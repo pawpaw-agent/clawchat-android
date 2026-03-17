@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File Provider Paths for sharing attachments -->
+<paths>
+    <!-- Cache directory for temporary files -->
+    <cache-path 
+        name="cache" 
+        path="." />
+    
+    <!-- Files directory for downloads -->
+    <files-path 
+        name="files" 
+        path="." />
+    
+    <!-- External cache (if needed) -->
+    <external-cache-path 
+        name="external_cache" 
+        path="." />
+    
+    <!-- External files (if needed) -->
+    <external-files-path 
+        name="external_files" 
+        path="." />
+    
+    <!-- Pictures directory for image attachments -->
+    <external-path 
+        name="external" 
+        path="." />
+</paths>

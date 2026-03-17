@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Data Extraction Rules for Android 12+ Auto Backup -->
+<data-extraction-rules>
+    <!-- 
+        Security Policy:
+        - Exclude all sensitive data from cloud backup
+        - Allow local device-to-device transfer only
+    -->
+    
+    <cloud-backup>
+        <!-- Exclude sensitive preferences -->
+        <exclude 
+            domain="sharedpref" 
+            path="clawchat_secure_prefs.xml" />
+        <exclude 
+            domain="sharedpref" 
+            path="clawchat_device_token.xml" />
+        
+        <!-- Exclude database with messages -->
+        <exclude 
+            domain="database" 
+            path="clawchat_db" />
+        <exclude 
+            domain="database" 
+            path="clawchat_messages.db" />
+        
+        <!-- Exclude keystore data -->
+        <exclude 
+            domain="keystore" 
+            path="clawchat_device_key" />
+        
+        <!-- Exclude cache files -->
+        <exclude 
+            domain="file" 
+            path="cache" />
+        <exclude 
+            domain="file" 
+            path="code_cache" />
+    </cloud-backup>
+
+    <!-- Device-to-device transfer rules (Android 12+) -->
+    <device-transfer>
+        <!-- Same exclusions as cloud backup -->
+        <exclude 
+            domain="sharedpref" 
+            path="clawchat_secure_prefs.xml" />
+        <exclude 
+            domain="sharedpref" 
+            path="clawchat_device_token.xml" />
+        <exclude 
+            domain="database" 
+            path="clawchat_db" />
+        <exclude 
+            domain="database" 
+            path="clawchat_messages.db" />
+        <exclude 
+            domain="keystore" 
+            path="clawchat_device_key" />
+    </device-transfer>
+</data-extraction-rules>

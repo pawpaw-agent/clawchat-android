@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="Theme.ClawChat" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="android:colorPrimary">@color/primary</item>
+        <item name="android:colorPrimaryDark">@color/primary_dark</item>
+        <item name="android:colorAccent">@color/accent</item>
+        
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/primary_dark</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        
+        <!-- Window background -->
+        <item name="android:windowBackground">@color/background</item>
+        
+        <!-- Text colors -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+    </style>
+
+    <!-- Splash screen theme -->
+    <style name="Theme.ClawChat.Splash" parent="Theme.ClawChat">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
+
+    <!-- Dialog theme -->
+    <style name="Theme.ClawChat.Dialog" parent="android:Theme.Material.Light.Dialog">
+        <item name="android:colorPrimary">@color/primary</item>
+        <item name="android:colorAccent">@color/accent</item>
+    </style>
+
+    <!-- Button style -->
+    <style name="Widget.ClawChat.Button" parent="android:Widget.Material.Button">
+        <item name="android:textColor">@color/button_text</item>
+        <item name="android:background">@drawable/button_background</item>
+    </style>
+
+    <!-- Input field style -->
+    <style name="Widget.ClawChat.TextInput" parent="android:Widget.Material.EditText">
+        <item name="android:background">@drawable/input_background</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+</resources>
