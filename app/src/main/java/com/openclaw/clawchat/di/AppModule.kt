@@ -1,12 +1,12 @@
 package com.openclaw.clawchat.di
 
 import android.content.Context
-import com.openclaw.clawchat.network.NetworkModule
+import com.openclaw.clawchat.data.local.*
 import com.openclaw.clawchat.network.OkHttpWebSocketService
 import com.openclaw.clawchat.network.WebSocketService
+import com.openclaw.clawchat.repository.MessageRepository
 import com.openclaw.clawchat.repository.SessionRepository
-import com.openclaw.clawchat.security.SecurityModule
-import dagger.Binds
+import com.openclaw.clawchat.security.SecurityManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -34,12 +34,48 @@ object AppModule {
     }
 
     /**
+     * Room 数据库
+     */
+    @Provides
+    @Singleton
+    fun provideDatabase(@ApplicationContext context: Context): ClawChatDatabase {
+        return ClawChatDatabase.getDatabase(context)
+    }
+
+    /**
+     * Message DAO
+     */
+    @Provides
+    @Singleton
+    fun provideMessageDao(database: ClawChatDatabase): MessageDao {
+        return database.messageDao()
+    }
+
+    /**
+     * Session DAO
+     */
+    @Provides
+    @Singleton
+    fun provideSessionDao(database: ClawChatDatabase): SessionDao {
+        return database.sessionDao()
+    }
+
+    /**
      * 会话仓库
      */
     @Provides
     @Singleton
-    fun provideSessionRepository(): SessionRepository {
-        return SessionRepository()
+    fun provideSessionRepository(sessionDao: SessionDao): SessionRepository {
+        return SessionRepository(sessionDao)
+    }
+
+    /**
+     * 消息仓库
+     */
+    @Provides
+    @Singleton
+    fun provideMessageRepository(messageDao: MessageDao): MessageRepository {
+        return MessageRepository(messageDao)
     }
 }
 

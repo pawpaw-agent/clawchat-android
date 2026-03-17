@@ -1,11 +1,16 @@
 package com.openclaw.clawchat.ui.state
 
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.openclaw.clawchat.data.local.MessageEntity
+import com.openclaw.clawchat.data.local.MessageRole as LocalMessageRole
+import com.openclaw.clawchat.data.local.MessageStatus
 import com.openclaw.clawchat.network.WebSocketService
 import com.openclaw.clawchat.network.GatewayMessage
 import com.openclaw.clawchat.network.WebSocketConnectionState
+import com.openclaw.clawchat.repository.MessageRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,11 +24,13 @@ import java.util.UUID
  * 负责管理会话中的消息收发：
  * - 发送用户消息到网关
  * - 接收并显示助手回复
- * - 管理消息历史
+ * - 管理消息历史 (本地缓存)
  * - 处理连接状态
  */
 class SessionViewModel(
-    private val webSocketService: WebSocketService
+    private val webSocketService: WebSocketService,
+    private val messageRepository: MessageRepository,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SessionUiState())
@@ -39,6 +46,7 @@ class SessionViewModel(
     init {
         observeWebSocketConnection()
         observeIncomingMessages()
+        loadMessageHistory()
     }
 
     /**
@@ -67,6 +75,20 @@ class SessionViewModel(
     }
 
     /**
+     * 加载消息历史（从本地缓存）
+     */
+    private fun loadMessageHistory() {
+        viewModelScope.launch {
+            val sessionId = savedStateHandle.get<String>("sessionId") ?: return@launch
+            
+            messageRepository.getMessages(sessionId).collect { entities ->
+                val messages = entities.map { it.toMessageUi() }
+                _state.update { it.copy(messages = messages) }
+            }
+        }
+    }
+
+    /**
      * 观察接收到的消息
      */
     private fun observeIncomingMessages() {
@@ -82,6 +104,8 @@ class SessionViewModel(
      */
     private fun handleIncomingMessage(message: GatewayMessage) {
         viewModelScope.launch {
+            val sessionId = _state.value.sessionId ?: return@launch
+            
             when (message) {
                 is GatewayMessage.AgentMessage -> {
                     // 收到助手回复
@@ -90,6 +114,15 @@ class SessionViewModel(
                         content = message.content,
                         role = MessageRole.ASSISTANT,
                         timestamp = System.currentTimeMillis()
+                    )
+
+                    // 保存到本地缓存
+                    messageRepository.saveMessage(
+                        sessionId = sessionId,
+                        role = assistantMessage.role.toLocalRole(),
+                        content = message.content,
+                        timestamp = assistantMessage.timestamp,
+                        status = MessageStatus.DELIVERED
                     )
 
                     _state.update {
@@ -166,12 +199,23 @@ class SessionViewModel(
                 return@launch
             }
 
+            val sessionId = _state.value.sessionId ?: return@launch
+
             // 创建用户消息
             val userMessage = MessageUi(
                 id = UUID.randomUUID().toString(),
                 content = content,
                 role = MessageRole.USER,
                 timestamp = System.currentTimeMillis()
+            )
+
+            // 保存到本地缓存
+            messageRepository.saveMessage(
+                sessionId = sessionId,
+                role = userMessage.role.toLocalRole(),
+                content = content,
+                timestamp = userMessage.timestamp,
+                status = MessageStatus.PENDING
             )
 
             // 添加到消息列表
@@ -186,7 +230,7 @@ class SessionViewModel(
 
             // 构建网关消息
             val gatewayMessage = GatewayMessage.AgentMessage(
-                sessionId = _state.value.sessionId ?: "",
+                sessionId = sessionId,
                 content = content,
                 role = "user",
                 timestamp = System.currentTimeMillis()
@@ -196,8 +240,25 @@ class SessionViewModel(
                 // 发送到网关
                 val result = webSocketService.send(gatewayMessage)
 
-                result.onFailure { error ->
+                result.onSuccess {
+                    // 更新消息状态为已发送
+                    messageRepository.saveMessage(
+                        sessionId = sessionId,
+                        role = userMessage.role.toLocalRole(),
+                        content = content,
+                        timestamp = userMessage.timestamp,
+                        status = MessageStatus.SENT
+                    )
+                }.onFailure { error ->
                     Log.e(TAG, "发送消息失败", error)
+                    // 更新消息状态为失败
+                    messageRepository.saveMessage(
+                        sessionId = sessionId,
+                        role = userMessage.role.toLocalRole(),
+                        content = content,
+                        timestamp = userMessage.timestamp,
+                        status = MessageStatus.FAILED
+                    )
                     _state.update {
                         it.copy(
                             error = "发送失败：${error.message}",
@@ -208,6 +269,14 @@ class SessionViewModel(
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "发送消息异常", e)
+                // 更新消息状态为失败
+                messageRepository.saveMessage(
+                    sessionId = sessionId,
+                    role = userMessage.role.toLocalRole(),
+                    content = content,
+                    timestamp = userMessage.timestamp,
+                    status = MessageStatus.FAILED
+                )
                 _state.update {
                     it.copy(
                         error = "发送异常：${e.message}",
@@ -308,4 +377,38 @@ enum class MessageRole {
     USER,
     ASSISTANT,
     SYSTEM
+}
+
+/**
+ * MessageRole 转 LocalMessageRole
+ */
+private fun MessageRole.toLocalRole(): LocalMessageRole {
+    return when (this) {
+        MessageRole.USER -> LocalMessageRole.USER
+        MessageRole.ASSISTANT -> LocalMessageRole.ASSISTANT
+        MessageRole.SYSTEM -> LocalMessageRole.SYSTEM
+    }
+}
+
+/**
+ * LocalMessageRole 转 MessageRole
+ */
+private fun LocalMessageRole.toUiRole(): MessageRole {
+    return when (this) {
+        LocalMessageRole.USER -> MessageRole.USER
+        LocalMessageRole.ASSISTANT -> MessageRole.ASSISTANT
+        LocalMessageRole.SYSTEM -> MessageRole.SYSTEM
+    }
+}
+
+/**
+ * MessageEntity 转 MessageUi
+ */
+private fun MessageEntity.toMessageUi(): MessageUi {
+    return MessageUi(
+        id = id.toString(),
+        content = content,
+        role = role.toUiRole(),
+        timestamp = timestamp
+    )
 }

@@ -1,11 +1,14 @@
 package com.openclaw.clawchat.repository
 
+import com.openclaw.clawchat.data.local.SessionDao
+import com.openclaw.clawchat.data.local.SessionEntity
 import com.openclaw.clawchat.ui.state.SessionUi
 import com.openclaw.clawchat.ui.state.SessionStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,13 +17,15 @@ import javax.inject.Singleton
  * 会话仓库
  * 
  * 负责管理会话数据：
- * - 本地缓存
+ * - 本地缓存 (Room)
  * - 会话列表排序
  * - 会话搜索
  * - 会话状态管理
  */
 @Singleton
-class SessionRepository @Inject constructor() {
+class SessionRepository @Inject constructor(
+    private val sessionDao: SessionDao
+) {
 
     private val _sessions = MutableStateFlow<List<SessionUi>>(emptyList())
     val sessions: StateFlow<List<SessionUi>> = _sessions.asStateFlow()
@@ -33,9 +38,23 @@ class SessionRepository @Inject constructor() {
     }
 
     /**
+     * 从数据库加载会话列表
+     */
+    fun observeSessions(): Flow<List<SessionUi>> {
+        return sessionDao.getActiveSessions().map { entities ->
+            entities.map { it.toSessionUi() }
+        }
+    }
+
+    /**
      * 添加会话
      */
-    fun addSession(session: SessionUi) {
+    suspend fun addSession(session: SessionUi) {
+        // 保存到数据库
+        val entity = session.toSessionEntity()
+        sessionDao.insert(entity)
+        
+        // 更新内存缓存
         _sessions.update { sessions ->
             val updatedList = (sessions + session)
                 .sortedByDescending { it.lastActivityAt }
@@ -48,11 +67,20 @@ class SessionRepository @Inject constructor() {
     /**
      * 更新会话
      */
-    fun updateSession(sessionId: String, update: (SessionUi) -> SessionUi) {
+    suspend fun updateSession(sessionId: String, update: (SessionUi) -> SessionUi) {
+        val currentSessions = _sessions.value
+        val sessionToUpdate = currentSessions.find { it.id == sessionId } ?: return
+        
+        val updatedSession = update(sessionToUpdate)
+        
+        // 更新数据库
+        sessionDao.update(updatedSession.toSessionEntity())
+        
+        // 更新内存缓存
         _sessions.update { sessions ->
             sessions.map { session ->
                 if (session.id == sessionId) {
-                    update(session)
+                    updatedSession
                 } else {
                     session
                 }
@@ -72,7 +100,11 @@ class SessionRepository @Inject constructor() {
     /**
      * 删除会话
      */
-    fun deleteSession(sessionId: String) {
+    suspend fun deleteSession(sessionId: String) {
+        // 从数据库删除
+        sessionDao.deleteById(sessionId)
+        
+        // 更新内存缓存
         _sessions.update { sessions ->
             sessions.filter { it.id != sessionId }
         }
@@ -100,16 +132,13 @@ class SessionRepository @Inject constructor() {
     /**
      * 搜索会话
      */
-    fun searchSessions(query: String): List<SessionUi> {
+    suspend fun searchSessions(query: String): List<SessionUi> {
         if (query.isBlank()) {
             return _sessions.value
         }
-
-        val lowerQuery = query.lowercase()
-        return _sessions.value.filter { session ->
-            session.label?.lowercase()?.contains(lowerQuery) == true ||
-            session.lastMessage?.lowercase()?.contains(lowerQuery) == true
-        }
+        
+        // 从数据库搜索
+        return sessionDao.searchSessions("%$query%", 20).map { it.toSessionUi() }
     }
 
     /**
@@ -136,7 +165,15 @@ class SessionRepository @Inject constructor() {
     /**
      * 清除所有已终止会话
      */
-    fun clearTerminatedSessions() {
+    suspend fun clearTerminatedSessions() {
+        val terminatedIds = _sessions.value
+            .filter { it.status == SessionStatus.TERMINATED }
+            .map { it.id }
+        
+        terminatedIds.forEach { id ->
+            sessionDao.deleteById(id)
+        }
+        
         _sessions.update { sessions ->
             sessions.filter { it.status != SessionStatus.TERMINATED }
         }
@@ -157,53 +194,55 @@ class SessionRepository @Inject constructor() {
     }
 
     /**
-     * 加载会话（从服务器或本地存储）
+     * 加载会话（从数据库）
      */
     suspend fun loadSessions() {
-        // TODO: 从服务器加载真实会话列表
-        // 暂时使用模拟数据
-        val mockSessions = listOf(
-            SessionUi(
-                id = "session_1",
-                label = "项目讨论",
-                model = "qwen3.5-plus",
-                status = SessionStatus.RUNNING,
-                lastActivityAt = System.currentTimeMillis() - 60000,
-                messageCount = 15,
-                lastMessage = "好的，我来帮你实现这个功能",
-                thinking = false
-            ),
-            SessionUi(
-                id = "session_2",
-                label = "代码审查",
-                model = "qwen3.5-plus",
-                status = SessionStatus.RUNNING,
-                lastActivityAt = System.currentTimeMillis() - 3600000,
-                messageCount = 8,
-                lastMessage = "这段代码需要优化",
-                thinking = false
-            ),
-            SessionUi(
-                id = "session_3",
-                label = "数据分析",
-                model = "qwen3.5-plus",
-                status = SessionStatus.PAUSED,
-                lastActivityAt = System.currentTimeMillis() - 86400000,
-                messageCount = 25,
-                lastMessage = "分析完成",
-                thinking = false
-            )
-        )
-        _sessions.value = mockSessions
+        val entities = sessionDao.getActiveSessions().firstOrNull() ?: emptyList()
+        _sessions.value = entities.map { it.toSessionUi() }
     }
 
     /**
      * 清空所有会话
      */
-    fun clearAllSessions() {
+    suspend fun clearAllSessions() {
+        val allSessions = sessionDao.getAllSessions().firstOrNull() ?: emptyList()
+        allSessions.forEach { sessionDao.delete(it) }
+        
         _sessions.value = emptyList()
         _currentSession.value = null
     }
+}
+
+/**
+ * SessionUi 转 SessionEntity
+ */
+private fun SessionUi.toSessionEntity(): SessionEntity {
+    return SessionEntity(
+        id = id,
+        title = label ?: "未命名会话",
+        createdAt = lastActivityAt,
+        updatedAt = lastActivityAt,
+        isActive = status == SessionStatus.RUNNING,
+        messageCount = messageCount,
+        lastMessagePreview = lastMessage,
+        metadata = model
+    )
+}
+
+/**
+ * SessionEntity 转 SessionUi
+ */
+private fun SessionEntity.toSessionUi(): SessionUi {
+    return SessionUi(
+        id = id,
+        label = title,
+        model = metadata ?: "qwen3.5-plus",
+        status = if (isActive) SessionStatus.RUNNING else SessionStatus.PAUSED,
+        lastActivityAt = updatedAt,
+        messageCount = messageCount,
+        lastMessage = lastMessagePreview,
+        thinking = false
+    )
 }
 
 /**
