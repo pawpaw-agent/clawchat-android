@@ -3,34 +3,51 @@ package com.openclaw.clawchat
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.openclaw.clawchat.ui.screens.PairingScreen
+import com.openclaw.clawchat.ui.screens.MainScreen
+import com.openclaw.clawchat.ui.screens.SessionScreen
+import com.openclaw.clawchat.ui.theme.ClawChatTheme
+import com.openclaw.clawchat.ui.state.MainViewModel
+import com.openclaw.clawchat.ui.state.PairingViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * ClawChat 主 Activity
  * 
- * 应用入口点 - 简化版本
+ * 应用入口点，负责：
+ * - 初始化 Compose UI
+ * - 设置导航结构
+ * - 管理应用生命周期
  */
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 安装启动屏
+        val splashScreen = installSplashScreen()
+        
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         setContent {
-            MaterialTheme {
+            ClawChatTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ClawChatApp()
+                    ClawChatNavHost()
                 }
             }
         }
@@ -38,24 +55,67 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * 简单的 ClawChat 应用界面
+ * ClawChat 导航主机
+ * 
+ * 定义应用的导航结构：
+ * - pairing: 设备配对屏幕（首次启动）
+ * - main: 主界面（配对成功后）
+ * - session/{sessionId}: 会话详情界面
  */
 @androidx.compose.runtime.Composable
-fun ClawChatApp() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+fun ClawChatNavHost(
+    mainViewModel: MainViewModel = hiltViewModel(),
+    pairingViewModel: PairingViewModel = hiltViewModel()
+) {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = "pairing"
     ) {
-        Text(
-            text = "ClawChat",
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-        Text(
-            text = "Coming Soon",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        // 配对屏幕
+        composable("pairing") {
+            PairingScreen(
+                viewModel = pairingViewModel,
+                onPairingSuccess = {
+                    navController.navigate("main") {
+                        popUpTo("pairing") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // 主屏幕
+        composable("main") {
+            MainScreen(
+                viewModel = mainViewModel,
+                onNavigateToSession = { sessionId ->
+                    navController.navigate("session/$sessionId")
+                },
+                onDisconnect = {
+                    navController.navigate("pairing") {
+                        popUpTo("main") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // 会话详情屏幕
+        composable(
+            route = "session/{sessionId}",
+            arguments = listOf(
+                navArgument("sessionId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
+            
+            SessionScreen(
+                viewModel = hiltViewModel(),
+                sessionId = sessionId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
     }
 }
