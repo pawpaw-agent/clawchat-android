@@ -37,6 +37,8 @@ fun MainScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showSettings by remember { mutableStateOf(false) }
+    var showSessionOptions by remember { mutableStateOf<SessionUi?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
 
     // 监听事件
     LaunchedEffect(viewModel.events) {
@@ -52,6 +54,34 @@ fun MainScreen(
             }
             viewModel.consumeEvent()
         }
+    }
+
+    // 会话选项对话框
+    showSessionOptions?.let { session ->
+        SessionOptionsDialog(
+            session = session,
+            onDismiss = { showSessionOptions = null },
+            onRename = { newName ->
+                viewModel.renameSession(session.id, newName)
+                showSessionOptions = null
+            },
+            onPauseResume = {
+                if (session.status == com.openclaw.clawchat.ui.state.SessionStatus.RUNNING) {
+                    viewModel.pauseSession(session.id)
+                } else {
+                    viewModel.resumeSession(session.id)
+                }
+                showSessionOptions = null
+            },
+            onTerminate = {
+                viewModel.terminateSession(session.id)
+                showSessionOptions = null
+            },
+            onDelete = {
+                viewModel.deleteSession(session.id)
+                showSessionOptions = null
+            }
+        )
     }
 
     Scaffold(
@@ -93,12 +123,39 @@ fun MainScreen(
                 }
                 else -> {
                     // 会话列表
-                    SessionList(
-                        sessions = state.sessions,
-                        currentSession = state.currentSession,
-                        onSelectSession = { viewModel.selectSession(it) },
-                        onDeleteSession = { viewModel.deleteSession(it) }
-                    )
+                    Column {
+                        // 搜索栏
+                        if (state.sessions.isNotEmpty()) {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                placeholder = { Text("搜索会话...") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = null
+                                    )
+                                },
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                )
+                            )
+                        }
+
+                        // 会话列表
+                        SessionList(
+                            sessions = filterSessions(state.sessions, searchQuery),
+                            currentSession = state.currentSession,
+                            onSelectSession = { viewModel.selectSession(it) },
+                            onSessionLongPress = { showSessionOptions = it },
+                            onDeleteSession = { viewModel.deleteSession(it) }
+                        )
+                    }
                 }
             }
         }
@@ -276,6 +333,7 @@ private fun SessionList(
     sessions: List<SessionUi>,
     currentSession: SessionUi?,
     onSelectSession: (String) -> Unit,
+    onSessionLongPress: (SessionUi) -> Unit,
     onDeleteSession: (String) -> Unit
 ) {
     LazyColumn(
@@ -288,6 +346,7 @@ private fun SessionList(
                 session = session,
                 isSelected = session.id == currentSession?.id,
                 onSelect = { onSelectSession(session.id) },
+                onSessionLongPress = { onSessionLongPress(session) },
                 onDelete = { onDeleteSession(session.id) }
             )
         }
@@ -302,6 +361,7 @@ private fun SessionItem(
     session: SessionUi,
     isSelected: Boolean,
     onSelect: () -> Unit,
+    onSessionLongPress: (() -> Unit)? = null,
     onDelete: () -> Unit
 ) {
     Card(
@@ -313,7 +373,8 @@ private fun SessionItem(
                 MaterialTheme.colorScheme.surface
             }
         ),
-        onClick = onSelect
+        onClick = onSelect,
+        onLongClick = onSessionLongPress
     ) {
         Row(
             modifier = Modifier
@@ -430,5 +491,140 @@ private fun formatTimeAgo(timestamp: Long): String {
         diff < 86400_000 -> "${diff / 3600_000} 小时前"
         diff < 604800_000 -> "${diff / 86400_000} 天前"
         else -> SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(java.util.Date(timestamp))
+    }
+}
+
+/**
+ * 过滤会话列表
+ */
+private fun filterSessions(sessions: List<SessionUi>, query: String): List<SessionUi> {
+    if (query.isBlank()) {
+        return sessions
+    }
+    val lowerQuery = query.lowercase()
+    return sessions.filter { session ->
+        session.label?.lowercase()?.contains(lowerQuery) == true ||
+        session.lastMessage?.lowercase()?.contains(lowerQuery) == true
+    }
+}
+
+/**
+ * 会话选项对话框
+ */
+@Composable
+private fun SessionOptionsDialog(
+    session: SessionUi,
+    onDismiss: () -> Unit,
+    onRename: (String) -> Unit,
+    onPauseResume: () -> Unit,
+    onTerminate: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf(session.label ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("会话选项") },
+        text = {
+            Column {
+                Text(
+                    text = session.label ?: "未命名会话",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "状态：${session.status.name}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "消息数：${session.messageCount}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Column {
+                Button(
+                    onClick = onPauseResume,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    )
+                ) {
+                    Text(
+                        if (session.status == com.openclaw.clawchat.ui.state.SessionStatus.RUNNING) {
+                            "暂停会话"
+                        } else {
+                            "恢复会话"
+                        }
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { showRenameDialog = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("重命名")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onTerminate,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("终止会话")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onDelete,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("删除会话")
+                }
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
+    )
+
+    // 重命名对话框
+    if (showRenameDialog) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("重命名会话") },
+            text = {
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text("会话名称") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { onRename(newName) },
+                    enabled = newName.isNotBlank()
+                ) {
+                    Text("确认")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showRenameDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
     }
 }
