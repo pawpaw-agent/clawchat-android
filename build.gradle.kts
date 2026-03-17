@@ -1,5 +1,5 @@
-# ClawChat Android Gradle Configuration
-# Add this to your project's build configuration
+// ClawChat Android Gradle Configuration
+// Root project build script - applies plugins to subprojects
 
 plugins {
     alias(libs.plugins.android.application) apply false
@@ -9,7 +9,6 @@ plugins {
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.room) apply false
-    alias(libs.plugins.jacoco) apply false
 }
 
 // Root build.gradle.kts
