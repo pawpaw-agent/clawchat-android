@@ -96,7 +96,12 @@ data class SettingsUiState(
 data class PairingUiState(
     val gatewayUrl: String = "",
     val isPairing: Boolean = false,
+    val isInitializing: Boolean = false,
     val pairingStatus: PairingStatus = PairingStatus.Idle,
+    val deviceId: String? = null,
+    val publicKey: String? = null,
+    val deviceToken: String? = null,
+    val pairingStartTime: Long? = null,
     val error: String? = null
 )
 
