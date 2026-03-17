@@ -1,14 +1,1 @@
-# This file should be configured for your local environment.
-# It is ignored by Git (see .gitignore).
-
-# SDK Location (Update this to match your system)
-# macOS/Linux:
-sdk.dir=/Users/your-username/Library/Android/sdk
-# Windows:
-# sdk.dir=C\:\\Users\\your-username\\AppData\\Local\\Android\\Sdk
-
-# NDK Location (Optional, only if using NDK)
-# ndk.dir=/Users/your-username/Library/Android/sdk/ndk/26.1.10909125
-
-# Java Home (Optional, if not using JAVA_HOME environment variable)
-# java.home=/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home
+sdk.dir=/usr/local/lib/android/sdk
