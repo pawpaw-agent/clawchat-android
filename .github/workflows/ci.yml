@@ -47,10 +47,10 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          api-level: 34
-          build-tools: 34.0.0
-          cmdline-tools-version: 11.0
+
+      - name: Install Android SDK Components
+        run: |
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Accept Android Licenses
         run: |
