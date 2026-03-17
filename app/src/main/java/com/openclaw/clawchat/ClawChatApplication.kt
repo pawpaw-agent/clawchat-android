@@ -30,22 +30,18 @@ class ClawChatApplication : Application() {
      */
     private fun enableStrictMode() {
         try {
-            val strictModeClass = Class.forName("android.os.StrictMode")
-            val threadPolicyBuilderClass = Class.forName("android.os.StrictMode\$ThreadPolicy\$Builder")
+            // Use Kotlin reflection-friendly approach
+            val threadPolicy = android.os.StrictMode.ThreadPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .build()
+            android.os.StrictMode.setThreadPolicy(threadPolicy)
             
-            val threadPolicyBuilder = threadPolicyBuilderClass.getDeclaredConstructor().newInstance()
-            threadPolicyBuilderClass.getMethod("detectAll").invoke(threadPolicyBuilder)
-            threadPolicyBuilderClass.getMethod("penaltyLog").invoke(threadPolicyBuilder)
-            
-            val threadPolicy = threadPolicyBuilderClass.getMethod("build").invoke(threadPolicyBuilder)
-            strictModeClass.getMethod("setThreadPolicy", threadPolicyBuilderClass).invoke(null, threadPolicy)
-            
-            val vmPolicyBuilder = threadPolicyBuilderClass.getDeclaredConstructor().newInstance()
-            vmPolicyBuilderClass.getMethod("detectAll").invoke(vmPolicyBuilder)
-            vmPolicyBuilderClass.getMethod("penaltyLog").invoke(vmPolicyBuilder)
-            
-            val vmPolicy = vmPolicyBuilderClass.getMethod("build").invoke(vmPolicyBuilder)
-            strictModeClass.getMethod("setVmPolicy", vmPolicyBuilderClass).invoke(null, vmPolicy)
+            val vmPolicy = android.os.StrictMode.VmPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .build()
+            android.os.StrictMode.setVmPolicy(vmPolicy)
         } catch (e: Exception) {
             // StrictMode not available, ignore
         }
