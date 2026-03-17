@@ -1,0 +1,318 @@
+# ClawChat Android Release Pipeline
+# Triggers: version tags (v*), manual dispatch
+# Jobs: build signed APK, create GitHub Release, upload artifacts
+
+name: Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'  # Tags like v1.0.0, v1.2.3-beta
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version name (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+      is_prerelease:
+        description: 'Mark as pre-release'
+        type: boolean
+        default: false
+      generate_tag:
+        description: 'Create new tag'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  RELEASE_VERSION: ${{ github.event.inputs.version || github.ref_name }}
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Validate Release
+  # ─────────────────────────────────────────────────────────────
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Extract Version from Tag
+        if: startsWith(github.ref, 'refs/tags/')
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Use Manual Version
+        if: github.event_name == 'workflow_dispatch'
+        id: version_manual
+        run: |
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+
+      - name: Determine Pre-release Status
+        id: prerelease
+        run: |
+          if [[ "${{ env.RELEASE_VERSION }}" == *"-beta"* ]] || \
+             [[ "${{ env.RELEASE_VERSION }}" == *"-alpha"* ]] || \
+             [[ "${{ env.RELEASE_VERSION }}" == *"-rc"* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.is_prerelease }}" = "true" ]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate Version Format
+        run: |
+          VERSION="${{ steps.version.outputs.version || steps.version_manual.outputs.version }}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+            echo "❌ Invalid version format: $VERSION"
+            echo "Expected format: MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-prerelease"
+            exit 1
+          fi
+          echo "✅ Version format valid: $VERSION"
+
+  # ─────────────────────────────────────────────────────────────
+  # Build Release APK
+  # ─────────────────────────────────────────────────────────────
+  build:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+    needs: validate
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+
+      - name: Grant Gradle Permissions
+        run: chmod +x gradlew
+
+      - name: Decode Keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "❌ RELEASE_KEYSTORE_B64 secret is not set"
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > keystore.jks
+          echo "✅ Keystore decoded successfully"
+
+      - name: Build Signed Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file=keystore.jks \
+            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
+            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+            -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+
+      - name: Verify APK
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "❌ No APK found in build output"
+            exit 1
+          fi
+          echo "APK_PATH=$APK_PATH" >> $GITHUB_ENV
+          
+          # Verify APK signature
+          echo "Verifying APK signature..."
+          jarsigner -verify -verbose -certs "$APK_PATH" || true
+          
+          # Get APK info
+          echo "## APK Information" >> $GITHUB_STEP_SUMMARY
+          echo "- File: $(basename $APK_PATH)" >> $GITHUB_STEP_SUMMARY
+          echo "- Size: $(du -h $APK_PATH | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "- SHA256: $(sha256sum $APK_PATH | cut -d' ' -f1)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: clawchat-release-apk
+          path: ${{ env.APK_PATH }}
+          retention-days: 30
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          TAG="v$VERSION"
+          
+          # Get commits since last tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          echo "## 📦 ClawChat v$VERSION" > release_notes.md
+          echo "" >> release_notes.md
+          
+          if [ -n "$PREV_TAG" ]; then
+            echo "### 🔄 Changes since $PREV_TAG" >> release_notes.md
+            echo "" >> release_notes.md
+            git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD >> release_notes.md
+          else
+            echo "### 🎉 Initial Release" >> release_notes.md
+            echo "" >> release_notes.md
+            git log --pretty=format:"- %s (%h)" | head -20 >> release_notes.md
+          fi
+          
+          echo "" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 📥 Installation" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "1. Download the APK from the Assets section below" >> release_notes.md
+          echo "2. Enable 'Install from Unknown Sources' on your Android device" >> release_notes.md
+          echo "3. Open the APK file and follow the installation prompts" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### ⚠️ Requirements" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "- Android 8.0 (API 26) or higher" >> release_notes.md
+          echo "- 50MB free storage space" >> release_notes.md
+          
+          cat release_notes.md >> $GITHUB_STEP_SUMMARY
+          echo "notes_file=release_notes.md" >> $GITHUB_OUTPUT
+
+      - name: Upload Release Notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release_notes.md
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────
+  # Create GitHub Release
+  # ─────────────────────────────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate, build]
+    timeout-minutes: 10
+    
+    steps:
+      - name: Download Release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: clawchat-release-apk
+          path: ./release-artifacts/
+
+      - name: Download Release Notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: ./release-artifacts/
+
+      - name: Create Tag (if manual dispatch)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.generate_tag == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          TAG="v$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+          echo "✅ Created and pushed tag: $TAG"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.validate.outputs.version }}
+          name: ClawChat v${{ needs.validate.outputs.version }}
+          body_path: ./release-artifacts/release-notes.md
+          files: |
+            ./release-artifacts/*.apk
+          draft: false
+          prerelease: ${{ needs.validate.outputs.is_prerelease == 'true' }}
+          generate_release_notes: false
+          make_latest: ${{ needs.validate.outputs.is_prerelease == 'false' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Notify Release Success
+        run: |
+          echo "## ✅ Release Published Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: v${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: refs/tags/v${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pre-release**: ${{ needs.validate.outputs.is_prerelease }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release URL**: https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────────────────────
+  # Publish to F-Droid (Optional)
+  # ─────────────────────────────────────────────────────────────
+  fdroid:
+    name: Submit to F-Droid (Optional)
+    runs-on: ubuntu-latest
+    needs: release
+    if: false  # Disabled by default, enable when ready
+    timeout-minutes: 10
+    
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: clawchat-release-apk
+          path: ./fdroid-submit/
+
+      - name: Prepare F-Droid Metadata
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          cat > fdroid-submit/metadata.yml << EOF
+          Categories:
+            - Development
+            - Communication
+          License: MIT
+          Source Code: https://github.com/${{ github.repository }}
+          Issue Tracker: https://github.com/${{ github.repository }}/issues
+          
+          Builds:
+            - version_name: $VERSION
+              commit: v$VERSION
+              subdir: app
+              gradle:
+                - yes
+          EOF
+
+      - name: Create F-Droid PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.FDROID_BOT_TOKEN }}
+          commit-message: "Add ClawChat v${{ needs.validate.outputs.version }}"
+          title: "Add ClawChat v${{ needs.validate.outputs.version }}"
+          body: |
+            New release of ClawChat Android client.
+            
+            - Version: ${{ needs.validate.outputs.version }}
+            - APK included in artifacts
+          branch: fdroid-update-v${{ needs.validate.outputs.version }}
+          base: master
+          repo: fdroid/fdroiddata
