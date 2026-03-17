@@ -1,5 +1,5 @@
-# ClawChat Android Gradle Configuration
-# Add this to your project's build configuration
+// ClawChat Android Gradle Configuration
+// Add this to your project's build configuration
 
 plugins {
     alias(libs.plugins.android.application) apply false
@@ -9,7 +9,7 @@ plugins {
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.room) apply false
-    alias(libs.plugins.jacoco) apply false
+    // JaCoCo is a built-in Gradle plugin, no need to alias from version catalog
 }
 
 // Root build.gradle.kts

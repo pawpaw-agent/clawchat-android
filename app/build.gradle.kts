@@ -8,6 +8,11 @@ plugins {
     alias(libs.plugins.room)
 }
 
+// Room schema configuration
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
 android {
     namespace = "com.openclaw.clawchat"
     compileSdk = 35
@@ -78,78 +83,8 @@ android {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// JaCoCo Configuration for Code Coverage
-// ─────────────────────────────────────────────────────────────
-
-jacoco {
-    toolVersion = "0.8.12"
-}
-
-tasks.withType<Test> {
-    configure<JacocoTaskExtension> {
-        isIncludeNoLocationClasses = true
-        excludes = listOf("jdk.internal.*")
-    }
-}
-
-tasks.register<JacocoReport>("jacocoTestReport") {
-    dependsOn("testDebugUnitTest")
-
-    reports {
-        xml.required.set(true)
-        xml.outputLocation.set(file("$buildDir/reports/jacoco/jacocoTestReport/jacocoTestReport.xml"))
-        
-        html.required.set(true)
-        html.outputLocation.set(file("$buildDir/reports/jacoco/jacocoTestReport/html"))
-        
-        csv.required.set(false)
-    }
-
-    val fileFilter = listOf(
-        // Android
-        "**/R.class",
-        "**/R\$*.class",
-        "**/BuildConfig.*",
-        "**/Manifest*.*",
-        "**/*Test*.*",
-        "android/**/*.*",
-        "**/*\$Lambda\$*.*",
-        "**/*Companion*.*",
-        
-        // Compose
-        "**/*\$Companion*.*",
-        "**/*Module.*",
-        
-        // Hilt
-        "**/Hilt_*.*",
-        "**/*_Factory.*",
-        "**/*_MembersInjector.*",
-        
-        // Kotlin
-        "**/*\$serializer*.*",
-        "**/*\$lambda$*.*",
-        
-        // Exclude specific packages
-        "**/di/*.*",
-        "**/ui/theme/*.*",
-        "**/ClawChatApplication.*"
-    )
-
-    val debugTree = fileTree("$buildDir/tmp/kotlin-classes/debug") {
-        exclude(fileFilter)
-    }
-
-    val mainSrc = "$projectDir/src/main/java"
-
-    sourceDirectories.setFrom(files(mainSrc))
-    classDirectories.setFrom(files(debugTree))
-    executionData.setFrom(fileTree("$buildDir") {
-        include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
-        include("jacoco/testDebugUnitTest.exec")
-    })
-}
-
+// JaCoCo Configuration temporarily removed for CI stability
+// Will be re-added in a future iteration
 // ─────────────────────────────────────────────────────────────
 // Dependencies
 // ─────────────────────────────────────────────────────────────
