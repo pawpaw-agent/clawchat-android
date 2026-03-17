@@ -72,14 +72,6 @@
         </activity>
 
         <!-- ─────────────────────────────────────────────────────────────
-             WebSocket Service (Background Service)
-             ───────────────────────────────────────────────────────────── -->
-        <service
-            android:name=".service.WebSocketService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
-        <!-- ─────────────────────────────────────────────────────────────
              FileProvider for sharing attachments
              ───────────────────────────────────────────────────────────── -->
         <provider
