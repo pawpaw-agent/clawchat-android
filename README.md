@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**OpenClaw 生态系统的官方 Android 客户端**
+**OpenClaw 第三方 Android 客户端（非官方项目）**
 
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com/)
 [![API](https://img.shields.io/badge/API-26%2B-brightgreen.svg)](https://android-arsenal.com/api?level=26)
@@ -31,7 +31,9 @@
 
 ## 📱 项目介绍
 
-ClawChat 是 OpenClaw 生态系统的官方 Android 客户端应用，提供与 OpenClaw Gateway 的实时通信能力，让开发者和管理员能够随时随地监控和管理 AI Agent 会话。
+ClawChat 是 OpenClaw 生态系统的**第三方** Android 客户端应用（非官方项目），提供与 OpenClaw Gateway 的实时通信能力，让开发者和管理员能够随时随地监控和管理 AI Agent 会话。
+
+> ⚠️ **声明**: 本项目为第三方客户端，与 OpenClaw 官方无关联。OpenClaw® 为 OpenClaw 项目所有。
 
 ### 产品定位
 
