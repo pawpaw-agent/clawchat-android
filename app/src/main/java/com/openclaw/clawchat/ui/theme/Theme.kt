@@ -16,62 +16,138 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// 深色主题配色方案
+/**
+ * 深色主题配色方案
+ * 
+ * 基于 OpenClaw 品牌色，采用深蓝色系
+ */
 private val DarkColorScheme = darkColorScheme(
+    // 主色
     primary = ClawBlue,
     onPrimary = Color.White,
     primaryContainer = ClawBlueDark,
     onPrimaryContainer = ClawBlueLight,
     
+    // 次级色
     secondary = ClawBlueLight,
     onSecondary = Color.White,
-    secondaryContainer = BackgroundTertiary,
-    onSecondaryContainer = TextPrimary,
+    secondaryContainer = DarkBackgroundTertiary,
+    onSecondaryContainer = DarkTextPrimary,
     
+    // 第三色
     tertiary = Success,
     onTertiary = Color.White,
+    tertiaryContainer = Success.copy(alpha = 0.2f),
+    onTertiaryContainer = Success,
     
-    background = BackgroundPrimary,
-    onBackground = TextPrimary,
+    // 背景
+    background = DarkBackgroundPrimary,
+    onBackground = DarkTextPrimary,
     
-    surface = SurfacePrimary,
-    onSurface = TextPrimary,
-    surfaceVariant = BackgroundSecondary,
-    onSurfaceVariant = TextSecondary,
+    // 表面
+    surface = DarkSurfacePrimary,
+    onSurface = DarkTextPrimary,
+    surfaceVariant = DarkBackgroundSecondary,
+    onSurfaceVariant = DarkTextSecondary,
+    surfaceTint = ClawBlue,
     
+    // 错误
     error = Error,
     onError = Color.White,
+    errorContainer = Error.copy(alpha = 0.2f),
+    onErrorContainer = Error,
     
-    outline = BackgroundTertiary,
-    outlineVariant = TextTertiary
+    // 边框/分割线
+    outline = DarkBackgroundTertiary,
+    outlineVariant = DarkTextTertiary,
+    
+    // 反色
+    inverseSurface = LightSurfacePrimary,
+    inverseOnSurface = LightTextPrimary,
+    inversePrimary = ClawBlueDark,
+    
+    // 阴影
+    shadow = Color.Black,
+    scrim = Color.Black.copy(alpha = 0.32f)
 )
 
-// 浅色主题配色方案（备用）
+/**
+ * 浅色主题配色方案
+ * 
+ * 采用清爽的浅蓝灰色系
+ */
 private val LightColorScheme = lightColorScheme(
+    // 主色
     primary = ClawBlueDark,
     onPrimary = Color.White,
     primaryContainer = ClawBlueLight,
-    onPrimaryContainer = ClawBlue,
+    onPrimaryContainer = Color.White,
     
-    background = Color(0xFFF8FAFC),
-    onBackground = Color(0xFF0F172A),
+    // 次级色
+    secondary = ClawBlue,
+    onSecondary = Color.White,
+    secondaryContainer = LightBackgroundTertiary,
+    onSecondaryContainer = LightTextPrimary,
     
-    surface = Color.White,
-    onSurface = Color(0xFF0F172A)
+    // 第三色
+    tertiary = Success,
+    onTertiary = Color.White,
+    tertiaryContainer = Success.copy(alpha = 0.1f),
+    onTertiaryContainer = Success,
+    
+    // 背景
+    background = LightBackgroundPrimary,
+    onBackground = LightTextPrimary,
+    
+    // 表面
+    surface = LightSurfacePrimary,
+    onSurface = LightTextPrimary,
+    surfaceVariant = LightBackgroundSecondary,
+    onSurfaceVariant = LightTextSecondary,
+    surfaceTint = ClawBlueDark,
+    
+    // 错误
+    error = Error,
+    onError = Color.White,
+    errorContainer = Error.copy(alpha = 0.1f),
+    onErrorContainer = Error,
+    
+    // 边框/分割线
+    outline = LightBackgroundTertiary,
+    outlineVariant = LightTextTertiary,
+    
+    // 反色
+    inverseSurface = DarkSurfacePrimary,
+    inverseOnSurface = DarkTextPrimary,
+    inversePrimary = ClawBlueLight,
+    
+    // 阴影
+    shadow = Color.Black.copy(alpha = 0.1f),
+    scrim = Color.Black.copy(alpha = 0.32f)
 )
 
+/**
+ * ClawChat 主题
+ * 
+ * @param darkTheme 是否使用深色主题，默认跟随系统
+ * @param dynamicColor 是否使用动态取色（Android 12+），默认关闭以保持品牌一致性
+ * @param content 内容
+ */
 @Composable
 fun ClawChatTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // 默认禁用动态取色，保持品牌一致性
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
+        // Android 12+ 支持动态取色
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
+        // 深色主题
         darkTheme -> DarkColorScheme
+        // 浅色主题
         else -> LightColorScheme
     }
     
@@ -79,7 +155,9 @@ fun ClawChatTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            // 设置状态栏颜色
             window.statusBarColor = colorScheme.background.toArgb()
+            // 根据主题设置状态栏图标颜色（深色主题用浅色图标）
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
@@ -91,7 +169,9 @@ fun ClawChatTheme(
     )
 }
 
-// Typography 实例
+/**
+ * 排版样式
+ */
 val Typography = androidx.compose.material3.Typography(
     displayLarge = HeadingLarge,
     displayMedium = HeadingMedium,

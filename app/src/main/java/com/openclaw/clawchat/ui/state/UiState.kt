@@ -1,5 +1,6 @@
 package com.openclaw.clawchat.ui.state
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.openclaw.clawchat.network.GatewayMessage
@@ -180,15 +181,17 @@ sealed class ConnectionStatusUi {
 
 /**
  * 获取连接状态的颜色（Composable 函数）
+ * 
+ * 使用 MaterialTheme 颜色，自动适配深色/浅色模式
  */
 @Composable
 fun ConnectionStatusUi.getStatusColor(): Color {
     return when (this) {
-        is ConnectionStatusUi.Disconnected -> Color.Gray
-        is ConnectionStatusUi.Connecting -> Color.Yellow
-        is ConnectionStatusUi.Disconnecting -> Color.Gray
-        is ConnectionStatusUi.Connected -> Color.Green
-        is ConnectionStatusUi.Error -> Color.Red
+        is ConnectionStatusUi.Disconnected -> MaterialTheme.colorScheme.onSurfaceVariant
+        is ConnectionStatusUi.Connecting -> MaterialTheme.colorScheme.tertiary
+        is ConnectionStatusUi.Disconnecting -> MaterialTheme.colorScheme.onSurfaceVariant
+        is ConnectionStatusUi.Connected -> MaterialTheme.colorScheme.primary
+        is ConnectionStatusUi.Error -> MaterialTheme.colorScheme.error
     }
 }
 
