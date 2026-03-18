@@ -190,6 +190,9 @@ dependencies {
 
     // Security
     implementation(libs.androidx.security.crypto)
+    
+    // JSON (用于协议解析)
+    implementation("org.json:json:20231013")
 
     // Local Storage
     implementation(libs.androidx.room.runtime)
@@ -208,6 +211,7 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.androidx.core.testing)
     testImplementation(libs.turbine)
+    testImplementation("org.robolectric:robolectric:4.11.1")
     
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)

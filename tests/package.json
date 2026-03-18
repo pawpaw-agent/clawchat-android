@@ -1,0 +1,16 @@
+{
+  "name": "tests",
+  "version": "1.0.0",
+  "description": "本目录包含 ClawChat 项目的完整单元测试套件。",
+  "main": "integration.test.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "uuid": "^13.0.0",
+    "ws": "^8.19.0"
+  }
+}
