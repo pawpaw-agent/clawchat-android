@@ -18,7 +18,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalSoftwareKeyboard
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -49,7 +48,7 @@ fun SessionScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
-    val keyboard = LocalSoftwareKeyboard.current
+    val keyboard: Any? = null
     val focusRequester = remember { FocusRequester() }
 
     // 初始化会话 ID
@@ -187,6 +186,7 @@ private fun ConnectionStatusIcon(status: ConnectionStatus) {
         is ConnectionStatus.Connecting, is ConnectionStatus.Disconnecting -> Icons.Default.Sync to MaterialTheme.colorScheme.tertiary
         is ConnectionStatus.Disconnected -> Icons.Default.CloudOff to MaterialTheme.colorScheme.onSurfaceVariant
         is ConnectionStatus.Error -> Icons.Default.Error to MaterialTheme.colorScheme.error
+        else -> Icons.Default.Help to MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Icon(

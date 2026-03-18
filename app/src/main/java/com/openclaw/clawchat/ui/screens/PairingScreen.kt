@@ -338,26 +338,45 @@ private fun PairingStatusIndicator(
     onCancel: () -> Unit
 ) {
     when (status) {
-        PairingStatus.Idle -> {
-            // 空闲状态，等待用户输入
+        is PairingStatus.Initializing -> {
+            // 初始化中
         }
-
-        PairingStatus.Requesting -> {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
+        is PairingStatus.WaitingForApproval -> {
+            // 等待批准
+        }
+        is PairingStatus.Approved -> {
+            // 已批准
+        }
+        is PairingStatus.Rejected -> {
+            // 已拒绝
+        }
+        is PairingStatus.Timeout -> {
+            // 超时
+        }
+        is PairingStatus.Error -> {
+            // 错误
+        }
+        else -> {
+            // 其他状态
+        }
+    }
+    
+    // 临时修复：添加实际 UI
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
                         strokeWidth = 2.dp,
                         color = MaterialTheme.colorScheme.primary
                     )
