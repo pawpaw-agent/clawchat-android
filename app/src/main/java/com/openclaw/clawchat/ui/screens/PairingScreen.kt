@@ -339,50 +339,27 @@ private fun PairingStatusIndicator(
 ) {
     when (status) {
         is PairingStatus.Initializing -> {
-            // 初始化中
-        }
-        is PairingStatus.WaitingForApproval -> {
-            // 等待批准
-        }
-        is PairingStatus.Approved -> {
-            // 已批准
-        }
-        is PairingStatus.Rejected -> {
-            // 已拒绝
-        }
-        is PairingStatus.Timeout -> {
-            // 超时
-        }
-        is PairingStatus.Error -> {
-            // 错误
-        }
-        else -> {
-            // 其他状态
-        }
-    }
-    
-    // 临时修复：添加实际 UI
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
                         strokeWidth = 2.dp,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "正在发送配对请求...",
+                        text = "正在初始化...",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -390,7 +367,7 @@ private fun PairingStatusIndicator(
             }
         }
 
-        PairingStatus.WaitingForApproval -> {
+        is PairingStatus.WaitingForApproval -> {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -439,7 +416,7 @@ private fun PairingStatusIndicator(
             }
         }
 
-        PairingStatus.Paired -> {
+        is PairingStatus.Approved -> {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -469,7 +446,9 @@ private fun PairingStatusIndicator(
             }
         }
 
-        PairingStatus.Failed -> {
+        is PairingStatus.Rejected,
+        is PairingStatus.Timeout,
+        is PairingStatus.Error -> {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -490,7 +469,12 @@ private fun PairingStatusIndicator(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = error ?: "配对失败",
+                        text = when (status) {
+                            is PairingStatus.Error -> status.message
+                            is PairingStatus.Rejected -> "配对已被拒绝"
+                            is PairingStatus.Timeout -> "配对超时"
+                            else -> error ?: "配对失败"
+                        },
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         textAlign = TextAlign.Center
