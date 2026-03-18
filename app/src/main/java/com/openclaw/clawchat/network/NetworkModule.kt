@@ -1,6 +1,7 @@
 package com.openclaw.clawchat.network
 
 import android.content.Context
+import com.openclaw.clawchat.BuildConfig
 import com.openclaw.clawchat.security.SecurityModule
 import dagger.Module
 import dagger.Provides

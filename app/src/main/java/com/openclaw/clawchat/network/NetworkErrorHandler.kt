@@ -59,26 +59,9 @@ fun Throwable.toNetworkError(): NetworkError {
             NetworkError.NoConnection
         }
         else -> {
-            // 检查是否是 HTTP 异常
-            if (this is okhttp3.internal.http.HttpException) {
-                when (this.code()) {
-                    401, 403 -> {
-                        Log.w("NetworkError", "Unauthorized: ${message}")
-                        NetworkError.Unauthorized
-                    }
-                    in 500..599 -> {
-                        Log.w("NetworkError", "Server error: ${message}")
-                        NetworkError.ServerError
-                    }
-                    else -> {
-                        Log.w("NetworkError", "HTTP error ${this.code()}: ${message}")
-                        NetworkError.Unknown(this)
-                    }
-                }
-            } else {
-                Log.e("NetworkError", "Unknown error: ${message}", this)
-                NetworkError.Unknown(this)
-            }
+            // 其他错误
+            Log.e("NetworkError", "Unknown error: ${message}", this)
+            NetworkError.Unknown(this)
         }
     }
 }

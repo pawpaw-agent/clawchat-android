@@ -3,6 +3,8 @@ package com.openclaw.clawchat.network
 import android.util.Log
 import com.openclaw.clawchat.security.SecurityModule
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -116,7 +118,7 @@ class OkHttpWebSocketService @Inject constructor(
                 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                     Log.i(TAG, "WebSocket closed: $code - $reason")
-                    _connectionState.value = WebSocketConnectionState.Disconnectiving(reason)
+                    _connectionState.value = WebSocketConnectionState.Disconnecting(reason)
                     webSocket = null
                     latencyMonitorJob?.cancel()
                 }
@@ -142,7 +144,7 @@ class OkHttpWebSocketService @Inject constructor(
         val timestamp = System.currentTimeMillis()
         val nonce = UUID.randomUUID().toString()
         val dataToSign = "/ws\n$timestamp\n$nonce"
-        val signature = securityModule.signChallenge(dataToSign.toByteArray()).toBase64()
+        val signature = securityModule.signChallenge(dataToSign).toBase64()
         
         val builder = Request.Builder()
             .url(url)
@@ -256,7 +258,7 @@ class OkHttpWebSocketService @Inject constructor(
      * 计算指数退避延迟
      */
     private fun calculateBackoffDelay(): Long {
-        val delay = (INITIAL_RECONNECT_DELAY_MS * Math.pow(RECONNECT_BACKOFF_FACTOR, reconnectAttempt)).toLong()
+        val delay = (INITIAL_RECONNECT_DELAY_MS * Math.pow(RECONNECT_BACKOFF_FACTOR.toDouble(), reconnectAttempt.toDouble())).toLong()
         reconnectAttempt++
         return delay.coerceAtMost(MAX_RECONNECT_DELAY_MS)
     }
