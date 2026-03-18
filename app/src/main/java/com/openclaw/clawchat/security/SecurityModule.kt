@@ -11,7 +11,7 @@ import java.text.Normalizer
 /**
  * SecurityModule - 安全模块统一入口
  * 
- * 整合 KeystoreManager、EncryptedStorage、DeviceFingerprint，
+ * 整合 KeystoreManager、EncryptedStorage，
  * 提供完整的设备配对和安全存储功能。
  * 
  * Gateway 协议 v3 签名规范：
@@ -35,7 +35,6 @@ class SecurityModule(private val context: Context) {
         alias = KEYPAIR_ALIAS,
         softwareKeyStore = encryptedStorage as? SoftwareKeyStore
     )
-    private val deviceFingerprint = DeviceFingerprint(context)
     
     // ==================== 公开 API ====================
     
@@ -184,7 +183,6 @@ class SecurityModule(private val context: Context) {
         val publicKey = keystoreManager.getPublicKeyBase64Url()
         val deviceId = getDeviceId()
             ?: throw IllegalStateException("Device not initialized")
-        val platformInfo = deviceFingerprint.getPlatformInfo()
         
         val payload = JSONObject().apply {
             put("device", JSONObject().apply {
@@ -193,8 +191,8 @@ class SecurityModule(private val context: Context) {
             })
             put("client", JSONObject().apply {
                 put("id", "openclaw-android")
-                put("version", platformInfo.appVersion)
-                put("platform", platformInfo.platform)
+                put("version", "1.0.0")
+                put("platform", "android")
             })
             put("nodeId", nodeId)
             put("role", role)
@@ -259,7 +257,9 @@ class SecurityModule(private val context: Context) {
         Log.i(TAG, "Factory reset completed")
     }
     
-    fun getDeviceDescription(): String = deviceFingerprint.getDeviceDescription()
+    fun getDeviceDescription(): String {
+        return "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} (Android ${android.os.Build.VERSION.RELEASE})"
+    }
     fun getKeyInfo(): KeystoreManager.KeyInfo = keystoreManager.getKeyInfo()
     
     // ==================== 内部方法 ====================

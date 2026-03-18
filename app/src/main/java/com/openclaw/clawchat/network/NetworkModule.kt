@@ -37,7 +37,6 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(
-        securityModule: SecurityModule,
         @ApplicationContext context: Context
     ): OkHttpClient {
         // 日志拦截器 - 仅在 Debug 模式启用
@@ -51,12 +50,8 @@ object NetworkModule {
             }
         }
         
-        // 签名拦截器
-        val signatureInterceptor = SignatureInterceptor(securityModule)
-        
         val builder = OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
-            .addInterceptor(signatureInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

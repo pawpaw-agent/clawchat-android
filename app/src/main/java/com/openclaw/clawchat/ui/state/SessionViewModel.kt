@@ -8,7 +8,6 @@ import com.openclaw.clawchat.data.local.MessageEntity
 import com.openclaw.clawchat.data.local.MessageRole as LocalMessageRole
 import com.openclaw.clawchat.data.local.MessageStatus
 import com.openclaw.clawchat.network.WebSocketService
-import com.openclaw.clawchat.network.GatewayMessage
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.repository.MessageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,15 +16,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.util.UUID
 import javax.inject.Inject
 
 /**
  * 会话界面 ViewModel
- * 
+ *
  * 负责管理会话中的消息收发：
- * - 发送用户消息到网关
- * - 接收并显示助手回复
+ * - 发送用户消息到网关（chat.send RPC）
+ * - 接收并显示助手回复（chat 事件流）
  * - 管理消息历史 (本地缓存)
  * - 处理连接状态
  */
@@ -44,6 +48,10 @@ class SessionViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "SessionViewModel"
+        private val json = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
     }
 
     init {
@@ -84,7 +92,7 @@ class SessionViewModel @Inject constructor(
     private fun loadMessageHistory() {
         viewModelScope.launch {
             val sessionId = savedStateHandle.get<String>("sessionId") ?: return@launch
-            
+
             messageRepository.getMessages(sessionId).collect { entities ->
                 val messages = entities.map { it.toMessageUi() }
                 _state.update { it.copy(messages = messages) }
@@ -93,81 +101,127 @@ class SessionViewModel @Inject constructor(
     }
 
     /**
-     * 观察接收到的消息
+     * 观察接收到的原始 JSON 消息
      */
     private fun observeIncomingMessages() {
         viewModelScope.launch {
-            webSocketService.incomingMessages.collect { gatewayMessage ->
-                handleIncomingMessage(gatewayMessage)
+            webSocketService.incomingMessages.collect { rawJson ->
+                handleIncomingMessage(rawJson)
             }
         }
     }
 
     /**
-     * 处理接收到的网关消息
+     * 处理接收到的原始 JSON 消息
+     *
+     * 解析 event 帧中的 chat / session.message 事件，
+     * 提取助手回复并更新 UI。
      */
-    private fun handleIncomingMessage(message: GatewayMessage) {
+    private fun handleIncomingMessage(rawJson: String) {
         viewModelScope.launch {
             val sessionId = _state.value.sessionId ?: return@launch
-            
-            when (message) {
-                is GatewayMessage.AssistantMessage -> {
-                    // 收到助手回复
-                    val assistantMessage = MessageUi(
-                        id = UUID.randomUUID().toString(),
-                        content = message.content,
-                        role = MessageRole.ASSISTANT,
-                        timestamp = message.timestamp
-                    )
 
-                    // 保存到本地缓存
-                    messageRepository.saveMessage(
-                        sessionId = sessionId,
-                        role = LocalMessageRole.ASSISTANT,
-                        content = message.content,
-                        timestamp = message.timestamp,
-                        status = MessageStatus.DELIVERED
-                    )
+            try {
+                val obj = json.parseToJsonElement(rawJson).jsonObject
+                val type = obj["type"]?.jsonPrimitive?.content
+                val event = obj["event"]?.jsonPrimitive?.content
 
-                    _state.update {
-                        it.copy(
-                            messages = it.messages + assistantMessage,
-                            isLoading = false
+                when {
+                    // 处理 chat 事件（Protocol v3 标准 chat 流）
+                    type == "event" && event == "chat" -> {
+                        val payload = obj["payload"]?.jsonObject ?: return@launch
+                        val eventSessionKey = payload["sessionKey"]?.jsonPrimitive?.content
+                        val state = payload["state"]?.jsonPrimitive?.content
+                        val msgObj = payload["message"]?.jsonObject
+                        val content = msgObj?.get("content")?.jsonPrimitive?.content ?: ""
+                        val role = msgObj?.get("role")?.jsonPrimitive?.content ?: "assistant"
+
+                        if (state == "final" || state == "delta") {
+                            val messageRole = when (role) {
+                                "user" -> MessageRole.USER
+                                "system" -> MessageRole.SYSTEM
+                                else -> MessageRole.ASSISTANT
+                            }
+
+                            val assistantMessage = MessageUi(
+                                id = UUID.randomUUID().toString(),
+                                content = content,
+                                role = messageRole,
+                                timestamp = System.currentTimeMillis()
+                            )
+
+                            if (state == "final") {
+                                messageRepository.saveMessage(
+                                    sessionId = sessionId,
+                                    role = messageRole.toLocalRole(),
+                                    content = content,
+                                    timestamp = System.currentTimeMillis(),
+                                    status = MessageStatus.DELIVERED
+                                )
+                            }
+
+                            _state.update {
+                                it.copy(
+                                    messages = it.messages + assistantMessage,
+                                    isLoading = false
+                                )
+                            }
+
+                            _events.value = SessionEvent.MessageReceived(assistantMessage)
+                        }
+                    }
+
+                    // 处理旧风格 session.message 事件
+                    type == "event" && (event == "session.message" || event == "session.message.update") -> {
+                        val payload = obj["payload"]?.jsonObject ?: return@launch
+                        val msgObj = payload["message"]?.jsonObject ?: return@launch
+                        val content = msgObj["content"]?.jsonPrimitive?.content ?: ""
+                        val role = msgObj["role"]?.jsonPrimitive?.content ?: "assistant"
+
+                        val messageRole = when (role) {
+                            "user" -> MessageRole.USER
+                            "system" -> MessageRole.SYSTEM
+                            else -> MessageRole.ASSISTANT
+                        }
+
+                        val assistantMessage = MessageUi(
+                            id = UUID.randomUUID().toString(),
+                            content = content,
+                            role = messageRole,
+                            timestamp = System.currentTimeMillis()
                         )
-                    }
 
-                    _events.value = SessionEvent.MessageReceived(assistantMessage)
-                }
-
-                is GatewayMessage.SystemEvent -> {
-                    // 系统事件（如会话状态变更）
-                    val systemMessage = MessageUi(
-                        id = UUID.randomUUID().toString(),
-                        content = message.text,
-                        role = MessageRole.SYSTEM,
-                        timestamp = message.timestamp
-                    )
-
-                    _state.update {
-                        it.copy(messages = it.messages + systemMessage)
-                    }
-                }
-
-                is GatewayMessage.Error -> {
-                    // 错误事件
-                    _state.update {
-                        it.copy(
-                            error = message.message,
-                            isLoading = false
+                        messageRepository.saveMessage(
+                            sessionId = sessionId,
+                            role = messageRole.toLocalRole(),
+                            content = content,
+                            timestamp = System.currentTimeMillis(),
+                            status = MessageStatus.DELIVERED
                         )
+
+                        _state.update {
+                            it.copy(
+                                messages = it.messages + assistantMessage,
+                                isLoading = false
+                            )
+                        }
+
+                        _events.value = SessionEvent.MessageReceived(assistantMessage)
                     }
 
-                    _events.value = SessionEvent.Error(message.message)
-                }
+                    // 处理错误事件
+                    type == "event" && event == "error" -> {
+                        val payload = obj["payload"]?.jsonObject
+                        val message = payload?.get("message")?.jsonPrimitive?.content ?: "Unknown error"
 
-                else -> {
-                    Log.w(TAG, "收到未知消息类型：${message.type}")
+                        _state.update {
+                            it.copy(error = message, isLoading = false)
+                        }
+                        _events.value = SessionEvent.Error(message)
+                    }
                 }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to parse incoming message: ${e.message}")
             }
         }
     }
@@ -202,7 +256,7 @@ class SessionViewModel @Inject constructor(
             // 保存到本地缓存
             messageRepository.saveMessage(
                 sessionId = sessionId,
-                role = userMessage.role.toLocalRole(),
+                role = LocalMessageRole.USER,
                 content = content,
                 timestamp = userMessage.timestamp,
                 status = MessageStatus.PENDING
@@ -218,33 +272,36 @@ class SessionViewModel @Inject constructor(
                 )
             }
 
-            // 构建网关消息
-            val gatewayMessage = GatewayMessage.UserMessage(
-                sessionId = sessionId,
-                content = content,
-                attachments = emptyList(),
-                timestamp = System.currentTimeMillis()
-            )
+            // 构建 chat.send RPC 请求帧
+            val requestId = "req-${System.currentTimeMillis()}"
+            val idempotencyKey = UUID.randomUUID().toString()
+            val requestFrame = buildJsonObject {
+                put("type", JsonPrimitive("req"))
+                put("id", JsonPrimitive(requestId))
+                put("method", JsonPrimitive("chat.send"))
+                put("params", buildJsonObject {
+                    put("sessionKey", JsonPrimitive(sessionId))
+                    put("message", JsonPrimitive(content))
+                    put("idempotencyKey", JsonPrimitive(idempotencyKey))
+                })
+            }
 
             try {
-                // 发送到网关
-                val result = webSocketService.send(gatewayMessage)
+                val result = webSocketService.sendRaw(requestFrame.toString())
 
                 result.onSuccess {
-                    // 更新消息状态为已发送
                     messageRepository.saveMessage(
                         sessionId = sessionId,
-                        role = userMessage.role.toLocalRole(),
+                        role = LocalMessageRole.USER,
                         content = content,
                         timestamp = userMessage.timestamp,
                         status = MessageStatus.SENT
                     )
                 }.onFailure { error ->
                     Log.e(TAG, "发送消息失败", error)
-                    // 更新消息状态为失败
                     messageRepository.saveMessage(
                         sessionId = sessionId,
-                        role = userMessage.role.toLocalRole(),
+                        role = LocalMessageRole.USER,
                         content = content,
                         timestamp = userMessage.timestamp,
                         status = MessageStatus.FAILED
@@ -259,10 +316,9 @@ class SessionViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "发送消息异常", e)
-                // 更新消息状态为失败
                 messageRepository.saveMessage(
                     sessionId = sessionId,
-                    role = userMessage.role.toLocalRole(),
+                    role = LocalMessageRole.USER,
                     content = content,
                     timestamp = userMessage.timestamp,
                     status = MessageStatus.FAILED
@@ -306,7 +362,7 @@ class SessionViewModel @Inject constructor(
         _state.update {
             it.copy(
                 sessionId = sessionId,
-                messages = emptyList() // 切换会话时清空消息列表
+                messages = emptyList()
             )
         }
     }
@@ -363,22 +419,22 @@ sealed class SessionEvent {
 /**
  * MessageRole 转 LocalMessageRole
  */
-private fun com.openclaw.clawchat.ui.state.MessageRole.toLocalRole(): LocalMessageRole {
+private fun MessageRole.toLocalRole(): LocalMessageRole {
     return when (this) {
-        com.openclaw.clawchat.ui.state.MessageRole.USER -> LocalMessageRole.USER
-        com.openclaw.clawchat.ui.state.MessageRole.ASSISTANT -> LocalMessageRole.ASSISTANT
-        com.openclaw.clawchat.ui.state.MessageRole.SYSTEM -> LocalMessageRole.SYSTEM
+        MessageRole.USER -> LocalMessageRole.USER
+        MessageRole.ASSISTANT -> LocalMessageRole.ASSISTANT
+        MessageRole.SYSTEM -> LocalMessageRole.SYSTEM
     }
 }
 
 /**
  * LocalMessageRole 转 MessageRole
  */
-private fun LocalMessageRole.toUiRole(): com.openclaw.clawchat.ui.state.MessageRole {
+private fun LocalMessageRole.toUiRole(): MessageRole {
     return when (this) {
-        LocalMessageRole.USER -> com.openclaw.clawchat.ui.state.MessageRole.USER
-        LocalMessageRole.ASSISTANT -> com.openclaw.clawchat.ui.state.MessageRole.ASSISTANT
-        LocalMessageRole.SYSTEM -> com.openclaw.clawchat.ui.state.MessageRole.SYSTEM
+        LocalMessageRole.USER -> MessageRole.USER
+        LocalMessageRole.ASSISTANT -> MessageRole.ASSISTANT
+        LocalMessageRole.SYSTEM -> MessageRole.SYSTEM
     }
 }
 

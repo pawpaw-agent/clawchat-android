@@ -2,8 +2,6 @@ package com.openclaw.clawchat.di
 
 import android.content.Context
 import com.openclaw.clawchat.data.local.*
-import com.openclaw.clawchat.network.OkHttpWebSocketService
-import com.openclaw.clawchat.network.WebSocketService
 import com.openclaw.clawchat.repository.MessageRepository
 import com.openclaw.clawchat.repository.SessionRepository
 import dagger.Module

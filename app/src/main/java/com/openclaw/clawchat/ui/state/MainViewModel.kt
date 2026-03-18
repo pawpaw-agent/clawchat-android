@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.network.GatewayUrlUtil
 import com.openclaw.clawchat.network.WebSocketService
-import com.openclaw.clawchat.network.GatewayMessage
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +18,7 @@ import javax.inject.Inject
 
 /**
  * 主界面 ViewModel
- * 
+ *
  * 负责管理：
  * - 连接状态
  * - 会话列表
@@ -53,7 +52,6 @@ class MainViewModel @Inject constructor(
             webSocketService.connectionState.collect { connectionState ->
                 val connectionStatus = when (connectionState) {
                     is WebSocketConnectionState.Connected -> {
-                        // 连接成功后测量延迟
                         val latency = webSocketService.measureLatency()
                         ConnectionStatus.Connected(latency = latency)
                     }
@@ -68,7 +66,6 @@ class MainViewModel @Inject constructor(
 
                 _uiState.update { it.copy(connectionStatus = connectionStatus) }
 
-                // 连接断开时通知用户
                 if (connectionState is WebSocketConnectionState.Disconnected ||
                     connectionState is WebSocketConnectionState.Error) {
                     _events.value = UiEvent.ConnectionLost
@@ -85,9 +82,7 @@ class MainViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                // 构建 WebSocket URL（统一通过 GatewayUrlUtil 标准化）
                 val wsUrl = GatewayUrlUtil.normalizeToWebSocketUrl(gatewayUrl)
-
                 val result = webSocketService.connect(wsUrl, token = null)
 
                 result.onSuccess {
@@ -152,9 +147,7 @@ class MainViewModel @Inject constructor(
             try {
                 webSocketService.disconnect()
                 _uiState.update {
-                    it.copy(
-                        connectionStatus = ConnectionStatus.Disconnected
-                    )
+                    it.copy(connectionStatus = ConnectionStatus.Disconnected)
                 }
                 _events.value = UiEvent.ShowSuccess("已断开连接")
             } catch (e: Exception) {
@@ -200,9 +193,6 @@ class MainViewModel @Inject constructor(
                 )
             }
 
-            // 发送创建会话的系统消息
-            sendCreateSessionEvent(newSession.id)
-
             _events.value = UiEvent.NavigateToSession(newSession.id)
         }
     }
@@ -241,9 +231,6 @@ class MainViewModel @Inject constructor(
                         }
                     )
                 }
-
-                // 发送暂停会话的系统消息
-                sendSystemEvent(sessionId, "session.paused")
             }
         }
     }
@@ -268,9 +255,6 @@ class MainViewModel @Inject constructor(
                         }
                     )
                 }
-
-                // 发送恢复会话的系统消息
-                sendSystemEvent(sessionId, "session.resumed")
             }
         }
     }
@@ -320,9 +304,6 @@ class MainViewModel @Inject constructor(
                     )
                 }
 
-                // 发送终止会话的系统消息
-                sendSystemEvent(sessionId, "session.terminated")
-
                 _events.value = UiEvent.ShowSuccess("会话已终止")
             }
         }
@@ -335,8 +316,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // TODO: 从服务器加载真实会话列表
-            // 暂时使用模拟数据
+            // TODO: 从 Gateway 加载真实会话列表（Step 4a 实现）
             val mockSessions = listOf(
                 SessionUi(
                     id = "session_1",
@@ -370,28 +350,6 @@ class MainViewModel @Inject constructor(
     }
 
     /**
-     * 发送创建会话事件
-     */
-    private suspend fun sendCreateSessionEvent(sessionId: String) {
-        val createEvent = GatewayMessage.SystemEvent(
-            text = "session.created:$sessionId",
-            timestamp = System.currentTimeMillis()
-        )
-        webSocketService.send(createEvent)
-    }
-
-    /**
-     * 发送系统事件
-     */
-    private suspend fun sendSystemEvent(sessionId: String, eventType: String) {
-        val systemEvent = GatewayMessage.SystemEvent(
-            text = "$eventType:$sessionId",
-            timestamp = System.currentTimeMillis()
-        )
-        webSocketService.send(systemEvent)
-    }
-
-    /**
      * 清除错误
      */
     fun clearError() {
@@ -416,5 +374,3 @@ sealed class UiEvent {
     data object ShowPairingDialog : UiEvent()
     data object ConnectionLost : UiEvent()
 }
-
-

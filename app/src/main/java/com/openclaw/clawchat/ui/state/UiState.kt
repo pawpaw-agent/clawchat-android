@@ -3,7 +3,6 @@ package com.openclaw.clawchat.ui.state
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import com.openclaw.clawchat.network.GatewayMessage
 
 /**
  * 会话数据模型

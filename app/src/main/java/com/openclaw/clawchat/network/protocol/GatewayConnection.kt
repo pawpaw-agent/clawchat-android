@@ -1,8 +1,6 @@
 package com.openclaw.clawchat.network.protocol
 
 import android.util.Log
-import com.openclaw.clawchat.network.GatewayMessage
-import com.openclaw.clawchat.network.MessageParser
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.security.SecurityModule
 import kotlinx.coroutines.CoroutineScope
@@ -73,9 +71,9 @@ class GatewayConnection(
     private val _connectionState = MutableStateFlow<WebSocketConnectionState>(WebSocketConnectionState.Disconnected)
     val connectionState: StateFlow<WebSocketConnectionState> = _connectionState.asStateFlow()
     
-    // 接收消息流
-    private val _incomingMessages = MutableSharedFlow<GatewayMessage>(replay = 0)
-    val incomingMessages: SharedFlow<GatewayMessage> = _incomingMessages.asSharedFlow()
+    // 接收消息流（原始 JSON 字符串）
+    private val _incomingMessages = MutableSharedFlow<String>(replay = 0)
+    val incomingMessages: SharedFlow<String> = _incomingMessages.asSharedFlow()
     
     // 接收事件流
     private val _incomingEvents = MutableSharedFlow<EventFrame>(replay = 0)
@@ -128,7 +126,7 @@ class GatewayConnection(
             // 建立 WebSocket 连接
             val request = Request.Builder()
                 .url(url)
-                .addHeader("X-ClawChat-Protocol-Version", WebSocketProtocol.VERSION)
+                .addHeader("X-ClawChat-Protocol-Version", WebSocketProtocol.PROTOCOL_VERSION.toString())
                 .build()
             
             webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
@@ -216,14 +214,9 @@ class GatewayConnection(
                 }
                 
                 else -> {
-                    // 尝试解析为旧格式消息
-                    val message = MessageParser.parse(text)
-                    if (message != null) {
-                        appScope.launch {
-                            _incomingMessages.emit(message)
-                        }
-                    } else {
-                        Log.w(TAG, "无法解析消息：$text")
+                    // 透传未知帧类型
+                    appScope.launch {
+                        _incomingMessages.emit(text)
                     }
                 }
             }
@@ -382,8 +375,12 @@ class GatewayConnection(
             
             Log.d(TAG, "收到会话消息：${payload.message.id}")
             
-            // 转发到消息流
-            // TODO: 转换为 GatewayMessage
+            // 转发到消息流（由上层解析）
+            _incomingMessages.emit(
+                kotlinx.serialization.json.Json.encodeToString(
+                    SessionMessagePayload.serializer(), payload
+                )
+            )
             
         } catch (e: Exception) {
             Log.e(TAG, "处理会话消息失败：${e.message}", e)
