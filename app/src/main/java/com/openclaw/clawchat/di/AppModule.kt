@@ -6,7 +6,6 @@ import com.openclaw.clawchat.network.OkHttpWebSocketService
 import com.openclaw.clawchat.network.WebSocketService
 import com.openclaw.clawchat.repository.MessageRepository
 import com.openclaw.clawchat.repository.SessionRepository
-import com.openclaw.clawchat.security.SecurityManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -90,9 +89,9 @@ object NetworkBindings {
     @Singleton
     fun provideWebSocketService(
         okHttpClient: okhttp3.OkHttpClient,
-        securityManager: com.openclaw.clawchat.security.SecurityManager,
+        securityModule: com.openclaw.clawchat.security.SecurityModule,
         appScope: CoroutineScope
     ): WebSocketService {
-        return OkHttpWebSocketService(okHttpClient, securityManager, appScope)
+        return OkHttpWebSocketService(okHttpClient, securityModule, appScope)
     }
 }
