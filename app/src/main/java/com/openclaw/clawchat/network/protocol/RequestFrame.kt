@@ -50,30 +50,31 @@ object RequestIdGenerator {
 /**
  * Gateway 支持的方法列表
  */
+/**
+ * Gateway 支持的方法列表（Protocol v3 源码验证）
+ */
 enum class GatewayMethod(val value: String) {
-    // 消息相关
-    SEND_MESSAGE("session.send"),
-    GET_MESSAGES("session.messages"),
-    
-    // 会话相关
-    GET_SESSIONS("session.list"),
-    GET_SESSION("session.get"),
-    CREATE_SESSION("session.create"),
-    TERMINATE_SESSION("session.terminate"),
-    PAUSE_SESSION("session.pause"),
-    RESUME_SESSION("session.resume"),
-    
-    // 设备相关
-    GET_DEVICE_STATUS("device.status"),
-    UPDATE_DEVICE_STATUS("device.update"),
-    
-    // 认证相关
+    // 认证
     CONNECT("connect"),
-    DISCONNECT("disconnect"),
-    
-    // 系统相关
+
+    // 聊天（chat.* 命名空间）
+    CHAT_SEND("chat.send"),
+    CHAT_HISTORY("chat.history"),
+    CHAT_INJECT("chat.inject"),
+    CHAT_ABORT("chat.abort"),
+
+    // 会话（sessions.* 命名空间）
+    SESSIONS_LIST("sessions.list"),
+    SESSIONS_RESET("sessions.reset"),
+    SESSIONS_DELETE("sessions.delete"),
+    SESSIONS_PATCH("sessions.patch"),
+
+    // 设备
+    DEVICE_TOKEN_ROTATE("device.token.rotate"),
+    DEVICE_TOKEN_REVOKE("device.token.revoke"),
+
+    // 系统
     PING("ping"),
-    GET_INFO("system.info")
 }
 
 /**
@@ -253,52 +254,37 @@ data class PingParams(
 )
 
 /**
- * 构建发送消息请求
+ * 构建 chat.send 请求
  */
-fun send_messageRequest(
-    sessionId: String,
-    content: String,
-    attachments: List<AttachmentParams>? = null
+fun chatSendRequest(
+    sessionKey: String,
+    message: String,
+    idempotencyKey: String = java.util.UUID.randomUUID().toString()
 ): RequestFrame {
-    return requestFrame(GatewayMethod.SEND_MESSAGE) {
-        putString("sessionId", sessionId)
-        putString("content", content)
-        if (attachments != null) {
-            // 需要序列化为 JsonElement
-        }
+    return requestFrame(GatewayMethod.CHAT_SEND) {
+        putString("sessionKey", sessionKey)
+        putString("message", message)
+        putString("idempotencyKey", idempotencyKey)
     }
 }
 
 /**
- * 构建获取会话列表请求
+ * 构建 sessions.list 请求
  */
-fun getSessionListRequest(): RequestFrame {
-    return requestFrame(GatewayMethod.GET_SESSIONS)
+fun sessionsListRequest(): RequestFrame {
+    return requestFrame(GatewayMethod.SESSIONS_LIST)
 }
 
 /**
- * 构建创建会话请求
+ * 构建 chat.abort 请求
  */
-fun createSessionRequest(
-    model: String? = null,
-    thinking: Boolean? = null
+fun chatAbortRequest(
+    sessionKey: String,
+    runId: String? = null
 ): RequestFrame {
-    return requestFrame(GatewayMethod.CREATE_SESSION) {
-        if (model != null) putString("model", model)
-        if (thinking != null) putBoolean("thinking", thinking)
-    }
-}
-
-/**
- * 构建终止会话请求
- */
-fun terminateSessionRequest(
-    sessionId: String,
-    reason: String? = null
-): RequestFrame {
-    return requestFrame(GatewayMethod.TERMINATE_SESSION) {
-        putString("sessionId", sessionId)
-        if (reason != null) putString("reason", reason)
+    return requestFrame(GatewayMethod.CHAT_ABORT) {
+        putString("sessionKey", sessionKey)
+        if (runId != null) putString("runId", runId)
     }
 }
 

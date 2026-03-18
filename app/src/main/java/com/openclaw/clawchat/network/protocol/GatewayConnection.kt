@@ -15,31 +15,36 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
-import java.util.concurrent.TimeUnit
+import java.util.UUID
 
 /**
- * Gateway 连接管理器 v2 (协议 v3 完整版)
- * 
- * 实现完整的 Gateway 协议 v3：
+ * Gateway 连接管理器（协议 v3）
+ *
+ * 握手流程（源码验证）：
  * 1. WebSocket 连接建立
- * 2. Challenge-Response 认证
- * 3. Request/Response/Event 帧处理
- * 4. 请求追踪
- * 5. 序列号管理
- * 6. 智能重试
+ * 2. 收到 type=event, event=connect.challenge（含 nonce）
+ * 3. 构建 v3 签名载荷 → Ed25519 签名 → 发送 type=req, method=connect
+ * 4. 收到 type=res（hello-ok）→ 提取 deviceToken / snapshot / features
+ *
+ * 消息格式：
+ * - 发送 chat.send：含 sessionKey + message + idempotencyKey
+ * - 接收 chat 事件：runId / seq / state(delta|final|aborted|error) / message
  */
 class GatewayConnection(
     private val okHttpClient: OkHttpClient,
@@ -48,642 +53,397 @@ class GatewayConnection(
 ) {
     companion object {
         private const val TAG = "GatewayConnection"
-        
-        // 连接配置
-        private const val CONNECT_TIMEOUT_MS = 30000L
-        private const val AUTH_TIMEOUT_MS = 60000L
-        private const val REQUEST_TIMEOUT_MS = 30000L
-        private const val HEARTBEAT_INTERVAL_MS = 30000L
-        
-        // 重连配置
+
+        private const val AUTH_TIMEOUT_MS = 60_000L
+        private const val REQUEST_TIMEOUT_MS = 30_000L
+        private const val HEARTBEAT_INTERVAL_MS = 30_000L
+
         private const val INITIAL_RECONNECT_DELAY_MS = 1000L
-        private const val MAX_RECONNECT_DELAY_MS = 30000L
+        private const val MAX_RECONNECT_DELAY_MS = 30_000L
         private const val RECONNECT_BACKOFF_FACTOR = 2.0
-        
-        // JSON 解析器
-        private val json = Json {
-            ignoreUnknownKeys = true
-            isLenient = true
-        }
+
+        private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     }
-    
-    // 连接状态
+
+    // ── 公开状态 ──
+
     private val _connectionState = MutableStateFlow<WebSocketConnectionState>(WebSocketConnectionState.Disconnected)
     val connectionState: StateFlow<WebSocketConnectionState> = _connectionState.asStateFlow()
-    
-    // 接收消息流（原始 JSON 字符串）
+
+    /** 所有非认证帧透传（原始 JSON） */
     private val _incomingMessages = MutableSharedFlow<String>(replay = 0)
     val incomingMessages: SharedFlow<String> = _incomingMessages.asSharedFlow()
-    
-    // 接收事件流
-    private val _incomingEvents = MutableSharedFlow<EventFrame>(replay = 0)
-    val incomingEvents: SharedFlow<EventFrame> = _incomingEvents.asSharedFlow()
-    
-    // Challenge-Response 认证器
+
+    /** hello-ok 快照（连接成功后可用） */
+    var helloOkPayload: JsonObject? = null
+        private set
+
+    /** 默认会话键（从 hello-ok snapshot.sessionDefaults.mainSessionKey 提取） */
+    var defaultSessionKey: String? = null
+        private set
+
+    // ── 内部组件 ──
+
     private val authHandler = ChallengeResponseAuth(securityModule)
-    
-    // 请求追踪器
     private val requestTracker = RequestTracker(timeoutMs = REQUEST_TIMEOUT_MS)
-    
-    // 序列号管理器
     private val sequenceManager = SequenceManager()
-    
-    // 事件去重器
     private val eventDeduplicator = EventDeduplicator()
-    
-    // 重试管理器
-    private val retryManager = RetryManager()
-    
-    // WebSocket 连接
+
     private var webSocket: WebSocket? = null
     private var reconnectJob: Job? = null
     private var heartbeatJob: Job? = null
-    
-    // 连接信息
     private var currentUrl: String? = null
     private var reconnectAttempt = 0
-    private var deviceToken: String? = null
-    
-    // 请求执行器
-    private lateinit var requestExecutor: RequestExecutor
-    
-    /**
-     * 连接到 Gateway
-     */
+
+    // ── 连接 ──
+
     suspend fun connect(url: String): Result<Unit> = withContext(Dispatchers.IO) {
-        // 检查是否已连接
         if (_connectionState.value is WebSocketConnectionState.Connected) {
-            Log.d(TAG, "已连接，跳过")
             return@withContext Result.success(Unit)
         }
-        
-        Log.d(TAG, "开始连接：$url")
+
         _connectionState.value = WebSocketConnectionState.Connecting
         currentUrl = url
         reconnectAttempt = 0
-        
+        authHandler.reset()
+        helloOkPayload = null
+        defaultSessionKey = null
+
         try {
-            // 建立 WebSocket 连接
             val request = Request.Builder()
                 .url(url)
                 .addHeader("X-ClawChat-Protocol-Version", WebSocketProtocol.PROTOCOL_VERSION.toString())
                 .build()
-            
+
             webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
-                    Log.d(TAG, "WebSocket 已打开")
+                    Log.i(TAG, "WebSocket opened, waiting for connect.challenge...")
                 }
-                
+
                 override fun onMessage(webSocket: WebSocket, text: String) {
-                    Log.d(TAG, "收到消息：$text")
-                    handleIncomingMessage(text)
+                    handleIncomingFrame(text)
                 }
-                
+
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    Log.e(TAG, "WebSocket 失败：${t.message}", t)
+                    Log.e(TAG, "WebSocket failure: ${t.message}", t)
                     _connectionState.value = WebSocketConnectionState.Error(t)
-                    
-                    // 调度重连
-                    scheduleReconnect(url)
+                    currentUrl?.let { scheduleReconnect(it) }
                 }
-                
+
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    Log.d(TAG, "WebSocket 关闭：$code - $reason")
+                    Log.i(TAG, "WebSocket closed: $code $reason")
                     _connectionState.value = WebSocketConnectionState.Disconnected
                     this@GatewayConnection.webSocket = null
                     heartbeatJob?.cancel()
                 }
+
+                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                    webSocket.close(code, reason)
+                }
             })
-            
-            // 初始化请求执行器
-            requestExecutor = createRequestExecutor(
-                tracker = requestTracker,
-                sendFunction = { frame ->
-                    webSocket?.send(json.encodeToString(frame))
-                },
-                timeoutMs = REQUEST_TIMEOUT_MS
-            )
-            
-            // 等待认证完成或超时
-            val authCompleted = withTimeoutOrNull(AUTH_TIMEOUT_MS) {
+
+            // 等待认证完成
+            val ok = withTimeoutOrNull(AUTH_TIMEOUT_MS) {
                 while (_connectionState.value !is WebSocketConnectionState.Connected &&
-                       _connectionState.value !is WebSocketConnectionState.Error) {
-                    delay(100)
+                    _connectionState.value !is WebSocketConnectionState.Error
+                ) {
+                    delay(50)
                 }
                 _connectionState.value is WebSocketConnectionState.Connected
             }
-            
-            if (authCompleted == true) {
-                Log.d(TAG, "认证成功")
+
+            if (ok == true) {
                 startHeartbeat()
                 Result.success(Unit)
             } else {
-                Log.e(TAG, "认证超时或失败")
                 Result.failure(IllegalStateException("Authentication timeout"))
             }
-            
         } catch (e: Exception) {
-            Log.e(TAG, "连接失败：${e.message}", e)
             _connectionState.value = WebSocketConnectionState.Error(e)
             Result.failure(e)
         }
     }
-    
-    /**
-     * 处理接收到的消息
-     */
-    private fun handleIncomingMessage(text: String) {
-        try {
-            // 解析为 JSON
-            val jsonElement = json.parseToJsonElement(text)
-            val type = jsonElement.jsonObject["type"]?.jsonPrimitive?.content
-            
-            when (type) {
-                "res" -> {
-                    // 处理响应
-                    val response = json.decodeFromString<ResponseFrame>(text)
-                    appScope.launch {
-                        requestTracker.completeRequest(response)
-                    }
-                }
-                
-                "event" -> {
-                    // 处理事件
-                    val event = json.decodeFromString<EventFrame>(text)
-                    handleEvent(event)
-                }
-                
-                else -> {
-                    // 透传未知帧类型
-                    appScope.launch {
-                        _incomingMessages.emit(text)
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "处理消息失败：${e.message}", e)
-        }
-    }
-    
-    /**
-     * 处理事件
-     */
-    private fun handleEvent(event: EventFrame) {
-        appScope.launch {
-            try {
-                // 检查序列号
-                when (sequenceManager.checkSequence(event.seq)) {
-                    is SequenceManager.SequenceResult.Ok -> {
-                        // 继续处理
-                    }
-                    is SequenceManager.SequenceResult.Duplicate -> {
-                        Log.d(TAG, "忽略重复事件：${event.event} (seq=${event.seq})")
-                        return@launch
-                    }
-                    is SequenceManager.SequenceResult.Old -> {
-                        Log.d(TAG, "忽略过时事件：${event.event} (seq=${event.seq})")
-                        return@launch
-                    }
-                    is SequenceManager.SequenceResult.Gap -> {
-                        Log.w(TAG, "检测到事件丢失：${event.event}")
-                        // 可以选择请求丢失的事件
-                    }
-                }
-                
-                // 检查事件是否重复
-                val eventId = event.stateVersion ?: "${event.event}-${event.seq}"
-                if (eventDeduplicator.isDuplicate(eventId, event.seq)) {
-                    Log.d(TAG, "忽略重复事件：$eventId")
-                    return@launch
-                }
-                
-                // 处理特定事件
-                when (event.event) {
-                    "connect.challenge" -> handleConnectChallenge(event)
-                    "connect.ok" -> handleConnectOk(event)
-                    "connect.error" -> handleConnectError(event)
-                    "session.message" -> handleSessionMessage(event)
-                    "error" -> handleErrorEvent(event)
-                    else -> {
-                        Log.d(TAG, "未知事件：${event.event}")
-                        // 转发到事件流
-                        _incomingEvents.emit(event)
-                    }
-                }
-                
-                // 确认序列号
-                sequenceManager.acknowledge(event.seq)
-                
-            } catch (e: Exception) {
-                Log.e(TAG, "处理事件失败：${e.message}", e)
-            }
-        }
-    }
-    
-    /**
-     * 处理连接挑战
-     */
-    private suspend fun handleConnectChallenge(event: EventFrame) {
-        try {
-            val challenge = event.parseConnectChallengePayload()
-            if (challenge == null) {
-                Log.e(TAG, "无效的 Challenge 格式")
-                return
-            }
-            
-            Log.d(TAG, "收到挑战：nonce=${challenge.nonce}")
-            
-            // 处理挑战
-            authHandler.handleChallenge(challenge)
-            
-            // 构建 connect 请求
-            val connectRequest = authHandler.buildConnectRequest()
-            
-            // 发送 connect 请求
-            val requestFrame = RequestFrame(
-                id = "auth-${System.currentTimeMillis()}",
-                method = "connect",
-                params = buildConnectParams(connectRequest)
-            )
-            
-            Log.d(TAG, "发送 Connect 请求")
-            webSocket?.send(json.encodeToString(requestFrame))
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "处理挑战失败：${e.message}", e)
-            _connectionState.value = WebSocketConnectionState.Error(e)
-        }
-    }
-    
-    /**
-     * 处理连接成功
-     */
-    private suspend fun handleConnectOk(event: EventFrame) {
-        try {
-            val connectOk = event.parseConnectOkPayload()
-            if (connectOk == null) {
-                Log.e(TAG, "无效的 ConnectOkPayload 格式")
-                return
-            }
-            
-            Log.d(TAG, "认证成功，收到 deviceToken")
-            
-            // 存储 deviceToken
-            deviceToken = connectOk.deviceToken
-            securityModule.completePairing(connectOk.deviceToken)
-            
-            // 更新连接状态
-            _connectionState.value = WebSocketConnectionState.Connected
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "处理认证成功失败：${e.message}", e)
-        }
-    }
-    
-    /**
-     * 处理连接错误
-     */
-    private suspend fun handleConnectError(event: EventFrame) {
-        try {
-            val error = event.parseErrorPayload()
-            if (error == null) {
-                Log.e(TAG, "无效的 ConnectError 格式")
-                return
-            }
-            
-            Log.e(TAG, "连接错误：${error.code} - ${error.message}")
-            
-            _connectionState.value = WebSocketConnectionState.Error(
-                IllegalStateException("${error.code}: ${error.message}")
-            )
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "处理连接错误失败：${e.message}", e)
-        }
-    }
-    
-    /**
-     * 处理会话消息
-     */
-    private suspend fun handleSessionMessage(event: EventFrame) {
-        try {
-            val payload = event.parseSessionMessagePayload()
-            if (payload == null) {
-                Log.e(TAG, "无效的 SessionMessage 格式")
-                return
-            }
-            
-            Log.d(TAG, "收到会话消息：${payload.message.id}")
-            
-            // 转发到消息流（由上层解析）
-            _incomingMessages.emit(
-                kotlinx.serialization.json.Json.encodeToString(
-                    SessionMessagePayload.serializer(), payload
-                )
-            )
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "处理会话消息失败：${e.message}", e)
-        }
-    }
-    
-    /**
-     * 处理错误事件
-     */
-    private suspend fun handleErrorEvent(event: EventFrame) {
-        try {
-            val error = event.parseErrorPayload()
-            if (error == null) {
-                Log.e(TAG, "无效的 Error 格式")
-                return
-            }
-            
-            Log.e(TAG, "错误事件：${error.code} - ${error.message}")
-            
-            // 如果有 requestId，完成对应的请求
-            if (error.requestId != null) {
-                requestTracker.failRequest(
-                    error.requestId,
-                    IllegalStateException("${error.code}: ${error.message}")
-                )
-            }
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "处理错误事件失败：${e.message}", e)
-        }
-    }
-    
-    /**
-     * 构建 connect 请求参数
-     */
-    private fun buildConnectParams(request: ConnectRequest): Map<String, JsonElement> {
-        return mapOf(
-            "device" to buildJsonObject {
-                put("id", JsonPrimitive(request.device.id))
-                put("publicKey", JsonPrimitive(request.device.publicKey))
-                put("signature", JsonPrimitive(request.signature))
-                put("signedAt", JsonPrimitive(System.currentTimeMillis()))
-                put("nonce", JsonPrimitive(request.nonce))
-            },
-            "client" to buildJsonObject {
-                put("id", JsonPrimitive(request.client.clientId))
-                put("version", JsonPrimitive(request.client.clientVersion))
-                put("platform", JsonPrimitive(request.client.platform))
-            },
-            "minProtocol" to JsonPrimitive(3),
-            "maxProtocol" to JsonPrimitive(3)
-        )
-    }
-    
-    /**
-     * 构建 JSON 对象
-     */
-    private inline fun buildJsonObject(block: JsonObjectBuilder.() -> Unit): JsonObject {
-        val builder = JsonObjectBuilder()
-        builder.block()
-        return builder.build()
-    }
-    
-    private class JsonObjectBuilder {
-        private val map = mutableMapOf<String, JsonElement>()
-        
-        fun put(key: String, value: JsonElement) {
-            map[key] = value
-        }
-        
-        fun put(key: String, value: String) {
-            map[key] = JsonPrimitive(value)
-        }
-        
-        fun put(key: String, value: Int) {
-            map[key] = JsonPrimitive(value)
-        }
-        
-        fun put(key: String, value: Long) {
-            map[key] = JsonPrimitive(value)
-        }
-        
-        fun build(): JsonObject = JsonObject(map)
-    }
-    
-    /**
-     * 发送请求并等待响应
-     */
-    suspend fun sendRequest(method: GatewayMethod, params: Map<String, JsonElement>? = null): ResponseFrame {
-        val request = RequestFrame(
-            id = RequestIdGenerator.generateRequestId(),
-            method = method.value,
-            params = params
-        )
-        
-        return requestExecutor.execute(request)
-    }
-    
-    /**
-     * 发送消息
-     */
-    suspend fun sendMessage(sessionId: String, content: String): Result<SendMessageResponse> {
-        return try {
-            val params = mapOf(
-                "sessionId" to JsonPrimitive(sessionId),
-                "content" to JsonPrimitive(content)
-            )
-            
-            val response = sendRequest(GatewayMethod.SEND_MESSAGE, params)
-            
-            if (!response.isSuccess()) {
-                return Result.failure(IllegalStateException("${response.error?.code}: ${response.error?.message}"))
-            }
-            
-            val result = response.parseSendMessageResponse()
-            if (result != null) {
-                Result.success(result)
-            } else {
-                Result.failure(IllegalStateException("Failed to parse response"))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "发送消息失败：${e.message}", e)
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * 获取会话列表
-     */
-    suspend fun getSessionList(): Result<SessionListResponse> {
-        return try {
-            val response = sendRequest(GatewayMethod.GET_SESSIONS)
-            
-            if (!response.isSuccess()) {
-                return Result.failure(IllegalStateException("${response.error?.code}: ${response.error?.message}"))
-            }
-            
-            val result = response.parseSessionListResponse()
-            if (result != null) {
-                Result.success(result)
-            } else {
-                Result.failure(IllegalStateException("Failed to parse response"))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "获取会话列表失败：${e.message}", e)
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * 创建会话
-     */
-    suspend fun createSession(model: String? = null, thinking: Boolean? = null): Result<CreateSessionResponse> {
-        return try {
-            val params = buildMap {
-                if (model != null) put("model", JsonPrimitive(model))
-                if (thinking != null) put("thinking", JsonPrimitive(thinking))
-            }
-            
-            val response = sendRequest(GatewayMethod.CREATE_SESSION, params)
-            
-            if (!response.isSuccess()) {
-                return Result.failure(IllegalStateException("${response.error?.code}: ${response.error?.message}"))
-            }
-            
-            val result = response.parseCreateSessionResponse()
-            if (result != null) {
-                Result.success(result)
-            } else {
-                Result.failure(IllegalStateException("Failed to parse response"))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "创建会话失败：${e.message}", e)
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * 终止会话
-     */
-    suspend fun terminateSession(sessionId: String, reason: String? = null): Result<Unit> {
-        return try {
-            val params = mapOf(
-                "sessionId" to JsonPrimitive(sessionId),
-                "reason" to (reason?.let { JsonPrimitive(it) } ?: JsonPrimitive(""))
-            )
-            
-            val response = sendRequest(GatewayMethod.TERMINATE_SESSION, params)
-            
-            if (!response.isSuccess()) {
-                return Result.failure(IllegalStateException("${response.error?.code}: ${response.error?.message}"))
-            }
-            
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Log.e(TAG, "终止会话失败：${e.message}", e)
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * Ping
-     */
-    suspend fun ping(): Result<Long> {
-        return try {
-            val startTime = System.currentTimeMillis()
-            val params = mapOf("timestamp" to JsonPrimitive(startTime))
-            
-            val response = sendRequest(GatewayMethod.PING, params)
-            
-            if (!response.isSuccess()) {
-                return Result.failure(IllegalStateException("${response.error?.code}: ${response.error?.message}"))
-            }
-            
-            val result = response.parsePingResponse()
-            val latency = System.currentTimeMillis() - startTime
-            
-            Result.success(result?.latency ?: latency)
-        } catch (e: Exception) {
-            Log.e(TAG, "Ping 失败：${e.message}", e)
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * 断开连接
-     */
+
     suspend fun disconnect(): Result<Unit> = withContext(Dispatchers.IO) {
-        Log.d(TAG, "断开连接...")
-        
-        // 取消所有任务
-        reconnectJob?.cancel()
-        reconnectJob = null
-        heartbeatJob?.cancel()
-        heartbeatJob = null
-        
-        // 取消所有请求
+        reconnectJob?.cancel(); reconnectJob = null
+        heartbeatJob?.cancel(); heartbeatJob = null
         requestTracker.cancelAllRequests("Disconnecting")
-        
-        // 停止管理器
         sequenceManager.reset()
         eventDeduplicator.clear()
         requestTracker.stop()
-        
-        // 关闭 WebSocket
-        webSocket?.close(1000, "User requested disconnect")
+        webSocket?.close(1000, "User disconnect")
         webSocket = null
-        
         _connectionState.value = WebSocketConnectionState.Disconnected
         currentUrl = null
-        
-        Log.d(TAG, "已断开连接")
         Result.success(Unit)
     }
-    
+
+    // ── 帧分发 ──
+
+    private fun handleIncomingFrame(text: String) {
+        try {
+            val obj = json.parseToJsonElement(text).jsonObject
+            when (obj["type"]?.jsonPrimitive?.content) {
+                "res" -> handleResFrame(text)
+                "event" -> handleEventFrame(obj, text)
+                else -> appScope.launch { _incomingMessages.emit(text) }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Frame parse error: ${e.message}")
+            appScope.launch { _incomingMessages.emit(text) }
+        }
+    }
+
+    /** 处理 type=res：匹配 RequestTracker（含 connect 的 hello-ok） */
+    private fun handleResFrame(text: String) {
+        appScope.launch {
+            try {
+                val response = json.decodeFromString<ResponseFrame>(text)
+                requestTracker.completeRequest(response)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to parse res frame: ${e.message}")
+            }
+            // 也透传给上层
+            _incomingMessages.emit(text)
+        }
+    }
+
+    /** 处理 type=event */
+    private fun handleEventFrame(obj: JsonObject, rawText: String) {
+        val event = obj["event"]?.jsonPrimitive?.content ?: return
+
+        appScope.launch {
+            // 序列号 + 去重
+            val seq = obj["seq"]?.jsonPrimitive?.content?.toIntOrNull()
+            when (sequenceManager.checkSequence(seq)) {
+                is SequenceManager.SequenceResult.Duplicate,
+                is SequenceManager.SequenceResult.Old -> return@launch
+                else -> {}
+            }
+            val eventId = obj["stateVersion"]?.jsonPrimitive?.content ?: "$event-$seq"
+            if (eventDeduplicator.isDuplicate(eventId, seq)) return@launch
+
+            when (event) {
+                "connect.challenge" -> handleConnectChallenge(obj)
+                // chat / tick / 所有其他事件 → 透传给上层
+                else -> _incomingMessages.emit(rawText)
+            }
+
+            sequenceManager.acknowledge(seq)
+        }
+    }
+
+    // ── 认证握手 ──
+
     /**
-     * 启动心跳
+     * 处理 connect.challenge：签名 → 发送 connect req → 通过 RequestTracker 等待 res
      */
+    private suspend fun handleConnectChallenge(obj: JsonObject) {
+        try {
+            val payload = obj["payload"]?.jsonObject ?: return
+            val nonce = payload["nonce"]?.jsonPrimitive?.content
+            val ts = payload["ts"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
+
+            if (nonce.isNullOrBlank()) {
+                Log.e(TAG, "connect.challenge: empty nonce")
+                return
+            }
+
+            Log.i(TAG, "connect.challenge received, nonce=${nonce.take(8)}...")
+
+            // 1. 处理 challenge
+            authHandler.handleChallenge(ConnectChallengePayload(nonce = nonce, timestamp = ts))
+
+            // 2. 构建 connect 请求
+            val connectReq = authHandler.buildConnectRequest()
+            val requestId = "connect-${System.currentTimeMillis()}"
+
+            val connectParams = buildConnectParams(connectReq)
+            val requestFrame = RequestFrame(
+                id = requestId,
+                method = "connect",
+                params = connectParams
+            )
+
+            // 3. 追踪请求 → 发送 → 等待 res
+            val deferred = requestTracker.trackRequest(requestId, "connect")
+            val frameJson = json.encodeToString(RequestFrame.serializer(), requestFrame)
+            val sent = webSocket?.send(frameJson) ?: false
+
+            if (!sent) {
+                requestTracker.failRequest(requestId, IllegalStateException("WebSocket closed during auth"))
+                _connectionState.value = WebSocketConnectionState.Error(
+                    IllegalStateException("WebSocket closed during auth")
+                )
+                return
+            }
+
+            Log.i(TAG, "connect request sent, waiting for hello-ok res...")
+
+            // 4. 等待 hello-ok 响应
+            val response = withTimeout(AUTH_TIMEOUT_MS) { deferred.await() }
+
+            if (response.ok) {
+                handleHelloOk(response)
+            } else {
+                val errCode = response.error?.code ?: "UNKNOWN"
+                val errMsg = response.error?.message ?: "Connect failed"
+                Log.e(TAG, "connect rejected: $errCode - $errMsg")
+                _connectionState.value = WebSocketConnectionState.Error(
+                    IllegalStateException("$errCode: $errMsg")
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "connect.challenge handling failed: ${e.message}", e)
+            _connectionState.value = WebSocketConnectionState.Error(e)
+        }
+    }
+
+    /** 解析 hello-ok 响应 */
+    private fun handleHelloOk(response: ResponseFrame) {
+        val payload = response.payload?.jsonObject
+        helloOkPayload = payload
+
+        // 提取 deviceToken
+        val deviceToken = payload?.get("auth")?.jsonObject?.get("deviceToken")?.jsonPrimitive?.content
+        if (!deviceToken.isNullOrBlank()) {
+            securityModule.completePairing(deviceToken)
+            Log.i(TAG, "deviceToken stored")
+        }
+
+        // 提取默认会话键
+        defaultSessionKey = payload
+            ?.get("snapshot")?.jsonObject
+            ?.get("sessionDefaults")?.jsonObject
+            ?.get("mainSessionKey")?.jsonPrimitive?.content
+
+        Log.i(TAG, "hello-ok: defaultSessionKey=$defaultSessionKey")
+
+        _connectionState.value = WebSocketConnectionState.Connected
+        reconnectAttempt = 0
+    }
+
+    /** 构建 connect 请求参数（对齐 ConnectParamsSchema） */
+    private fun buildConnectParams(req: ConnectRequest): Map<String, JsonElement> {
+        return mapOf(
+            "minProtocol" to JsonPrimitive(3),
+            "maxProtocol" to JsonPrimitive(3),
+            "client" to buildJsonObject {
+                put("id", "openclaw-android")
+                put("version", req.client.clientVersion)
+                put("platform", req.client.platform)
+                put("mode", "ui")
+                put("deviceFamily", "phone")
+                put("modelIdentifier", req.client.deviceModel)
+            },
+            "role" to JsonPrimitive(req.role),
+            "scopes" to JsonArray(req.scopes.map { JsonPrimitive(it) }),
+            "caps" to JsonArray(emptyList()),
+            "commands" to JsonArray(emptyList()),
+            "permissions" to JsonObject(emptyMap()),
+            "auth" to buildJsonObject {
+                put("token", req.token ?: "")
+            },
+            "device" to buildJsonObject {
+                put("id", req.device.id)
+                put("publicKey", req.device.publicKey)
+                put("signature", req.device.signature)
+                put("signedAt", req.device.signedAt)
+                put("nonce", req.device.nonce)
+            },
+            "locale" to JsonPrimitive("zh-CN"),
+            "userAgent" to JsonPrimitive("openclaw-android/${req.client.clientVersion}")
+        )
+    }
+
+    // ── RPC ──
+
+    /** 通用 RPC 调用 */
+    suspend fun call(method: String, params: Map<String, JsonElement>? = null): ResponseFrame {
+        val requestId = RequestIdGenerator.generateRequestId()
+        val frame = RequestFrame(id = requestId, method = method, params = params)
+
+        val deferred = requestTracker.trackRequest(requestId, method)
+        val frameJson = json.encodeToString(RequestFrame.serializer(), frame)
+        val sent = webSocket?.send(frameJson) ?: false
+
+        if (!sent) {
+            requestTracker.failRequest(requestId, IllegalStateException("WebSocket not connected"))
+            throw IllegalStateException("WebSocket not connected")
+        }
+
+        return withTimeout(REQUEST_TIMEOUT_MS) { deferred.await() }
+    }
+
+    /** chat.send — 含 idempotencyKey（必需） */
+    suspend fun chatSend(sessionKey: String, message: String): ResponseFrame {
+        return call("chat.send", mapOf(
+            "sessionKey" to JsonPrimitive(sessionKey),
+            "message" to JsonPrimitive(message),
+            "idempotencyKey" to JsonPrimitive(UUID.randomUUID().toString())
+        ))
+    }
+
+    /** chat.history */
+    suspend fun chatHistory(sessionKey: String, limit: Int? = null): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "sessionKey" to JsonPrimitive(sessionKey)
+        )
+        if (limit != null) params["limit"] = JsonPrimitive(limit)
+        return call("chat.history", params)
+    }
+
+    /** chat.abort */
+    suspend fun chatAbort(sessionKey: String, runId: String? = null): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "sessionKey" to JsonPrimitive(sessionKey)
+        )
+        if (runId != null) params["runId"] = JsonPrimitive(runId)
+        return call("chat.abort", params)
+    }
+
+    /** sessions.list */
+    suspend fun sessionsList(limit: Int? = null, activeMinutes: Int? = null): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>()
+        if (limit != null) params["limit"] = JsonPrimitive(limit)
+        if (activeMinutes != null) params["activeMinutes"] = JsonPrimitive(activeMinutes)
+        return call("sessions.list", params.ifEmpty { null })
+    }
+
+    /** ping */
+    suspend fun ping(): Result<Long> {
+        return try {
+            val start = System.currentTimeMillis()
+            call("ping", mapOf("timestamp" to JsonPrimitive(start)))
+            Result.success(System.currentTimeMillis() - start)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ── 心跳 / 重连 ──
+
     private fun startHeartbeat() {
         heartbeatJob?.cancel()
-        
         heartbeatJob = appScope.launch {
             while (_connectionState.value is WebSocketConnectionState.Connected) {
-                try {
-                    val result = ping()
-                    if (result.isSuccess) {
-                        Log.d(TAG, "心跳：延迟 ${result.getOrNull()}ms")
-                    }
-                } catch (e: Exception) {
-                    Log.w(TAG, "心跳失败：${e.message}")
-                }
+                try { ping() } catch (_: Exception) {}
                 delay(HEARTBEAT_INTERVAL_MS)
             }
         }
     }
-    
-    /**
-     * 调度重连
-     */
+
     private fun scheduleReconnect(url: String) {
         reconnectJob?.cancel()
-        
-        val delayMs = calculateBackoffDelay()
-        Log.d(TAG, "调度重连：${delayMs}ms (尝试 ${reconnectAttempt + 1})")
-        
+        val delayMs = (INITIAL_RECONNECT_DELAY_MS * Math.pow(RECONNECT_BACKOFF_FACTOR, reconnectAttempt.toDouble()))
+            .toLong().coerceAtMost(MAX_RECONNECT_DELAY_MS)
+        reconnectAttempt++
+
         reconnectJob = appScope.launch {
             delay(delayMs)
-            
-            if (reconnectJob?.isActive == true && 
-                _connectionState.value !is WebSocketConnectionState.Connected) {
-                Log.d(TAG, "执行重连...")
+            if (_connectionState.value !is WebSocketConnectionState.Connected) {
                 connect(url)
             }
         }
-    }
-    
-    /**
-     * 计算退避延迟
-     */
-    private fun calculateBackoffDelay(): Long {
-        val delay = (INITIAL_RECONNECT_DELAY_MS * 
-                    Math.pow(RECONNECT_BACKOFF_FACTOR.toDouble(), reconnectAttempt.toDouble())).toLong()
-        reconnectAttempt++
-        return delay.coerceAtMost(MAX_RECONNECT_DELAY_MS)
     }
 }
