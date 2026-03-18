@@ -144,7 +144,7 @@ class OkHttpWebSocketService @Inject constructor(
         val timestamp = System.currentTimeMillis()
         val nonce = UUID.randomUUID().toString()
         val dataToSign = "/ws\n$timestamp\n$nonce"
-        val signature = securityModule.signChallenge(dataToSign).let { android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP) }
+        val signature = securityModule.signChallenge(dataToSign)
         
         val builder = Request.Builder()
             .url(url)
