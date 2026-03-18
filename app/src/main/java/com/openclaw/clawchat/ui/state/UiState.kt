@@ -68,15 +68,25 @@ data class SessionUiState(
 )
 
 /**
+ * Gateway 配置（输入用）
+ */
+data class GatewayConfigInput(
+    val name: String = "",
+    val host: String = "",
+    val port: Int = 18789,
+    val useTls: Boolean = false
+)
+
+/**
  * 设置界面 UI 状态
  */
 data class SettingsUiState(
-    val gatewayConfigs: List<GatewayConfigUi> = emptyList(),
     val currentGateway: GatewayConfigUi? = null,
-    val isEditingGateway: Boolean = false,
-    val editingGateway: GatewayConfigUi? = null,
-    val error: String? = null,
-    val isLoading: Boolean = false
+    val gatewayConfigInput: GatewayConfigInput = GatewayConfigInput(),
+    val connectionStatus: ConnectionStatusUi = ConnectionStatusUi.Disconnected,
+    val notificationsEnabled: Boolean = true,
+    val dndEnabled: Boolean = false,
+    val appVersion: String = "1.0.0"
 )
 
 /**

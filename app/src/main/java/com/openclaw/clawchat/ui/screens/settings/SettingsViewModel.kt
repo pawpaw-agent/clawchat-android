@@ -158,15 +158,3 @@ data class GatewayConfigInput(
     val port: Int = 18789,
     val useTls: Boolean = false
 )
-
-/**
- * 设置页面 UI 状态
- */
-data class SettingsUiState(
-    val currentGateway: GatewayConfigUi? = null,
-    val gatewayConfigInput: GatewayConfigInput = GatewayConfigInput(),
-    val connectionStatus: ConnectionStatusUi = ConnectionStatusUi.Disconnected,
-    val notificationsEnabled: Boolean = true,
-    val dndEnabled: Boolean = false,
-    val appVersion: String = "1.0.0"
-)
