@@ -5,6 +5,7 @@ import com.openclaw.clawchat.network.protocol.ChallengeResponseAuth
 import com.openclaw.clawchat.network.protocol.ConnectChallengePayload
 import com.openclaw.clawchat.network.protocol.ConnectOkPayload
 import com.openclaw.clawchat.network.protocol.RequestFrame
+import com.openclaw.clawchat.network.protocol.ResponseFrame
 import com.openclaw.clawchat.network.protocol.WebSocketProtocol
 import com.openclaw.clawchat.security.SecurityModule
 import kotlinx.coroutines.CoroutineScope
@@ -87,6 +88,9 @@ class OkHttpWebSocketService @Inject constructor(
     
     // 请求帧计数器
     private var requestCounter = 0L
+    
+    // 请求-响应追踪：requestId → callback
+    private val pendingRequests = mutableMapOf<String, (ResponseFrame) -> Unit>()
     
     private val latencyMeasurements = mutableListOf<Long>()
     private var latencyMonitorJob: Job? = null
@@ -186,8 +190,9 @@ class OkHttpWebSocketService @Inject constructor(
      * 处理接收到的消息
      * 
      * 根据帧 type 字段分发：
-     * - "event" → 处理协议事件（connect.challenge / connect.ok / connect.error / 业务事件）
-     * - 其他 → 按旧格式 GatewayMessage 解析
+     * - "event"  → 协议事件（connect.* / session.message / system.* / error）
+     * - "res"    → 响应帧，匹配 pendingRequests 中的请求 ID
+     * - 其他     → 按旧格式 GatewayMessage 解析
      */
     private fun processIncomingMessage(text: String) {
         try {
@@ -195,7 +200,8 @@ class OkHttpWebSocketService @Inject constructor(
             val type = jsonElement.jsonObject["type"]?.jsonPrimitive?.content
             
             when (type) {
-                "event" -> handleEvent(jsonElement.jsonObject, text)
+                "event" -> handleEvent(jsonElement.jsonObject)
+                "res" -> handleResponse(text)
                 else -> handleLegacyMessage(text)
             }
         } catch (e: Exception) {
@@ -207,17 +213,77 @@ class OkHttpWebSocketService @Inject constructor(
     /**
      * 处理协议 v3 事件帧
      */
-    private fun handleEvent(obj: JsonObject, raw: String) {
+    private fun handleEvent(obj: JsonObject) {
         val event = obj["event"]?.jsonPrimitive?.content ?: return
         
         when (event) {
+            // 认证流程
             "connect.challenge" -> handleConnectChallenge(obj)
             "connect.ok" -> handleConnectOk(obj)
             "connect.error" -> handleConnectError(obj)
-            else -> {
-                // 业务事件，转为 GatewayMessage 发出
-                handleLegacyMessage(raw)
+            
+            // 会话消息 → 转为 GatewayMessage
+            "session.message", "session.message.update" -> {
+                val payload = obj["payload"]?.jsonObject ?: return
+                val sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return
+                val msgObj = payload["message"]?.jsonObject ?: return
+                val content = msgObj["content"]?.jsonPrimitive?.content ?: ""
+                val role = msgObj["role"]?.jsonPrimitive?.content ?: "assistant"
+                val model = msgObj["metadata"]?.jsonObject
+                    ?.get("model")?.jsonPrimitive?.content
+                
+                val gatewayMsg = when (role) {
+                    "user" -> GatewayMessage.UserMessage(sessionId = sessionId, content = content)
+                    else -> GatewayMessage.AssistantMessage(
+                        sessionId = sessionId, content = content, model = model
+                    )
+                }
+                appScope.launch { _incomingMessages.emit(gatewayMsg) }
             }
+            
+            // 系统通知 → SystemEvent
+            "system.notification" -> {
+                val payload = obj["payload"]?.jsonObject ?: return
+                val title = payload["title"]?.jsonPrimitive?.content ?: ""
+                val message = payload["message"]?.jsonPrimitive?.content ?: ""
+                val text = if (title.isNotEmpty()) "$title: $message" else message
+                appScope.launch { _incomingMessages.emit(GatewayMessage.SystemEvent(text = text)) }
+            }
+            
+            // 错误事件 → Error
+            "error" -> {
+                val payload = obj["payload"]?.jsonObject ?: return
+                val code = payload["code"]?.jsonPrimitive?.content ?: "UNKNOWN"
+                val message = payload["message"]?.jsonPrimitive?.content ?: "Unknown error"
+                appScope.launch {
+                    _incomingMessages.emit(GatewayMessage.Error(code = code, message = message))
+                }
+            }
+            
+            // 其他事件透传
+            else -> {
+                appScope.launch {
+                    _incomingMessages.emit(GatewayMessage.SystemEvent(text = "event:$event"))
+                }
+            }
+        }
+    }
+    
+    /**
+     * 处理响应帧 (type=res)：按 id 匹配 pendingRequests 回调
+     */
+    private fun handleResponse(text: String) {
+        try {
+            val response = json.decodeFromString(ResponseFrame.serializer(), text)
+            val callback = synchronized(pendingRequests) { pendingRequests.remove(response.id) }
+            if (callback != null) {
+                callback(response)
+                Log.d(TAG, "Response matched: id=${response.id}, ok=${response.ok}")
+            } else {
+                Log.w(TAG, "Unmatched response id=${response.id}")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse response frame: ${e.message}")
         }
     }
     
