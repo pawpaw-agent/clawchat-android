@@ -6,12 +6,17 @@ Android 安全模块，为 ClawChat 提供硬件级安全保护。
 
 ```
 security/
-├── KeystoreManager.kt        # 密钥生成/签名（Android Keystore）
-├── EncryptedStorage.kt       # 加密 SharedPreferences 封装
-├── DeviceFingerprint.kt      # 设备指纹生成
-├── SecurityModule.kt         # 统一入口 + 安全日志
-├── build-security.gradle.kts # Gradle 依赖配置
-└── README.md                 # 本文档
+├── KeystoreManager.kt              # 客户端密钥生成/签名（Android Keystore）
+├── EncryptedStorage.kt             # 加密 SharedPreferences 封装
+├── DeviceFingerprint.kt            # 设备指纹生成（随机 UUID）
+├── SecurityModule.kt               # 统一入口 + 安全日志
+├── ServerPublicKeyManager.kt       # 服务端公钥管理（密钥轮换）
+├── ServerSignatureVerifier.kt      # 服务端签名验证器
+├── NonceCache.kt                   # Nonce 缓存（防重放攻击）
+├── SecureWebSocketService.kt       # 带签名验证的 WebSocket 服务
+├── ServerSignatureVerifierTest.kt  # 单元测试
+├── build-security.gradle.kts       # Gradle 依赖配置
+└── README.md                       # 本文档
 ```
 
 ## 🔧 依赖项
@@ -170,6 +175,26 @@ class WebSocketService @Inject constructor(
 | `resetDeviceId()` | 重置设备指纹（用户主动重置） |
 | `hasDeviceId()` | 检查是否已有设备指纹 |
 
+### ServerPublicKeyManager
+
+| 方法 | 描述 |
+|------|------|
+| `savePrimaryPublicKey(pem)` | 保存主公钥（PEM 格式） |
+| `saveBackupPublicKey(pem)` | 保存备份公钥（密钥轮换） |
+| `getPrimaryPublicKey()` | 获取主公钥 |
+| `getPrimaryFingerprint()` | 获取公钥指纹（SHA256） |
+| `verifyFingerprint(fp)` | 验证公钥指纹 |
+| `hasValidPublicKey()` | 检查是否有有效公钥 |
+| `clearAllKeys()` | 清除所有公钥 |
+
+### ServerSignatureVerifier
+
+| 方法 | 描述 |
+|------|------|
+| `verify(method, path, body, ts, nonce, sig)` | 验证 HTTP 请求签名 |
+| `verifyWebSocketMessage(type, session, content, ts, nonce, sig)` | 验证 WebSocket 消息签名 |
+| `toException()` | 转换为 SecurityException |
+
 ## 🔐 安全特性
 
 ### 1. 硬件级密钥存储
@@ -192,7 +217,16 @@ class WebSocketService @Inject constructor(
 - 应用卸载后自动重置（用户可控制）
 - 符合 Google Play 开发者政策
 
-### 4. 日志安全
+### 4. 服务端签名验证
+
+- ECDSA secp256r1 签名验证（与客户端一致）
+- 时间戳验证（±5 分钟窗口，防止重放攻击）
+- Nonce 缓存（5 分钟内不重复）
+- 支持主公钥和备份公钥（密钥轮换）
+- WebSocket 消息签名验证
+- 验证失败自动丢弃消息并记录安全日志
+
+### 5. 日志安全
 
 - SecureLogger 自动脱敏敏感信息
 - 生产环境不记录敏感数据
@@ -332,9 +366,20 @@ when {
 
 ### 4. 密钥轮换
 
-当前版本不支持密钥轮换。如需支持，需在 `KeystoreManager` 中添加版本管理。
+服务端公钥支持主/备双密钥轮换机制：
+- 使用 `saveBackupPublicKey()` 保存新公钥
+- 验证时会尝试主公钥，失败后尝试备份公钥
+- 验证成功后可以调用 `savePrimaryPublicKey()` 提升新密钥为主密钥
 
 ## 📝 变更日志
+
+- **v2.1.0** (2026-03-18) - 服务端签名验证 🟠
+  - ServerPublicKeyManager: 服务端公钥管理（支持密钥轮换）
+  - ServerSignatureVerifier: 服务端签名验证器
+  - NonceCache: Nonce 缓存（防重放攻击）
+  - SecureWebSocketService: 带签名验证的 WebSocket 服务
+  - 时间戳验证（±5 分钟窗口）
+  - 添加完整单元测试
 
 - **v2.0.0** (2026-03-18) - 隐私合规修复 🔴
   - DeviceFingerprint: 改用随机 UUID（移除硬件标识符）
@@ -348,9 +393,66 @@ when {
   - DeviceFingerprint: 设备指纹生成
   - SecurityModule: 统一入口
 
+## 🔐 服务端签名验证
+
+### 签名格式
+
+服务端消息使用以下格式进行签名：
+
+```
+签名字符串 = messageType + \n + sessionId + \n + timestamp + \n + nonce + \n + contentHash
+```
+
+其中：
+- `messageType`: 消息类型（如 `assistantMessage`, `systemEvent`）
+- `sessionId`: 会话 ID
+- `timestamp`: Unix 时间戳（毫秒）
+- `nonce`: 随机数（UUID 格式）
+- `contentHash`: 消息内容的 SHA256 哈希
+
+### 验证流程
+
+```kotlin
+// 1. 保存服务端公钥（首次配对时）
+val fingerprint = securityModule.saveServerPublicKey(serverPublicKeyPem)
+
+// 2. 验证 WebSocket 消息
+val result = securityModule.verifyWebSocketSignature(
+    messageType = "assistantMessage",
+    sessionId = sessionId,
+    content = messageContent,
+    timestamp = messageTimestamp,
+    nonce = messageNonce,
+    signature = messageSignature
+)
+
+if (!result.isSuccess()) {
+    // 验证失败，丢弃消息
+    throw result.toException()
+}
+```
+
+### 消息格式（带签名）
+
+```json
+{
+  "type": "assistantMessage",
+  "sessionId": "session-123",
+  "content": "Hello from assistant",
+  "model": "gpt-4",
+  "timestamp": 1710756000000,
+  "metadata": {
+    "nonce": "uuid-here",
+    "signature": "base64-encoded-signature",
+    "messageType": "assistantMessage"
+  }
+}
+```
+
 ## 📚 参考资料
 
 - [Android Keystore System](https://developer.android.com/training/articles/keystore)
 - [EncryptedSharedPreferences](https://developer.android.com/reference/androidx/security/crypto/EncryptedSharedPreferences)
 - [OpenClaw Pairing Protocol](https://docs.openclaw.ai/channels/pairing)
 - [ClawChat Setup Spec](../../project-specs/clawchat-setup.md)
+- [ECDSA Digital Signature](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm)

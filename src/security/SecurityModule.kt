@@ -9,8 +9,9 @@ import org.json.JSONObject
 /**
  * SecurityModule - 安全模块统一入口
  * 
- * 整合 KeystoreManager、EncryptedStorage、DeviceFingerprint，
- * 提供完整的设备配对和安全存储功能。
+ * 整合 KeystoreManager、EncryptedStorage、DeviceFingerprint、
+ * ServerPublicKeyManager、ServerSignatureVerifier，
+ * 提供完整的设备配对、安全存储和服务端签名验证功能。
  * 
  * 使用 Hilt 单例注入，整个应用生命周期只创建一次。
  */
@@ -25,6 +26,8 @@ class SecurityModule(private val context: Context) {
     private val keystoreManager = KeystoreManager(KEYPAIR_ALIAS)
     private val encryptedStorage = EncryptedStorage(context)
     private val deviceFingerprint = DeviceFingerprint(context)
+    private val publicKeyManager = ServerPublicKeyManager(context)
+    private val signatureVerifier = ServerSignatureVerifier(publicKeyManager)
     
     // ==================== 公开 API ====================
     
@@ -214,6 +217,77 @@ class SecurityModule(private val context: Context) {
      */
     fun getKeyInfo(): KeystoreManager.KeyInfo {
         return keystoreManager.getKeyInfo()
+    }
+    
+    // ==================== 服务端签名验证 ====================
+    
+    /**
+     * 保存服务端公钥
+     * 
+     * @param publicKeyPem PEM 格式的公钥
+     * @return 公钥指纹
+     */
+    fun saveServerPublicKey(publicKeyPem: String): String {
+        return publicKeyManager.savePrimaryPublicKey(publicKeyPem)
+    }
+    
+    /**
+     * 获取服务端公钥指纹
+     */
+    fun getServerFingerprint(): String? {
+        return publicKeyManager.getPrimaryFingerprint()
+    }
+    
+    /**
+     * 验证服务端消息签名
+     * 
+     * @param method 方法/消息类型
+     * @param path 路径/会话 ID
+     * @param body 消息体（可选）
+     * @param timestamp 时间戳
+     * @param nonce 随机数
+     * @param signature Base64 签名
+     * @return 验证结果
+     */
+    fun verifyServerSignature(
+        method: String,
+        path: String,
+        body: String?,
+        timestamp: Long,
+        nonce: String,
+        signature: String
+    ): SignatureVerificationResult {
+        return signatureVerifier.verify(method, path, body, timestamp, nonce, signature)
+    }
+    
+    /**
+     * 验证 WebSocket 消息签名
+     */
+    fun verifyWebSocketSignature(
+        messageType: String,
+        sessionId: String,
+        content: String,
+        timestamp: Long,
+        nonce: String,
+        signature: String
+    ): SignatureVerificationResult {
+        return signatureVerifier.verifyWebSocketMessage(
+            messageType, sessionId, content, timestamp, nonce, signature
+        )
+    }
+    
+    /**
+     * 检查是否有有效的服务端公钥
+     */
+    fun hasServerPublicKey(): Boolean {
+        return publicKeyManager.hasValidPublicKey()
+    }
+    
+    /**
+     * 清除服务端公钥（用于重置）
+     */
+    fun clearServerPublicKey() {
+        publicKeyManager.clearAllKeys()
     }
 }
 
