@@ -84,7 +84,7 @@ class GatewayConnection(
 
     // ── 内部组件 ──
 
-    private val authHandler = ChallengeResponseAuth(securityModule)
+    private var authHandler = ChallengeResponseAuth(securityModule)
     private val requestTracker = RequestTracker(timeoutMs = REQUEST_TIMEOUT_MS)
     private val sequenceManager = SequenceManager()
     private val eventDeduplicator = EventDeduplicator()
@@ -93,21 +93,28 @@ class GatewayConnection(
     private var reconnectJob: Job? = null
     private var heartbeatJob: Job? = null
     private var currentUrl: String? = null
+    private var currentToken: String? = null
     private var reconnectAttempt = 0
 
     // ── 连接 ──
 
-    suspend fun connect(url: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun connect(url: String, token: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
         if (_connectionState.value is WebSocketConnectionState.Connected) {
             return@withContext Result.success(Unit)
         }
 
         _connectionState.value = WebSocketConnectionState.Connecting
         currentUrl = url
+        currentToken = token
         reconnectAttempt = 0
-        authHandler.reset()
         helloOkPayload = null
         defaultSessionKey = null
+
+        // 重建 auth handler（携带 token）
+        authHandler = ChallengeResponseAuth(
+            securityModule = securityModule,
+            gatewayToken = token ?: securityModule.getAuthToken()
+        )
 
         try {
             val request = Request.Builder()
@@ -127,7 +134,7 @@ class GatewayConnection(
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                     Log.e(TAG, "WebSocket failure: ${t.message}", t)
                     _connectionState.value = WebSocketConnectionState.Error(t)
-                    currentUrl?.let { scheduleReconnect(it) }
+                    currentUrl?.let { scheduleReconnect(it, currentToken) }
                 }
 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
@@ -175,6 +182,7 @@ class GatewayConnection(
         webSocket = null
         _connectionState.value = WebSocketConnectionState.Disconnected
         currentUrl = null
+        currentToken = null
         Result.success(Unit)
     }
 
@@ -358,6 +366,11 @@ class GatewayConnection(
 
     // ── RPC ──
 
+    /** 发送原始 JSON 帧 */
+    fun sendFrame(jsonText: String): Boolean {
+        return webSocket?.send(jsonText) ?: false
+    }
+
     /** 通用 RPC 调用 */
     suspend fun call(method: String, params: Map<String, JsonElement>? = null): ResponseFrame {
         val requestId = RequestIdGenerator.generateRequestId()
@@ -421,6 +434,11 @@ class GatewayConnection(
         }
     }
 
+    /** 测量延迟（ping 的别名） */
+    suspend fun measureLatency(): Long? {
+        return ping().getOrNull()
+    }
+
     // ── 心跳 / 重连 ──
 
     private fun startHeartbeat() {
@@ -433,7 +451,7 @@ class GatewayConnection(
         }
     }
 
-    private fun scheduleReconnect(url: String) {
+    private fun scheduleReconnect(url: String, token: String? = null) {
         reconnectJob?.cancel()
         val delayMs = (INITIAL_RECONNECT_DELAY_MS * Math.pow(RECONNECT_BACKOFF_FACTOR, reconnectAttempt.toDouble()))
             .toLong().coerceAtMost(MAX_RECONNECT_DELAY_MS)
@@ -442,7 +460,7 @@ class GatewayConnection(
         reconnectJob = appScope.launch {
             delay(delayMs)
             if (_connectionState.value !is WebSocketConnectionState.Connected) {
-                connect(url)
+                connect(url, token)
             }
         }
     }
