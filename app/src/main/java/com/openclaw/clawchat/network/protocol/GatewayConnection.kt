@@ -424,13 +424,13 @@ class GatewayConnection(
             "device" to buildJsonObject {
                 put("id", JsonPrimitive(request.device.id))
                 put("publicKey", JsonPrimitive(request.device.publicKey))
-                put("signature", JsonPrimitive(request.device.signature))
-                put("signedAt", JsonPrimitive(request.device.signedAt))
-                put("nonce", JsonPrimitive(request.device.nonce))
+                put("signature", JsonPrimitive(request.signature))
+                put("signedAt", JsonPrimitive(System.currentTimeMillis()))
+                put("nonce", JsonPrimitive(request.nonce))
             },
             "client" to buildJsonObject {
-                put("id", JsonPrimitive(request.client.id))
-                put("version", JsonPrimitive(request.client.version))
+                put("id", JsonPrimitive(request.client.clientId))
+                put("version", JsonPrimitive(request.client.clientVersion))
                 put("platform", JsonPrimitive(request.client.platform))
             },
             "minProtocol" to JsonPrimitive(3),

@@ -131,7 +131,7 @@ class RetryManager(
         val result = executeWithRetry(operation, shouldRetry, maxRetries)
         
         return when (result) {
-            is RetryResult.Success -> Result.success(result.value)
+            is RetryResult.Success -> result.value // Already a Result<T>
             is RetryResult.Failure -> Result.failure(result.error)
         }
     }
