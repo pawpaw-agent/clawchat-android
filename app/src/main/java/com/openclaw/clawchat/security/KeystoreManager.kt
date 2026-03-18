@@ -6,6 +6,7 @@ import android.util.Base64
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.Signature
+import java.security.spec.ECGenParameterSpec
 import java.util.Date
 import javax.crypto.Cipher
 
