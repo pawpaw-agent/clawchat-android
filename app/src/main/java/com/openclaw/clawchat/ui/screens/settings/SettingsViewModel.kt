@@ -148,13 +148,3 @@ class SettingsViewModel @Inject constructor(
         // TODO: 保存到 Preferences
     }
 }
-
-/**
- * Gateway 配置（输入用）
- */
-data class GatewayConfigInput(
-    val name: String = "",
-    val host: String = "",
-    val port: Int = 18789,
-    val useTls: Boolean = false
-)
