@@ -44,7 +44,7 @@ enum class ProtocolErrorCode(val code: Int, val description: String) {
     INVALID_SIGNATURE(2002, "签名无效"),
     EXPIRED_CHALLENGE(2003, "挑战已过期"),
     INVALID_NONCE(2004, "Nonce 无效"),
-    DEVICE_NOT_PAIRE D(2005, "设备未配对"),
+    DEVICE_NOT_PAIRED(2005, "设备未配对"),
     TOKEN_EXPIRED(2006, "Token 已过期"),
     TOKEN_REVOKED(2007, "Token 已撤销"),
     
