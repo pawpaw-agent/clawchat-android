@@ -1,5 +1,6 @@
 package com.openclaw.clawchat.ui.state
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.openclaw.clawchat.network.GatewayMessage
 
@@ -165,15 +166,20 @@ sealed class ConnectionStatusUi {
             is Connected -> if (latency > 0) "已连接 · ${latency}ms" else "已连接"
             is Error -> "错误：$message"
         }
+}
 
-    val statusColor: Color
-        get() = when (this) {
-            is Disconnected -> Color.Gray
-            is Connecting -> Color.Yellow
-            is Disconnecting -> Color.Gray
-            is Connected -> Color.Green
-            is Error -> Color.Red
-        }
+/**
+ * 获取连接状态的颜色（Composable 函数）
+ */
+@Composable
+fun ConnectionStatusUi.getStatusColor(): Color {
+    return when (this) {
+        is ConnectionStatusUi.Disconnected -> Color.Gray
+        is ConnectionStatusUi.Connecting -> Color.Yellow
+        is ConnectionStatusUi.Disconnecting -> Color.Gray
+        is ConnectionStatusUi.Connected -> Color.Green
+        is ConnectionStatusUi.Error -> Color.Red
+    }
 }
 
 /**

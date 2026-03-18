@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.openclaw.clawchat.ui.state.ConnectionStatusUi
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
+import com.openclaw.clawchat.ui.state.getStatusColor
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -271,7 +272,7 @@ private fun GatewayConfigItem(
                     Text(
                         text = connectionStatus.displayText,
                         style = MaterialTheme.typography.labelSmall,
-                        color = connectionStatus.statusColor
+                        color = connectionStatus.getStatusColor()
                     )
                 }
             }
