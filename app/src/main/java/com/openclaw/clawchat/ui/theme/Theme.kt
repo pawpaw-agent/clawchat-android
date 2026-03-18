@@ -66,8 +66,7 @@ private val DarkColorScheme = darkColorScheme(
     inverseOnSurface = LightTextPrimary,
     inversePrimary = ClawBlueDark,
     
-    // 阴影
-    shadow = Color.Black,
+    // 遮罩
     scrim = Color.Black.copy(alpha = 0.32f)
 )
 
@@ -121,8 +120,7 @@ private val LightColorScheme = lightColorScheme(
     inverseOnSurface = DarkTextPrimary,
     inversePrimary = ClawBlueLight,
     
-    // 阴影
-    shadow = Color.Black.copy(alpha = 0.1f),
+    // 遮罩
     scrim = Color.Black.copy(alpha = 0.32f)
 )
 
