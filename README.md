@@ -448,10 +448,10 @@ Gateway 地址：ws://192.168.1.100:18789
 │                    Security Layers                           │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │              Android Keystore (TEE/StrongBox)          │  │
-│  │  - ECDSA secp256r1 密钥对                              │  │
-│  │  - 私钥不可导出                                        │  │
-│  │  - 硬件级保护                                          │  │
+│  │           Ed25519 密钥对 (Gateway Protocol v3)         │  │
+│  │  - API 33+: Android Keystore (TEE/StrongBox)           │  │
+│  │  - API 26-32: BouncyCastle + EncryptedSharedPreferences│  │
+│  │  - deviceId = SHA-256(raw 32-byte pubkey).hex()        │  │
 │  └───────────────────────────────────────────────────────┘  │
 │                              │                               │
 │                              ▼                               │
@@ -464,10 +464,10 @@ Gateway 地址：ws://192.168.1.100:18789
 │                              │                               │
 │                              ▼                               │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │              TLS 1.3 + 证书固定                        │  │
-│  │  - 生产环境强制 WSS                                    │  │
-│  │  - Certificate Pinning                                 │  │
-│  │  - 签名验证（防重放攻击）                              │  │
+│  │              TLS 1.3 + WebSocket (Protocol v3)         │  │
+│  │  - Challenge-Response Ed25519 签名认证                  │  │
+│  │  - v3 签名载荷: 11 段竖线分隔                           │  │
+│  │  - RequestTracker 追踪 req/res 匹配                    │  │
 │  └───────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -476,26 +476,27 @@ Gateway 地址：ws://192.168.1.100:18789
 
 | 数据类型 | 存储位置 | 加密方式 |
 |----------|----------|----------|
-| 设备私钥 | Android Keystore | 硬件级加密（TEE/StrongBox） |
+| Ed25519 私钥 | EncryptedSharedPreferences (API<33) / Keystore (API 33+) | AES256-GCM / 硬件级 |
 | 设备令牌 | EncryptedSharedPreferences | AES256-GCM |
-| Gateway 地址 | SharedPreferences | 明文 |
-| 消息缓存 | Room | 可选 SQLCipher |
+| Gateway 地址 | EncryptedSharedPreferences | AES256-GCM |
+| 消息缓存 | Room | 明文（本地存储） |
 
 ### 密钥管理
 
 ```kotlin
-// 密钥对生成
-val keyPairGenerator = KeyPairGenerator.getInstance(
-    KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore"
-)
+// Ed25519 密钥对生成（BouncyCastle 回退路径）
+val generator = Ed25519KeyPairGenerator()
+generator.init(Ed25519KeyGenerationParameters(SecureRandom()))
+val keyPair = generator.generateKeyPair()
 
-// 签名挑战
-fun signChallenge(challenge: ByteArray): ByteArray {
-    val signature = Signature.getInstance("SHA256withECDSA")
-    signature.initSign(privateKey)
-    signature.update(challenge)
-    return signature.sign()
-}
+// Ed25519 签名（等效 Node.js crypto.sign(null, payload, key)）
+val signer = Ed25519Signer()
+signer.init(true, privateKeyParams)
+signer.update(data, 0, data.size)
+val signature = signer.generateSignature()
+
+// v3 签名载荷
+// v3|{deviceId}|openclaw-android|ui|operator|operator.read,operator.write|{ms}|{token}|{nonce}|android|phone
 ```
 
 ### 安全最佳实践
@@ -504,8 +505,6 @@ fun signChallenge(challenge: ByteArray): ByteArray {
 - ✅ 生产环境禁用明文 HTTP
 - ✅ 日志自动脱敏敏感信息
 - ✅ 定期轮换设备令牌
-
-详细内容见 [Security README](src/security/README.md)。
 
 ---
 

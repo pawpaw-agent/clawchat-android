@@ -4,7 +4,6 @@ import android.util.Log
 import com.openclaw.clawchat.security.SecurityModule
 import com.openclaw.clawchat.security.SignedPayload
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 /**
  * 连接请求参数
@@ -54,10 +53,6 @@ class ChallengeResponseAuth(
 ) {
     companion object {
         private const val TAG = "ChallengeResponseAuth"
-        private val json = Json {
-            ignoreUnknownKeys = true
-            isLenient = true
-        }
     }
 
     // 当前待处理的挑战
@@ -68,22 +63,6 @@ class ChallengeResponseAuth(
         val nonce: String,
         val timestamp: Long,
         val requestId: String
-    )
-
-    sealed class AuthState {
-        data object Initial : AuthState()
-        data object Connected : AuthState()
-        data object ChallengeReceived : AuthState()
-        data object RequestSent : AuthState()
-        data class Success(val deviceToken: String) : AuthState()
-        data class Error(val message: String, val code: String? = null) : AuthState()
-    }
-
-    data class AuthResult(
-        val success: Boolean,
-        val deviceToken: String? = null,
-        val error: String? = null,
-        val errorCode: String? = null
     )
 
     /**
@@ -165,33 +144,6 @@ class ChallengeResponseAuth(
         )
     }
 
-    /**
-     * 步骤 3: 处理 connect 响应
-     *
-     * 成功响应:
-     * { "type": "res", "id": "...", "ok": true, "payload": { "type": "hello-ok", ..., "auth": { "deviceToken": "..." } } }
-     */
-    fun handleConnectOk(connectOk: ConnectOkPayload): AuthResult {
-        Log.d(TAG, "认证成功，收到 deviceToken")
-
-        if (connectOk.deviceToken.isBlank()) {
-            return AuthResult(success = false, error = "Empty device token")
-        }
-
-        securityModule.completePairing(connectOk.deviceToken)
-        Log.d(TAG, "deviceToken 已存储")
-
-        return AuthResult(success = true, deviceToken = connectOk.deviceToken)
-    }
-
-    /**
-     * 处理错误
-     */
-    fun handleErrorEvent(error: ErrorPayload): AuthResult {
-        Log.e(TAG, "认证错误：${error.code} - ${error.message}")
-        return AuthResult(success = false, error = error.message, errorCode = error.code)
-    }
-
     fun reset() {
         pendingChallenge = null
     }
@@ -215,27 +167,5 @@ class ChallengeResponseAuth(
         } catch (e: Exception) {
             "1.0.0"
         }
-    }
-}
-
-/**
- * 从 JSON 解析 ConnectChallengePayload
- */
-fun String.toConnectChallenge(): ConnectChallengePayload? {
-    return try {
-        Json { ignoreUnknownKeys = true }.decodeFromString(this)
-    } catch (e: Exception) {
-        null
-    }
-}
-
-/**
- * 从 JSON 解析 ConnectOkPayload
- */
-fun String.toConnectOk(): ConnectOkPayload? {
-    return try {
-        Json { ignoreUnknownKeys = true }.decodeFromString(this)
-    } catch (e: Exception) {
-        null
     }
 }

@@ -3,7 +3,6 @@ package com.openclaw.clawchat.data.local
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Index
-import java.time.Instant
 
 /**
  * 消息实体 - Room 数据库表
