@@ -1,5 +1,6 @@
 package com.openclaw.clawchat.network
 
+import android.util.Base64
 import com.openclaw.clawchat.security.SecurityModule
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -24,8 +25,8 @@ class SignatureInterceptor(
         
         // 构建签名字符串：路径 + 时间戳 + 随机数
         val dataToSign = "${request.url.encodedPath}\n$timestamp\n$nonce"
-        val signature = securityManager.signChallenge(dataToSign.toByteArray())
-            let { android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP) }
+        val signatureBytes = securityModule.signChallenge(dataToSign)
+        val signature = Base64.encodeToString(signatureBytes.toByteArray(), Base64.NO_WRAP)
         
         // 添加签名头
         val signedRequest = request.newBuilder()
@@ -43,11 +44,4 @@ class SignatureInterceptor(
     private fun generateNonce(): String {
         return UUID.randomUUID().toString()
     }
-}
-
-/**
- * ByteArray 转 Base64
- */
-private fun ByteArraylet { android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP) }: String {
-    return android.util.Base64.encodeToString(this, android.util.Base64.NO_WRAP)
 }
