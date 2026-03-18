@@ -361,33 +361,24 @@ sealed class SessionEvent {
 }
 
 /**
- * 消息角色（与 ui.components.MessageRole 保持一致）
- */
-enum class MessageRole {
-    USER,
-    ASSISTANT,
-    SYSTEM
-}
-
-/**
  * MessageRole 转 LocalMessageRole
  */
-private fun MessageRole.toLocalRole(): LocalMessageRole {
+private fun com.openclaw.clawchat.ui.state.MessageRole.toLocalRole(): LocalMessageRole {
     return when (this) {
-        MessageRole.USER -> LocalMessageRole.USER
-        MessageRole.ASSISTANT -> LocalMessageRole.ASSISTANT
-        MessageRole.SYSTEM -> LocalMessageRole.SYSTEM
+        com.openclaw.clawchat.ui.state.MessageRole.USER -> LocalMessageRole.USER
+        com.openclaw.clawchat.ui.state.MessageRole.ASSISTANT -> LocalMessageRole.ASSISTANT
+        com.openclaw.clawchat.ui.state.MessageRole.SYSTEM -> LocalMessageRole.SYSTEM
     }
 }
 
 /**
  * LocalMessageRole 转 MessageRole
  */
-private fun LocalMessageRole.toUiRole(): MessageRole {
+private fun LocalMessageRole.toUiRole(): com.openclaw.clawchat.ui.state.MessageRole {
     return when (this) {
-        LocalMessageRole.USER -> MessageRole.USER
-        LocalMessageRole.ASSISTANT -> MessageRole.ASSISTANT
-        LocalMessageRole.SYSTEM -> MessageRole.SYSTEM
+        LocalMessageRole.USER -> com.openclaw.clawchat.ui.state.MessageRole.USER
+        LocalMessageRole.ASSISTANT -> com.openclaw.clawchat.ui.state.MessageRole.ASSISTANT
+        LocalMessageRole.SYSTEM -> com.openclaw.clawchat.ui.state.MessageRole.SYSTEM
     }
 }
 
