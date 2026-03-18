@@ -1,4 +1,4 @@
-package ui.theme
+package com.openclaw.clawchat.ui.theme
 
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily

@@ -144,7 +144,7 @@ class OkHttpWebSocketService @Inject constructor(
         val timestamp = System.currentTimeMillis()
         val nonce = UUID.randomUUID().toString()
         val dataToSign = "/ws\n$timestamp\n$nonce"
-        val signature = securityModule.signChallenge(dataToSign).toBase64()
+        val signature = securityModule.signChallenge(dataToSign)let { android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP) }
         
         val builder = Request.Builder()
             .url(url)
@@ -322,11 +322,4 @@ class OkHttpWebSocketService @Inject constructor(
     fun clearLatencyMeasurements() {
         latencyMeasurements.clear()
     }
-}
-
-/**
- * ByteArray 转 Base64
- */
-private fun ByteArray.toBase64(): String {
-    return android.util.Base64.encodeToString(this, android.util.Base64.NO_WRAP)
 }

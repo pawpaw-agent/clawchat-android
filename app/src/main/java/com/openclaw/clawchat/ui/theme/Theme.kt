@@ -1,4 +1,4 @@
-package ui.theme
+package com.openclaw.clawchat.ui.theme
 
 import android.app.Activity
 import android.os.Build

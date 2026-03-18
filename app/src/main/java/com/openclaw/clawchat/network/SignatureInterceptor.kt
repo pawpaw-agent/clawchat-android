@@ -14,7 +14,7 @@ import java.util.UUID
  * - X-ClawChat-Signature: 请求签名
  */
 class SignatureInterceptor(
-    private val securityManager: SecurityModule
+    private val securityModule: SecurityModule
 ) : Interceptor {
     
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -23,9 +23,9 @@ class SignatureInterceptor(
         val nonce = generateNonce()
         
         // 构建签名字符串：路径 + 时间戳 + 随机数
-        val dataToSign = "${request.url.path}\n$timestamp\n$nonce"
+        val dataToSign = "${request.url.encodedPath}\n$timestamp\n$nonce"
         val signature = securityManager.signChallenge(dataToSign.toByteArray())
-            .toBase64()
+            let { android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP) }
         
         // 添加签名头
         val signedRequest = request.newBuilder()
@@ -48,6 +48,6 @@ class SignatureInterceptor(
 /**
  * ByteArray 转 Base64
  */
-private fun ByteArray.toBase64(): String {
+private fun ByteArraylet { android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP) }: String {
     return android.util.Base64.encodeToString(this, android.util.Base64.NO_WRAP)
 }
