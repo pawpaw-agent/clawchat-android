@@ -3,6 +3,7 @@ package com.openclaw.clawchat.ui.state
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.openclaw.clawchat.network.GatewayUrlUtil
 import com.openclaw.clawchat.network.WebSocketService
 import com.openclaw.clawchat.network.GatewayMessage
 import com.openclaw.clawchat.network.WebSocketConnectionState
@@ -84,11 +85,8 @@ class MainViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                // 构建 WebSocket URL
-                val wsUrl = gatewayUrl
-                    .replace("http://", "ws://")
-                    .replace("https://", "wss://")
-                    .plus("/ws")
+                // 构建 WebSocket URL（统一通过 GatewayUrlUtil 标准化）
+                val wsUrl = GatewayUrlUtil.normalizeToWebSocketUrl(gatewayUrl)
 
                 val result = webSocketService.connect(wsUrl, token = null)
 

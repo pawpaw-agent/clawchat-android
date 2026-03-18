@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.openclaw.clawchat.network.GatewayUrlUtil
 import com.openclaw.clawchat.ui.state.PairingEvent
 import com.openclaw.clawchat.ui.state.PairingStatus
 import com.openclaw.clawchat.ui.state.PairingViewModel
@@ -233,6 +234,9 @@ private fun DeviceInfoCard(
 
 /**
  * 网关地址输入框
+ *
+ * 用户直接输入 IP:端口 或域名，无需手动添加协议前缀。
+ * 代码内部通过 GatewayUrlUtil 自动转换为 ws:// 或 wss:// URL。
  */
 @Composable
 private fun GatewayUrlInput(
@@ -240,6 +244,12 @@ private fun GatewayUrlInput(
     onValueChange: (String) -> Unit,
     enabled: Boolean
 ) {
+    val isValid = value.isBlank() || GatewayUrlUtil.isValidInput(value)
+    // 实时预览转换后的 WebSocket URL
+    val wsUrlPreview = if (value.isNotBlank() && isValid) {
+        GatewayUrlUtil.normalizeToWebSocketUrl(value)
+    } else null
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -260,7 +270,7 @@ private fun GatewayUrlInput(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "输入 OpenClaw Gateway 地址（如：http://192.168.1.100:18789）",
+                text = "输入 Gateway 的 IP 地址和端口（如：192.168.0.213:18789）",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -271,7 +281,7 @@ private fun GatewayUrlInput(
                 value = value,
                 onValueChange = onValueChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("http://192.168.1.100:18789") },
+                placeholder = { Text("192.168.0.213:18789") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Link,
@@ -280,14 +290,25 @@ private fun GatewayUrlInput(
                 },
                 enabled = enabled,
                 singleLine = true,
-                isError = value.isNotBlank() && !isValidGatewayUrl(value)
+                isError = value.isNotBlank() && !isValid
             )
 
-            if (value.isNotBlank() && !isValidGatewayUrl(value)) {
+            if (value.isNotBlank() && !isValid) {
                 Text(
-                    text = "请输入有效的网关地址",
+                    text = "请输入有效的地址（如 192.168.0.213:18789）",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            // 显示转换后的 WebSocket URL 预览
+            if (wsUrlPreview != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "→ $wsUrlPreview",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                 )
             }
 
@@ -299,7 +320,7 @@ private fun GatewayUrlInput(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     AssistChip(
-                        onClick = { onValueChange("http://localhost:18789") },
+                        onClick = { onValueChange("localhost:18789") },
                         label = { Text("本地") },
                         leadingIcon = {
                             Icon(
@@ -310,7 +331,7 @@ private fun GatewayUrlInput(
                         }
                     )
                     AssistChip(
-                        onClick = { onValueChange("http://192.168.1.100:18789") },
+                        onClick = { onValueChange("192.168.1.100:18789") },
                         label = { Text("局域网") },
                         leadingIcon = {
                             Icon(
@@ -594,9 +615,4 @@ private fun copyToClipboard(context: Context, label: String, text: String) {
     clipboard.setPrimaryClip(clip)
 }
 
-/**
- * 验证网关 URL 格式
- */
-private fun isValidGatewayUrl(url: String): Boolean {
-    return url.startsWith("http://") || url.startsWith("https://")
-}
+
