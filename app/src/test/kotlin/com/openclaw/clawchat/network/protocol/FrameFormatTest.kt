@@ -62,8 +62,8 @@ class FrameFormatTest {
     
     @Test
     fun testRequestIdGeneration() {
-        val id1 = RequestFrame.generateRequestId()
-        val id2 = RequestFrame.generateRequestId()
+        val id1 = RequestIdGenerator.generateRequestId()
+        val id2 = RequestIdGenerator.generateRequestId()
         
         // ID 应该不同（包含时间戳和计数器）
         assertNotEquals("ID 应该唯一", id1, id2)

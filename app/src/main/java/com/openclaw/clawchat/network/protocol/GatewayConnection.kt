@@ -474,7 +474,7 @@ class GatewayConnection(
      */
     suspend fun sendRequest(method: GatewayMethod, params: Map<String, JsonElement>? = null): ResponseFrame {
         val request = RequestFrame(
-            id = RequestFrame.generateRequestId(),
+            id = RequestIdGenerator.generateRequestId(),
             method = method.value,
             params = params
         )

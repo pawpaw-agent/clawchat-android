@@ -30,17 +30,20 @@ data class RequestFrame(
     
     @SerialName("params")
     val params: Map<String, JsonElement>? = null
-) {
-    companion object {
-        private var requestCounter = 0L
-        
-        /**
-         * 生成唯一的请求 ID
-         */
-        fun generateRequestId(): String {
-            val counter = requestCounter++
-            return "req-${System.currentTimeMillis()}-$counter"
-        }
+)
+
+/**
+ * 请求 ID 生成器
+ */
+object RequestIdGenerator {
+    private var requestCounter = 0L
+    
+    /**
+     * 生成唯一的请求 ID
+     */
+    fun generateRequestId(): String {
+        val counter = requestCounter++
+        return "req-${System.currentTimeMillis()}-$counter"
     }
 }
 
@@ -122,7 +125,7 @@ fun requestFrame(
     builder.params()
     
     return RequestFrame(
-        id = RequestFrame.generateRequestId(),
+        id = RequestIdGenerator.generateRequestId(),
         method = method.value,
         params = builder.build()
     )
