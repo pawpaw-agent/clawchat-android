@@ -46,7 +46,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(
-        securityManager: SecurityManager,
+        securityModule: SecurityModule,
         @ApplicationContext context: Context
     ): OkHttpClient {
         // 日志拦截器 - 仅在 Debug 模式启用
@@ -61,7 +61,7 @@ object NetworkModule {
         }
         
         // 签名拦截器
-        val signatureInterceptor = SignatureInterceptor(securityManager)
+        val signatureInterceptor = SignatureInterceptor(securityModule)
         
         val builder = OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
@@ -92,7 +92,7 @@ object NetworkModule {
     @Singleton
     fun provideWebSocketService(
         okHttpClient: OkHttpClient,
-        securityManager: SecurityManager,
+        securityModule: SecurityModule,
         appScope: CoroutineScope
     ): WebSocketService {
         return OkHttpWebSocketService(okHttpClient, securityModule, appScope)
