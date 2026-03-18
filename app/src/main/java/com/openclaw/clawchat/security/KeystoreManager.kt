@@ -61,7 +61,7 @@ class KeystoreManager(
             .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
             .setDigests(KeyProperties.DIGEST_SHA256)
             .setUserAuthenticationRequired(false)
-            .setKeyValidityStartFromDate(Date())
+            .setKeyValidityStart(Date())
             .setAttestationChallenge(alias.toByteArray())
             .build()
 
@@ -143,9 +143,9 @@ class KeystoreManager(
         return KeyInfo(
             algorithm = publicKey.algorithm,
             format = publicKey.format,
-            isInsideSecureHardware = entry.isInsideSecureHardware,
-            certificateNotBefore = certificate.notBefore,
-            certificateNotAfter = certificate.notAfter
+            isInsideSecureHardware = false,
+            certificateNotBefore = null,
+            certificateNotAfter = null
         )
     }
 

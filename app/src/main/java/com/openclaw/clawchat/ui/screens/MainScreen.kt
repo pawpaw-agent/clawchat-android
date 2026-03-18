@@ -225,6 +225,7 @@ private fun ConnectionStatusIcon(status: ConnectionStatus) {
         is ConnectionStatus.Connecting, is ConnectionStatus.Disconnecting -> Icons.Default.Sync to MaterialTheme.colorScheme.tertiary
         is ConnectionStatus.Disconnected -> Icons.Default.CloudOff to MaterialTheme.colorScheme.onSurfaceVariant
         is ConnectionStatus.Error -> Icons.Default.Error to MaterialTheme.colorScheme.error
+        else -> Icons.Default.Help to MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Icon(
@@ -265,6 +266,7 @@ private fun NotConnectedContent(
                 is ConnectionStatus.Disconnecting -> "正在断开..."
                 is ConnectionStatus.Error -> "连接错误：${connectionStatus.message}"
                 is ConnectionStatus.Connected -> "已连接"
+                else -> "未知状态"
             },
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
