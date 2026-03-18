@@ -164,9 +164,11 @@ class WebSocketService @Inject constructor(
 
 | 方法 | 描述 |
 |------|------|
-| `generateDeviceId()` | 生成设备指纹 |
+| `generateDeviceId()` | 生成/获取设备指纹（随机 UUID） |
 | `getDeviceDescription()` | 获取设备描述（人类可读） |
 | `getPlatformInfo()` | 获取平台信息 |
+| `resetDeviceId()` | 重置设备指纹（用户主动重置） |
+| `hasDeviceId()` | 检查是否已有设备指纹 |
 
 ## 🔐 安全特性
 
@@ -182,11 +184,13 @@ class WebSocketService @Inject constructor(
 - MasterKey 存储在 Android Keystore
 - AES256-GCM 加密（值），AES256-SIV（密钥）
 
-### 3. 设备指纹
+### 3. 设备指纹（隐私合规）
 
-- 基于多标识符组合（Android ID + Build 信息 + 安装 ID）
-- SHA256 哈希，不可逆
-- 应用卸载后重置（尊重用户隐私）
+- 基于随机 UUID（首次安装时生成）
+- 不使用任何硬件标识符（IMEI、Android ID、序列号等）
+- 不请求敏感权限
+- 应用卸载后自动重置（用户可控制）
+- 符合 Google Play 开发者政策
 
 ### 4. 日志安全
 
@@ -331,6 +335,12 @@ when {
 当前版本不支持密钥轮换。如需支持，需在 `KeystoreManager` 中添加版本管理。
 
 ## 📝 变更日志
+
+- **v2.0.0** (2026-03-18) - 隐私合规修复 🔴
+  - DeviceFingerprint: 改用随机 UUID（移除硬件标识符）
+  - DeviceFingerprint: 添加 resetDeviceId() 方法
+  - DeviceFingerprint: 添加 hasDeviceId() 方法
+  - 符合 Google Play 开发者政策
 
 - **v1.0.0** (2026-03-17) - 初始版本
   - KeystoreManager: ECDSA 密钥生成/签名

@@ -1,32 +1,33 @@
 package com.openclaw.clawchat.security
 
-import android.annotation.SuppressLint
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Build
-import android.provider.Settings
-import android.telephony.TelephonyManager
 import android.util.Base64
 import android.util.Log
-import java.nio.ByteBuffer
-import java.security.MessageDigest
 import java.util.UUID
 
 /**
- * DeviceFingerprint - 设备指纹生成器
+ * DeviceFingerprint - 设备指纹生成器（隐私合规版本）
  * 
  * 负责：
  * - 生成唯一的设备指纹 ID
- * - 基于多硬件标识符组合
+ * - 基于随机 UUID（首次安装时生成）
  * - 支持 Android 6.0 (API 26+) 
- * - 生成结果稳定（应用重装不变）
+ * - 生成结果稳定（应用生命周期内不变）
  * 
  * 指纹用途：
  * - 设备身份识别（Pairing 流程）
  * - 防重复注册
  * - 设备管理/撤销
  * 
- * 注意：不使用不可重置的硬件 ID（如 IMEI），
- * 尊重用户隐私，遵循 Google 政策。
+ * 🔐 隐私合规说明：
+ * - 不使用任何硬件标识符（IMEI、Android ID、序列号等）
+ * - 不请求敏感权限（READ_PHONE_STATE 等）
+ * - 应用卸载后自动重置（用户可控制）
+ * - 符合 Google Play 开发者政策
+ * 
+ * @see <a href="https://developer.android.com/training/articles/user-data-ids">Android 用户数据 ID 最佳实践</a>
  */
 class DeviceFingerprint(private val context: Context) {
     
@@ -34,61 +35,45 @@ class DeviceFingerprint(private val context: Context) {
         private const val TAG = "DeviceFingerprint"
         
         // 指纹格式版本（用于未来升级）
-        private const val FINGERPRINT_VERSION = "v1"
+        private const val FINGERPRINT_VERSION = "v2"
+        
+        // SharedPreferences 文件名
+        private const val PREFS_NAME = "clawchat_device_fingerprint"
+        
+        // 存储键名
+        private const val KEY_DEVICE_ID = "device_id"
+    }
+    
+    // 私有 SharedPreferences（仅本模块可访问）
+    private val prefs: SharedPreferences by lazy {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
     
     /**
-     * 生成设备指纹 ID
+     * 生成/获取设备指纹 ID
      * 
-     * 组合多个设备标识符，生成 SHA256 哈希值。
-     * 结果稳定、唯一、不可逆。
+     * 首次调用时生成随机 UUID 并存储，后续调用返回相同值。
+     * 应用卸载后，SharedPreferences 被清除，下次安装会生成新的 ID。
      * 
      * @return Base64 编码的设备指纹（URL-safe）
      */
-    @SuppressLint("HardwareIds")
     fun generateDeviceId(): String {
-        val components = mutableListOf<String>()
-        
-        // 1. Android ID (主要标识符，应用卸载后重置)
-        val androidId = Settings.Secure.getString(
-            context.contentResolver,
-            Settings.Secure.ANDROID_ID
-        )
-        components.add("android_id:$androidId")
-        
-        // 2. Build 信息（设备型号、厂商等）
-        components.add("brand:${Build.BRAND}")
-        components.add("model:${Build.MODEL}")
-        components.add("manufacturer:${Build.MANUFACTURER}")
-        components.add("product:${Build.PRODUCT}")
-        
-        // 3. 硬件信息（稳定且不可重置）
-        components.add("fingerprint:${Build.FINGERPRINT}")
-        components.add("hardware:${Build.HARDWARE}")
-        components.add("board:${Build.BOARD}")
-        
-        // 4. 系统版本（区分不同 Android 版本）
-        components.add("sdk:${Build.VERSION.SDK_INT}")
-        components.add("release:${Build.VERSION.RELEASE}")
-        
-        // 5. 应用安装 ID（首次安装生成，卸载后重置）
-        val installationId = getOrCreateInstallationId()
-        components.add("installation:$installationId")
-        
-        // 6. 可选：SIM 信息（如果有）
-        getSimInfo()?.let { simInfo ->
-            components.add("sim:$simInfo")
+        // 检查是否已有存储的 ID
+        val existingId = prefs.getString(KEY_DEVICE_ID, null)
+        if (existingId != null) {
+            Log.d(TAG, "Returning existing device fingerprint")
+            return existingId
         }
         
-        // 生成 SHA256 哈希
-        val combined = components.joinToString("|")
-        val hash = sha256(combined)
+        // 生成新的随机 UUID
+        val uuid = UUID.randomUUID()
+        val deviceId = "$FINGERPRINT_VERSION:${Base64.encodeToString(uuidToBytes(uuid), Base64.URL_SAFE or Base64.NO_WRAP)}"
         
-        // 添加版本前缀，返回 Base64 URL-safe 编码
-        val fingerprint = "$FINGERPRINT_VERSION:${Base64.encodeToString(hash, Base64.URL_SAFE or Base64.NO_WRAP)}"
+        // 存储到 SharedPreferences
+        prefs.edit().putString(KEY_DEVICE_ID, deviceId).apply()
         
-        Log.d(TAG, "Generated device fingerprint: $fingerprint")
-        return fingerprint
+        Log.i(TAG, "Generated new device fingerprint: $deviceId")
+        return deviceId
     }
     
     /**
@@ -114,65 +99,44 @@ class DeviceFingerprint(private val context: Context) {
         )
     }
     
+    /**
+     * 重置设备指纹
+     * 
+     * 清除当前存储的 ID，下次调用 generateDeviceId() 会生成新的 ID。
+     * 用于用户主动重置设备身份或重新配对场景。
+     */
+    fun resetDeviceId() {
+        prefs.edit().remove(KEY_DEVICE_ID).apply()
+        Log.i(TAG, "Device fingerprint reset")
+    }
+    
+    /**
+     * 检查是否已有设备指纹
+     */
+    fun hasDeviceId(): Boolean {
+        return prefs.contains(KEY_DEVICE_ID)
+    }
+    
     // ==================== 内部方法 ====================
     
     /**
-     * 获取或创建安装 ID
-     * 
-     * 存储在 SharedPreferences 中，应用卸载后重置。
-     * 用于区分同一设备上的不同安装。
+     * UUID 转字节数组
      */
-    private fun getOrCreateInstallationId(): String {
-        val prefs = context.getSharedPreferences("clawchat_installation", Context.MODE_PRIVATE)
-        val existing = prefs.getString("installation_id", null)
-        if (existing != null) {
-            return existing
+    private fun uuidToBytes(uuid: UUID): ByteArray {
+        val bytes = ByteArray(16)
+        var i = 0
+        
+        // Most significant bits (8 bytes)
+        for (shift in listOf(56, 48, 40, 32, 24, 16, 8, 0)) {
+            bytes[i++] = ((uuid.mostSignificantBits ushr shift) and 0xFF).toByte()
         }
         
-        // 生成新的 UUID
-        val newId = UUID.randomUUID().toString()
-        prefs.edit().putString("installation_id", newId).apply()
-        return newId
-    }
-    
-    /**
-     * 获取 SIM 信息（如果可用）
-     */
-    @SuppressLint("MissingPermission")
-    private fun getSimInfo(): String? {
-        return try {
-            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
-                ?: return null
-            
-            // 使用 SIM 序列号（如果可用）
-            val simSerial = telephonyManager.simSerialNumber
-            if (!simSerial.isNullOrEmpty()) {
-                return "serial:$simSerial"
-            }
-            
-            // 或使用 SIM 运营商
-            val simOperator = telephonyManager.simOperator
-            if (!simOperator.isNullOrEmpty()) {
-                return "operator:$simOperator"
-            }
-            
-            null
-        } catch (e: SecurityException) {
-            // 没有电话权限，跳过 SIM 信息
-            Log.w(TAG, "No permission to access SIM info", e)
-            null
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to get SIM info", e)
-            null
+        // Least significant bits (8 bytes)
+        for (shift in listOf(56, 48, 40, 32, 24, 16, 8, 0)) {
+            bytes[i++] = ((uuid.leastSignificantBits ushr shift) and 0xFF).toByte()
         }
-    }
-    
-    /**
-     * SHA256 哈希
-     */
-    private fun sha256(input: String): ByteArray {
-        val digest = MessageDigest.getInstance("SHA-256")
-        return digest.digest(input.toByteArray(Charsets.UTF_8))
+        
+        return bytes
     }
     
     /**
@@ -216,11 +180,7 @@ object SimpleDeviceFingerprint {
      */
     fun generateTestId(): String {
         val uuid = UUID.randomUUID()
-        val bytes = ByteBuffer.allocate(16)
-            .putLong(uuid.mostSignificantBits)
-            .putLong(uuid.leastSignificantBits)
-            .array()
-        
+        val bytes = uuidToBytes(uuid)
         return "test:${Base64.encodeToString(bytes, Base64.URL_SAFE or Base64.NO_WRAP)}"
     }
     
@@ -230,9 +190,27 @@ object SimpleDeviceFingerprint {
      * 用于测试场景，需要可重复的指纹。
      */
     fun generateFromSeed(seed: String): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        val hash = digest.digest(seed.toByteArray(Charsets.UTF_8))
-        return "seed:${Base64.encodeToString(hash, Base64.URL_SAFE or Base64.NO_WRAP)}"
+        val uuid = UUID.nameUUIDFromBytes(seed.toByteArray(Charsets.UTF_8))
+        val bytes = uuidToBytes(uuid)
+        return "seed:${Base64.encodeToString(bytes, Base64.URL_SAFE or Base64.NO_WRAP)}"
+    }
+    
+    /**
+     * UUID 转字节数组
+     */
+    private fun uuidToBytes(uuid: UUID): ByteArray {
+        val bytes = ByteArray(16)
+        var i = 0
+        
+        for (shift in listOf(56, 48, 40, 32, 24, 16, 8, 0)) {
+            bytes[i++] = ((uuid.mostSignificantBits ushr shift) and 0xFF).toByte()
+        }
+        
+        for (shift in listOf(56, 48, 40, 32, 24, 16, 8, 0)) {
+            bytes[i++] = ((uuid.leastSignificantBits ushr shift) and 0xFF).toByte()
+        }
+        
+        return bytes
     }
 }
 
@@ -243,7 +221,7 @@ object SimpleDeviceFingerprint {
  * val fingerprint = DeviceFingerprint(context)
  * val deviceId = fingerprint.generateDeviceId()
  * 
- * // 2. 存储到 EncryptedStorage
+ * // 2. 存储到 EncryptedStorage（可选，用于备份/同步）
  * val storage = EncryptedStorage(context)
  * storage.saveDeviceId(deviceId)
  * 
@@ -267,7 +245,10 @@ object SimpleDeviceFingerprint {
  *     }
  * """.trimIndent()
  * 
- * // 5. 测试环境使用
+ * // 5. 重置设备指纹（用户主动重置）
+ * fingerprint.resetDeviceId()
+ * 
+ * // 6. 测试环境使用
  * val testId = SimpleDeviceFingerprint.generateTestId()
  * val deterministicId = SimpleDeviceFingerprint.generateFromSeed("fixed_seed")
  */
