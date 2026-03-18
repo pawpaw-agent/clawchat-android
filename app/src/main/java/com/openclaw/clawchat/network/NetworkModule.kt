@@ -27,15 +27,6 @@ import javax.inject.Singleton
 object NetworkModule {
     
     /**
-     * 应用级别的 CoroutineScope
-     */
-    @Provides
-    @Singleton
-    fun provideAppScope(): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    }
-    
-    /**
      * OkHttp 客户端配置
      * 
      * 包含：

@@ -77,21 +77,3 @@ object AppModule {
         return MessageRepository(messageDao)
     }
 }
-
-/**
- * 网络模块绑定
- */
-@Module
-@InstallIn(SingletonComponent::class)
-object NetworkBindings {
-
-    @Provides
-    @Singleton
-    fun provideWebSocketService(
-        okHttpClient: okhttp3.OkHttpClient,
-        securityModule: com.openclaw.clawchat.security.SecurityModule,
-        appScope: CoroutineScope
-    ): WebSocketService {
-        return OkHttpWebSocketService(okHttpClient, securityModule, appScope)
-    }
-}
