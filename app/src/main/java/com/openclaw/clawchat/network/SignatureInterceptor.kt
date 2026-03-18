@@ -1,6 +1,5 @@
 package com.openclaw.clawchat.network
 
-import android.util.Base64
 import com.openclaw.clawchat.security.SecurityModule
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -25,8 +24,8 @@ class SignatureInterceptor(
         
         // 构建签名字符串：路径 + 时间戳 + 随机数
         val dataToSign = "${request.url.encodedPath}\n$timestamp\n$nonce"
-        val signatureBytes = securityModule.signChallenge(dataToSign)
-        val signature = Base64.encodeToString(signatureBytes.toByteArray(), Base64.NO_WRAP)
+        // signChallenge(String) 返回 Base64 编码的签名字符串
+        val signature = securityModule.signChallenge(dataToSign)
         
         // 添加签名头
         val signedRequest = request.newBuilder()

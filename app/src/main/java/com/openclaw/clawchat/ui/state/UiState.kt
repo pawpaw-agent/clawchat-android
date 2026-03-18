@@ -95,12 +95,13 @@ data class PairingUiState(
 /**
  * 配对状态
  */
-enum class PairingStatus {
-    Idle,
-    Requesting,
-    WaitingForApproval,
-    Paired,
-    Failed
+sealed class PairingStatus {
+    data object Initializing : PairingStatus()
+    data object WaitingForApproval : PairingStatus()
+    data object Approved : PairingStatus()
+    data object Rejected : PairingStatus()
+    data object Timeout : PairingStatus()
+    data class Error(val message: String) : PairingStatus()
 }
 
 /**
@@ -121,4 +122,21 @@ enum class MessageRole {
     USER,
     ASSISTANT,
     SYSTEM
+}
+
+/**
+ * 连接状态
+ */
+sealed class ConnectionStatus {
+    data object Disconnected : ConnectionStatus()
+    data object Connecting : ConnectionStatus()
+    data class Connected(val latency: Long? = null) : ConnectionStatus()
+    data object Disconnecting : ConnectionStatus()
+    data class Error(val message: String, val throwable: Throwable? = null) : ConnectionStatus()
+
+    val isConnected: Boolean
+        get() = this is Connected
+
+    val isConnecting: Boolean
+        get() = this is Connecting || this is Disconnecting
 }

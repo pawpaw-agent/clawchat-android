@@ -1,6 +1,5 @@
 package com.openclaw.clawchat.ui.state
 
-import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.security.SecurityModule
@@ -12,20 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.security.KeyPairGenerator
+import org.json.JSONObject
 import javax.inject.Inject
-
-/**
- * 配对状态
- */
-sealed class PairingStatus {
-    data object Initializing : PairingStatus()
-    data object WaitingForApproval : PairingStatus()
-    data object Approved : PairingStatus()
-    data object Rejected : PairingStatus()
-    data object Timeout : PairingStatus()
-    data class Error(val message: String) : PairingStatus()
-}
 
 /**
  * 配对事件
@@ -149,33 +136,27 @@ class PairingViewModel @Inject constructor(
      */
     fun consumeEvent() {
         viewModelScope.launch {
-            _events.tryEmit(PairingEvent.PairingSuccess) // 占位，实际由具体事件替换
+            _events.tryEmit(null)
         }
     }
 
     /**
      * 生成设备 ID
      */
-    private fun generateDeviceId(): String {
-        return securityModule.generateDeviceId()
+    private suspend fun generateDeviceId(): String {
+        val status = securityModule.initialize()
+        return status.deviceId ?: securityModule.getSecurityStatus().deviceId ?: "unknown"
     }
 
     /**
      * 生成密钥对并返回公钥（PEM 格式）
      */
-    private fun generateKeyPair(): String {
-        return securityModule.getOrCreateKeyPair()?.let { keyPair ->
-            val publicKeyBytes = keyPair.public.encoded
-            val publicKeyPem = Base64.encodeToString(publicKeyBytes, Base64.NO_WRAP)
-            "-----BEGIN PUBLIC KEY-----\n$publicKeyPem\n-----END PUBLIC KEY-----"
-        } ?: run {
-            // 生成新的密钥对
-            val kpg = KeyPairGenerator.getInstance("EC")
-            kpg.initialize(256)
-            val keyPair = kpg.generateKeyPair()
-            val publicKeyBytes = keyPair.public.encoded
-            val publicKeyPem = Base64.encodeToString(publicKeyBytes, Base64.NO_WRAP)
-            "-----BEGIN PUBLIC KEY-----\n$publicKeyPem\n-----END PUBLIC KEY-----"
-        }
+    private suspend fun generateKeyPair(): String {
+        securityModule.initialize()
+        return securityModule.preparePairingRequest("default-node")
+            .let { 
+                val jsonOrg = JSONObject(it)
+                jsonOrg.getJSONObject("device").getString("publicKey")
+            }
     }
 }

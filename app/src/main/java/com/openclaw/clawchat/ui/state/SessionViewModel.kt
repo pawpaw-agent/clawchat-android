@@ -11,12 +11,14 @@ import com.openclaw.clawchat.network.WebSocketService
 import com.openclaw.clawchat.network.GatewayMessage
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.repository.MessageRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
+import javax.inject.Inject
 
 /**
  * 会话界面 ViewModel
@@ -27,7 +29,8 @@ import java.util.UUID
  * - 管理消息历史 (本地缓存)
  * - 处理连接状态
  */
-class SessionViewModel(
+@HiltViewModel
+class SessionViewModel @Inject constructor(
     private val webSocketService: WebSocketService,
     private val messageRepository: MessageRepository,
     private val savedStateHandle: SavedStateHandle
@@ -107,21 +110,21 @@ class SessionViewModel(
             val sessionId = _state.value.sessionId ?: return@launch
             
             when (message) {
-                is GatewayMessage.AgentMessage -> {
+                is GatewayMessage.AssistantMessage -> {
                     // 收到助手回复
                     val assistantMessage = MessageUi(
                         id = UUID.randomUUID().toString(),
                         content = message.content,
                         role = MessageRole.ASSISTANT,
-                        timestamp = System.currentTimeMillis()
+                        timestamp = message.timestamp
                     )
 
                     // 保存到本地缓存
                     messageRepository.saveMessage(
                         sessionId = sessionId,
-                        role = assistantMessage.role.toLocalRole(),
+                        role = LocalMessageRole.ASSISTANT,
                         content = message.content,
-                        timestamp = assistantMessage.timestamp,
+                        timestamp = message.timestamp,
                         status = MessageStatus.DELIVERED
                     )
 
@@ -139,9 +142,9 @@ class SessionViewModel(
                     // 系统事件（如会话状态变更）
                     val systemMessage = MessageUi(
                         id = UUID.randomUUID().toString(),
-                        content = formatSystemEvent(message),
+                        content = message.text,
                         role = MessageRole.SYSTEM,
-                        timestamp = System.currentTimeMillis()
+                        timestamp = message.timestamp
                     )
 
                     _state.update {
@@ -149,36 +152,22 @@ class SessionViewModel(
                     }
                 }
 
-                is GatewayMessage.ErrorEvent -> {
+                is GatewayMessage.Error -> {
                     // 错误事件
                     _state.update {
                         it.copy(
-                            error = message.error,
+                            error = message.message,
                             isLoading = false
                         )
                     }
 
-                    _events.value = SessionEvent.Error(message.error)
+                    _events.value = SessionEvent.Error(message.message)
                 }
 
                 else -> {
-                    Log.w(TAG, "收到未知消息类型：$message")
+                    Log.w(TAG, "收到未知消息类型：${message.type}")
                 }
             }
-        }
-    }
-
-    /**
-     * 格式化系统事件为可读文本
-     */
-    private fun formatSystemEvent(event: GatewayMessage.SystemEvent): String {
-        return when (event.eventType) {
-            "session.created" -> "会话已创建"
-            "session.terminated" -> "会话已结束"
-            "session.paused" -> "会话已暂停"
-            "agent.thinking" -> "助手正在思考..."
-            "agent.completed" -> "助手已完成"
-            else -> "系统事件：${event.eventType}"
         }
     }
 
@@ -229,10 +218,10 @@ class SessionViewModel(
             }
 
             // 构建网关消息
-            val gatewayMessage = GatewayMessage.AgentMessage(
+            val gatewayMessage = GatewayMessage.UserMessage(
                 sessionId = sessionId,
                 content = content,
-                role = "user",
+                attachments = emptyList(),
                 timestamp = System.currentTimeMillis()
             )
 

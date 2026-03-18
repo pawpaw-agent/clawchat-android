@@ -54,7 +54,7 @@ class MainViewModel @Inject constructor(
                     is WebSocketConnectionState.Connected -> {
                         // 连接成功后测量延迟
                         val latency = webSocketService.measureLatency()
-                        ConnectionStatus.Connected.copy(latency = latency)
+                        ConnectionStatus.Connected(latency = latency)
                     }
                     is WebSocketConnectionState.Connecting -> ConnectionStatus.Connecting
                     is WebSocketConnectionState.Disconnecting -> ConnectionStatus.Disconnecting
@@ -376,8 +376,7 @@ class MainViewModel @Inject constructor(
      */
     private suspend fun sendCreateSessionEvent(sessionId: String) {
         val createEvent = GatewayMessage.SystemEvent(
-            sessionId = sessionId,
-            eventType = "session.created",
+            text = "session.created:$sessionId",
             timestamp = System.currentTimeMillis()
         )
         webSocketService.send(createEvent)
@@ -388,8 +387,7 @@ class MainViewModel @Inject constructor(
      */
     private suspend fun sendSystemEvent(sessionId: String, eventType: String) {
         val systemEvent = GatewayMessage.SystemEvent(
-            sessionId = sessionId,
-            eventType = eventType,
+            text = "$eventType:$sessionId",
             timestamp = System.currentTimeMillis()
         )
         webSocketService.send(systemEvent)
@@ -421,28 +419,4 @@ sealed class UiEvent {
     data object ConnectionLost : UiEvent()
 }
 
-/**
- * 连接状态（带延迟信息）
- */
-sealed class ConnectionStatus {
-    data object Disconnected : ConnectionStatus()
-    data object Connecting : ConnectionStatus()
-    data object Connected : ConnectionStatus()
-    data object Disconnecting : ConnectionStatus()
-    data class Error(val message: String, val throwable: Throwable? = null) : ConnectionStatus()
 
-    val isConnected: Boolean
-        get() = this is Connected
-
-    val isConnecting: Boolean
-        get() = this is Connecting || this is Disconnecting
-}
-
-/**
- * 扩展连接状态以包含延迟
- */
-fun ConnectionStatus.Companion.Connected(latency: Long? = null): ConnectionStatus {
-    return ConnectedWithLatency(latency)
-}
-
-data class ConnectedWithLatency(val latency: Long? = null) : ConnectionStatus()
