@@ -119,7 +119,7 @@ class OkHttpWebSocketService @Inject constructor(
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                     Log.i(TAG, "WebSocket closed: $code - $reason")
                     _connectionState.value = WebSocketConnectionState.Disconnecting(reason)
-                    this.webSocket = null
+                    webSocket = null
                     latencyMonitorJob?.cancel()
                 }
                 
@@ -222,7 +222,7 @@ class OkHttpWebSocketService @Inject constructor(
         
         // 关闭 WebSocket
         webSocket?.close(1000, "User requested disconnect")
-        this.webSocket = null
+        webSocket = null
         
         _connectionState.value = WebSocketConnectionState.Disconnected
         currentUrl = null
