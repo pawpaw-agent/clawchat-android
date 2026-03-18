@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit
  */
 class OkHttpWebSocketService @Inject constructor(
     private val okHttpClient: OkHttpClient,
-    private val securityManager: SecurityManager,
+    private val securityModule: SecurityModule,
     private val appScope: CoroutineScope
 ) : WebSocketService {
     
