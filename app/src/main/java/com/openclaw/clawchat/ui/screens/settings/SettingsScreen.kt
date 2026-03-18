@@ -15,6 +15,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.openclaw.clawchat.ui.state.ConnectionStatus
+import com.openclaw.clawchat.ui.state.GatewayConfigUi
 import java.text.SimpleDateFormat
 import java.util.*
 

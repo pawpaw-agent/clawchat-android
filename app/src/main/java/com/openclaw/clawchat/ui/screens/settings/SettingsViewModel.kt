@@ -1,9 +1,12 @@
 package com.openclaw.clawchat.ui.screens.settings
 
 import android.util.Log
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.network.WebSocketService
+import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -146,22 +149,6 @@ class SettingsViewModel @Inject constructor(
 }
 
 /**
- * 设置页面 UI 状态
- */
-data class SettingsUiState(
-    val currentGateway: GatewayConfigUi? = null,
-    val gatewayConfigInput: GatewayConfigInput = GatewayConfigInput(),
-    val connectionStatus: ConnectionStatusUi = ConnectionStatusUi.Disconnected,
-    val notificationsEnabled: Boolean = true,
-    val dndEnabled: Boolean = false,
-    val appVersion: String = APP_VERSION
-)
-
-/**
- * 连接状态（UI 用 - Settings 特定）
- */
-
-/**
  * Gateway 配置（输入用）
  */
 data class GatewayConfigInput(
@@ -172,34 +159,13 @@ data class GatewayConfigInput(
 )
 
 /**
- * 连接状态（UI 用）
+ * 设置页面 UI 状态
  */
-sealed class ConnectionStatusUi {
-    object Disconnected : ConnectionStatusUi()
-    object Connecting : ConnectionStatusUi()
-    object Disconnecting : ConnectionStatusUi()
-    data class Connected(val latency: Long = 0) : ConnectionStatusUi()
-    data class Error(val message: String) : ConnectionStatusUi()
-
-    val isConnected: Boolean
-        get() = this is Connected
-
-    val displayText: String
-        get() = when (this) {
-            is Disconnected -> "未连接"
-            is Connecting -> "连接中..."
-            is Disconnecting -> "断开中..."
-            is Connected -> if (latency > 0) "已连接 · ${latency}ms" else "已连接"
-            is Error -> "错误：$message"
-        }
-
-    val statusColor: androidx.compose.ui.graphics.Color
-        @Composable
-        get() = when (this) {
-            is Disconnected -> androidx.compose.ui.graphics.Color.Gray
-            is Connecting -> androidx.compose.ui.graphics.Color.Yellow
-            is Disconnecting -> androidx.compose.ui.graphics.Color.Gray
-            is Connected -> androidx.compose.ui.graphics.Color.Green
-            is Error -> androidx.compose.ui.graphics.Color.Red
-        }
-}
+data class SettingsUiState(
+    val currentGateway: GatewayConfigUi? = null,
+    val gatewayConfigInput: GatewayConfigInput = GatewayConfigInput(),
+    val connectionStatus: ConnectionStatus = ConnectionStatus.Disconnected,
+    val notificationsEnabled: Boolean = true,
+    val dndEnabled: Boolean = false,
+    val appVersion: String = "1.0.0"
+)
