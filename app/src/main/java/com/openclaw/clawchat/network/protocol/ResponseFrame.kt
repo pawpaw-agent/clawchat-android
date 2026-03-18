@@ -56,11 +56,6 @@ data class ResponseFrame(
     fun isSuccess(): Boolean = ok && error == null
     
     /**
-     * 获取错误信息（如果有）
-     */
-    fun getError(): ResponseError? = error
-    
-    /**
      * 解析 payload 为指定类型
      */
     inline fun <reified T> parsePayload(deserializer: kotlinx.serialization.DeserializationStrategy<T>): T? {
