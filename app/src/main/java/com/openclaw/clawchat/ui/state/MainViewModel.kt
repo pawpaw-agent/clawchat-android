@@ -208,6 +208,73 @@ class MainViewModel @Inject constructor(
         loadSessionsFromGateway()
     }
 
+    fun createSession(model: String = "default", thinking: Boolean = false) {
+        viewModelScope.launch {
+            // 发送 /new 到默认会话创建新会话
+            val sessionKey = gateway.defaultSessionKey ?: "agent:main:main"
+            try {
+                gateway.call("sessions.reset", mapOf(
+                    "key" to kotlinx.serialization.json.JsonPrimitive(sessionKey),
+                    "reason" to kotlinx.serialization.json.JsonPrimitive("new")
+                ))
+                refreshSessions()
+            } catch (e: Exception) {
+                Log.w(TAG, "Create session failed: ${e.message}")
+            }
+        }
+    }
+
+    fun renameSession(sessionId: String, newName: String) {
+        viewModelScope.launch {
+            try {
+                gateway.call("sessions.patch", mapOf(
+                    "key" to kotlinx.serialization.json.JsonPrimitive(sessionId),
+                    "label" to kotlinx.serialization.json.JsonPrimitive(newName)
+                ))
+                _uiState.update { state ->
+                    val idx = state.sessions.indexOfFirst { it.id == sessionId }
+                    if (idx >= 0) {
+                        val updated = state.sessions.toMutableList()
+                        updated[idx] = updated[idx].copy(label = newName)
+                        state.copy(sessions = updated)
+                    } else state
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Rename session failed: ${e.message}")
+            }
+        }
+    }
+
+    fun pauseSession(sessionId: String) {
+        viewModelScope.launch {
+            _uiState.update { state ->
+                val idx = state.sessions.indexOfFirst { it.id == sessionId }
+                if (idx >= 0) {
+                    val updated = state.sessions.toMutableList()
+                    updated[idx] = updated[idx].copy(status = SessionStatus.PAUSED)
+                    state.copy(sessions = updated)
+                } else state
+            }
+        }
+    }
+
+    fun resumeSession(sessionId: String) {
+        viewModelScope.launch {
+            _uiState.update { state ->
+                val idx = state.sessions.indexOfFirst { it.id == sessionId }
+                if (idx >= 0) {
+                    val updated = state.sessions.toMutableList()
+                    updated[idx] = updated[idx].copy(status = SessionStatus.RUNNING, lastActivityAt = System.currentTimeMillis())
+                    state.copy(sessions = updated)
+                } else state
+            }
+        }
+    }
+
+    fun terminateSession(sessionId: String) {
+        deleteSession(sessionId)
+    }
+
     fun clearError() { _uiState.update { it.copy(error = null) } }
     fun consumeEvent() { _events.value = null }
 }
