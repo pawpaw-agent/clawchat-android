@@ -19,22 +19,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openclaw.clawchat.network.GatewayUrlUtil
+import com.openclaw.clawchat.ui.state.ConnectMode
 import com.openclaw.clawchat.ui.state.PairingEvent
 import com.openclaw.clawchat.ui.state.PairingStatus
 import com.openclaw.clawchat.ui.state.PairingViewModel
 
 /**
- * 设备配对屏幕
- * 
- * 实现 OpenClaw 设备配对流程：
- * 1. 显示设备 ID 和公钥（用于管理员批准）
- * 2. 提供网关地址输入
- * 3. 显示配对状态（等待批准/成功/失败）
- * 4. 支持复制设备信息
+ * 设备连接/配对屏幕
+ *
+ * 三种连接模式：
+ * 1. Token — 输入 Gateway 地址 + Token 直连
+ * 2. 配对 — Ed25519 设备签名 + 管理员批准
+ * 3. Setup Code — 粘贴 base64 配对码
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,21 +46,12 @@ fun PairingScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    // 监听配对事件
-    LaunchedEffect(Unit) {
-        viewModel.initializePairing()
-    }
-
     LaunchedEffect(viewModel.events) {
         viewModel.events.collect { event ->
             when (event) {
-                is PairingEvent.PairingSuccess -> {
-                    onPairingSuccess()
-                }
+                is PairingEvent.PairingSuccess -> onPairingSuccess()
                 is PairingEvent.PairingTimeout,
-                is PairingEvent.PairingRejected -> {
-                    // 显示错误，用户可以重试
-                }
+                is PairingEvent.PairingRejected -> {}
                 else -> {}
             }
             viewModel.consumeEvent()
@@ -69,7 +61,7 @@ fun PairingScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("设备配对") },
+                title = { Text("连接 Gateway") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -85,49 +77,343 @@ fun PairingScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 设备信息卡片
-            DeviceInfoCard(
-                deviceId = state.deviceId ?: "生成中...",
-                publicKey = state.publicKey,
-                isInitializing = state.isInitializing,
-                onCopyDeviceId = {
-                    copyToClipboard(context, "设备 ID", state.deviceId ?: "")
-                },
-                onCopyPublicKey = {
-                    copyToClipboard(context, "公钥", state.publicKey ?: "")
-                }
+            // ── 连接模式选择 ──
+            ConnectModeSelector(
+                selected = state.connectMode,
+                onSelect = { viewModel.setConnectMode(it) },
+                enabled = !state.isPairing
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // 网关地址输入
-            GatewayUrlInput(
-                value = state.gatewayUrl,
-                onValueChange = { viewModel.setGatewayUrl(it) },
-                enabled = !state.isPairing && !state.isInitializing
-            )
+            // ── 模式内容 ──
+            when (state.connectMode) {
+                ConnectMode.TOKEN -> TokenModeContent(
+                    gatewayUrl = state.gatewayUrl,
+                    token = state.token,
+                    onGatewayUrlChange = { viewModel.setGatewayUrl(it) },
+                    onTokenChange = { viewModel.setToken(it) },
+                    onConnect = { viewModel.connectWithToken() },
+                    isPairing = state.isPairing,
+                    status = state.status
+                )
 
-            Spacer(modifier = Modifier.height(24.dp))
+                ConnectMode.PAIRING -> PairingModeContent(
+                    viewModel = viewModel,
+                    state = state,
+                    context = context
+                )
 
-            // 配对状态显示
-            PairingStatusIndicator(
-                status = state.status,
-                error = null,
-                gatewayUrl = state.gatewayUrl,
-                onRetry = { viewModel.startPairing() },
-                onCancel = { viewModel.cancelPairing() }
-            )
+                ConnectMode.SETUP_CODE -> SetupCodeModeContent(
+                    setupCode = state.setupCode,
+                    parsed = state.setupCodeParsed,
+                    parseError = state.setupCodeError,
+                    onSetupCodeChange = { viewModel.setSetupCode(it) },
+                    onConnect = { viewModel.connectWithSetupCode() },
+                    isPairing = state.isPairing,
+                    status = state.status
+                )
+            }
 
-            // 帮助文本
-            Spacer(modifier = Modifier.height(32.dp))
-            PairingHelpText()
+            // ── 状态指示器（非初始化时显示） ──
+            if (state.status !is PairingStatus.Initializing || state.isPairing) {
+                Spacer(modifier = Modifier.height(24.dp))
+                PairingStatusIndicator(
+                    status = state.status,
+                    onRetry = {
+                        when (state.connectMode) {
+                            ConnectMode.TOKEN -> viewModel.connectWithToken()
+                            ConnectMode.PAIRING -> viewModel.startPairing()
+                            ConnectMode.SETUP_CODE -> viewModel.connectWithSetupCode()
+                        }
+                    },
+                    onCancel = { viewModel.cancelPairing() }
+                )
+            }
         }
     }
 }
 
-/**
- * 设备信息卡片
- */
+// ─────────────────────────────────────────────────────────────
+// 连接模式选择器
+// ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun ConnectModeSelector(
+    selected: ConnectMode,
+    onSelect: (ConnectMode) -> Unit,
+    enabled: Boolean
+) {
+    val modes = listOf(
+        ConnectMode.TOKEN to "Token",
+        ConnectMode.PAIRING to "配对",
+        ConnectMode.SETUP_CODE to "Setup Code"
+    )
+
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        modes.forEachIndexed { index, (mode, label) ->
+            SegmentedButton(
+                selected = selected == mode,
+                onClick = { onSelect(mode) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
+                enabled = enabled
+            ) {
+                Text(label)
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Token 模式
+// ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun TokenModeContent(
+    gatewayUrl: String,
+    token: String,
+    onGatewayUrlChange: (String) -> Unit,
+    onTokenChange: (String) -> Unit,
+    onConnect: () -> Unit,
+    isPairing: Boolean,
+    status: PairingStatus
+) {
+    val urlValid = gatewayUrl.isBlank() || GatewayUrlUtil.isValidInput(gatewayUrl)
+    val wsPreview = if (gatewayUrl.isNotBlank() && urlValid) {
+        GatewayUrlUtil.normalizeToWebSocketUrl(gatewayUrl)
+    } else null
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "直接输入 Gateway 地址和 Token 连接",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Gateway 地址
+            OutlinedTextField(
+                value = gatewayUrl,
+                onValueChange = onGatewayUrlChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Gateway 地址") },
+                placeholder = { Text("192.168.0.213:18789") },
+                leadingIcon = { Icon(Icons.Default.Link, null) },
+                enabled = !isPairing,
+                singleLine = true,
+                isError = gatewayUrl.isNotBlank() && !urlValid
+            )
+
+            if (wsPreview != null) {
+                Text(
+                    text = "→ $wsPreview",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Token
+            OutlinedTextField(
+                value = token,
+                onValueChange = onTokenChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Gateway Token") },
+                placeholder = { Text("粘贴 OPENCLAW_GATEWAY_TOKEN") },
+                leadingIcon = { Icon(Icons.Default.Key, null) },
+                enabled = !isPairing,
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onConnect,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isPairing
+                        && gatewayUrl.isNotBlank() && urlValid
+                        && token.isNotBlank()
+            ) {
+                if (isPairing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text("连接")
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 配对模式
+// ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun PairingModeContent(
+    viewModel: PairingViewModel,
+    state: com.openclaw.clawchat.ui.state.PairingState,
+    context: Context
+) {
+    // 初始化密钥
+    LaunchedEffect(Unit) {
+        viewModel.initializePairing()
+    }
+
+    // 设备信息卡片
+    DeviceInfoCard(
+        deviceId = state.deviceId ?: "生成中...",
+        publicKey = state.publicKey,
+        isInitializing = state.isInitializing,
+        onCopyDeviceId = { copyToClipboard(context, "设备 ID", state.deviceId ?: "") },
+        onCopyPublicKey = { copyToClipboard(context, "公钥", state.publicKey ?: "") }
+    )
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    // Gateway 地址
+    GatewayUrlInput(
+        value = state.gatewayUrl,
+        onValueChange = { viewModel.setGatewayUrl(it) },
+        enabled = !state.isPairing && !state.isInitializing
+    )
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    Button(
+        onClick = { viewModel.startPairing() },
+        modifier = Modifier.fillMaxWidth(),
+        enabled = !state.isPairing && !state.isInitializing
+                && state.gatewayUrl.isNotBlank()
+                && GatewayUrlUtil.isValidInput(state.gatewayUrl)
+    ) {
+        if (state.isPairing) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text("开始配对")
+    }
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    // 帮助文本
+    PairingHelpText()
+}
+
+// ─────────────────────────────────────────────────────────────
+// Setup Code 模式
+// ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun SetupCodeModeContent(
+    setupCode: String,
+    parsed: com.openclaw.clawchat.ui.state.SetupCodeInfo?,
+    parseError: String?,
+    onSetupCodeChange: (String) -> Unit,
+    onConnect: () -> Unit,
+    isPairing: Boolean,
+    status: PairingStatus
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "从 Telegram 或终端获取 Setup Code，粘贴到下方",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = setupCode,
+                onValueChange = onSetupCodeChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Setup Code") },
+                placeholder = { Text("粘贴 base64 配对码...") },
+                leadingIcon = { Icon(Icons.Default.QrCode, null) },
+                enabled = !isPairing,
+                minLines = 3,
+                maxLines = 5,
+                isError = parseError != null
+            )
+
+            // 解析错误
+            if (parseError != null) {
+                Text(
+                    text = parseError,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            // 解析成功 — 显示 URL 预览
+            if (parsed != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "✅ 解析成功",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Gateway: ${parsed.url}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Text(
+                            text = "Token: ${parsed.bootstrapToken.take(12)}…",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onConnect,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isPairing && parsed != null
+            ) {
+                if (isPairing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text("连接")
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 共用组件
+// ─────────────────────────────────────────────────────────────
+
 @Composable
 private fun DeviceInfoCard(
     deviceId: String,
@@ -142,30 +428,20 @@ private fun DeviceInfoCard(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text(
                 text = "设备信息",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
             Spacer(modifier = Modifier.height(16.dp))
 
             if (isInitializing) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(32.dp),
-                    strokeWidth = 2.dp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "正在生成设备密钥...",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("正在生成 Ed25519 设备密钥...", style = MaterialTheme.typography.bodyMedium)
+                }
             } else {
                 // 设备 ID
                 Row(
@@ -174,57 +450,37 @@ private fun DeviceInfoCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "设备 ID",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = deviceId,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                        )
+                        Text("设备 ID", style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(deviceId, style = MaterialTheme.typography.bodyMedium,
+                            fontFamily = FontFamily.Monospace)
                     }
                     IconButton(onClick = onCopyDeviceId) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "复制设备 ID",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Icon(Icons.Default.ContentCopy, "复制",
+                            tint = MaterialTheme.colorScheme.primary)
                     }
                 }
 
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                // 公钥（截断显示）
+                // 公钥
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
+                        Text("公钥 (Ed25519)", style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
-                            text = "公钥",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = if (publicKey != null) {
-                                "${publicKey.take(30)}..."
-                            } else {
-                                "无"
-                            },
+                            text = publicKey?.let { "${it.take(30)}..." } ?: "无",
                             style = MaterialTheme.typography.bodySmall,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            maxLines = 2
+                            fontFamily = FontFamily.Monospace, maxLines = 2
                         )
                     }
                     IconButton(onClick = onCopyPublicKey) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "复制公钥",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Icon(Icons.Default.ContentCopy, "复制",
+                            tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -232,12 +488,6 @@ private fun DeviceInfoCard(
     }
 }
 
-/**
- * 网关地址输入框
- *
- * 用户直接输入 IP:端口 或域名，无需手动添加协议前缀。
- * 代码内部通过 GatewayUrlUtil 自动转换为 ws:// 或 wss:// URL。
- */
 @Composable
 private fun GatewayUrlInput(
     value: String,
@@ -245,149 +495,36 @@ private fun GatewayUrlInput(
     enabled: Boolean
 ) {
     val isValid = value.isBlank() || GatewayUrlUtil.isValidInput(value)
-    // 实时预览转换后的 WebSocket URL
-    val wsUrlPreview = if (value.isNotBlank() && isValid) {
+    val wsPreview = if (value.isNotBlank() && isValid) {
         GatewayUrlUtil.normalizeToWebSocketUrl(value)
     } else null
 
-    Card(
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "网关地址",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "输入 Gateway 的 IP 地址和端口（如：192.168.0.213:18789）",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("192.168.0.213:18789") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Link,
-                        contentDescription = null
-                    )
-                },
-                enabled = enabled,
-                singleLine = true,
-                isError = value.isNotBlank() && !isValid
-            )
-
-            if (value.isNotBlank() && !isValid) {
-                Text(
-                    text = "请输入有效的地址（如 192.168.0.213:18789）",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-
-            // 显示转换后的 WebSocket URL 预览
-            if (wsUrlPreview != null) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "→ $wsUrlPreview",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                )
-            }
-
-            // 快速连接选项
-            if (enabled) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AssistChip(
-                        onClick = { onValueChange("localhost:18789") },
-                        label = { Text("本地") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Home,
-                                contentDescription = null,
-                                modifier = Modifier.size(AssistChipDefaults.IconSize)
-                            )
-                        }
-                    )
-                    AssistChip(
-                        onClick = { onValueChange("192.168.1.100:18789") },
-                        label = { Text("局域网") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Wifi,
-                                contentDescription = null,
-                                modifier = Modifier.size(AssistChipDefaults.IconSize)
-                            )
-                        }
-                    )
-                }
+        label = { Text("Gateway 地址") },
+        placeholder = { Text("192.168.0.213:18789") },
+        leadingIcon = { Icon(Icons.Default.Link, null) },
+        enabled = enabled,
+        singleLine = true,
+        isError = value.isNotBlank() && !isValid,
+        supportingText = {
+            when {
+                value.isNotBlank() && !isValid -> Text("请输入有效的地址")
+                wsPreview != null -> Text("→ $wsPreview", fontFamily = FontFamily.Monospace)
             }
         }
-    }
+    )
 }
 
-/**
- * 配对状态指示器
- */
 @Composable
 private fun PairingStatusIndicator(
     status: PairingStatus,
-    error: String?,
-    gatewayUrl: String,
     onRetry: () -> Unit,
     onCancel: () -> Unit
 ) {
     when (status) {
-        is PairingStatus.Initializing -> {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "正在初始化...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-        }
-
         is PairingStatus.WaitingForApproval -> {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -396,42 +533,24 @@ private fun PairingStatusIndicator(
                 )
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.MoreTime,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer
-                    )
+                    Icon(Icons.Default.MoreTime, null, Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "等待管理员批准",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                        textAlign = TextAlign.Center
-                    )
+                    Text("等待管理员批准", style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "请在网关终端运行：\nopenclaw device pair approve",
+                    Text("请在终端运行：openclaw devices approve",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
                         textAlign = TextAlign.Center,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                    )
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(onClick = onCancel) {
-                            Text("取消")
-                        }
-                        Button(onClick = onRetry) {
-                            Text("重试")
-                        }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = onCancel) { Text("取消") }
+                        Button(onClick = onRetry) { Text("重试") }
                     }
                 }
             }
@@ -445,31 +564,20 @@ private fun PairingStatusIndicator(
                 )
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
+                    Icon(Icons.Default.CheckCircle, null, Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer)
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "配对成功！",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
+                    Text("连接成功！", style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer)
                 }
             }
         }
 
-        is PairingStatus.Rejected,
-        is PairingStatus.Timeout,
-        is PairingStatus.Error -> {
+        is PairingStatus.Error, is PairingStatus.Rejected, is PairingStatus.Timeout -> {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -477,49 +585,36 @@ private fun PairingStatusIndicator(
                 )
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Error,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onErrorContainer
-                    )
+                    Icon(Icons.Default.Error, null, Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onErrorContainer)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = when (status) {
                             is PairingStatus.Error -> status.message
                             is PairingStatus.Rejected -> "配对已被拒绝"
-                            is PairingStatus.Timeout -> "配对超时"
-                            else -> error ?: "配对失败"
+                            is PairingStatus.Timeout -> "连接超时"
+                            else -> "连接失败"
                         },
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(onClick = onCancel) {
-                            Text("返回")
-                        }
-                        Button(onClick = onRetry) {
-                            Text("重试")
-                        }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = onCancel) { Text("返回") }
+                        Button(onClick = onRetry) { Text("重试") }
                     }
                 }
             }
         }
+
+        else -> {} // Initializing — 不显示
     }
 }
 
-/**
- * 配对帮助文本
- */
 @Composable
 private fun PairingHelpText() {
     Card(
@@ -528,91 +623,41 @@ private fun PairingHelpText() {
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "如何配对？",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text("如何配对？", style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-
             Spacer(modifier = Modifier.height(12.dp))
-
-            Column(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                HelpStep(
-                    number = "1",
-                    text = "确保手机和网关在同一网络"
-                )
-                HelpStep(
-                    number = "2",
-                    text = "输入网关地址并点击连接"
-                )
-                HelpStep(
-                    number = "3",
-                    text = "在网关终端运行批准命令"
-                )
-                HelpStep(
-                    number = "4",
-                    text = "等待配对完成"
-                )
-            }
+            HelpStep("1", "确保手机和网关在同一网络")
+            HelpStep("2", "输入网关地址并点击开始配对")
+            HelpStep("3", "在网关终端运行批准命令")
+            HelpStep("4", "等待配对完成")
         }
     }
 }
 
 @Composable
 private fun HelpStep(number: String, text: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.Start
-    ) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
+            modifier = Modifier.size(24.dp).clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = number,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
+            Text(number, style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimary)
         }
         Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
+        Text(text, style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f)
-        )
+            modifier = Modifier.weight(1f))
     }
 }
 
-/**
- * 复制到剪贴板
- */
 private fun copyToClipboard(context: Context, label: String, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText(label, text)
-    clipboard.setPrimaryClip(clip)
+    clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
 }
-
-
