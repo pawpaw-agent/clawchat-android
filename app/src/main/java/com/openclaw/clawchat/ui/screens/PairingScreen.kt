@@ -103,16 +103,6 @@ fun PairingScreen(
                     state = state,
                     context = context
                 )
-
-                ConnectMode.SETUP_CODE -> SetupCodeModeContent(
-                    setupCode = state.setupCode,
-                    parsed = state.setupCodeParsed,
-                    parseError = state.setupCodeError,
-                    onSetupCodeChange = { viewModel.setSetupCode(it) },
-                    onConnect = { viewModel.connectWithSetupCode() },
-                    isPairing = state.isPairing,
-                    status = state.status
-                )
             }
 
             // ── 状态指示器（非初始化时显示） ──
@@ -124,7 +114,6 @@ fun PairingScreen(
                         when (state.connectMode) {
                             ConnectMode.TOKEN -> viewModel.connectWithToken()
                             ConnectMode.PAIRING -> viewModel.startPairing()
-                            ConnectMode.SETUP_CODE -> viewModel.connectWithSetupCode()
                         }
                     },
                     onCancel = { viewModel.cancelPairing() }
@@ -146,8 +135,7 @@ private fun ConnectModeSelector(
 ) {
     val modes = listOf(
         ConnectMode.TOKEN to "Token",
-        ConnectMode.PAIRING to "配对",
-        ConnectMode.SETUP_CODE to "Setup Code"
+        ConnectMode.PAIRING to "配对"
     )
 
     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -315,100 +303,6 @@ private fun PairingModeContent(
 // ─────────────────────────────────────────────────────────────
 // Setup Code 模式
 // ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun SetupCodeModeContent(
-    setupCode: String,
-    parsed: com.openclaw.clawchat.ui.state.SetupCodeInfo?,
-    parseError: String?,
-    onSetupCodeChange: (String) -> Unit,
-    onConnect: () -> Unit,
-    isPairing: Boolean,
-    status: PairingStatus
-) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "从 Telegram 或终端获取 Setup Code，粘贴到下方",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = setupCode,
-                onValueChange = onSetupCodeChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Setup Code") },
-                placeholder = { Text("粘贴 base64 配对码...") },
-                leadingIcon = { Icon(Icons.Default.QrCode, null) },
-                enabled = !isPairing,
-                minLines = 3,
-                maxLines = 5,
-                isError = parseError != null
-            )
-
-            // 解析错误
-            if (parseError != null) {
-                Text(
-                    text = parseError,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-
-            // 解析成功 — 显示 URL 预览
-            if (parsed != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    shape = MaterialTheme.shapes.small
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = "✅ 解析成功",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Gateway: ${parsed.url}",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Text(
-                            text = "Token: ${parsed.bootstrapToken.take(12)}…",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onConnect,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isPairing && parsed != null
-            ) {
-                if (isPairing) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Text("连接")
-            }
-        }
-    }
-}
 
 // ─────────────────────────────────────────────────────────────
 // 共用组件

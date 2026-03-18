@@ -95,8 +95,7 @@ data class SettingsUiState(
  */
 enum class ConnectMode {
     TOKEN,       // Token 直连
-    PAIRING,     // 设备配对（Ed25519 签名 + 管理员批准）
-    SETUP_CODE   // Setup Code（base64 配对码）
+    PAIRING      // 设备配对（Ed25519 签名 + 管理员批准）
 }
 
 /**
@@ -114,19 +113,7 @@ data class PairingUiState(
     val pairingStartTime: Long? = null,
     val error: String? = null,
     // Token 模式
-    val token: String = "",
-    // Setup Code 模式
-    val setupCode: String = "",
-    val setupCodeParsed: SetupCodeInfo? = null,
-    val setupCodeError: String? = null
-)
-
-/**
- * 解析后的 Setup Code 信息
- */
-data class SetupCodeInfo(
-    val url: String,
-    val bootstrapToken: String
+    val token: String = ""
 )
 
 /**
