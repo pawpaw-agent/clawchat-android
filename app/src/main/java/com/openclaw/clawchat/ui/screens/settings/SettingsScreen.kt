@@ -17,7 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.openclaw.clawchat.ui.state.ConnectionStatusUi
+import com.openclaw.clawchat.ui.state.GatewayConfigInput
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
+import com.openclaw.clawchat.ui.state.SettingsUiState
 import com.openclaw.clawchat.ui.state.getStatusColor
 import java.text.SimpleDateFormat
 import java.util.*
