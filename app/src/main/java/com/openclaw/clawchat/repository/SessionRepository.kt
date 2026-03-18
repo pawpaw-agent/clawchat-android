@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import kotlin.coroutines.firstOrNull
+import kotlin.collections.firstOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
