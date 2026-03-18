@@ -1,5 +1,6 @@
 package com.openclaw.clawchat.ui.state
 
+import androidx.compose.ui.graphics.Color
 import com.openclaw.clawchat.network.GatewayMessage
 
 /**
@@ -139,4 +140,51 @@ sealed class ConnectionStatus {
 
     val isConnecting: Boolean
         get() = this is Connecting || this is Disconnecting
+}
+
+/**
+ * 连接状态（UI 显示用）
+ * 
+ * 包含 UI 特定的辅助属性，用于 SettingsScreen 等显示
+ */
+sealed class ConnectionStatusUi {
+    data object Disconnected : ConnectionStatusUi()
+    data object Connecting : ConnectionStatusUi()
+    data object Disconnecting : ConnectionStatusUi()
+    data class Connected(val latency: Long = 0) : ConnectionStatusUi()
+    data class Error(val message: String) : ConnectionStatusUi()
+
+    val isConnected: Boolean
+        get() = this is Connected
+
+    val displayText: String
+        get() = when (this) {
+            is Disconnected -> "未连接"
+            is Connecting -> "连接中..."
+            is Disconnecting -> "断开中..."
+            is Connected -> if (latency > 0) "已连接 · ${latency}ms" else "已连接"
+            is Error -> "错误：$message"
+        }
+
+    val statusColor: Color
+        get() = when (this) {
+            is Disconnected -> Color.Gray
+            is Connecting -> Color.Yellow
+            is Disconnecting -> Color.Gray
+            is Connected -> Color.Green
+            is Error -> Color.Red
+        }
+}
+
+/**
+ * 将 ConnectionStatus 转换为 ConnectionStatusUi
+ */
+fun ConnectionStatus.toUiStatus(): ConnectionStatusUi {
+    return when (this) {
+        is ConnectionStatus.Disconnected -> ConnectionStatusUi.Disconnected
+        is ConnectionStatus.Connecting -> ConnectionStatusUi.Connecting
+        is ConnectionStatus.Disconnecting -> ConnectionStatusUi.Disconnecting
+        is ConnectionStatus.Connected -> ConnectionStatusUi.Connected(latency ?: 0)
+        is ConnectionStatus.Error -> ConnectionStatusUi.Error(message)
+    }
 }

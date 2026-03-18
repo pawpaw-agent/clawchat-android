@@ -11,11 +11,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.openclaw.clawchat.ui.state.ConnectionStatus
+import com.openclaw.clawchat.ui.state.ConnectionStatusUi
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
 import java.text.SimpleDateFormat
 import java.util.*

@@ -1,13 +1,13 @@
 package com.openclaw.clawchat.ui.screens.settings
 
 import android.util.Log
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.network.WebSocketService
 import com.openclaw.clawchat.ui.state.ConnectionStatus
+import com.openclaw.clawchat.ui.state.ConnectionStatusUi
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
+import com.openclaw.clawchat.ui.state.toUiStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -75,25 +75,26 @@ class SettingsViewModel @Inject constructor(
                 val connectionStatus = when (connectionState) {
                     is com.openclaw.clawchat.network.WebSocketConnectionState.Connected -> {
                         val latency = webSocketService.measureLatency() ?: 0L
-                        ConnectionStatusUi.Connected(latency = latency)
+                        ConnectionStatus.Connected(latency = latency)
                     }
                     is com.openclaw.clawchat.network.WebSocketConnectionState.Connecting -> {
-                        ConnectionStatusUi.Connecting
+                        ConnectionStatus.Connecting
                     }
                     is com.openclaw.clawchat.network.WebSocketConnectionState.Disconnecting -> {
-                        ConnectionStatusUi.Disconnecting
+                        ConnectionStatus.Disconnecting
                     }
                     is com.openclaw.clawchat.network.WebSocketConnectionState.Disconnected -> {
-                        ConnectionStatusUi.Disconnected
+                        ConnectionStatus.Disconnected
                     }
                     is com.openclaw.clawchat.network.WebSocketConnectionState.Error -> {
-                        ConnectionStatusUi.Error(
-                            message = connectionState.throwable.message ?: "连接错误"
+                        ConnectionStatus.Error(
+                            message = connectionState.throwable.message ?: "连接错误",
+                            throwable = connectionState.throwable
                         )
                     }
                 }
 
-                _uiState.update { it.copy(connectionStatus = connectionStatus) }
+                _uiState.update { it.copy(connectionStatus = connectionStatus.toUiStatus()) }
             }
         }
     }
@@ -164,7 +165,7 @@ data class GatewayConfigInput(
 data class SettingsUiState(
     val currentGateway: GatewayConfigUi? = null,
     val gatewayConfigInput: GatewayConfigInput = GatewayConfigInput(),
-    val connectionStatus: ConnectionStatus = ConnectionStatus.Disconnected,
+    val connectionStatus: ConnectionStatusUi = ConnectionStatusUi.Disconnected,
     val notificationsEnabled: Boolean = true,
     val dndEnabled: Boolean = false,
     val appVersion: String = "1.0.0"
