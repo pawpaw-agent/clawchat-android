@@ -66,7 +66,7 @@ interface MessageDao {
     /**
      * 获取所有会话 ID 列表
      */
-    @Query("SELECT DISTINCT sessionId FROM messages ORDER BY MAX(timestamp) DESC")
+    @Query("SELECT sessionId FROM messages GROUP BY sessionId ORDER BY MAX(timestamp) DESC")
     fun getAllSessionIds(): Flow<List<String>>
     
     /**

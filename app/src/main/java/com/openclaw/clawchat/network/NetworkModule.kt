@@ -1,7 +1,7 @@
 package com.openclaw.clawchat.network
 
 import android.content.Context
-import com.clawchat.android.security.SecurityManager
+import com.openclaw.clawchat.security.SecurityModule
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -95,7 +95,7 @@ object NetworkModule {
         securityManager: SecurityManager,
         appScope: CoroutineScope
     ): WebSocketService {
-        return OkHttpWebSocketService(okHttpClient, securityManager, appScope)
+        return OkHttpWebSocketService(okHttpClient, securityModule, appScope)
     }
     
     /**

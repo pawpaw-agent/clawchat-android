@@ -1,6 +1,6 @@
 package com.openclaw.clawchat.network
 
-import com.clawchat.android.security.SecurityManager
+import com.openclaw.clawchat.security.SecurityModule
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.util.UUID
@@ -14,7 +14,7 @@ import java.util.UUID
  * - X-ClawChat-Signature: 请求签名
  */
 class SignatureInterceptor(
-    private val securityManager: SecurityManager
+    private val securityManager: SecurityModule
 ) : Interceptor {
     
     override fun intercept(chain: Interceptor.Chain): Response {

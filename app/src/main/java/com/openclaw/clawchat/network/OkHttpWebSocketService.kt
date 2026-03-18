@@ -1,7 +1,7 @@
 package com.openclaw.clawchat.network
 
 import android.util.Log
-import com.clawchat.android.security.SecurityManager
+import com.openclaw.clawchat.security.SecurityModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -142,7 +142,7 @@ class OkHttpWebSocketService @Inject constructor(
         val timestamp = System.currentTimeMillis()
         val nonce = UUID.randomUUID().toString()
         val dataToSign = "/ws\n$timestamp\n$nonce"
-        val signature = securityManager.signChallenge(dataToSign.toByteArray()).toBase64()
+        val signature = securityModule.signChallenge(dataToSign.toByteArray()).toBase64()
         
         val builder = Request.Builder()
             .url(url)
