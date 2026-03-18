@@ -228,7 +228,8 @@ class GatewayConnection(
                 is SequenceManager.SequenceResult.Old -> return@launch
                 else -> {}
             }
-            val eventId = obj["stateVersion"]?.jsonPrimitive?.content ?: "$event-$seq"
+            val eventId = obj["stateVersion"]?.jsonPrimitive?.content
+                ?: if (seq != null) "$event-$seq" else "$event-${UUID.randomUUID()}"
             if (eventDeduplicator.isDuplicate(eventId, seq)) return@launch
 
             when (event) {
