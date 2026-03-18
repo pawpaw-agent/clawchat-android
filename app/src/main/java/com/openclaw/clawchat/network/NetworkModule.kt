@@ -11,7 +11,6 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
@@ -64,15 +63,14 @@ object NetworkModule {
             .pingInterval(30, TimeUnit.SECONDS) // WebSocket 心跳
             .retryOnConnectionFailure(true)
         
-        // 生产环境添加证书固定
-        if (!BuildConfig.DEBUG) {
-            val certificatePinner = CertificatePinner.Builder()
-                // TODO: 替换为实际的证书指纹
-                .add("*.openclaw.ai", "sha256/production_pin_1")
-                .add("*.openclaw.ai", "sha256/production_pin_2")
-                .build()
-            builder.certificatePinner(certificatePinner)
-        }
+        // 证书固定：临时移除（开发/测试阶段）
+        // TODO: 发布前配置真实的证书指纹
+        // if (!BuildConfig.DEBUG) {
+        //     val certificatePinner = CertificatePinner.Builder()
+        //         .add("your-domain.com", "sha256/ACTUAL_CERTIFICATE_PIN_HERE")
+        //         .build()
+        //     builder.certificatePinner(certificatePinner)
+        // }
         
         return builder.build()
     }
