@@ -301,7 +301,7 @@ class GatewayConnection(
             Log.d(TAG, "收到挑战：nonce=${challenge.nonce}")
             
             // 处理挑战
-            authHandler.handleChallenge(ConnectChallenge(challenge.nonce, challenge.timestamp))
+            authHandler.handleChallenge(challenge)
             
             // 构建 connect 请求
             val connectRequest = authHandler.buildConnectRequest()
@@ -329,7 +329,7 @@ class GatewayConnection(
         try {
             val connectOk = event.parseConnectOkPayload()
             if (connectOk == null) {
-                Log.e(TAG, "无效的 ConnectOk 格式")
+                Log.e(TAG, "无效的 ConnectOkPayload 格式")
                 return
             }
             

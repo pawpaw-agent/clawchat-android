@@ -71,7 +71,7 @@ class ChallengeResponseAuth(
      * 
      * Gateway 在 WebSocket 连接后自动发送挑战
      */
-    fun handleChallenge(challenge: ConnectChallenge): Result<String> {
+    fun handleChallenge(challenge: ConnectChallengePayload): Result<String> {
         Log.d(TAG, "收到挑战：nonce=${challenge.nonce}, ts=${challenge.timestamp}")
         
         // 验证 nonce 不为空
@@ -139,7 +139,7 @@ class ChallengeResponseAuth(
             client = clientInfo,
             nonce = challenge.nonce,
             signature = signature,
-            token = status.deviceToken  // 如果有已存储的 token
+            token = securityModule.getAuthToken()  // 如果有已存储的 token
         )
     }
     
@@ -148,7 +148,7 @@ class ChallengeResponseAuth(
      * 
      * 存储 deviceToken
      */
-    fun handleConnectOk(connectOk: ConnectOk): AuthResult {
+    fun handleConnectOk(connectOk: ConnectOkPayload): AuthResult {
         Log.d(TAG, "认证成功，收到 deviceToken")
         
         // 验证 token 不为空
@@ -173,7 +173,7 @@ class ChallengeResponseAuth(
     /**
      * 处理错误事件
      */
-    fun handleErrorEvent(error: ErrorEvent): AuthResult {
+    fun handleErrorEvent(error: ErrorPayload): AuthResult {
         Log.e(TAG, "认证错误：${error.code} - ${error.message}")
         
         return AuthResult(
@@ -236,9 +236,9 @@ class ChallengeResponseAuth(
  */
 
 /**
- * 从 JSON 解析 ConnectChallenge
+ * 从 JSON 解析 ConnectChallengePayload
  */
-fun String.toConnectChallenge(): ConnectChallenge? {
+fun String.toConnectChallenge(): ConnectChallengePayload? {
     return try {
         Json { ignoreUnknownKeys = true }.decodeFromString(this)
     } catch (e: Exception) {
@@ -247,9 +247,9 @@ fun String.toConnectChallenge(): ConnectChallenge? {
 }
 
 /**
- * 从 JSON 解析 ConnectOk
+ * 从 JSON 解析 ConnectOkPayload
  */
-fun String.toConnectOk(): ConnectOk? {
+fun String.toConnectOk(): ConnectOkPayload? {
     return try {
         Json { ignoreUnknownKeys = true }.decodeFromString(this)
     } catch (e: Exception) {

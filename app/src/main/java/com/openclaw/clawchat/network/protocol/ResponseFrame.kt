@@ -63,11 +63,11 @@ data class ResponseFrame(
     /**
      * 解析 payload 为指定类型
      */
-    inline fun <reified T> parsePayload(): T? {
+    inline fun <reified T> parsePayload(deserializer: kotlinx.serialization.DeserializationStrategy<T>): T? {
         if (payload == null) return null
         return try {
             kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
-                .decodeFromJsonElement(payload)
+                .decodeFromJsonElement(deserializer, payload)
         } catch (e: Exception) {
             null
         }
@@ -392,33 +392,33 @@ data class ProtocolInfo(
  * 解析为 SendMessageResponse
  */
 fun ResponseFrame.parseSendMessageResponse(): SendMessageResponse? {
-    return parsePayload()
+    return parsePayload(SendMessageResponse.serializer())
 }
 
 /**
  * 解析为 SessionListResponse
  */
 fun ResponseFrame.parseSessionListResponse(): SessionListResponse? {
-    return parsePayload()
+    return parsePayload(SessionListResponse.serializer())
 }
 
 /**
  * 解析为 CreateSessionResponse
  */
 fun ResponseFrame.parseCreateSessionResponse(): CreateSessionResponse? {
-    return parsePayload()
+    return parsePayload(CreateSessionResponse.serializer())
 }
 
 /**
  * 解析为 DeviceStatusResponse
  */
 fun ResponseFrame.parseDeviceStatusResponse(): DeviceStatusResponse? {
-    return parsePayload()
+    return parsePayload(DeviceStatusResponse.serializer())
 }
 
 /**
  * 解析为 PingResponse
  */
 fun ResponseFrame.parsePingResponse(): PingResponse? {
-    return parsePayload()
+    return parsePayload(PingResponse.serializer())
 }

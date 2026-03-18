@@ -38,11 +38,11 @@ data class EventFrame(
     /**
      * 解析 payload 为指定类型
      */
-    inline fun <reified T> parsePayload(): T? {
+    inline fun <reified T> parsePayload(deserializer: kotlinx.serialization.DeserializationStrategy<T>): T? {
         if (payload == null) return null
         return try {
             kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
-                .decodeFromJsonElement(payload)
+                .decodeFromJsonElement(deserializer, payload)
         } catch (e: Exception) {
             null
         }
@@ -450,42 +450,42 @@ data class ErrorPayload(
  * 解析为 SessionMessagePayload
  */
 fun EventFrame.parseSessionMessagePayload(): SessionMessagePayload? {
-    return parsePayload()
+    return parsePayload(SessionMessagePayload.serializer())
 }
 
 /**
  * 解析为 SessionCreatePayload
  */
 fun EventFrame.parseSessionCreatePayload(): SessionCreatePayload? {
-    return parsePayload()
+    return parsePayload(SessionCreatePayload.serializer())
 }
 
 /**
  * 解析为 ConnectOkPayload
  */
 fun EventFrame.parseConnectOkPayload(): ConnectOkPayload? {
-    return parsePayload()
+    return parsePayload(ConnectOkPayload.serializer())
 }
 
 /**
  * 解析为 ConnectChallengePayload
  */
 fun EventFrame.parseConnectChallengePayload(): ConnectChallengePayload? {
-    return parsePayload()
+    return parsePayload(ConnectChallengePayload.serializer())
 }
 
 /**
  * 解析为 SystemNotificationPayload
  */
 fun EventFrame.parseSystemNotificationPayload(): SystemNotificationPayload? {
-    return parsePayload()
+    return parsePayload(SystemNotificationPayload.serializer())
 }
 
 /**
  * 解析为 ErrorPayload
  */
 fun EventFrame.parseErrorPayload(): ErrorPayload? {
-    return parsePayload()
+    return parsePayload(ErrorPayload.serializer())
 }
 
 /**
@@ -502,7 +502,7 @@ fun sessionMessageEvent(
     stateVersion: String? = null
 ): EventFrame {
     val json = kotlinx.serialization.json.Json
-    val payload = json.encodeToJsonElement(SessionMessagePayload(sessionId, message, seq))
+    val payload = json.encodeToJsonElement(SessionMessagePayload.serializer(), SessionMessagePayload(sessionId, message, seq))
     
     return EventFrame(
         event = GatewayEvent.SESSION_MESSAGE.value,
@@ -521,7 +521,7 @@ fun sessionTypingEvent(
     userId: String? = null
 ): EventFrame {
     val json = kotlinx.serialization.json.Json
-    val payload = json.encodeToJsonElement(SessionTypingPayload(sessionId, isTyping, userId))
+    val payload = json.encodeToJsonElement(SessionTypingPayload.serializer(), SessionTypingPayload(sessionId, isTyping, userId))
     
     return EventFrame(
         event = GatewayEvent.SESSION_TYPING.value,
@@ -538,7 +538,7 @@ fun sessionThinkingEvent(
     model: String? = null
 ): EventFrame {
     val json = kotlinx.serialization.json.Json
-    val payload = json.encodeToJsonElement(SessionThinkingPayload(sessionId, isThinking, model))
+    val payload = json.encodeToJsonElement(SessionThinkingPayload.serializer(), SessionThinkingPayload(sessionId, isThinking, model))
     
     return EventFrame(
         event = GatewayEvent.SESSION_THINKING.value,
@@ -556,7 +556,7 @@ fun systemNotificationEvent(
     action: SystemAction? = null
 ): EventFrame {
     val json = kotlinx.serialization.json.Json
-    val payload = json.encodeToJsonElement(SystemNotificationPayload(title, message, type, action))
+    val payload = json.encodeToJsonElement(SystemNotificationPayload.serializer(), SystemNotificationPayload(title, message, type, action))
     
     return EventFrame(
         event = GatewayEvent.SYSTEM_NOTIFICATION.value,
