@@ -7,6 +7,25 @@ import kotlinx.serialization.json.Json
 import org.json.JSONObject
 
 /**
+ * 连接请求参数
+ */
+data class ConnectRequest(
+    val device: DeviceInfo,
+    val client: ClientInfo,
+    val nonce: String,
+    val signature: String,
+    val token: String? = null
+)
+
+/**
+ * 设备信息
+ */
+data class DeviceInfo(
+    val id: String,
+    val publicKey: String
+)
+
+/**
  * Challenge-Response 认证实现 (Gateway 协议 v3)
  * 
  * 认证流程:

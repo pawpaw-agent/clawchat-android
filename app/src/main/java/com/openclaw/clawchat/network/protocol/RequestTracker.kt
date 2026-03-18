@@ -2,6 +2,10 @@ package com.openclaw.clawchat.network.protocol
 
 import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonElement
@@ -77,9 +81,9 @@ class RequestTracker(
      * 启动定期清理任务
      */
     private fun startCleanupTask() {
-        cleanupJob = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+        cleanupJob = CoroutineScope(Dispatchers.IO).launch {
             while (true) {
-                kotlinx.coroutines.delay(CLEANUP_INTERVAL_MS)
+                delay(CLEANUP_INTERVAL_MS)
                 cleanupExpiredRequests()
             }
         }
@@ -236,12 +240,12 @@ class RequestTracker(
     /**
      * 请求超时异常
      */
-    class RequestTimeoutException(message: String, val requestId: String) : Exception(message)
+    class RequestTimeoutException(message: String, val requestId: String) : java.util.concurrent.CancellationException(message)
     
     /**
      * 取消异常
      */
-    class CancellationException(message: String) : Exception(message)
+    class CancellationException(message: String) : java.util.concurrent.CancellationException(message)
 }
 
 /**
@@ -286,14 +290,17 @@ class RequestExecutor(
     /**
      * 执行请求并解析响应载荷
      */
-    suspend inline fun <reified T> executeAndParse(request: RequestFrame): T? {
+    suspend inline fun <reified T> executeAndParse(
+        request: RequestFrame,
+        deserializer: kotlinx.serialization.DeserializationStrategy<T>
+    ): T? {
         val response = execute(request)
         
         if (!response.isSuccess()) {
             throw RequestException("Request failed: ${response.error?.code} - ${response.error?.message}")
         }
         
-        return response.parsePayload()
+        return response.parsePayload(deserializer)
     }
     
     /**
