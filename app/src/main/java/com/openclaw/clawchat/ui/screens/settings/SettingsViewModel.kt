@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.network.WebSocketService
+import com.openclaw.clawchat.ui.state.GatewayConfigUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -70,7 +71,7 @@ class SettingsViewModel @Inject constructor(
             webSocketService.connectionState.collect { connectionState ->
                 val connectionStatus = when (connectionState) {
                     is com.openclaw.clawchat.network.WebSocketConnectionState.Connected -> {
-                        val latency = webSocketService.measureLatency()
+                        val latency = webSocketService.measureLatency() ?: 0L
                         ConnectionStatusUi.Connected(latency = latency)
                     }
                     is com.openclaw.clawchat.network.WebSocketConnectionState.Connecting -> {
@@ -106,7 +107,8 @@ class SettingsViewModel @Inject constructor(
                     name = config.name.ifEmpty { "默认 Gateway" },
                     host = config.host,
                     port = config.port,
-                    useTls = config.useTls
+                    useTls = config.useTls,
+                    isCurrent = true
                 )
             )
         }
@@ -156,15 +158,8 @@ data class SettingsUiState(
 )
 
 /**
- * Gateway 配置（显示用）
+ * 连接状态（UI 用 - Settings 特定）
  */
-data class GatewayConfigUi(
-    val id: String,
-    val name: String,
-    val host: String,
-    val port: Int,
-    val useTls: Boolean
-)
 
 /**
  * Gateway 配置（输入用）

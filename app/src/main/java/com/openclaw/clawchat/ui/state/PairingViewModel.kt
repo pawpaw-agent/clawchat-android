@@ -135,9 +135,7 @@ class PairingViewModel @Inject constructor(
      * 消费事件
      */
     fun consumeEvent() {
-        viewModelScope.launch {
-            _events.tryEmit(null)
-        }
+        // 事件通过 StateFlow 的 state 属性消费
     }
 
     /**

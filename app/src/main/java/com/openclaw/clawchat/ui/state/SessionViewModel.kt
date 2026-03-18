@@ -59,12 +59,13 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch {
             webSocketService.connectionState.collect { connectionState ->
                 val connectionStatus = when (connectionState) {
-                    is WebSocketConnectionState.Connected -> ConnectionStatus.Connected
+                    is WebSocketConnectionState.Connected -> ConnectionStatus.Connected()
                     is WebSocketConnectionState.Connecting -> ConnectionStatus.Connecting
                     is WebSocketConnectionState.Disconnecting -> ConnectionStatus.Disconnecting
                     is WebSocketConnectionState.Disconnected -> ConnectionStatus.Disconnected
                     is WebSocketConnectionState.Error -> ConnectionStatus.Error(
-                        connectionState.throwable.message ?: "WebSocket 错误"
+                        connectionState.throwable.message ?: "WebSocket 错误",
+                        throwable = connectionState.throwable
                     )
                 }
 
