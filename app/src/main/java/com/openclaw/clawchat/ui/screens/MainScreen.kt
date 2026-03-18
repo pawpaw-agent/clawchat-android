@@ -361,6 +361,7 @@ private fun SessionList(
 /**
  * 会话列表项
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SessionItem(
     session: SessionUi,
