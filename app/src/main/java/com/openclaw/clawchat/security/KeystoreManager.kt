@@ -156,8 +156,8 @@ class KeystoreManager(
         val algorithm: String?,
         val format: String?,
         val isInsideSecureHardware: Boolean,
-        val certificateNotBefore: Date?,
-        val certificateNotAfter: Date?
+        val certificateNotBefore: Date? = null,
+        val certificateNotAfter: Date? = null
     )
 }
 

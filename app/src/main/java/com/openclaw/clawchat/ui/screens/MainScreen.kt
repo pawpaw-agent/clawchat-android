@@ -367,16 +367,25 @@ private fun SessionItem(
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .let {
+                if (onSessionLongPress != null) {
+                    it.combinedClickable(
+                        onClick = onSelect,
+                        onLongClick = onSessionLongPress
+                    )
+                } else {
+                    it.clickable(onClick = onSelect)
+                }
+            },
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
                 MaterialTheme.colorScheme.surface
             }
-        ),
-        onClick = onSelect,
-        onLongClick = onSessionLongPress
+        )
     ) {
         Row(
             modifier = Modifier

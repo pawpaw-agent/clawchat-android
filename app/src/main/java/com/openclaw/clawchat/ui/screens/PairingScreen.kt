@@ -102,7 +102,7 @@ fun PairingScreen(
             // 网关地址输入
             GatewayUrlInput(
                 value = state.gatewayUrl,
-                onValueChange = { viewModel.requestPairing(it) },
+                onValueChange = { viewModel.setGatewayUrl(it) },
                 enabled = !state.isPairing && !state.isInitializing
             )
 
@@ -110,10 +110,10 @@ fun PairingScreen(
 
             // 配对状态显示
             PairingStatusIndicator(
-                status = state.pairingStatus,
-                error = state.error,
+                status = state.status,
+                error = null,
                 gatewayUrl = state.gatewayUrl,
-                onRetry = { viewModel.retryPairing() },
+                onRetry = { viewModel.startPairing() },
                 onCancel = { viewModel.cancelPairing() }
             )
 
