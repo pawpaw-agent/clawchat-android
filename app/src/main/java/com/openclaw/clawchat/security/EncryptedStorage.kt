@@ -304,6 +304,16 @@ class EncryptedStorage(context: Context) {
             .remove(KEY_LAST_CONNECTED)
             .apply()
     }
+    
+    /**
+     * 清除 Gateway 配置
+     */
+    fun clearGatewayConfig() {
+        sharedPreferences.edit()
+            .remove(KEY_GATEWAY_URL)
+            .remove(KEY_GATEWAY_TLS_FINGERPRINT)
+            .apply()
+    }
 }
 
 /**

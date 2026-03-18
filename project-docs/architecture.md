@@ -2,9 +2,24 @@
 
 > 模块边界 · 数据流 · 接口规范 · 数据库设计 · 网络层
 
-**版本**: 1.0.0  
-**最后更新**: 2026-03-17  
+**版本**: 1.1.0  
+**最后更新**: 2026-03-18  
 **状态**: 架构定义
+
+---
+
+## 变更日志
+
+### v1.1.0 (2026-03-18) - Domain 层创建
+
+- ✅ 创建完整的 Domain 层架构
+- ✅ 添加领域模型：`User`, `Session`, `Message`, `Attachment`, `GatewayConfig`, `DeviceToken`, `ConnectionStatus`
+- ✅ 添加 Repository 接口：`SessionRepository`, `ConnectionRepository`, `SettingsRepository`
+- ✅ 添加 UseCase：`SendMessage`, `CreateSession`, `DeleteSession`, `GetSessionHistory`, `PairDevice`, `ConnectGateway`, `ReceiveMessage`
+- ✅ 添加单元测试框架（领域模型 + UseCase）
+- ✅ 纯 Kotlin 实现，无 Android 依赖
+
+---
 
 ---
 
