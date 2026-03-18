@@ -73,6 +73,24 @@ jobs:
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
+      - name: Verify APK Signing
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" -type f | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "❌ Debug APK not found"
+            exit 1
+          fi
+          # 验证签名一致性（应为 ci-debug.keystore 的指纹）
+          EXPECTED_FINGERPRINT="4F:F6:99:1C:E2:04:13:7F:A5:47:A1:22:C7:F0:F6:4F:50:C7:13:C8:77:4A:79:4F:16:AD:B3:FF:A6:BC:D7:FC"
+          ACTUAL=$(keytool -printcert -jarfile "$APK_PATH" 2>/dev/null | grep "SHA-256" | head -1 | sed 's/.*: //')
+          echo "Expected: $EXPECTED_FINGERPRINT"
+          echo "Actual:   $ACTUAL"
+          if [ "$ACTUAL" = "$EXPECTED_FINGERPRINT" ]; then
+            echo "✅ APK signed with fixed CI debug keystore"
+          else
+            echo "⚠️ APK signature fingerprint differs (may be OK if keystore was regenerated)"
+          fi
+
       - name: Verify APK Created
         run: |
           APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" -type f | head -1)

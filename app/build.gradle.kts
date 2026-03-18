@@ -13,6 +13,16 @@ android {
     namespace = "com.openclaw.clawchat"
     compileSdk = 35
 
+    signingConfigs {
+        getByName("debug") {
+            // 固定 debug keystore，确保 CI 和本地构建签名一致，支持覆盖安装
+            storeFile = rootProject.file("keystores/ci-debug.keystore")
+            storePassword = "clawchat-debug"
+            keyAlias = "clawchat-debug"
+            keyPassword = "clawchat-debug"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.openclaw.clawchat"
         minSdk = 26
@@ -42,6 +52,7 @@ android {
             isDebuggable = true
             applicationIdSuffix = ".debug"
             enableUnitTestCoverage = true
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
