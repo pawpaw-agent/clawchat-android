@@ -85,6 +85,9 @@ class OkHttpWebSocketService @Inject constructor(
     // Challenge-Response 认证器
     private val authHandler = ChallengeResponseAuth(securityModule)
     
+    // 请求帧计数器
+    private var requestCounter = 0L
+    
     private val latencyMeasurements = mutableListOf<Long>()
     private var latencyMonitorJob: Job? = null
     
@@ -356,6 +359,8 @@ class OkHttpWebSocketService @Inject constructor(
     
     /**
      * 发送消息
+     *
+     * 将 GatewayMessage 包装为 RequestFrame（type=req）通过 WebSocket 发送。
      */
     override suspend fun send(message: GatewayMessage): Result<Unit> {
         val ws = webSocket
@@ -363,13 +368,48 @@ class OkHttpWebSocketService @Inject constructor(
         
         return withContext(Dispatchers.IO) {
             try {
-                val json = MessageParser.serialize(message)
-                val success = ws.send(json)
+                val requestId = "req-${System.currentTimeMillis()}-${requestCounter++}"
+                
+                val frame: RequestFrame? = when (message) {
+                    is GatewayMessage.UserMessage -> RequestFrame(
+                        id = requestId,
+                        method = "chat.send",
+                        params = mapOf(
+                            "sessionId" to JsonPrimitive(message.sessionId),
+                            "content" to JsonPrimitive(message.content)
+                        )
+                    )
+                    
+                    is GatewayMessage.Ping -> RequestFrame(
+                        id = requestId,
+                        method = "ping",
+                        params = mapOf(
+                            "timestamp" to JsonPrimitive(message.timestamp)
+                        )
+                    )
+                    
+                    is GatewayMessage.Pong -> null  // 心跳响应不需要发帧
+                    
+                    is GatewayMessage.SystemEvent,
+                    is GatewayMessage.AssistantMessage,
+                    is GatewayMessage.Error -> {
+                        return@withContext Result.failure(
+                            IllegalArgumentException("Cannot send ${message.type} from client")
+                        )
+                    }
+                }
+                
+                if (frame == null) {
+                    return@withContext Result.success(Unit)
+                }
+                
+                val frameJson = json.encodeToString(RequestFrame.serializer(), frame)
+                val success = ws.send(frameJson)
                 if (success) {
-                    Log.d(TAG, "Sent message: ${message.type}")
+                    Log.d(TAG, "Sent RequestFrame: method=${frame.method}, id=${frame.id}")
                     Result.success(Unit)
                 } else {
-                    Result.failure(IllegalStateException("Failed to send message"))
+                    Result.failure(IllegalStateException("Failed to send frame"))
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Send failed: ${e.message}", e)
