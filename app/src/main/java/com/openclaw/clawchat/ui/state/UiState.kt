@@ -91,9 +91,19 @@ data class SettingsUiState(
 )
 
 /**
+ * 连接模式
+ */
+enum class ConnectMode {
+    TOKEN,       // Token 直连
+    PAIRING,     // 设备配对（Ed25519 签名 + 管理员批准）
+    SETUP_CODE   // Setup Code（base64 配对码）
+}
+
+/**
  * 配对界面 UI 状态
  */
 data class PairingUiState(
+    val connectMode: ConnectMode = ConnectMode.TOKEN,
     val gatewayUrl: String = "",
     val isPairing: Boolean = false,
     val isInitializing: Boolean = false,
@@ -102,7 +112,21 @@ data class PairingUiState(
     val publicKey: String? = null,
     val deviceToken: String? = null,
     val pairingStartTime: Long? = null,
-    val error: String? = null
+    val error: String? = null,
+    // Token 模式
+    val token: String = "",
+    // Setup Code 模式
+    val setupCode: String = "",
+    val setupCodeParsed: SetupCodeInfo? = null,
+    val setupCodeError: String? = null
+)
+
+/**
+ * 解析后的 Setup Code 信息
+ */
+data class SetupCodeInfo(
+    val url: String,
+    val bootstrapToken: String
 )
 
 /**
