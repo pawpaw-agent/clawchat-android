@@ -202,6 +202,10 @@ dependencies {
     // Security
     implementation(libs.androidx.security.crypto)
     
+    // BouncyCastle Ed25519 (software fallback for API < 33)
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.78.1")
+    
     // JSON (用于协议解析)
     implementation("org.json:json:20231013")
 

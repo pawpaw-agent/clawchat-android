@@ -4,33 +4,30 @@ import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import java.security.KeyFactory
+import org.bouncycastle.crypto.generators.Ed25519KeyPairGenerator
+import org.bouncycastle.crypto.params.Ed25519KeyGenerationParameters
+import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
+import org.bouncycastle.crypto.signers.Ed25519Signer
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.PrivateKey
-import java.security.PublicKey
+import java.security.SecureRandom
 import java.security.Signature
-import java.security.spec.PKCS8EncodedKeySpec
-import java.security.spec.X509EncodedKeySpec
 import java.util.Date
 
 /**
- * KeystoreManager - Android 密钥管理 (Ed25519)
+ * KeystoreManager - Android Ed25519 密钥管理
  *
  * Gateway 协议 v3 要求 Ed25519 密钥对：
- * - 签名：Ed25519 native（无需单独 hash）
+ * - 签名：Ed25519 纯签名（等效 Node.js crypto.sign(null, payload, key)）
  * - 公钥：raw 32 bytes base64url（去掉 SPKI 前缀）
  * - deviceId：sha256(raw 32 bytes public key).hex()
  *
  * 实现策略：
  * - API 33+：Android Keystore 硬件级 Ed25519
- * - API 26-32：软件 Ed25519 + EncryptedSharedPreferences 存储
- *
- * 安全特性：
- * - 私钥不可导出（Keystore 模式）
- * - 硬件级保护（TEE/StrongBox，API 33+）
- * - Ed25519 原生签名（无 hash 算法参数）
+ * - API 26-32：BouncyCastle Ed25519 + EncryptedSharedPreferences 存储
  */
 class KeystoreManager(
     private val alias: String = "clawchat_device_key",
@@ -40,20 +37,27 @@ class KeystoreManager(
         /**
          * Ed25519 SPKI DER 前缀 (12 bytes)
          * SEQUENCE { SEQUENCE { OID 1.3.101.112 } BIT STRING ... }
-         * raw public key 是后 32 bytes
+         * raw public key = 后 32 bytes
          */
         val ED25519_SPKI_PREFIX: ByteArray =
             byteArrayOf(0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00)
 
         /** API 33+ 支持 Keystore Ed25519 */
         private val USE_KEYSTORE_ED25519 = Build.VERSION.SDK_INT >= 33
+
+        /** BouncyCastle raw key 长度 */
+        private const val ED25519_KEY_SIZE = 32
     }
 
     private val keyStore: KeyStore? = if (USE_KEYSTORE_ED25519) {
         KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
     } else null
 
-    // ==================== 公钥操作 ====================
+    // BouncyCastle 密钥缓存（仅 API < 33）
+    private var cachedBcPublicKey: Ed25519PublicKeyParameters? = null
+    private var cachedBcPrivateKey: Ed25519PrivateKeyParameters? = null
+
+    // ==================== 公开 API ====================
 
     /**
      * 检查密钥对是否已存在
@@ -75,47 +79,42 @@ class KeystoreManager(
         if (hasKeyPair()) {
             deleteKey()
         }
+        clearBcCache()
 
         if (USE_KEYSTORE_ED25519) {
             generateKeystoreEd25519()
         } else {
-            generateSoftwareEd25519()
+            generateBouncyCastleEd25519()
         }
 
         return getPublicKeyBase64Url()
     }
 
     /**
-     * 获取公钥 raw bytes（去掉 SPKI 前缀的 32 bytes）
+     * 获取公钥 raw bytes（32 bytes）
      */
     fun getPublicKeyRaw(): ByteArray {
-        val spki = getPublicKeySPKI()
-        return extractRawFromSPKI(spki)
+        return if (USE_KEYSTORE_ED25519) {
+            val spki = getPublicKeySPKI()
+            extractRawFromSPKI(spki)
+        } else {
+            ensureBcKeysLoaded()
+            cachedBcPublicKey!!.encoded
+        }
     }
 
     /**
      * 获取公钥 raw 32 bytes 的 base64url 编码
-     * 这是 Gateway connect 协议要求的格式
+     *
+     * 这是 Gateway connect 协议要求的传输格式
      */
     fun getPublicKeyBase64Url(): String {
         return base64UrlEncode(getPublicKeyRaw())
     }
 
     /**
-     * 获取公钥（PEM 格式，保留用于诊断/兼容）
-     */
-    fun getPublicKeyPem(): String {
-        val spki = getPublicKeySPKI()
-        val encoded = Base64.encodeToString(spki, Base64.NO_WRAP)
-        return buildString {
-            appendLine("-----BEGIN PUBLIC KEY-----")
-            encoded.chunked(64).forEach { appendLine(it) }
-            append("-----END PUBLIC KEY-----")
-        }
-    }
-
-    /**
      * 计算 deviceId: sha256(raw public key).hex()
+     *
      * 与 Gateway 端 fingerprintPublicKey() 一致
      */
     fun deriveDeviceId(): String {
@@ -129,22 +128,24 @@ class KeystoreManager(
     /**
      * Ed25519 签名（ByteArray 输入）
      *
+     * 等效 Node.js: crypto.sign(null, Buffer.from(data), privateKey)
+     *
      * @param data 待签名数据
      * @return 签名 bytes（64 bytes）
      */
     fun sign(data: ByteArray): ByteArray {
-        val privateKey = getPrivateKey()
-        val signature = Signature.getInstance("Ed25519")
-        signature.initSign(privateKey)
-        signature.update(data)
-        return signature.sign()
+        return if (USE_KEYSTORE_ED25519) {
+            signWithKeystore(data)
+        } else {
+            signWithBouncyCastle(data)
+        }
     }
 
     /**
      * Ed25519 签名（String 输入）
      *
-     * @param data 待签名字符串
-     * @return 签名的 base64url 编码
+     * @param data 待签名字符串（UTF-8）
+     * @return 签名的 base64url 编码（无填充）
      */
     fun sign(data: String): String {
         return base64UrlEncode(sign(data.toByteArray(Charsets.UTF_8)))
@@ -152,15 +153,8 @@ class KeystoreManager(
 
     /**
      * 对挑战进行签名（兼容旧接口）
-     *
-     * @param challenge 挑战数据
-     * @return 签名 bytes
      */
     fun signChallenge(challenge: ByteArray): ByteArray = sign(challenge)
-
-    /**
-     * 对挑战进行签名（String → base64url）
-     */
     fun signChallenge(challenge: String): String = sign(challenge)
 
     // ==================== 密钥管理 ====================
@@ -176,6 +170,7 @@ class KeystoreManager(
         } else {
             softwareKeyStore?.deleteKeyPair(alias)
         }
+        clearBcCache()
     }
 
     /**
@@ -185,17 +180,15 @@ class KeystoreManager(
         if (!hasKeyPair()) return KeyInfo(null, null, false)
 
         return if (USE_KEYSTORE_ED25519) {
-            val entry = keyStore!!.getEntry(alias, null) as? KeyStore.PrivateKeyEntry
-                ?: return KeyInfo(null, null, false)
             KeyInfo(
                 algorithm = "Ed25519",
-                format = "Keystore",
-                isInsideSecureHardware = true // API 33+ Keystore
+                format = "AndroidKeyStore (TEE/StrongBox)",
+                isInsideSecureHardware = true
             )
         } else {
             KeyInfo(
-                algorithm = "Ed25519",
-                format = "Software (EncryptedSharedPreferences)",
+                algorithm = "Ed25519 (BouncyCastle)",
+                format = "EncryptedSharedPreferences (AES-256-GCM)",
                 isInsideSecureHardware = false
             )
         }
@@ -209,10 +202,10 @@ class KeystoreManager(
         val certificateNotAfter: Date? = null
     )
 
-    // ==================== 内部方法 ====================
+    // ==================== Keystore 路径（API 33+） ====================
 
     /**
-     * API 33+: 使用 Android Keystore 生成 Ed25519 密钥对
+     * API 33+: Android Keystore 生成 Ed25519 密钥对
      */
     private fun generateKeystoreEd25519() {
         val keyPairGenerator = KeyPairGenerator.getInstance(
@@ -231,67 +224,122 @@ class KeystoreManager(
     }
 
     /**
-     * API 26-32: 使用软件生成 Ed25519 密钥对，存储到 EncryptedSharedPreferences
+     * API 33+: Keystore 签名
      */
-    private fun generateSoftwareEd25519() {
-        requireNotNull(softwareKeyStore) {
-            "SoftwareKeyStore is required for API < 33"
-        }
-        val kpg = KeyPairGenerator.getInstance("Ed25519")
-        val keyPair = kpg.generateKeyPair()
-
-        // 存储到加密存储
-        softwareKeyStore.saveKeyPair(
-            alias = alias,
-            publicKeyEncoded = keyPair.public.encoded,  // SPKI DER
-            privateKeyEncoded = keyPair.private.encoded  // PKCS8 DER
-        )
+    private fun signWithKeystore(data: ByteArray): ByteArray {
+        val privateKey = getKeystorePrivateKey()
+        val signature = Signature.getInstance("Ed25519")
+        signature.initSign(privateKey)
+        signature.update(data)
+        return signature.sign()
     }
 
     /**
-     * 获取公钥 SPKI DER 编码
+     * API 33+: 获取 Keystore 私钥
+     */
+    private fun getKeystorePrivateKey(): PrivateKey {
+        val entry = keyStore!!.getEntry(alias, null) as? KeyStore.PrivateKeyEntry
+            ?: throw IllegalStateException("Key pair not found in Keystore. Call generateKeyPair() first.")
+        return entry.privateKey
+    }
+
+    /**
+     * API 33+: 获取公钥 SPKI DER 编码
      */
     private fun getPublicKeySPKI(): ByteArray {
-        return if (USE_KEYSTORE_ED25519) {
-            val entry = keyStore!!.getEntry(alias, null) as? KeyStore.PrivateKeyEntry
-                ?: throw IllegalStateException("Key pair not found. Call generateKeyPair() first.")
-            entry.certificate.publicKey.encoded
-        } else {
-            requireNotNull(softwareKeyStore) { "SoftwareKeyStore required" }
-            softwareKeyStore.getPublicKeyEncoded(alias)
-                ?: throw IllegalStateException("Key pair not found. Call generateKeyPair() first.")
+        val entry = keyStore!!.getEntry(alias, null) as? KeyStore.PrivateKeyEntry
+            ?: throw IllegalStateException("Key pair not found in Keystore. Call generateKeyPair() first.")
+        return entry.certificate.publicKey.encoded
+    }
+
+    // ==================== BouncyCastle 路径（API 26-32） ====================
+
+    /**
+     * API 26-32: BouncyCastle 生成 Ed25519 密钥对
+     *
+     * 密钥以 raw bytes 形式存储在 EncryptedSharedPreferences 中：
+     * - publicKey: 32 bytes → SPKI DER 编码存储（与 Keystore 路径格式一致）
+     * - privateKey: 32 bytes → 原始 seed 存储
+     */
+    private fun generateBouncyCastleEd25519() {
+        requireNotNull(softwareKeyStore) {
+            "SoftwareKeyStore is required for API < 33 (Ed25519 BouncyCastle fallback)"
         }
+
+        val generator = Ed25519KeyPairGenerator()
+        generator.init(Ed25519KeyGenerationParameters(SecureRandom()))
+        val keyPair = generator.generateKeyPair()
+
+        val publicKey = keyPair.public as Ed25519PublicKeyParameters
+        val privateKey = keyPair.private as Ed25519PrivateKeyParameters
+
+        // 构造 SPKI DER（兼容 Keystore 路径的存储格式）
+        val spki = ED25519_SPKI_PREFIX + publicKey.encoded
+
+        // 存储 raw 私钥 seed（32 bytes）和 SPKI 公钥
+        softwareKeyStore.saveKeyPair(
+            alias = alias,
+            publicKeyEncoded = spki,
+            privateKeyEncoded = privateKey.encoded  // raw 32 bytes seed
+        )
+
+        // 缓存
+        cachedBcPublicKey = publicKey
+        cachedBcPrivateKey = privateKey
     }
 
     /**
-     * 获取私钥
+     * API 26-32: BouncyCastle 签名
      */
-    private fun getPrivateKey(): PrivateKey {
-        return if (USE_KEYSTORE_ED25519) {
-            val entry = keyStore!!.getEntry(alias, null) as? KeyStore.PrivateKeyEntry
-                ?: throw IllegalStateException("Key pair not found. Call generateKeyPair() first.")
-            entry.privateKey
-        } else {
-            requireNotNull(softwareKeyStore) { "SoftwareKeyStore required" }
-            val encoded = softwareKeyStore.getPrivateKeyEncoded(alias)
-                ?: throw IllegalStateException("Key pair not found. Call generateKeyPair() first.")
-            val keyFactory = KeyFactory.getInstance("Ed25519")
-            keyFactory.generatePrivate(PKCS8EncodedKeySpec(encoded))
-        }
+    private fun signWithBouncyCastle(data: ByteArray): ByteArray {
+        ensureBcKeysLoaded()
+
+        val signer = Ed25519Signer()
+        signer.init(true, cachedBcPrivateKey!!)
+        signer.update(data, 0, data.size)
+        return signer.generateSignature()
     }
+
+    /**
+     * 确保 BouncyCastle 密钥已从存储加载到缓存
+     */
+    private fun ensureBcKeysLoaded() {
+        if (cachedBcPrivateKey != null && cachedBcPublicKey != null) return
+
+        requireNotNull(softwareKeyStore) { "SoftwareKeyStore required" }
+
+        val privateRaw = softwareKeyStore.getPrivateKeyEncoded(alias)
+            ?: throw IllegalStateException("Key pair not found. Call generateKeyPair() first.")
+        val publicSpki = softwareKeyStore.getPublicKeyEncoded(alias)
+            ?: throw IllegalStateException("Key pair not found. Call generateKeyPair() first.")
+
+        // 从 raw 32 bytes seed 恢复 BouncyCastle 私钥
+        cachedBcPrivateKey = Ed25519PrivateKeyParameters(privateRaw, 0)
+        // 从 SPKI 中提取 raw 32 bytes 恢复公钥
+        val publicRaw = extractRawFromSPKI(publicSpki)
+        cachedBcPublicKey = Ed25519PublicKeyParameters(publicRaw, 0)
+    }
+
+    private fun clearBcCache() {
+        cachedBcPrivateKey = null
+        cachedBcPublicKey = null
+    }
+
+    // ==================== 工具方法 ====================
 
     /**
      * 从 SPKI DER 中提取 raw 32 bytes 公钥
      */
     private fun extractRawFromSPKI(spki: ByteArray): ByteArray {
-        if (spki.size == ED25519_SPKI_PREFIX.size + 32) {
+        if (spki.size == ED25519_SPKI_PREFIX.size + ED25519_KEY_SIZE) {
             val prefix = spki.sliceArray(0 until ED25519_SPKI_PREFIX.size)
             if (prefix.contentEquals(ED25519_SPKI_PREFIX)) {
                 return spki.sliceArray(ED25519_SPKI_PREFIX.size until spki.size)
             }
         }
-        // 兜底：返回完整 SPKI（不应该走到这里）
-        return spki
+        // 如果已经是 raw 32 bytes，直接返回
+        if (spki.size == ED25519_KEY_SIZE) return spki
+        throw IllegalStateException("Unexpected public key format: size=${spki.size}")
     }
 
     /**
@@ -306,7 +354,7 @@ class KeystoreManager(
  * 软件密钥存储接口
  *
  * 在 API < 33 时使用，由 EncryptedStorage 实现。
- * 私钥存储在 EncryptedSharedPreferences 中（AES-256 加密）。
+ * 私钥存储在 EncryptedSharedPreferences 中（AES-256-GCM 加密）。
  */
 interface SoftwareKeyStore {
     fun hasKeyPair(alias: String): Boolean

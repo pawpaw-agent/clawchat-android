@@ -31,7 +31,7 @@ import javax.crypto.spec.GCMParameterSpec
  * - 值加密：AES256-GCM
  * - 自动处理密钥轮换
  */
-class EncryptedStorage(context: Context) {
+class EncryptedStorage(context: Context) : SoftwareKeyStore {
     
     private val sharedPreferences: SharedPreferences
     
@@ -284,6 +284,40 @@ class EncryptedStorage(context: Context) {
         return keyGenerator.generateKey()
     }
     
+    // ==================== SoftwareKeyStore 实现（Ed25519 密钥存储） ====================
+
+    private val KEY_PREFIX_PUBLIC = "sw_pubkey_"
+    private val KEY_PREFIX_PRIVATE = "sw_privkey_"
+
+    override fun hasKeyPair(alias: String): Boolean {
+        return sharedPreferences.contains(KEY_PREFIX_PUBLIC + alias) &&
+                sharedPreferences.contains(KEY_PREFIX_PRIVATE + alias)
+    }
+
+    override fun saveKeyPair(alias: String, publicKeyEncoded: ByteArray, privateKeyEncoded: ByteArray) {
+        sharedPreferences.edit()
+            .putString(KEY_PREFIX_PUBLIC + alias, Base64.encodeToString(publicKeyEncoded, Base64.NO_WRAP))
+            .putString(KEY_PREFIX_PRIVATE + alias, Base64.encodeToString(privateKeyEncoded, Base64.NO_WRAP))
+            .apply()
+    }
+
+    override fun getPublicKeyEncoded(alias: String): ByteArray? {
+        val encoded = sharedPreferences.getString(KEY_PREFIX_PUBLIC + alias, null) ?: return null
+        return Base64.decode(encoded, Base64.NO_WRAP)
+    }
+
+    override fun getPrivateKeyEncoded(alias: String): ByteArray? {
+        val encoded = sharedPreferences.getString(KEY_PREFIX_PRIVATE + alias, null) ?: return null
+        return Base64.decode(encoded, Base64.NO_WRAP)
+    }
+
+    override fun deleteKeyPair(alias: String) {
+        sharedPreferences.edit()
+            .remove(KEY_PREFIX_PUBLIC + alias)
+            .remove(KEY_PREFIX_PRIVATE + alias)
+            .apply()
+    }
+
     // ==================== 清除操作 ====================
     
     /**

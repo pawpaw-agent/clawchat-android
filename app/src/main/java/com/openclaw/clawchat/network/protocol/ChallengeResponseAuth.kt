@@ -132,7 +132,7 @@ class ChallengeResponseAuth(
             nonce = challenge.nonce,
             signedAtMs = signedAtMs,
             clientId = "openclaw-android",
-            clientMode = "cli",
+            clientMode = "ui",
             role = role,
             scopes = scopes,
             token = gatewayToken ?: "",

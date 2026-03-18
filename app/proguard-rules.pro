@@ -116,6 +116,15 @@
     *;
 }
 
+# BouncyCastle Ed25519 (software key fallback for API < 33)
+-keep class org.bouncycastle.jcajce.provider.asymmetric.edec.** { *; }
+-keep class org.bouncycastle.jcajce.provider.asymmetric.ec.** { *; }
+-keep class org.bouncycastle.crypto.signers.Ed25519Signer { *; }
+-keep class org.bouncycastle.crypto.params.Ed25519** { *; }
+-keep class org.bouncycastle.crypto.generators.Ed25519KeyPairGenerator { *; }
+-keep class org.bouncycastle.jce.provider.BouncyCastleProvider { *; }
+-dontwarn org.bouncycastle.**
+
 # ─────────────────────────────────────────────────────────────
 # Model Classes (Keep for JSON serialization)
 # ─────────────────────────────────────────────────────────────

@@ -124,7 +124,7 @@ class SecurityModule(private val context: Context) {
         nonce: String,
         signedAtMs: Long = System.currentTimeMillis(),
         clientId: String = "openclaw-android",
-        clientMode: String = "cli",
+        clientMode: String = "ui",
         role: String = "operator",
         scopes: List<String> = listOf("operator.read", "operator.write"),
         token: String = "",
