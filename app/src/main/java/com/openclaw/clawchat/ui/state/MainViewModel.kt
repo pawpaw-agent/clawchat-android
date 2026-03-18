@@ -6,12 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.network.GatewayUrlUtil
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
+import com.openclaw.clawchat.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -21,11 +23,14 @@ import javax.inject.Inject
 /**
  * 主界面 ViewModel
  *
- * 使用 GatewayConnection 管理连接状态和会话列表
+ * 数据流：
+ * - 启动时从 Room 加载缓存的会话列表（离线可用）
+ * - 连接成功后从 Gateway 拉取最新列表 → 同步到 Room
  */
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val gateway: GatewayConnection
+    private val gateway: GatewayConnection,
+    private val sessionRepository: SessionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -39,7 +44,22 @@ class MainViewModel @Inject constructor(
     }
 
     init {
+        loadSessionsFromCache()
         observeConnectionState()
+    }
+
+    /**
+     * 启动时从 Room 加载缓存会话（离线可用）
+     */
+    private fun loadSessionsFromCache() {
+        viewModelScope.launch {
+            sessionRepository.observeSessions().collect { cachedSessions ->
+                // 仅在没有 Gateway 数据时使用缓存
+                if (_uiState.value.connectionStatus !is ConnectionStatus.Connected) {
+                    _uiState.update { it.copy(sessions = cachedSessions) }
+                }
+            }
+        }
     }
 
     private fun observeConnectionState() {
@@ -47,7 +67,6 @@ class MainViewModel @Inject constructor(
             gateway.connectionState.collect { connectionState ->
                 val connectionStatus = when (connectionState) {
                     is WebSocketConnectionState.Connected -> {
-                        // 连接成功 → 加载会话列表
                         loadSessionsFromGateway()
                         ConnectionStatus.Connected(latency = gateway.measureLatency())
                     }
@@ -73,7 +92,6 @@ class MainViewModel @Inject constructor(
     fun connectToGateway(gatewayUrl: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-
             try {
                 val wsUrl = GatewayUrlUtil.normalizeToWebSocketUrl(gatewayUrl)
                 val result = gateway.connect(wsUrl)
@@ -82,11 +100,8 @@ class MainViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             currentGateway = GatewayConfigUi(
-                                id = "default",
-                                name = "Gateway",
-                                host = gatewayUrl,
-                                port = 18789,
-                                useTls = gatewayUrl.startsWith("https://"),
+                                id = "default", name = "Gateway", host = gatewayUrl,
+                                port = 18789, useTls = gatewayUrl.startsWith("https://"),
                                 isCurrent = true
                             ),
                             isLoading = false
@@ -100,8 +115,7 @@ class MainViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             connectionStatus = ConnectionStatus.Error(
-                                message = "连接失败：${error.message}",
-                                throwable = error
+                                message = "连接失败：${error.message}", throwable = error
                             ),
                             isLoading = false
                         )
@@ -124,7 +138,7 @@ class MainViewModel @Inject constructor(
     }
 
     /**
-     * 从 Gateway 加载会话列表（sessions.list RPC）
+     * 从 Gateway 加载会话列表 → 更新 UI + 同步到 Room
      */
     private fun loadSessionsFromGateway() {
         viewModelScope.launch {
@@ -160,11 +174,31 @@ class MainViewModel @Inject constructor(
                     }
                 }
 
+                // 更新 UI
                 _uiState.update { it.copy(sessions = sessions) }
-                Log.i(TAG, "Loaded ${sessions.size} sessions from Gateway")
+
+                // 同步到 Room 缓存
+                syncSessionsToRoom(sessions)
+
+                Log.i(TAG, "Loaded ${sessions.size} sessions from Gateway, synced to Room")
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to load sessions: ${e.message}")
             }
+        }
+    }
+
+    /**
+     * 将 Gateway 会话列表同步到 Room（全量替换）
+     */
+    private suspend fun syncSessionsToRoom(sessions: List<SessionUi>) {
+        try {
+            // 清除旧缓存，写入新数据
+            sessionRepository.clearAllSessions()
+            sessions.forEach { session ->
+                sessionRepository.addSession(session)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to sync sessions to Room: ${e.message}")
         }
     }
 
@@ -190,10 +224,10 @@ class MainViewModel @Inject constructor(
     fun deleteSession(sessionId: String) {
         viewModelScope.launch {
             try {
-                gateway.call("sessions.delete", mapOf(
-                    "key" to kotlinx.serialization.json.JsonPrimitive(sessionId)
-                ))
+                gateway.call("sessions.delete", mapOf("key" to JsonPrimitive(sessionId)))
             } catch (_: Exception) {}
+            // 从 Room 删除
+            sessionRepository.deleteSession(sessionId)
             _uiState.update {
                 it.copy(
                     sessions = it.sessions.filter { s -> s.id != sessionId },
@@ -204,18 +238,15 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun refreshSessions() {
-        loadSessionsFromGateway()
-    }
+    fun refreshSessions() { loadSessionsFromGateway() }
 
     fun createSession(model: String = "default", thinking: Boolean = false) {
         viewModelScope.launch {
-            // 发送 /new 到默认会话创建新会话
             val sessionKey = gateway.defaultSessionKey ?: "agent:main:main"
             try {
                 gateway.call("sessions.reset", mapOf(
-                    "key" to kotlinx.serialization.json.JsonPrimitive(sessionKey),
-                    "reason" to kotlinx.serialization.json.JsonPrimitive("new")
+                    "key" to JsonPrimitive(sessionKey),
+                    "reason" to JsonPrimitive("new")
                 ))
                 refreshSessions()
             } catch (e: Exception) {
@@ -228,8 +259,8 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 gateway.call("sessions.patch", mapOf(
-                    "key" to kotlinx.serialization.json.JsonPrimitive(sessionId),
-                    "label" to kotlinx.serialization.json.JsonPrimitive(newName)
+                    "key" to JsonPrimitive(sessionId),
+                    "label" to JsonPrimitive(newName)
                 ))
                 _uiState.update { state ->
                     val idx = state.sessions.indexOfFirst { it.id == sessionId }
@@ -239,6 +270,8 @@ class MainViewModel @Inject constructor(
                         state.copy(sessions = updated)
                     } else state
                 }
+                // 同步到 Room
+                sessionRepository.updateSession(sessionId) { it.copy(label = newName) }
             } catch (e: Exception) {
                 Log.w(TAG, "Rename session failed: ${e.message}")
             }
@@ -246,42 +279,32 @@ class MainViewModel @Inject constructor(
     }
 
     fun pauseSession(sessionId: String) {
-        viewModelScope.launch {
-            _uiState.update { state ->
-                val idx = state.sessions.indexOfFirst { it.id == sessionId }
-                if (idx >= 0) {
-                    val updated = state.sessions.toMutableList()
-                    updated[idx] = updated[idx].copy(status = SessionStatus.PAUSED)
-                    state.copy(sessions = updated)
-                } else state
-            }
+        _uiState.update { state ->
+            val idx = state.sessions.indexOfFirst { it.id == sessionId }
+            if (idx >= 0) {
+                val updated = state.sessions.toMutableList()
+                updated[idx] = updated[idx].copy(status = SessionStatus.PAUSED)
+                state.copy(sessions = updated)
+            } else state
         }
     }
 
     fun resumeSession(sessionId: String) {
-        viewModelScope.launch {
-            _uiState.update { state ->
-                val idx = state.sessions.indexOfFirst { it.id == sessionId }
-                if (idx >= 0) {
-                    val updated = state.sessions.toMutableList()
-                    updated[idx] = updated[idx].copy(status = SessionStatus.RUNNING, lastActivityAt = System.currentTimeMillis())
-                    state.copy(sessions = updated)
-                } else state
-            }
+        _uiState.update { state ->
+            val idx = state.sessions.indexOfFirst { it.id == sessionId }
+            if (idx >= 0) {
+                val updated = state.sessions.toMutableList()
+                updated[idx] = updated[idx].copy(status = SessionStatus.RUNNING, lastActivityAt = System.currentTimeMillis())
+                state.copy(sessions = updated)
+            } else state
         }
     }
 
-    fun terminateSession(sessionId: String) {
-        deleteSession(sessionId)
-    }
-
+    fun terminateSession(sessionId: String) { deleteSession(sessionId) }
     fun clearError() { _uiState.update { it.copy(error = null) } }
     fun consumeEvent() { _events.value = null }
 }
 
-/**
- * UI 事件类型
- */
 sealed class UiEvent {
     data class NavigateToSession(val sessionId: String) : UiEvent()
     data class ShowError(val message: String) : UiEvent()
