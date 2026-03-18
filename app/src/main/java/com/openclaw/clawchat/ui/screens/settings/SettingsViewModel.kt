@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.network.WebSocketService
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.ConnectionStatusUi
+import com.openclaw.clawchat.ui.state.GatewayConfigInput
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
 import com.openclaw.clawchat.ui.state.toUiStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
