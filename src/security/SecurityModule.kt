@@ -4,14 +4,21 @@ import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
+import java.text.Normalizer
 
 /**
  * SecurityModule - 安全模块统一入口
  * 
- * 整合 KeystoreManager、EncryptedStorage、DeviceFingerprint、
- * ServerPublicKeyManager、ServerSignatureVerifier，
- * 提供完整的设备配对、安全存储和服务端签名验证功能。
+ * 整合 KeystoreManager、EncryptedStorage、DeviceFingerprint，
+ * 提供完整的设备配对和安全存储功能。
+ * 
+ * Gateway 协议 v3 签名规范：
+ * - 密钥：Ed25519
+ * - 签名 payload v3: "v3|deviceId|clientId|clientMode|role|scopes|signedAtMs|token|nonce|platform|deviceFamily"
+ * - 公钥：raw 32 bytes base64url
+ * - deviceId: sha256(raw public key).hex()
  * 
  * 使用 Hilt 单例注入，整个应用生命周期只创建一次。
  */
@@ -23,33 +30,36 @@ class SecurityModule(private val context: Context) {
     }
     
     // 核心组件
-    private val keystoreManager = KeystoreManager(KEYPAIR_ALIAS)
     private val encryptedStorage = EncryptedStorage(context)
+    private val keystoreManager = KeystoreManager(
+        alias = KEYPAIR_ALIAS,
+        softwareKeyStore = encryptedStorage as? SoftwareKeyStore
+    )
     private val deviceFingerprint = DeviceFingerprint(context)
-    private val publicKeyManager = ServerPublicKeyManager(context)
-    private val signatureVerifier = ServerSignatureVerifier(publicKeyManager)
     
     // ==================== 公开 API ====================
     
     /**
      * 初始化安全模块
      * 
-     * 检查是否需要生成密钥对。
+     * 生成密钥对和设备 ID（如不存在）。
      * 应在 Application onCreate 中调用。
      */
     suspend fun initialize(): SecurityStatus = withContext(Dispatchers.IO) {
         try {
-            // 检查密钥对
+            // 生成 Ed25519 密钥对
             if (!keystoreManager.hasKeyPair()) {
-                Log.i(TAG, "Generating new device key pair...")
+                Log.i(TAG, "Generating new Ed25519 device key pair...")
                 keystoreManager.generateKeyPair()
             }
             
-            // 检查设备 ID
-            if (encryptedStorage.getDeviceId().isNullOrEmpty()) {
-                Log.i(TAG, "Generating new device fingerprint...")
-                val deviceId = deviceFingerprint.generateDeviceId()
-                encryptedStorage.saveDeviceId(deviceId)
+            // 使用密钥派生 deviceId（与 Gateway 对齐）
+            val derivedDeviceId = keystoreManager.deriveDeviceId()
+            val storedDeviceId = encryptedStorage.getDeviceId()
+            
+            if (storedDeviceId != derivedDeviceId) {
+                Log.i(TAG, "Updating device ID from key fingerprint...")
+                encryptedStorage.saveDeviceId(derivedDeviceId)
             }
             
             getSecurityStatus()
@@ -78,9 +88,91 @@ class SecurityModule(private val context: Context) {
     }
     
     /**
-     * 准备配对请求
+     * 获取 deviceId
      * 
-     * 生成配对所需的公钥和设备信息。
+     * 由 sha256(raw Ed25519 public key) 派生，与 Gateway fingerprintPublicKey() 一致
+     */
+    fun getDeviceId(): String? {
+        return encryptedStorage.getDeviceId()
+    }
+    
+    /**
+     * 获取公钥 raw 32 bytes 的 base64url 编码
+     * 
+     * Gateway connect 协议要求此格式
+     */
+    fun getPublicKeyBase64Url(): String {
+        return keystoreManager.getPublicKeyBase64Url()
+    }
+    
+    /**
+     * 构建 v3 签名 payload 并签名
+     * 
+     * v3 payload 格式: "v3|{deviceId}|{clientId}|{clientMode}|{role}|{scopes}|{signedAtMs}|{token}|{nonce}|{platform}|{deviceFamily}"
+     * 
+     * @param nonce Server 提供的 challenge nonce
+     * @param signedAtMs 签名时间戳（毫秒）
+     * @param clientId 客户端 ID
+     * @param clientMode 客户端模式（如 "cli"）
+     * @param role 连接角色（"operator" 或 "node"）
+     * @param scopes 权限范围列表
+     * @param token Gateway token（参与签名绑定）
+     * @param platform 平台标识
+     * @param deviceFamily 设备类型（如 "phone"）
+     * @return 签名的 base64url 编码
+     */
+    fun signV3Payload(
+        nonce: String,
+        signedAtMs: Long = System.currentTimeMillis(),
+        clientId: String = "openclaw-android",
+        clientMode: String = "cli",
+        role: String = "operator",
+        scopes: List<String> = listOf("operator.read", "operator.write"),
+        token: String = "",
+        platform: String = "android",
+        deviceFamily: String = "phone"
+    ): SignedPayload {
+        val deviceId = getDeviceId()
+            ?: throw IllegalStateException("Device not initialized. Call initialize() first.")
+        
+        // 构建 v3 payload（与 Gateway buildDeviceAuthPayloadV3 对齐）
+        val payload = listOf(
+            "v3",
+            deviceId,
+            clientId,
+            clientMode,
+            role,
+            scopes.joinToString(","),
+            signedAtMs.toString(),
+            token,
+            nonce,
+            normalizeDeviceMetadata(platform),
+            normalizeDeviceMetadata(deviceFamily)
+        ).joinToString("|")
+        
+        val signature = keystoreManager.sign(payload)
+        
+        return SignedPayload(
+            payload = payload,
+            signature = signature,
+            signedAtMs = signedAtMs,
+            deviceId = deviceId,
+            publicKeyBase64Url = getPublicKeyBase64Url()
+        )
+    }
+    
+    /**
+     * 签名挑战（兼容旧接口，已不推荐）
+     * 
+     * 新代码应使用 signV3Payload()
+     */
+    @Deprecated("Use signV3Payload() for v3 protocol", ReplaceWith("signV3Payload(nonce)"))
+    fun signChallenge(nonce: String): String {
+        return keystoreManager.signChallenge(nonce)
+    }
+    
+    /**
+     * 准备配对请求
      * 
      * @return 配对请求 JSON（Protocol v3 格式）
      */
@@ -89,12 +181,11 @@ class SecurityModule(private val context: Context) {
         role: String = "operator",
         scopes: List<String> = listOf("operator.read", "operator.write")
     ): String = withContext(Dispatchers.IO) {
-        val publicKey = keystoreManager.getPublicKeyPem()
-        val deviceId = encryptedStorage.getDeviceId() 
-            ?: deviceFingerprint.generateDeviceId().also { encryptedStorage.saveDeviceId(it) }
+        val publicKey = keystoreManager.getPublicKeyBase64Url()
+        val deviceId = getDeviceId()
+            ?: throw IllegalStateException("Device not initialized")
         val platformInfo = deviceFingerprint.getPlatformInfo()
         
-        // 构建 Protocol v3 格式的签名载荷
         val payload = JSONObject().apply {
             put("device", JSONObject().apply {
                 put("id", deviceId)
@@ -108,7 +199,7 @@ class SecurityModule(private val context: Context) {
             put("nodeId", nodeId)
             put("role", role)
             put("scopes", JSONArray(scopes.toTypedArray()))
-            put("token", "") // 空表示首次配对
+            put("token", "")
             put("signedAt", System.currentTimeMillis())
             put("deviceFamily", "phone")
         }
@@ -117,38 +208,17 @@ class SecurityModule(private val context: Context) {
     }
     
     /**
-     * 签名挑战
-     * 
-     * 用于配对流程中的挑战 - 响应认证。
-     * 
-     * @param nonce Server 提供的挑战 nonce
-     * @return Base64 编码的签名
-     */
-    fun signChallenge(nonce: String): String {
-        return keystoreManager.signChallenge(nonce)
-    }
-    
-    /**
      * 完成配对
-     * 
-     * 配对成功后调用，存储设备令牌。
-     * 
-     * @param deviceToken Gateway 颁发的设备令牌
      */
     fun completePairing(deviceToken: String) {
         encryptedStorage.saveDeviceToken(deviceToken)
         encryptedStorage.savePairingStatus(EncryptedStorage.PAIRING_STATUS_APPROVED)
         encryptedStorage.saveLastConnectedTimestamp(System.currentTimeMillis())
-        
         Log.i(TAG, "Pairing completed successfully")
     }
     
     /**
-     * 获取认证令牌
-     * 
-     * 用于 WebSocket 连接认证。
-     * 
-     * @return 设备令牌，如果未配对返回 null
+     * 获取认证令牌（用于 WebSocket 连接）
      */
     fun getAuthToken(): String? {
         return encryptedStorage.getDeviceToken()
@@ -169,24 +239,11 @@ class SecurityModule(private val context: Context) {
         tlsFingerprint?.let { encryptedStorage.saveTlsFingerprint(it) }
     }
     
-    /**
-     * 获取 Gateway URL
-     */
-    fun getGatewayUrl(): String? {
-        return encryptedStorage.getGatewayUrl()
-    }
+    fun getGatewayUrl(): String? = encryptedStorage.getGatewayUrl()
+    fun getTlsFingerprint(): String? = encryptedStorage.getTlsFingerprint()
     
     /**
-     * 获取 TLS 指纹
-     */
-    fun getTlsFingerprint(): String? {
-        return encryptedStorage.getTlsFingerprint()
-    }
-    
-    /**
-     * 重置配对（用于撤销/重新配对）
-     * 
-     * 清除设备令牌和配对状态，但保留密钥对。
+     * 重置配对（保留密钥对）
      */
     fun resetPairing() {
         encryptedStorage.clearPairingData()
@@ -194,10 +251,7 @@ class SecurityModule(private val context: Context) {
     }
     
     /**
-     * 完全重置（恢复出厂设置）
-     * 
-     * 清除所有安全数据，包括密钥对。
-     * 下次启动时会重新生成所有凭证。
+     * 完全重置（清除所有安全数据）
      */
     fun factoryReset() {
         encryptedStorage.clearAll()
@@ -205,94 +259,39 @@ class SecurityModule(private val context: Context) {
         Log.i(TAG, "Factory reset completed")
     }
     
-    /**
-     * 获取设备描述（用于显示给用户）
-     */
-    fun getDeviceDescription(): String {
-        return deviceFingerprint.getDeviceDescription()
-    }
+    fun getDeviceDescription(): String = deviceFingerprint.getDeviceDescription()
+    fun getKeyInfo(): KeystoreManager.KeyInfo = keystoreManager.getKeyInfo()
+    
+    // ==================== 内部方法 ====================
     
     /**
-     * 获取密钥信息（用于诊断）
-     */
-    fun getKeyInfo(): KeystoreManager.KeyInfo {
-        return keystoreManager.getKeyInfo()
-    }
-    
-    // ==================== 服务端签名验证 ====================
-    
-    /**
-     * 保存服务端公钥
+     * 标准化设备元数据（与 Gateway normalizeDeviceMetadataForAuth 对齐）
      * 
-     * @param publicKeyPem PEM 格式的公钥
-     * @return 公钥指纹
+     * 规则：trim → NFKD → 去变音符 → 小写
      */
-    fun saveServerPublicKey(publicKeyPem: String): String {
-        return publicKeyManager.savePrimaryPublicKey(publicKeyPem)
-    }
-    
-    /**
-     * 获取服务端公钥指纹
-     */
-    fun getServerFingerprint(): String? {
-        return publicKeyManager.getPrimaryFingerprint()
-    }
-    
-    /**
-     * 验证服务端消息签名
-     * 
-     * @param method 方法/消息类型
-     * @param path 路径/会话 ID
-     * @param body 消息体（可选）
-     * @param timestamp 时间戳
-     * @param nonce 随机数
-     * @param signature Base64 签名
-     * @return 验证结果
-     */
-    fun verifyServerSignature(
-        method: String,
-        path: String,
-        body: String?,
-        timestamp: Long,
-        nonce: String,
-        signature: String
-    ): SignatureVerificationResult {
-        return signatureVerifier.verify(method, path, body, timestamp, nonce, signature)
-    }
-    
-    /**
-     * 验证 WebSocket 消息签名
-     */
-    fun verifyWebSocketSignature(
-        messageType: String,
-        sessionId: String,
-        content: String,
-        timestamp: Long,
-        nonce: String,
-        signature: String
-    ): SignatureVerificationResult {
-        return signatureVerifier.verifyWebSocketMessage(
-            messageType, sessionId, content, timestamp, nonce, signature
-        )
-    }
-    
-    /**
-     * 检查是否有有效的服务端公钥
-     */
-    fun hasServerPublicKey(): Boolean {
-        return publicKeyManager.hasValidPublicKey()
-    }
-    
-    /**
-     * 清除服务端公钥（用于重置）
-     */
-    fun clearServerPublicKey() {
-        publicKeyManager.clearAllKeys()
+    private fun normalizeDeviceMetadata(value: String?): String {
+        if (value.isNullOrBlank()) return ""
+        val trimmed = value.trim()
+        if (trimmed.isEmpty()) return ""
+        // NFKD 分解 → 去掉 combining marks → 小写
+        val nfkd = Normalizer.normalize(trimmed, Normalizer.Form.NFKD)
+        return nfkd.replace(Regex("\\p{M}"), "").lowercase()
     }
 }
 
 /**
- * 安全状态数据类
+ * 签名结果
+ */
+data class SignedPayload(
+    val payload: String,
+    val signature: String,
+    val signedAtMs: Long,
+    val deviceId: String,
+    val publicKeyBase64Url: String
+)
+
+/**
+ * 安全状态
  */
 data class SecurityStatus(
     val isInitialized: Boolean,
@@ -302,96 +301,36 @@ data class SecurityStatus(
     val hasDeviceToken: Boolean = false,
     val error: String? = null
 ) {
-    /**
-     * 是否完全就绪（可以连接 Gateway）
-     */
-    fun isReady(): Boolean {
-        return isInitialized && hasKeyPair && isPaired
-    }
+    fun isReady(): Boolean = isInitialized && hasKeyPair && isPaired
     
-    /**
-     * 获取状态描述
-     */
-    fun getStatusText(): String {
-        return when {
-            error != null -> "错误：$error"
-            !isInitialized -> "初始化中..."
-            !hasKeyPair -> "生成密钥中..."
-            !isPaired -> "未配对"
-            !hasDeviceToken -> "配对完成，等待连接"
-            else -> "已就绪"
-        }
+    fun getStatusText(): String = when {
+        error != null -> "错误：$error"
+        !isInitialized -> "初始化中..."
+        !hasKeyPair -> "生成密钥中..."
+        !isPaired -> "未配对"
+        !hasDeviceToken -> "配对完成，等待连接"
+        else -> "已就绪"
     }
 }
 
 /**
- * 安全日志工具
- * 
- * 自动脱敏敏感信息
+ * 安全日志工具（自动脱敏）
  */
 object SecureLogger {
     private const val TAG = "ClawChat-Security"
     
-    fun d(message: String) {
-        android.util.Log.d(TAG, message.redactSensitive())
-    }
-    
-    fun i(message: String) {
-        android.util.Log.i(TAG, message.redactSensitive())
-    }
-    
-    fun w(message: String) {
-        android.util.Log.w(TAG, message.redactSensitive())
-    }
-    
+    fun d(message: String) = android.util.Log.d(TAG, message.redactSensitive())
+    fun i(message: String) = android.util.Log.i(TAG, message.redactSensitive())
+    fun w(message: String) = android.util.Log.w(TAG, message.redactSensitive())
     fun e(message: String, throwable: Throwable? = null) {
-        if (throwable != null) {
-            android.util.Log.e(TAG, message.redactSensitive(), throwable)
-        } else {
-            android.util.Log.e(TAG, message.redactSensitive())
-        }
+        if (throwable != null) android.util.Log.e(TAG, message.redactSensitive(), throwable)
+        else android.util.Log.e(TAG, message.redactSensitive())
     }
     
-    /**
-     * 脱敏敏感信息
-     */
-    private fun String.redactSensitive(): String {
-        return this
-            .replace(Regex("token[\"']?\\s*[:=]\\s*[\"']?[^,}\"'\\s]+"), "token=***")
-            .replace(Regex("key[\"']?\\s*[:=]\\s*[\"']?[^,}\"'\\s]+"), "key=***")
-            .replace(Regex("signature[\"']?\\s*[:=]\\s*[\"']?[^,}\"'\\s]+"), "signature=***")
-            .replace(Regex("secret[\"']?\\s*[:=]\\s*[\"']?[^,}\"'\\s]+"), "secret=***")
-            .replace(Regex("password[\"']?\\s*[:=]\\s*[\"']?[^,}\"'\\s]+"), "password=***")
-    }
+    private fun String.redactSensitive(): String = this
+        .replace(Regex("token[\"']?\\s*[:=]\\s*[\"']?[^,}\"'\\s]+"), "token=***")
+        .replace(Regex("key[\"']?\\s*[:=]\\s*[\"']?[^,}\"'\\s]+"), "key=***")
+        .replace(Regex("signature[\"']?\\s*[:=]\\s*[\"']?[^,}\"'\\s]+"), "signature=***")
+        .replace(Regex("secret[\"']?\\s*[:=]\\s*[\"']?[^,}\"'\\s]+"), "secret=***")
+        .replace(Regex("password[\"']?\\s*[:=]\\s*[\"']?[^,}\"'\\s]+"), "password=***")
 }
-
-/**
- * 使用示例（Hilt 模块）：
- * 
- * @Module
- * @Singleton
- * object SecurityModule {
- * 
- *     @Provides
- *     @Singleton
- *     fun provideSecurityModule(@ApplicationContext context: Context): SecurityModule {
- *         return SecurityModule(context)
- *     }
- * }
- * 
- * // ViewModel 中使用：
- * @HiltViewModel
- * class MainViewModel @Inject constructor(
- *     private val securityModule: SecurityModule
- * ) : ViewModel() {
- * 
- *     init {
- *         viewModelScope.launch {
- *             val status = securityModule.initialize()
- *             if (status.needsPairing()) {
- *                 // 导航到配对页面
- *             }
- *         }
- *     }
- * }
- */
