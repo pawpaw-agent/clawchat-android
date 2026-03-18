@@ -17,7 +17,10 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -111,7 +114,7 @@ class GatewayConnection(
         try {
             // 步骤 1: 构建认证请求
             val authRequest = authHandler.buildAuthRequest()
-            val authRequestJson = json.encodeToString(authRequest)
+            val authRequestJson = json.encodeToString<AuthRequest>(authRequest)
             
             Log.d(TAG, "认证请求：$authRequestJson")
             
@@ -262,7 +265,7 @@ class GatewayConnection(
                 
                 // 构建认证响应
                 val authResponse = authHandler.buildAuthResponse()
-                val responseJson = json.encodeToString(authResponse)
+                val responseJson = json.encodeToString<AuthResponse>(authResponse)
                 
                 Log.d(TAG, "发送认证响应：$responseJson")
                 

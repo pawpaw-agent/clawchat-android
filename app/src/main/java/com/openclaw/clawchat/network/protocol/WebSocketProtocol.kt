@@ -247,7 +247,7 @@ data class ProtocolVersion(
     @SerialName("patch")
     val patch: Int = 0
 ) {
-    fun toString(): String = "$major.$minor.$patch"
+    override fun toString(): String = "$major.$minor.$patch"
     
     fun isCompatibleWith(other: ProtocolVersion): Boolean {
         // 主版本号必须匹配
