@@ -2,14 +2,10 @@ package com.openclaw.clawchat.network
 
 import android.util.Log
 import com.openclaw.clawchat.network.protocol.GatewayConnection
-import com.openclaw.clawchat.security.SecurityModule
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import javax.inject.Inject
 
 /**
  * WebSocketService 实现 — 委托给 GatewayConnection
@@ -17,18 +13,13 @@ import javax.inject.Inject
  * 所有连接管理、认证握手、帧收发由 GatewayConnection 处理。
  * 本类仅做接口适配，保持 WebSocketService 接口稳定。
  */
-class OkHttpWebSocketService @Inject constructor(
-    okHttpClient: OkHttpClient,
-    securityModule: SecurityModule,
-    appScope: CoroutineScope
+class OkHttpWebSocketService(
+    val gateway: GatewayConnection
 ) : WebSocketService {
 
     companion object {
         private const val TAG = "WebSocketService"
     }
-
-    /** 内部 GatewayConnection（完整协议 v3 实现） */
-    val gateway = GatewayConnection(okHttpClient, securityModule, appScope)
 
     override val connectionState: StateFlow<WebSocketConnectionState>
         get() = gateway.connectionState

@@ -4,29 +4,28 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.network.GatewayUrlUtil
-import com.openclaw.clawchat.network.WebSocketService
 import com.openclaw.clawchat.network.WebSocketConnectionState
+import com.openclaw.clawchat.network.protocol.GatewayConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import javax.inject.Inject
 
 /**
  * 主界面 ViewModel
  *
- * 负责管理：
- * - 连接状态
- * - 会话列表
- * - 全局 UI 状态
+ * 使用 GatewayConnection 管理连接状态和会话列表
  */
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val webSocketService: WebSocketService
+    private val gateway: GatewayConnection
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -41,25 +40,22 @@ class MainViewModel @Inject constructor(
 
     init {
         observeConnectionState()
-        loadSessions()
     }
 
-    /**
-     * 观察 WebSocket 连接状态
-     */
     private fun observeConnectionState() {
         viewModelScope.launch {
-            webSocketService.connectionState.collect { connectionState ->
+            gateway.connectionState.collect { connectionState ->
                 val connectionStatus = when (connectionState) {
                     is WebSocketConnectionState.Connected -> {
-                        val latency = webSocketService.measureLatency()
-                        ConnectionStatus.Connected(latency = latency)
+                        // 连接成功 → 加载会话列表
+                        loadSessionsFromGateway()
+                        ConnectionStatus.Connected(latency = gateway.measureLatency())
                     }
                     is WebSocketConnectionState.Connecting -> ConnectionStatus.Connecting
                     is WebSocketConnectionState.Disconnecting -> ConnectionStatus.Disconnecting
                     is WebSocketConnectionState.Disconnected -> ConnectionStatus.Disconnected
                     is WebSocketConnectionState.Error -> ConnectionStatus.Error(
-                        message = connectionState.throwable.message ?: "WebSocket 错误",
+                        message = connectionState.throwable.message ?: "连接错误",
                         throwable = connectionState.throwable
                     )
                 }
@@ -74,24 +70,20 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    /**
-     * 连接到网关
-     */
     fun connectToGateway(gatewayUrl: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
                 val wsUrl = GatewayUrlUtil.normalizeToWebSocketUrl(gatewayUrl)
-                val result = webSocketService.connect(wsUrl, token = null)
+                val result = gateway.connect(wsUrl)
 
                 result.onSuccess {
                     _uiState.update {
                         it.copy(
-                            connectionStatus = ConnectionStatus.Connected(),
                             currentGateway = GatewayConfigUi(
                                 id = "default",
-                                name = "本地网关",
+                                name = "Gateway",
                                 host = gatewayUrl,
                                 port = 18789,
                                 useTls = gatewayUrl.startsWith("https://"),
@@ -121,8 +113,7 @@ class MainViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         connectionStatus = ConnectionStatus.Error(
-                            message = "连接异常：${e.message}",
-                            throwable = e
+                            message = "连接异常：${e.message}", throwable = e
                         ),
                         isLoading = false
                     )
@@ -133,235 +124,92 @@ class MainViewModel @Inject constructor(
     }
 
     /**
-     * 断开连接
+     * 从 Gateway 加载会话列表（sessions.list RPC）
      */
+    private fun loadSessionsFromGateway() {
+        viewModelScope.launch {
+            try {
+                val response = gateway.sessionsList()
+                if (!response.isSuccess()) {
+                    Log.w(TAG, "sessions.list failed: ${response.error?.message}")
+                    return@launch
+                }
+
+                val payload = response.payload?.jsonObject ?: return@launch
+                val sessionsArray = payload["sessions"]?.jsonArray ?: return@launch
+
+                val sessions = sessionsArray.mapNotNull { element ->
+                    try {
+                        val obj = element.jsonObject
+                        SessionUi(
+                            id = obj["key"]?.jsonPrimitive?.content
+                                ?: obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
+                            label = obj["label"]?.jsonPrimitive?.content
+                                ?: obj["derivedTitle"]?.jsonPrimitive?.content,
+                            model = obj["model"]?.jsonPrimitive?.content,
+                            status = SessionStatus.RUNNING,
+                            lastActivityAt = obj["lastActivityAt"]?.jsonPrimitive?.long
+                                ?: System.currentTimeMillis(),
+                            messageCount = 0,
+                            lastMessage = obj["lastMessage"]?.jsonPrimitive?.content,
+                            thinking = false
+                        )
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to parse session: ${e.message}")
+                        null
+                    }
+                }
+
+                _uiState.update { it.copy(sessions = sessions) }
+                Log.i(TAG, "Loaded ${sessions.size} sessions from Gateway")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to load sessions: ${e.message}")
+            }
+        }
+    }
+
     fun disconnect() {
         viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    connectionStatus = ConnectionStatus.Disconnecting,
-                    currentGateway = null
-                )
-            }
-
+            _uiState.update { it.copy(connectionStatus = ConnectionStatus.Disconnecting, currentGateway = null) }
             try {
-                webSocketService.disconnect()
-                _uiState.update {
-                    it.copy(connectionStatus = ConnectionStatus.Disconnected)
-                }
+                gateway.disconnect()
+                _uiState.update { it.copy(connectionStatus = ConnectionStatus.Disconnected) }
                 _events.value = UiEvent.ShowSuccess("已断开连接")
             } catch (e: Exception) {
-                Log.e(TAG, "断开连接失败", e)
                 _events.value = UiEvent.ShowError("断开连接失败：${e.message}")
             }
         }
     }
 
-    /**
-     * 选择会话
-     */
     fun selectSession(sessionId: String) {
-        viewModelScope.launch {
-            val session = _uiState.value.sessions.find { it.id == sessionId }
-            _uiState.update { it.copy(currentSession = session) }
-            _events.value = UiEvent.NavigateToSession(sessionId)
-        }
+        val session = _uiState.value.sessions.find { it.id == sessionId }
+        _uiState.update { it.copy(currentSession = session) }
+        _events.value = UiEvent.NavigateToSession(sessionId)
     }
 
-    /**
-     * 创建新会话
-     */
-    fun createSession(model: String = "default", thinking: Boolean = false) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-
-            val newSession = SessionUi(
-                id = "session_${System.currentTimeMillis()}",
-                label = "新会话",
-                model = model,
-                status = SessionStatus.RUNNING,
-                lastActivityAt = System.currentTimeMillis(),
-                messageCount = 0,
-                thinking = thinking
-            )
-
-            _uiState.update {
-                it.copy(
-                    sessions = it.sessions + newSession,
-                    currentSession = newSession,
-                    isLoading = false
-                )
-            }
-
-            _events.value = UiEvent.NavigateToSession(newSession.id)
-        }
-    }
-
-    /**
-     * 删除会话
-     */
     fun deleteSession(sessionId: String) {
         viewModelScope.launch {
+            try {
+                gateway.call("sessions.delete", mapOf(
+                    "key" to kotlinx.serialization.json.JsonPrimitive(sessionId)
+                ))
+            } catch (_: Exception) {}
             _uiState.update {
                 it.copy(
-                    sessions = it.sessions.filter { it.id != sessionId },
+                    sessions = it.sessions.filter { s -> s.id != sessionId },
                     currentSession = if (it.currentSession?.id == sessionId) null else it.currentSession
                 )
             }
-
-            // TODO: 调用 API 删除服务端会话
             _events.value = UiEvent.ShowSuccess("会话已删除")
         }
     }
 
-    /**
-     * 暂停会话
-     */
-    fun pauseSession(sessionId: String) {
-        viewModelScope.launch {
-            val sessionIndex = _uiState.value.sessions.indexOfFirst { it.id == sessionId }
-            if (sessionIndex >= 0) {
-                val session = _uiState.value.sessions[sessionIndex]
-                val updatedSession = session.copy(status = SessionStatus.PAUSED)
-
-                _uiState.update {
-                    it.copy(
-                        sessions = it.sessions.toMutableList().apply {
-                            set(sessionIndex, updatedSession)
-                        }
-                    )
-                }
-            }
-        }
+    fun refreshSessions() {
+        loadSessionsFromGateway()
     }
 
-    /**
-     * 恢复会话
-     */
-    fun resumeSession(sessionId: String) {
-        viewModelScope.launch {
-            val sessionIndex = _uiState.value.sessions.indexOfFirst { it.id == sessionId }
-            if (sessionIndex >= 0) {
-                val session = _uiState.value.sessions[sessionIndex]
-                val updatedSession = session.copy(
-                    status = SessionStatus.RUNNING,
-                    lastActivityAt = System.currentTimeMillis()
-                )
-
-                _uiState.update {
-                    it.copy(
-                        sessions = it.sessions.toMutableList().apply {
-                            set(sessionIndex, updatedSession)
-                        }
-                    )
-                }
-            }
-        }
-    }
-
-    /**
-     * 重命名会话
-     */
-    fun renameSession(sessionId: String, newName: String) {
-        viewModelScope.launch {
-            val sessionIndex = _uiState.value.sessions.indexOfFirst { it.id == sessionId }
-            if (sessionIndex >= 0) {
-                val session = _uiState.value.sessions[sessionIndex]
-                val updatedSession = session.copy(label = newName)
-
-                _uiState.update {
-                    it.copy(
-                        sessions = it.sessions.toMutableList().apply {
-                            set(sessionIndex, updatedSession)
-                        }
-                    )
-                }
-
-                _events.value = UiEvent.ShowSuccess("会话已重命名")
-            }
-        }
-    }
-
-    /**
-     * 终止会话
-     */
-    fun terminateSession(sessionId: String) {
-        viewModelScope.launch {
-            val sessionIndex = _uiState.value.sessions.indexOfFirst { it.id == sessionId }
-            if (sessionIndex >= 0) {
-                val session = _uiState.value.sessions[sessionIndex]
-                val updatedSession = session.copy(
-                    status = SessionStatus.TERMINATED,
-                    lastActivityAt = System.currentTimeMillis()
-                )
-
-                _uiState.update {
-                    it.copy(
-                        sessions = it.sessions.toMutableList().apply {
-                            set(sessionIndex, updatedSession)
-                        },
-                        currentSession = if (it.currentSession?.id == sessionId) null else it.currentSession
-                    )
-                }
-
-                _events.value = UiEvent.ShowSuccess("会话已终止")
-            }
-        }
-    }
-
-    /**
-     * 加载会话列表
-     */
-    private fun loadSessions() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-
-            // TODO: 从 Gateway 加载真实会话列表（Step 4a 实现）
-            val mockSessions = listOf(
-                SessionUi(
-                    id = "session_1",
-                    label = "项目讨论",
-                    model = "qwen3.5-plus",
-                    status = SessionStatus.RUNNING,
-                    lastActivityAt = System.currentTimeMillis() - 60000,
-                    messageCount = 15,
-                    lastMessage = "好的，我来帮你实现这个功能",
-                    thinking = false
-                ),
-                SessionUi(
-                    id = "session_2",
-                    label = "代码审查",
-                    model = "qwen3.5-plus",
-                    status = SessionStatus.RUNNING,
-                    lastActivityAt = System.currentTimeMillis() - 3600000,
-                    messageCount = 8,
-                    lastMessage = "这段代码需要优化",
-                    thinking = false
-                )
-            )
-
-            _uiState.update {
-                it.copy(
-                    sessions = mockSessions,
-                    isLoading = false
-                )
-            }
-        }
-    }
-
-    /**
-     * 清除错误
-     */
-    fun clearError() {
-        _uiState.update { it.copy(error = null) }
-    }
-
-    /**
-     * 清除事件
-     */
-    fun consumeEvent() {
-        _events.value = null
-    }
+    fun clearError() { _uiState.update { it.copy(error = null) } }
+    fun consumeEvent() { _events.value = null }
 }
 
 /**
