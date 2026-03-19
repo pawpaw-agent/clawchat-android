@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.data.local.MessageEntity
 import com.openclaw.clawchat.data.local.MessageRole as LocalMessageRole
 import com.openclaw.clawchat.data.local.MessageStatus
+import com.openclaw.clawchat.domain.model.Session
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
@@ -374,3 +375,33 @@ private fun MessageEntity.toMessageUi(): MessageUi = MessageUi(
     role = role.toUiRole(),
     timestamp = timestamp
 )
+
+// ─────────────────────────────────────────────────────────────
+// 映射函数：Domain Session → UI SessionUi
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Domain Session 转 UI SessionUi
+ */
+private fun Session.toSessionUi(): SessionUi {
+    return SessionUi(
+        id = id,
+        label = label,
+        model = model,
+        status = status.toUiStatus(),
+        lastActivityAt = lastActivityAt,
+        messageCount = messageCount,
+        lastMessage = lastMessage,
+        thinking = thinking
+    )
+}
+
+/**
+ * Domain SessionStatus 转 UI SessionStatus
+ */
+private fun com.openclaw.clawchat.domain.model.SessionStatus.toUiStatus(): SessionStatus =
+    when (this) {
+        com.openclaw.clawchat.domain.model.SessionStatus.RUNNING -> SessionStatus.RUNNING
+        com.openclaw.clawchat.domain.model.SessionStatus.PAUSED -> SessionStatus.PAUSED
+        com.openclaw.clawchat.domain.model.SessionStatus.TERMINATED -> SessionStatus.TERMINATED
+    }

@@ -3,6 +3,8 @@ package com.openclaw.clawchat.ui.state
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.openclaw.clawchat.domain.model.Session
+import com.openclaw.clawchat.domain.model.SessionStatus as DomainSessionStatus
 import com.openclaw.clawchat.network.GatewayUrlUtil
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
@@ -161,16 +163,17 @@ class MainViewModel @Inject constructor(
                 val payload = response.payload?.jsonObject ?: return@launch
                 val sessionsArray = payload["sessions"]?.jsonArray ?: return@launch
 
-                val sessions = sessionsArray.mapNotNull { element ->
+                // Parse to Domain Session
+                val domainSessions = sessionsArray.mapNotNull { element ->
                     try {
                         val obj = element.jsonObject
-                        SessionUi(
+                        Session(
                             id = obj["key"]?.jsonPrimitive?.content
                                 ?: obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
                             label = obj["label"]?.jsonPrimitive?.content
                                 ?: obj["derivedTitle"]?.jsonPrimitive?.content,
                             model = obj["model"]?.jsonPrimitive?.content,
-                            status = SessionStatus.RUNNING,
+                            status = DomainSessionStatus.RUNNING,
                             lastActivityAt = obj["lastActivityAt"]?.jsonPrimitive?.long
                                 ?: System.currentTimeMillis(),
                             messageCount = 0,
@@ -183,13 +186,16 @@ class MainViewModel @Inject constructor(
                     }
                 }
 
+                // Map Domain Session → UI SessionUi
+                val uiSessions = domainSessions.map { it.toSessionUi() }
+
                 // 更新 UI
-                _uiState.update { it.copy(sessions = sessions) }
+                _uiState.update { it.copy(sessions = uiSessions) }
 
-                // 同步到 Room 缓存
-                syncSessionsToRoom(sessions)
+                // 同步到 Room 缓存（使用 Domain 模型）
+                syncSessionsToRoom(domainSessions)
 
-                Log.i(TAG, "Loaded ${sessions.size} sessions from Gateway, synced to Room")
+                Log.i(TAG, "Loaded ${domainSessions.size} sessions from Gateway, synced to Room")
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to load sessions: ${e.message}")
             }
@@ -197,9 +203,9 @@ class MainViewModel @Inject constructor(
     }
 
     /**
-     * 将 Gateway 会话列表同步到 Room（全量替换）
+     * 将 Gateway 会话列表同步到 Room（全量替换，使用 Domain 模型）
      */
-    private suspend fun syncSessionsToRoom(sessions: List<SessionUi>) {
+    private suspend fun syncSessionsToRoom(sessions: List<Session>) {
         try {
             // 清除旧缓存，写入新数据
             sessionRepository.clearAllSessions()
@@ -313,6 +319,39 @@ class MainViewModel @Inject constructor(
     fun clearError() { _uiState.update { it.copy(error = null) } }
     fun consumeEvent() { /* no-op: Channel events are consumed on receive */ }
 }
+
+// ─────────────────────────────────────────────────────────────
+// 映射函数：Domain Session → UI SessionUi
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Domain Session 转 UI SessionUi
+ */
+private fun Session.toSessionUi(): SessionUi {
+    return SessionUi(
+        id = id,
+        label = label,
+        model = model,
+        status = status.toUiStatus(),
+        lastActivityAt = lastActivityAt,
+        messageCount = messageCount,
+        lastMessage = lastMessage,
+        thinking = thinking
+    )
+}
+
+/**
+ * Domain SessionStatus 转 UI SessionStatus
+ */
+private fun DomainSessionStatus.toUiStatus(): SessionStatus = when (this) {
+    DomainSessionStatus.RUNNING -> SessionStatus.RUNNING
+    DomainSessionStatus.PAUSED -> SessionStatus.PAUSED
+    DomainSessionStatus.TERMINATED -> SessionStatus.TERMINATED
+}
+
+// ─────────────────────────────────────────────────────────────
+// UI Events
+// ─────────────────────────────────────────────────────────────
 
 sealed class UiEvent {
     data class NavigateToSession(val sessionId: String) : UiEvent()

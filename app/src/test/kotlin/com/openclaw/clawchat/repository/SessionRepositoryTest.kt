@@ -2,8 +2,8 @@ package com.openclaw.clawchat.repository
 
 import com.openclaw.clawchat.data.local.SessionDao
 import com.openclaw.clawchat.data.local.SessionEntity
-import com.openclaw.clawchat.ui.state.SessionStatus
-import com.openclaw.clawchat.ui.state.SessionUi
+import com.openclaw.clawchat.domain.model.Session
+import com.openclaw.clawchat.domain.model.SessionStatus
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -41,7 +41,7 @@ class SessionRepositoryTest {
         @DisplayName("添加会话成功")
         fun `addSession adds session successfully`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "Test Session",
                 model = "qwen3.5-plus",
@@ -69,7 +69,7 @@ class SessionRepositoryTest {
         @DisplayName("添加会话后更新内存缓存")
         fun `addSession updates in-memory cache`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "Test Session",
                 model = "qwen3.5-plus",
@@ -92,7 +92,7 @@ class SessionRepositoryTest {
         @DisplayName("添加会话后设置为当前会话")
         fun `addSession sets session as current`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "Test Session",
                 model = "qwen3.5-plus",
@@ -115,7 +115,7 @@ class SessionRepositoryTest {
         @DisplayName("添加会话未命名时使用默认标题")
         fun `addSession uses default title when label is null`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = null,
                 model = "qwen3.5-plus",
@@ -145,7 +145,7 @@ class SessionRepositoryTest {
         @DisplayName("获取会话返回正确会话")
         fun `getSession returns correct session`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "Test Session",
                 model = "qwen3.5-plus",
@@ -232,7 +232,7 @@ class SessionRepositoryTest {
         @DisplayName("更新会话成功")
         fun `updateSession updates session successfully`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "Original Title",
                 model = "qwen3.5-plus",
@@ -271,7 +271,7 @@ class SessionRepositoryTest {
         @DisplayName("更新当前会话同步更新")
         fun `updateSession updates current session if matching`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "Original",
                 model = "qwen3.5-plus",
@@ -299,7 +299,7 @@ class SessionRepositoryTest {
         @DisplayName("删除会话成功")
         fun `deleteSession deletes session successfully`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "To Delete",
                 model = "qwen3.5-plus",
@@ -324,7 +324,7 @@ class SessionRepositoryTest {
         @DisplayName("删除当前会话清除当前会话")
         fun `deleteSession clears current session if deleting current`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "Current",
                 model = "qwen3.5-plus",
@@ -346,7 +346,7 @@ class SessionRepositoryTest {
         @DisplayName("删除会话从内存缓存移除")
         fun `deleteSession removes from in-memory cache`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "To Delete",
                 model = "qwen3.5-plus",
@@ -374,7 +374,7 @@ class SessionRepositoryTest {
         @DisplayName("获取活跃会话")
         fun `getActiveSessions returns running sessions`() = runTest {
             // Given
-            val runningSession = SessionUi(
+            val runningSession = Session(
                 id = "session-1",
                 label = "Running",
                 model = "qwen3.5-plus",
@@ -382,7 +382,7 @@ class SessionRepositoryTest {
                 lastActivityAt = 1234567890L
             )
 
-            val pausedSession = SessionUi(
+            val pausedSession = Session(
                 id = "session-2",
                 label = "Paused",
                 model = "qwen3.5-plus",
@@ -405,7 +405,7 @@ class SessionRepositoryTest {
         @DisplayName("获取已暂停会话")
         fun `getPausedSessions returns paused sessions`() = runTest {
             // Given
-            val pausedSession = SessionUi(
+            val pausedSession = Session(
                 id = "session-1",
                 label = "Paused",
                 model = "qwen3.5-plus",
@@ -427,7 +427,7 @@ class SessionRepositoryTest {
         @DisplayName("获取已终止会话")
         fun `getTerminatedSessions returns terminated sessions`() = runTest {
             // Given
-            val terminatedSession = SessionUi(
+            val terminatedSession = Session(
                 id = "session-1",
                 label = "Terminated",
                 model = "qwen3.5-plus",
@@ -449,7 +449,7 @@ class SessionRepositoryTest {
         @DisplayName("获取会话统计")
         fun `getSessionStats returns correct statistics`() = runTest {
             // Given
-            val runningSession = SessionUi(
+            val runningSession = Session(
                 id = "session-1",
                 label = "Running",
                 model = "qwen3.5-plus",
@@ -458,7 +458,7 @@ class SessionRepositoryTest {
                 messageCount = 10
             )
 
-            val pausedSession = SessionUi(
+            val pausedSession = Session(
                 id = "session-2",
                 label = "Paused",
                 model = "qwen3.5-plus",
@@ -515,7 +515,7 @@ class SessionRepositoryTest {
         @DisplayName("搜索空查询返回所有会话")
         fun `searchSessions returns all sessions when query is blank`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "Test",
                 model = "qwen3.5-plus",
@@ -541,7 +541,7 @@ class SessionRepositoryTest {
         @DisplayName("设置当前会话")
         fun `setCurrentSession sets current session`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "Test",
                 model = "qwen3.5-plus",
@@ -564,7 +564,7 @@ class SessionRepositoryTest {
         @DisplayName("设置当前会话为 null 清除当前会话")
         fun `setCurrentSession clears current session when null`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "Test",
                 model = "qwen3.5-plus",
@@ -585,7 +585,7 @@ class SessionRepositoryTest {
         @DisplayName("清除已终止会话")
         fun `clearTerminatedSessions removes terminated sessions`() = runTest {
             // Given
-            val terminatedSession = SessionUi(
+            val terminatedSession = Session(
                 id = "session-1",
                 label = "Terminated",
                 model = "qwen3.5-plus",
@@ -608,7 +608,7 @@ class SessionRepositoryTest {
         @DisplayName("清空所有会话")
         fun `clearAllSessions removes all sessions`() = runTest {
             // Given
-            val session = SessionUi(
+            val session = Session(
                 id = "session-123",
                 label = "Test",
                 model = "qwen3.5-plus",
