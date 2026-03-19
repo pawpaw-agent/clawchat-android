@@ -134,7 +134,6 @@ jobs:
         id: keystore
         env:
           KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
-        working-directory: app
         run: |
           if [ -z "$KEYSTORE_B64" ]; then
             echo "has_keystore=false" >> $GITHUB_OUTPUT
@@ -143,17 +142,20 @@ jobs:
             echo "$KEYSTORE_B64" | base64 -d > keystore.jks
             echo "has_keystore=true" >> $GITHUB_OUTPUT
             echo "✅ Keystore decoded successfully"
+            # Output absolute path for signing
+            echo "keystore_path=$GITHUB_WORKSPACE/keystore.jks" >> $GITHUB_OUTPUT
           fi
 
       - name: Build Signed Release APK
         if: steps.keystore.outputs.has_keystore == 'true'
         env:
+          KEYSTORE_PATH: ${{ steps.keystore.outputs.keystore_path }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew assembleRelease --no-daemon --stacktrace \
-            -Pandroid.injected.signing.store.file=keystore.jks \
+            -Pandroid.injected.signing.store.file=$KEYSTORE_PATH \
             -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
             -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
             -Pandroid.injected.signing.key.password=$KEY_PASSWORD
