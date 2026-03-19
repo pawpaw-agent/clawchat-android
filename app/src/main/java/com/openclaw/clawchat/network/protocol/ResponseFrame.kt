@@ -133,39 +133,6 @@ enum class ResponseErrorCode(
 }
 
 /**
- * 创建错误响应的辅助函数
- */
-fun errorResponse(
-    requestId: String,
-    errorCode: ResponseErrorCode,
-    details: Map<String, String>? = null
-): ResponseFrame {
-    return ResponseFrame(
-        id = requestId,
-        ok = false,
-        error = ResponseError(
-            code = errorCode.code,
-            message = errorCode.description,
-            details = details
-        )
-    )
-}
-
-/**
- * 创建成功响应的辅助函数
- */
-fun successResponse(
-    requestId: String,
-    payload: kotlinx.serialization.json.JsonElement? = null
-): ResponseFrame {
-    return ResponseFrame(
-        id = requestId,
-        ok = true,
-        payload = payload
-    )
-}
-
-/**
  * 常见响应载荷
  */
 

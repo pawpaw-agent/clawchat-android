@@ -59,11 +59,15 @@ object GatewayUrlUtil {
      *
      * 宽松验证——只要能解析出 host 就行，不要求协议前缀。
      */
+    /**
+     * Validate user input as a valid Gateway address.
+     *
+     * Lenient: accepts bare host, host:port, IPv6 [::1], or full URLs.
+     */
     fun isValidInput(input: String): Boolean {
         val trimmed = input.trim()
         if (trimmed.isEmpty()) return false
 
-        // 去掉协议前缀后检查
         val hostPart = trimmed
             .removePrefix("ws://").removePrefix("wss://")
             .removePrefix("http://").removePrefix("https://")
@@ -71,11 +75,24 @@ object GatewayUrlUtil {
 
         if (hostPart.isEmpty()) return false
 
-        // 提取 host（去掉端口）
+        // IPv6 bracket notation: [::1] or [::1]:18789
+        if (hostPart.startsWith("[")) {
+            val closeBracket = hostPart.indexOf(']')
+            if (closeBracket < 0) return false
+            // Optional port after ]
+            val afterBracket = hostPart.substring(closeBracket + 1)
+            if (afterBracket.isNotEmpty()) {
+                if (!afterBracket.startsWith(":")) return false
+                val port = afterBracket.substring(1).toIntOrNull() ?: return false
+                if (port !in 1..65535) return false
+            }
+            return true
+        }
+
+        // IPv4 or hostname
         val host = hostPart.substringBefore(":")
         if (host.isEmpty()) return false
 
-        // 检查端口（如果有）
         if (hostPart.contains(":")) {
             val portStr = hostPart.substringAfter(":")
             val port = portStr.toIntOrNull() ?: return false
@@ -104,11 +121,24 @@ object GatewayUrlUtil {
     }
 
     /**
-     * 确保 host:port 格式
+     * Ensure host:port format, with IPv6 bracket support.
+     *
+     * IPv6 examples: [::1]:18789, [fe80::1%25eth0]:18789
      */
     private fun ensurePort(hostPort: String, defaultPort: Int): String {
-        // 去掉尾部路径
         val clean = hostPort.removeSuffix("/ws").removeSuffix("/")
+
+        // IPv6 bracket notation: [::1] or [::1]:port
+        if (clean.startsWith("[")) {
+            val closeBracket = clean.indexOf(']')
+            if (closeBracket >= 0) {
+                val afterBracket = clean.substring(closeBracket + 1)
+                return if (afterBracket.startsWith(":")) clean
+                else "$clean:$defaultPort"
+            }
+        }
+
+        // IPv4 / hostname: check for exactly one colon (port separator)
         return if (clean.contains(":")) clean else "$clean:$defaultPort"
     }
 

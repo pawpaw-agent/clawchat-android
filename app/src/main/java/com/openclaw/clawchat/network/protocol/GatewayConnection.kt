@@ -70,24 +70,24 @@ class GatewayConnection(
         private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     }
 
-    // ── 公开状态 ──
+    // ── Public state ──
 
     private val _connectionState = MutableStateFlow<WebSocketConnectionState>(WebSocketConnectionState.Disconnected)
     val connectionState: StateFlow<WebSocketConnectionState> = _connectionState.asStateFlow()
 
-    /** 所有非认证帧透传（原始 JSON） */
+    /** All non-auth frames forwarded as raw JSON */
     private val _incomingMessages = MutableSharedFlow<String>(replay = 0)
     val incomingMessages: SharedFlow<String> = _incomingMessages.asSharedFlow()
 
-    /** hello-ok 快照（连接成功后可用） */
+    /** hello-ok snapshot (available after connect) */
     var helloOkPayload: JsonObject? = null
         private set
 
-    /** 默认会话键（从 hello-ok snapshot.sessionDefaults.mainSessionKey 提取） */
+    /** Default session key (from hello-ok snapshot.sessionDefaults.mainSessionKey) */
     var defaultSessionKey: String? = null
         private set
 
-    // ── 内部组件 ──
+    // ── Internal components ──
 
     private var authHandler = ChallengeResponseAuth(securityModule)
     private val requestTracker = RequestTracker(timeoutMs = REQUEST_TIMEOUT_MS, scope = appScope)
@@ -101,7 +101,7 @@ class GatewayConnection(
     private var currentToken: String? = null
     private var reconnectAttempt = 0
 
-    // ── 连接 ──
+    // ── Connection ──
 
     suspend fun connect(url: String, token: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
         if (_connectionState.value is WebSocketConnectionState.Connected) {
@@ -115,7 +115,7 @@ class GatewayConnection(
         helloOkPayload = null
         defaultSessionKey = null
 
-        // 重建 auth handler（携带 token）
+        // Rebuild auth handler with token
         authHandler = ChallengeResponseAuth(
             securityModule = securityModule,
             gatewayToken = token ?: securityModule.getAuthToken()
@@ -153,7 +153,7 @@ class GatewayConnection(
                 }
             })
 
-            // 等待认证完成（挂起直到状态变为 Connected 或 Error）
+            // Wait for auth to complete (suspends until Connected or Error)
             val finalState = withTimeoutOrNull(AUTH_TIMEOUT_MS) {
                 _connectionState.first {
                     it is WebSocketConnectionState.Connected || it is WebSocketConnectionState.Error
@@ -187,7 +187,7 @@ class GatewayConnection(
         Result.success(Unit)
     }
 
-    // ── 帧分发 ──
+    // ── Frame dispatch ──
 
     private fun handleIncomingFrame(text: String) {
         try {
@@ -203,7 +203,7 @@ class GatewayConnection(
         }
     }
 
-    /** 处理 type=res：匹配 RequestTracker（含 connect 的 hello-ok） */
+    /** Handle type=res: match RequestTracker (including connect hello-ok) */
     private fun handleResFrame(text: String) {
         appScope.launch {
             try {
@@ -217,12 +217,12 @@ class GatewayConnection(
         }
     }
 
-    /** 处理 type=event */
+    /** Handle type=event */
     private fun handleEventFrame(obj: JsonObject, rawText: String) {
         val event = obj["event"]?.jsonPrimitive?.content ?: return
 
         appScope.launch {
-            // 序列号 + 去重
+            // Sequence check + dedup
             val seq = obj["seq"]?.jsonPrimitive?.content?.toIntOrNull()
             when (sequenceManager.checkSequence(seq)) {
                 is SequenceManager.SequenceResult.Duplicate,
@@ -235,7 +235,7 @@ class GatewayConnection(
 
             when (event) {
                 "connect.challenge" -> handleConnectChallenge(obj)
-                // chat / tick / 所有其他事件 → 透传给上层
+                // chat / tick / all other events → forward to upstream
                 else -> _incomingMessages.emit(rawText)
             }
 
@@ -243,10 +243,10 @@ class GatewayConnection(
         }
     }
 
-    // ── 认证握手 ──
+    // ── Auth handshake ──
 
     /**
-     * 处理 connect.challenge：签名 → 发送 connect req → 通过 RequestTracker 等待 res
+     * Handle connect.challenge: sign → send connect req → await res via RequestTracker
      */
     private suspend fun handleConnectChallenge(obj: JsonObject) {
         try {
@@ -265,10 +265,10 @@ class GatewayConnection(
                 Log.i(TAG, "connect.challenge received")
             }
 
-            // 1. 处理 challenge
+            // 1. Handle challenge
             authHandler.handleChallenge(ConnectChallengePayload(nonce = nonce, timestamp = ts))
 
-            // 2. 构建 connect 请求
+            // 2. Build connect request
             val connectReq = authHandler.buildConnectRequest()
             val requestId = "connect-${System.currentTimeMillis()}"
 
@@ -279,7 +279,7 @@ class GatewayConnection(
                 params = connectParams
             )
 
-            // 3. 追踪请求 → 发送 → 等待 res
+            // 3. Track request → send → await res
             val deferred = requestTracker.trackRequest(requestId, "connect")
             val frameJson = json.encodeToString(RequestFrame.serializer(), requestFrame)
             val sent = webSocket?.send(frameJson) ?: false
@@ -294,7 +294,7 @@ class GatewayConnection(
 
             Log.i(TAG, "connect request sent, waiting for hello-ok res...")
 
-            // 4. 等待 hello-ok 响应
+            // 4. Await hello-ok response
             val response = withTimeout(AUTH_TIMEOUT_MS) { deferred.await() }
 
             if (response.ok) {
@@ -313,19 +313,19 @@ class GatewayConnection(
         }
     }
 
-    /** 解析 hello-ok 响应 */
+    /** Parse hello-ok response */
     private fun handleHelloOk(response: ResponseFrame) {
         val payload = response.payload?.jsonObject
         helloOkPayload = payload
 
-        // 提取 deviceToken
+        // Extract deviceToken
         val deviceToken = payload?.get("auth")?.jsonObject?.get("deviceToken")?.jsonPrimitive?.content
         if (!deviceToken.isNullOrBlank()) {
             securityModule.completePairing(deviceToken)
             Log.i(TAG, "deviceToken stored")
         }
 
-        // 提取默认会话键
+        // Extract default session key
         defaultSessionKey = payload
             ?.get("snapshot")?.jsonObject
             ?.get("sessionDefaults")?.jsonObject
@@ -337,7 +337,7 @@ class GatewayConnection(
         reconnectAttempt = 0
     }
 
-    /** 构建 connect 请求参数（对齐 ConnectParamsSchema） */
+    /** Build connect request params (aligned with ConnectParamsSchema) */
     private fun buildConnectParams(req: ConnectRequest): Map<String, JsonElement> {
         return mapOf(
             "minProtocol" to JsonPrimitive(3),
@@ -372,12 +372,12 @@ class GatewayConnection(
 
     // ── RPC ──
 
-    /** 发送原始 JSON 帧 */
+    /** Send raw JSON frame */
     fun sendFrame(jsonText: String): Boolean {
         return webSocket?.send(jsonText) ?: false
     }
 
-    /** 通用 RPC 调用 */
+    /** Generic RPC call */
     suspend fun call(method: String, params: Map<String, JsonElement>? = null): ResponseFrame {
         val requestId = RequestIdGenerator.generateRequestId()
         val frame = RequestFrame(id = requestId, method = method, params = params)
@@ -394,7 +394,7 @@ class GatewayConnection(
         return withTimeout(REQUEST_TIMEOUT_MS) { deferred.await() }
     }
 
-    /** chat.send — 含 idempotencyKey（必需） */
+    /** chat.send — with required idempotencyKey */
     suspend fun chatSend(sessionKey: String, message: String): ResponseFrame {
         return call("chat.send", mapOf(
             "sessionKey" to JsonPrimitive(sessionKey),
@@ -440,12 +440,12 @@ class GatewayConnection(
         }
     }
 
-    /** 测量延迟（ping 的别名） */
+    /** Measure latency (alias for ping) */
     suspend fun measureLatency(): Long? {
         return ping().getOrNull()
     }
 
-    // ── 心跳 / 重连 ──
+    // ── Heartbeat / Reconnect ──
 
     private fun startHeartbeat() {
         heartbeatJob?.cancel()

@@ -3,6 +3,7 @@ package com.openclaw.clawchat.network.protocol
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Request 帧定义 (Gateway 协议 v3)
@@ -36,13 +37,13 @@ data class RequestFrame(
  * 请求 ID 生成器
  */
 object RequestIdGenerator {
-    private var requestCounter = 0L
+    private val requestCounter = AtomicLong(0)
     
     /**
-     * 生成唯一的请求 ID
+     * Generate a unique request ID (thread-safe).
      */
     fun generateRequestId(): String {
-        val counter = requestCounter++
+        val counter = requestCounter.getAndIncrement()
         return "req-${System.currentTimeMillis()}-$counter"
     }
 }
@@ -131,127 +132,6 @@ fun requestFrame(
         params = builder.build()
     )
 }
-
-/**
- * 常用请求参数
- */
-
-/**
- * 发送消息参数
- */
-@Serializable
-data class SendMessageParams(
-    @SerialName("sessionId")
-    val sessionId: String,
-    
-    @SerialName("content")
-    val content: String,
-    
-    @SerialName("attachments")
-    val attachments: List<AttachmentParams>? = null,
-    
-    @SerialName("metadata")
-    val metadata: Map<String, String>? = null
-)
-
-/**
- * 附件参数
- */
-@Serializable
-data class AttachmentParams(
-    @SerialName("id")
-    val id: String,
-    
-    @SerialName("name")
-    val name: String,
-    
-    @SerialName("mimeType")
-    val mimeType: String,
-    
-    @SerialName("size")
-    val size: Long,
-    
-    @SerialName("url")
-    val url: String? = null,
-    
-    @SerialName("base64")
-    val base64: String? = null
-)
-
-/**
- * 创建会话参数
- */
-@Serializable
-data class CreateSessionParams(
-    @SerialName("model")
-    val model: String? = null,
-    
-    @SerialName("thinking")
-    val thinking: Boolean? = null,
-    
-    @SerialName("metadata")
-    val metadata: Map<String, String>? = null
-)
-
-/**
- * 获取会话参数
- */
-@Serializable
-data class GetSessionParams(
-    @SerialName("sessionId")
-    val sessionId: String
-)
-
-/**
- * 终止会话参数
- */
-@Serializable
-data class TerminateSessionParams(
-    @SerialName("sessionId")
-    val sessionId: String,
-    
-    @SerialName("reason")
-    val reason: String? = null
-)
-
-/**
- * 获取消息参数
- */
-@Serializable
-data class GetMessagesParams(
-    @SerialName("sessionId")
-    val sessionId: String,
-    
-    @SerialName("limit")
-    val limit: Int? = null,
-    
-    @SerialName("before")
-    val before: String? = null,
-    
-    @SerialName("after")
-    val after: String? = null
-)
-
-/**
- * 更新设备状态参数
- */
-@Serializable
-data class UpdateDeviceStatusParams(
-    @SerialName("status")
-    val status: String,
-    
-    @SerialName("metadata")
-    val metadata: Map<String, String>? = null
-)
-
-/**
- * Ping 参数
- */
-@Serializable
-data class PingParams(
-    @SerialName("timestamp")
-    val timestamp: Long = System.currentTimeMillis()
-)
 
 /**
  * 构建 chat.send 请求
