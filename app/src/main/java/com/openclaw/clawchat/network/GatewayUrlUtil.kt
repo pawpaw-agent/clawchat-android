@@ -145,10 +145,27 @@ object GatewayUrlUtil {
     /**
      * 猜测是否应该用 TLS
      *
-     * .ts.net 域名通常走 HTTPS/WSS
+     * 规则:
+     * - .ts.net / .tailnet 域名 → TLS
+     * - 局域网 IP (192.168.x.x, 10.x.x.x, 172.16-31.x.x) → TLS (默认安全)
+     * - localhost → TLS
+     * - 其他 → TLS (默认安全)
      */
     private fun looksLikeTlsHost(host: String): Boolean {
         val clean = host.substringBefore(":").substringBefore("/")
-        return clean.endsWith(".ts.net") || clean.endsWith(".tailnet")
+        
+        // .ts.net / .tailnet 域名
+        if (clean.endsWith(".ts.net") || clean.endsWith(".tailnet")) return true
+        
+        // localhost
+        if (clean.equals("localhost", ignoreCase = true)) return true
+        
+        // 局域网 IP 默认用 TLS (安全优先)
+        if (clean.matches(Regex("""192\.168\.\d+\.\d+"""))) return true
+        if (clean.matches(Regex("""10\.\d+\.\d+\.\d+"""))) return true
+        if (clean.matches(Regex("""172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+"""))) return true
+        
+        // 其他情况默认 TLS (安全优先)
+        return true
     }
 }
