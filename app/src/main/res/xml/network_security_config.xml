@@ -23,14 +23,8 @@
         <domain includeSubdomains="true">172.30.*</domain>
         <domain includeSubdomains="true">172.31.*</domain>
         
-        <!-- 信任 Gateway 内置证书 -->
-        <pin-set expiration="2036-03-16">
-            <!-- 证书 SHA-256 指纹 -->
-            <pin digest="SHA-256">38ED78CCCA32F9A6704813A21E9AE2C43FF2694F1432D688EC5DA79963417981</pin>
-        </pin-set>
-        
         <!-- 直接信任 raw 目录中的证书 -->
-        <certificates src="@raw/openclaw_gateway" overridePins="true" />
+        <certificates src="@raw/openclaw_gateway" />
     </domain-config>
 
     <!-- 开发调试：允许用户安装的证书 -->
