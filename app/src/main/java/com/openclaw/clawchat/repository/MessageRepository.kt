@@ -104,11 +104,9 @@ class MessageRepository @Inject constructor(
     }
     
     /**
-     * 根据 ID 获取消息（用于更新）
+     * 根据 ID 获取消息
      */
     private suspend fun getMessageById(id: Long): MessageEntity? {
-        // Room 不支持直接按 ID 查询单个消息，需要通过其他方式获取
-        // 这里简化处理，实际使用中可能需要添加对应的 DAO 方法
-        return null
+        return messageDao.getById(id)
     }
 }

@@ -133,14 +133,3 @@ class GatewayRepository @Inject constructor(
         return Triple(host, port, useTls)
     }
 }
-
-/**
- * 扩展 EncryptedStorage 添加清除 Gateway 配置方法
- */
-private fun EncryptedStorage.clearGatewayConfig() {
-    // 使用反射访问私有 sharedPreferences 或使用清除方法
-    // 这里使用清除特定键的方式
-    // 注意：EncryptedStorage 没有直接提供此方法，需要通过 clearAll 或添加新方法
-    // 临时实现：保存空值
-    saveGatewayUrl("")
-}

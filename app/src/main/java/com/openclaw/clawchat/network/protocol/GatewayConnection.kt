@@ -61,6 +61,7 @@ class GatewayConnection(
         private const val INITIAL_RECONNECT_DELAY_MS = 1000L
         private const val MAX_RECONNECT_DELAY_MS = 30_000L
         private const val RECONNECT_BACKOFF_FACTOR = 2.0
+        private const val MAX_RECONNECT_ATTEMPTS = 15
 
         private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     }
@@ -454,6 +455,15 @@ class GatewayConnection(
 
     private fun scheduleReconnect(url: String, token: String? = null) {
         reconnectJob?.cancel()
+
+        if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
+            Log.e(TAG, "Max reconnect attempts ($MAX_RECONNECT_ATTEMPTS) reached, giving up")
+            _connectionState.value = WebSocketConnectionState.Error(
+                IllegalStateException("Max reconnect attempts reached")
+            )
+            return
+        }
+
         val delayMs = (INITIAL_RECONNECT_DELAY_MS * Math.pow(RECONNECT_BACKOFF_FACTOR, reconnectAttempt.toDouble()))
             .toLong().coerceAtMost(MAX_RECONNECT_DELAY_MS)
         reconnectAttempt++
