@@ -228,6 +228,7 @@ dependencies {
     testImplementation(libs.androidx.core.testing)
     testImplementation(libs.turbine)
     testImplementation("org.robolectric:robolectric:4.11.1")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
