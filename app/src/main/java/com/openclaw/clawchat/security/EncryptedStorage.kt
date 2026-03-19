@@ -24,19 +24,35 @@ import javax.crypto.spec.GCMParameterSpec
  * - 存储 Gateway 配置（可选加密）
  * - 存储用户偏好设置
  * - AES256-GCM 加密保护
+ * - Ed25519 软件密钥存储（API 26-32，SoftwareKeyStore 接口）
  * 
  * 安全特性：
  * - MasterKey 存储于 Android Keystore
  * - 密钥加密：AES256-SIV
  * - 值加密：AES256-GCM
- * - 自动处理密钥轮换
+ * - API 33+：MasterKey 由硬件 Keystore (TEE/StrongBox) 保护
+ * - API 26-32：MasterKey 使用 setUserAuthenticationRequired(true) 保护，
+ *   要求设备锁屏验证后才能访问。
+ * 
+ * ⚠️ 已知限制（API 26-32 软件密钥存储）：
+ * Ed25519 私钥存储在 EncryptedSharedPreferences 中而非硬件 Keystore，
+ * 因为 Android Keystore 在 API < 33 不支持 Ed25519。
+ * MasterKey 虽在 Keystore 中，但密钥操作在用户空间完成，
+ * 理论上 root 设备可提取解密后的私钥。
+ * API 33+ 设备使用硬件级 Ed25519，不受此限制。
  */
 class EncryptedStorage(context: Context) : SoftwareKeyStore {
     
     private val sharedPreferences: SharedPreferences
+
+    /**
+     * 当前是否使用软件密钥存储（API < 33）
+     */
+    val usingSoftwareKeyStore: Boolean = Build.VERSION.SDK_INT < 33
     
     // 密钥常量
     companion object {
+        private const val TAG = "EncryptedStorage"
         private const val PREFS_NAME = "clawchat_secure_prefs"
         
         // 存储键名
@@ -56,18 +72,36 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
     
     init {
         sharedPreferences = createEncryptedPrefs(context)
+
+        if (BuildConfig.DEBUG && usingSoftwareKeyStore) {
+            android.util.Log.d(TAG,
+                "⚠️ API ${Build.VERSION.SDK_INT} < 33: using software key store " +
+                "(Ed25519 private keys in EncryptedSharedPreferences, not hardware Keystore)")
+        }
     }
     
     /**
      * 创建 EncryptedSharedPreferences 实例
      * 
-     * 使用 MasterKey 存储在 Android Keystore 中，
-     * 确保即使设备被 Root，加密数据也无法被提取。
+     * MasterKey 存储在 Android Keystore 中。
+     * API 26-32：添加 setUserAuthenticationRequired(true) 保护，
+     * 要求设备解锁后才能访问加密数据（增加 root 设备攻击难度）。
+     * API 33+：MasterKey 由硬件 TEE/StrongBox 保护。
      */
     private fun createEncryptedPrefs(context: Context): SharedPreferences {
-        val masterKey = MasterKey.Builder(context)
+        val masterKeyBuilder = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
+
+        // API 26-32：Ed25519 私钥存储在软件层，
+        // 添加用户认证要求以增强保护（设备锁屏后密钥不可访问）
+        if (usingSoftwareKeyStore) {
+            masterKeyBuilder.setUserAuthenticationRequired(
+                true,
+                /* authValidityDurationSeconds = */ 0  // 每次使用都需要验证
+            )
+        }
+
+        val masterKey = masterKeyBuilder.build()
         
         return EncryptedSharedPreferences.create(
             context,

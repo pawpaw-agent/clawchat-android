@@ -261,6 +261,14 @@ class SecurityModule(private val context: Context) {
         return "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} (Android ${android.os.Build.VERSION.RELEASE})"
     }
     fun getKeyInfo(): KeystoreManager.KeyInfo = keystoreManager.getKeyInfo()
+
+    /**
+     * 暴露内部 EncryptedStorage 实例
+     *
+     * 供 Hilt DI 模块使用，确保 GatewayRepository 等外部类
+     * 注入的 EncryptedStorage 与 SecurityModule 内部是同一实例。
+     */
+    fun getEncryptedStorage(): EncryptedStorage = encryptedStorage
     
     // ==================== 内部方法 ====================
     
