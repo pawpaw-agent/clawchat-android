@@ -67,10 +67,26 @@ class MainViewModel @Inject constructor(
             sessionRepository.observeSessions().collect { cachedSessions ->
                 // 仅在没有 Gateway 数据时使用缓存
                 if (_uiState.value.connectionStatus !is ConnectionStatus.Connected) {
-                    _uiState.update { it.copy(sessions = cachedSessions) }
+                    _uiState.update { it.copy(sessions = cachedSessions.map { s -> s.toSessionUi() }) }
                 }
             }
         }
+    }
+
+    /**
+     * Convert domain Session to UI SessionUi
+     */
+    private fun com.openclaw.clawchat.domain.model.Session.toSessionUi(): SessionUi {
+        return SessionUi(
+            id = id,
+            label = label,
+            model = model,
+            status = status,
+            lastActivityAt = lastActivityAt,
+            messageCount = messageCount,
+            lastMessage = lastMessage,
+            thinking = thinking
+        )
     }
 
     private fun observeConnectionState() {

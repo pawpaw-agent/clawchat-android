@@ -54,7 +54,7 @@ fun PairingScreen(
                 is PairingEvent.PairingRejected -> {}
                 else -> {}
             }
-            viewModel.consumeEvent()
+            // Channel events are consumed on receive, no manual consume needed
         }
     }
 
