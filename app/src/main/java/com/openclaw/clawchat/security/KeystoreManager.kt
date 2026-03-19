@@ -98,8 +98,7 @@ class KeystoreManager(
             val spki = getPublicKeySPKI()
             extractRawFromSPKI(spki)
         } else {
-            ensureBcKeysLoaded()
-            cachedBcPublicKey!!.encoded
+            loadBcPublicKey().encoded
         }
     }
 
@@ -283,43 +282,67 @@ class KeystoreManager(
             privateKeyEncoded = privateKey.encoded  // raw 32 bytes seed
         )
 
-        // 缓存
+        // 仅缓存公钥（非敏感），私钥不驻留内存
         cachedBcPublicKey = publicKey
-        cachedBcPrivateKey = privateKey
     }
 
     /**
      * API 26-32: BouncyCastle 签名
+     *
+     * 私钥每次从存储加载，签名完成后立即清除内存引用，
+     * 防止 root 设备通过内存转储提取私钥。
+     * 性能影响可忽略（AES-GCM 解密 32 bytes < 1ms）。
      */
     private fun signWithBouncyCastle(data: ByteArray): ByteArray {
-        ensureBcKeysLoaded()
-
-        val signer = Ed25519Signer()
-        signer.init(true, cachedBcPrivateKey!!)
-        signer.update(data, 0, data.size)
-        return signer.generateSignature()
+        val privateKey = loadBcPrivateKey()
+        return try {
+            val signer = Ed25519Signer()
+            signer.init(true, privateKey)
+            signer.update(data, 0, data.size)
+            signer.generateSignature()
+        } finally {
+            // 签名完成后立即清除私钥内存引用
+            clearBcPrivateKeyCache()
+        }
     }
 
     /**
-     * 确保 BouncyCastle 密钥已从存储加载到缓存
+     * 从存储加载 BouncyCastle 公钥（可缓存，非敏感）
      */
-    private fun ensureBcKeysLoaded() {
-        if (cachedBcPrivateKey != null && cachedBcPublicKey != null) return
+    private fun loadBcPublicKey(): Ed25519PublicKeyParameters {
+        cachedBcPublicKey?.let { return it }
 
+        requireNotNull(softwareKeyStore) { "SoftwareKeyStore required" }
+
+        val publicSpki = softwareKeyStore.getPublicKeyEncoded(alias)
+            ?: throw IllegalStateException("Key pair not found. Call generateKeyPair() first.")
+        val publicRaw = extractRawFromSPKI(publicSpki)
+        val publicKey = Ed25519PublicKeyParameters(publicRaw, 0)
+        cachedBcPublicKey = publicKey
+        return publicKey
+    }
+
+    /**
+     * 从存储加载 BouncyCastle 私钥（不缓存，用完即弃）
+     */
+    private fun loadBcPrivateKey(): Ed25519PrivateKeyParameters {
         requireNotNull(softwareKeyStore) { "SoftwareKeyStore required" }
 
         val privateRaw = softwareKeyStore.getPrivateKeyEncoded(alias)
             ?: throw IllegalStateException("Key pair not found. Call generateKeyPair() first.")
-        val publicSpki = softwareKeyStore.getPublicKeyEncoded(alias)
-            ?: throw IllegalStateException("Key pair not found. Call generateKeyPair() first.")
-
-        // 从 raw 32 bytes seed 恢复 BouncyCastle 私钥
-        cachedBcPrivateKey = Ed25519PrivateKeyParameters(privateRaw, 0)
-        // 从 SPKI 中提取 raw 32 bytes 恢复公钥
-        val publicRaw = extractRawFromSPKI(publicSpki)
-        cachedBcPublicKey = Ed25519PublicKeyParameters(publicRaw, 0)
+        return Ed25519PrivateKeyParameters(privateRaw, 0)
     }
 
+    /**
+     * 清除私钥内存缓存
+     */
+    private fun clearBcPrivateKeyCache() {
+        cachedBcPrivateKey = null
+    }
+
+    /**
+     * 清除所有 BouncyCastle 密钥缓存（公钥 + 私钥）
+     */
     private fun clearBcCache() {
         cachedBcPrivateKey = null
         cachedBcPublicKey = null
