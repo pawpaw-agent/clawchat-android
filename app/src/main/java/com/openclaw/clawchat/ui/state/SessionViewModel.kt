@@ -11,9 +11,12 @@ import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -41,8 +44,13 @@ class SessionViewModel @Inject constructor(
     private val _state = MutableStateFlow(SessionUiState())
     val state: StateFlow<SessionUiState> = _state.asStateFlow()
 
-    private val _events = MutableStateFlow<SessionEvent?>(null)
-    val events: StateFlow<SessionEvent?> = _events.asStateFlow()
+    private val _events = Channel<SessionEvent>(Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
+
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Log.e(TAG, "Uncaught coroutine exception", throwable)
+        _state.update { it.copy(error = throwable.message ?: "未知错误", isLoading = false, isSending = false) }
+    }
 
     /** 流式消息缓冲：runId → 累积内容 */
     private val streamingBuffers = mutableMapOf<String, StringBuilder>()
@@ -62,7 +70,7 @@ class SessionViewModel @Inject constructor(
     }
 
     private fun observeConnectionState() {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             gateway.connectionState.collect { connectionState ->
                 val status = when (connectionState) {
                     is WebSocketConnectionState.Connected -> ConnectionStatus.Connected()
@@ -80,7 +88,7 @@ class SessionViewModel @Inject constructor(
     }
 
     private fun loadMessageHistory() {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             val sessionId = savedStateHandle.get<String>("sessionId") ?: return@launch
             messageRepository.getMessages(sessionId).collect { entities ->
                 _state.update { it.copy(messages = entities.map { e -> e.toMessageUi() }) }
@@ -91,7 +99,7 @@ class SessionViewModel @Inject constructor(
     // ── ChatEvent 状态机 ──
 
     private fun observeIncomingMessages() {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             gateway.incomingMessages.collect { rawJson ->
                 handleIncomingFrame(rawJson)
             }
@@ -99,7 +107,7 @@ class SessionViewModel @Inject constructor(
     }
 
     private fun handleIncomingFrame(rawJson: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             val sessionId = _state.value.sessionId ?: return@launch
 
             try {
@@ -199,7 +207,7 @@ class SessionViewModel @Inject constructor(
             currentState.copy(messages = newMessages, isLoading = false)
         }
 
-        _events.value = SessionEvent.MessageReceived(finalMsg)
+        _events.trySend(SessionEvent.MessageReceived(finalMsg))
     }
 
     /** aborted: 标记中止 */
@@ -230,19 +238,19 @@ class SessionViewModel @Inject constructor(
         streamingBuffers.remove(runId)
 
         _state.update { it.copy(error = errorMsg, isLoading = false) }
-        _events.value = SessionEvent.Error(errorMsg)
+        _events.trySend(SessionEvent.Error(errorMsg))
     }
 
     // ── 发送消息 ──
 
     fun sendMessage(content: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             if (content.isBlank()) {
-                _events.value = SessionEvent.Error("消息内容不能为空")
+                _events.trySend(SessionEvent.Error("消息内容不能为空"))
                 return@launch
             }
             if (_state.value.connectionStatus !is ConnectionStatus.Connected) {
-                _events.value = SessionEvent.Error("未连接到网关")
+                _events.trySend(SessionEvent.Error("未连接到网关"))
                 return@launch
             }
 
@@ -296,7 +304,7 @@ class SessionViewModel @Inject constructor(
                         status = MessageStatus.FAILED
                     )
                     _state.update { it.copy(error = errMsg, isLoading = false) }
-                    _events.value = SessionEvent.Error(errMsg)
+                    _events.trySend(SessionEvent.Error(errMsg))
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "发送消息异常", e)
@@ -308,7 +316,7 @@ class SessionViewModel @Inject constructor(
                     status = MessageStatus.FAILED
                 )
                 _state.update { it.copy(error = "发送异常：${e.message}", isLoading = false) }
-                _events.value = SessionEvent.Error("发送异常：${e.message}")
+                _events.trySend(SessionEvent.Error("发送异常：${e.message}"))
             }
         }
     }
@@ -317,7 +325,7 @@ class SessionViewModel @Inject constructor(
 
     fun updateInputText(text: String) { _state.update { it.copy(inputText = text) } }
     fun clearError() { _state.update { it.copy(error = null) } }
-    fun consumeEvent() { _events.value = null }
+    fun consumeEvent() { /* no-op: Channel events are consumed on receive */ }
 
     fun setSessionId(sessionId: String) {
         streamingBuffers.clear()

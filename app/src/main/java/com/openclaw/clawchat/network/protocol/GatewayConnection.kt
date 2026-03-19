@@ -1,6 +1,7 @@
 package com.openclaw.clawchat.network.protocol
 
 import android.util.Log
+import com.openclaw.clawchat.BuildConfig
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.security.SecurityModule
 import kotlinx.coroutines.CoroutineScope
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -86,7 +88,7 @@ class GatewayConnection(
     // ── 内部组件 ──
 
     private var authHandler = ChallengeResponseAuth(securityModule)
-    private val requestTracker = RequestTracker(timeoutMs = REQUEST_TIMEOUT_MS)
+    private val requestTracker = RequestTracker(timeoutMs = REQUEST_TIMEOUT_MS, scope = appScope)
     private val sequenceManager = SequenceManager()
     private val eventDeduplicator = EventDeduplicator()
 
@@ -150,17 +152,14 @@ class GatewayConnection(
                 }
             })
 
-            // 等待认证完成
-            val ok = withTimeoutOrNull(AUTH_TIMEOUT_MS) {
-                while (_connectionState.value !is WebSocketConnectionState.Connected &&
-                    _connectionState.value !is WebSocketConnectionState.Error
-                ) {
-                    delay(50)
+            // 等待认证完成（挂起直到状态变为 Connected 或 Error）
+            val finalState = withTimeoutOrNull(AUTH_TIMEOUT_MS) {
+                _connectionState.first {
+                    it is WebSocketConnectionState.Connected || it is WebSocketConnectionState.Error
                 }
-                _connectionState.value is WebSocketConnectionState.Connected
             }
 
-            if (ok == true) {
+            if (finalState is WebSocketConnectionState.Connected) {
                 startHeartbeat()
                 Result.success(Unit)
             } else {
@@ -259,7 +258,11 @@ class GatewayConnection(
                 return
             }
 
-            Log.i(TAG, "connect.challenge received, nonce=${nonce.take(8)}...")
+            if (BuildConfig.DEBUG) {
+                Log.i(TAG, "connect.challenge received, nonce=${nonce.take(8)}...")
+            } else {
+                Log.i(TAG, "connect.challenge received")
+            }
 
             // 1. 处理 challenge
             authHandler.handleChallenge(ConnectChallengePayload(nonce = nonce, timestamp = ts))

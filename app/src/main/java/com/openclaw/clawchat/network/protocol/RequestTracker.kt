@@ -37,7 +37,8 @@ import kotlinx.serialization.json.JsonElement
  * ```
  */
 class RequestTracker(
-    private val timeoutMs: Long = 30000L
+    private val timeoutMs: Long = 30000L,
+    private val scope: CoroutineScope? = null
 ) {
     companion object {
         private const val TAG = "RequestTracker"
@@ -74,14 +75,17 @@ class RequestTracker(
     }
     
     init {
-        startCleanupTask()
+        // Only start cleanup if an external scope is provided (avoids leaked coroutine)
+        if (scope != null) {
+            startCleanupTask()
+        }
     }
     
     /**
-     * 启动定期清理任务
+     * 启动定期清理任务（使用外部提供的 CoroutineScope）
      */
     private fun startCleanupTask() {
-        cleanupJob = CoroutineScope(Dispatchers.IO).launch {
+        cleanupJob = scope!!.launch {
             while (true) {
                 delay(CLEANUP_INTERVAL_MS)
                 cleanupExpiredRequests()

@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * ClawChat Room 数据库
@@ -14,7 +16,7 @@ import androidx.room.TypeConverters
         MessageEntity::class,
         SessionEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -26,6 +28,15 @@ abstract class ClawChatDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: ClawChatDatabase? = null
+
+        /**
+         * Migration 1→2: 占位（schema 未变，仅版本号升级以启用安全迁移策略）
+         */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // no-op: schema unchanged, version bump for migration strategy
+            }
+        }
         
         fun getDatabase(context: Context): ClawChatDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -34,7 +45,8 @@ abstract class ClawChatDatabase : RoomDatabase() {
                     ClawChatDatabase::class.java,
                     "clawchat_database"
                 )
-                .fallbackToDestructiveMigration()
+                .addMigrations(MIGRATION_1_2)
+                .fallbackToDestructiveMigrationOnDowngrade()
                 .build()
                 INSTANCE = instance
                 instance

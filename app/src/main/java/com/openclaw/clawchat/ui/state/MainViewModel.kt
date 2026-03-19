@@ -8,9 +8,12 @@ import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
@@ -36,8 +39,13 @@ class MainViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
-    private val _events = MutableStateFlow<UiEvent?>(null)
-    val events: StateFlow<UiEvent?> = _events.asStateFlow()
+    private val _events = Channel<UiEvent>(Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
+
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Log.e(TAG, "Uncaught coroutine exception", throwable)
+        _uiState.update { it.copy(error = throwable.message ?: "未知错误", isLoading = false) }
+    }
 
     companion object {
         private const val TAG = "MainViewModel"
@@ -52,7 +60,7 @@ class MainViewModel @Inject constructor(
      * 启动时从 Room 加载缓存会话（离线可用）
      */
     private fun loadSessionsFromCache() {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             sessionRepository.observeSessions().collect { cachedSessions ->
                 // 仅在没有 Gateway 数据时使用缓存
                 if (_uiState.value.connectionStatus !is ConnectionStatus.Connected) {
@@ -63,7 +71,7 @@ class MainViewModel @Inject constructor(
     }
 
     private fun observeConnectionState() {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             gateway.connectionState.collect { connectionState ->
                 val connectionStatus = when (connectionState) {
                     is WebSocketConnectionState.Connected -> {
@@ -83,14 +91,14 @@ class MainViewModel @Inject constructor(
 
                 if (connectionState is WebSocketConnectionState.Disconnected ||
                     connectionState is WebSocketConnectionState.Error) {
-                    _events.value = UiEvent.ConnectionLost
+                    _events.trySend(UiEvent.ConnectionLost)
                 }
             }
         }
     }
 
     fun connectToGateway(gatewayUrl: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val wsUrl = GatewayUrlUtil.normalizeToWebSocketUrl(gatewayUrl)
@@ -107,7 +115,7 @@ class MainViewModel @Inject constructor(
                             isLoading = false
                         )
                     }
-                    _events.value = UiEvent.ShowSuccess("已连接到网关")
+                    _events.trySend(UiEvent.ShowSuccess("已连接到网关"))
                 }
 
                 result.onFailure { error ->
@@ -120,7 +128,7 @@ class MainViewModel @Inject constructor(
                             isLoading = false
                         )
                     }
-                    _events.value = UiEvent.ShowError("连接失败：${error.message}")
+                    _events.trySend(UiEvent.ShowError("连接失败：${error.message}"))
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "连接异常", e)
@@ -132,7 +140,7 @@ class MainViewModel @Inject constructor(
                         isLoading = false
                     )
                 }
-                _events.value = UiEvent.ShowError("连接异常：${e.message}")
+                _events.trySend(UiEvent.ShowError("连接异常：${e.message}"))
             }
         }
     }
@@ -141,7 +149,7 @@ class MainViewModel @Inject constructor(
      * 从 Gateway 加载会话列表 → 更新 UI + 同步到 Room
      */
     private fun loadSessionsFromGateway() {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             try {
                 val response = gateway.sessionsList()
                 if (!response.isSuccess()) {
@@ -203,14 +211,14 @@ class MainViewModel @Inject constructor(
     }
 
     fun disconnect() {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(connectionStatus = ConnectionStatus.Disconnecting, currentGateway = null) }
             try {
                 gateway.disconnect()
                 _uiState.update { it.copy(connectionStatus = ConnectionStatus.Disconnected) }
-                _events.value = UiEvent.ShowSuccess("已断开连接")
+                _events.trySend(UiEvent.ShowSuccess("已断开连接"))
             } catch (e: Exception) {
-                _events.value = UiEvent.ShowError("断开连接失败：${e.message}")
+                _events.trySend(UiEvent.ShowError("断开连接失败：${e.message}"))
             }
         }
     }
@@ -218,11 +226,11 @@ class MainViewModel @Inject constructor(
     fun selectSession(sessionId: String) {
         val session = _uiState.value.sessions.find { it.id == sessionId }
         _uiState.update { it.copy(currentSession = session) }
-        _events.value = UiEvent.NavigateToSession(sessionId)
+        _events.trySend(UiEvent.NavigateToSession(sessionId))
     }
 
     fun deleteSession(sessionId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             try {
                 gateway.call("sessions.delete", mapOf("key" to JsonPrimitive(sessionId)))
             } catch (_: Exception) {}
@@ -234,14 +242,14 @@ class MainViewModel @Inject constructor(
                     currentSession = if (it.currentSession?.id == sessionId) null else it.currentSession
                 )
             }
-            _events.value = UiEvent.ShowSuccess("会话已删除")
+            _events.trySend(UiEvent.ShowSuccess("会话已删除"))
         }
     }
 
     fun refreshSessions() { loadSessionsFromGateway() }
 
     fun createSession(model: String = "default", thinking: Boolean = false) {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             val sessionKey = gateway.defaultSessionKey ?: "agent:main:main"
             try {
                 gateway.call("sessions.reset", mapOf(
@@ -256,7 +264,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun renameSession(sessionId: String, newName: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             try {
                 gateway.call("sessions.patch", mapOf(
                     "key" to JsonPrimitive(sessionId),
@@ -302,7 +310,7 @@ class MainViewModel @Inject constructor(
 
     fun terminateSession(sessionId: String) { deleteSession(sessionId) }
     fun clearError() { _uiState.update { it.copy(error = null) } }
-    fun consumeEvent() { _events.value = null }
+    fun consumeEvent() { /* no-op: Channel events are consumed on receive */ }
 }
 
 sealed class UiEvent {
