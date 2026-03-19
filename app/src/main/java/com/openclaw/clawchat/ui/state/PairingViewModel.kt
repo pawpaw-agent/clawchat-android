@@ -184,8 +184,6 @@ class PairingViewModel @Inject constructor(
         }
     }
 
-    fun consumeEvent() {}
-
     private fun emitError(message: String) {
         viewModelScope.launch { _events.emit(PairingEvent.PairingError(message)) }
     }

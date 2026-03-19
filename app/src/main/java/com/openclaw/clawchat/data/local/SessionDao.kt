@@ -88,6 +88,12 @@ interface SessionDao {
     suspend fun getCount(): Int
     
     /**
+     * 删除所有非活跃会话
+     */
+    @Query("DELETE FROM sessions WHERE isActive = false")
+    suspend fun deleteInactive(): Int
+
+    /**
      * 搜索会话标题
      */
     @Query("SELECT * FROM sessions WHERE title LIKE :query ORDER BY updatedAt DESC LIMIT :limit")

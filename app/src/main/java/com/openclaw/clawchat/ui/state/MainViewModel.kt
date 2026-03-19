@@ -49,6 +49,7 @@ class MainViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "MainViewModel"
+        private const val DEFAULT_GATEWAY_PORT = 18789
     }
 
     init {
@@ -109,7 +110,7 @@ class MainViewModel @Inject constructor(
                         it.copy(
                             currentGateway = GatewayConfigUi(
                                 id = "default", name = "Gateway", host = gatewayUrl,
-                                port = 18789, useTls = gatewayUrl.startsWith("https://"),
+                                port = DEFAULT_GATEWAY_PORT, useTls = gatewayUrl.startsWith("https://"),
                                 isCurrent = true
                             ),
                             isLoading = false

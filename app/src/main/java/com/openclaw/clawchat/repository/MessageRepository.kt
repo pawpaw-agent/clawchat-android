@@ -60,11 +60,10 @@ class MessageRepository @Inject constructor(
     }
     
     /**
-     * 更新消息状态
+     * 更新消息状态（直接 SQL，不需要先查询）
      */
     suspend fun updateMessageStatus(messageId: Long, status: MessageStatus) {
-        val message = getMessageById(messageId) ?: return
-        messageDao.update(message.copy(status = status))
+        messageDao.updateStatusById(messageId, status.name)
     }
     
     /**

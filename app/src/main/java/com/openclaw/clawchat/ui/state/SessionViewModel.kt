@@ -53,13 +53,14 @@ class SessionViewModel @Inject constructor(
     }
 
     /** 流式消息缓冲：runId → 累积内容 */
-    private val streamingBuffers = mutableMapOf<String, StringBuilder>()
+    private val streamingBuffers = LinkedHashMap<String, StringBuilder>()
 
     /** 已完成的 runId（防止 final 后重复处理 delta） */
-    private val completedRuns = mutableSetOf<String>()
+    private val completedRuns = LinkedHashSet<String>()
 
     companion object {
         private const val TAG = "SessionViewModel"
+        private const val MAX_TRACKED_RUNS = 100
         private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     }
 
@@ -175,6 +176,7 @@ class SessionViewModel @Inject constructor(
     /** final: 完成消息，写入缓存 */
     private suspend fun handleFinal(runId: String, content: String, role: String, sessionId: String) {
         completedRuns.add(runId)
+        evictOldRuns()
 
         // 使用缓冲中的完整内容（如果有），否则用 final 的 content
         val finalContent = streamingBuffers.remove(runId)?.toString()?.ifEmpty { content } ?: content
@@ -241,6 +243,21 @@ class SessionViewModel @Inject constructor(
         _events.trySend(SessionEvent.Error(errorMsg))
     }
 
+    // ── 容量管理 ──
+
+    /** 清理超出容量的旧 run 记录 */
+    private fun evictOldRuns() {
+        while (completedRuns.size > MAX_TRACKED_RUNS) {
+            val oldest = completedRuns.first()
+            completedRuns.remove(oldest)
+            streamingBuffers.remove(oldest)
+        }
+        while (streamingBuffers.size > MAX_TRACKED_RUNS) {
+            val oldest = streamingBuffers.keys.first()
+            streamingBuffers.remove(oldest)
+        }
+    }
+
     // ── 发送消息 ──
 
     fun sendMessage(content: String) {
@@ -266,7 +283,7 @@ class SessionViewModel @Inject constructor(
                 timestamp = System.currentTimeMillis()
             )
 
-            messageRepository.saveMessage(
+            val messageId = messageRepository.saveMessage(
                 sessionId = sessionKey,
                 role = LocalMessageRole.USER,
                 content = content,
@@ -287,34 +304,16 @@ class SessionViewModel @Inject constructor(
                 val response = gateway.chatSend(sessionKey, content)
 
                 if (response.isSuccess()) {
-                    messageRepository.saveMessage(
-                        sessionId = sessionKey,
-                        role = LocalMessageRole.USER,
-                        content = content,
-                        timestamp = userMessage.timestamp,
-                        status = MessageStatus.SENT
-                    )
+                    messageRepository.updateMessageStatus(messageId, MessageStatus.SENT)
                 } else {
                     val errMsg = response.error?.message ?: "发送失败"
-                    messageRepository.saveMessage(
-                        sessionId = sessionKey,
-                        role = LocalMessageRole.USER,
-                        content = content,
-                        timestamp = userMessage.timestamp,
-                        status = MessageStatus.FAILED
-                    )
+                    messageRepository.updateMessageStatus(messageId, MessageStatus.FAILED)
                     _state.update { it.copy(error = errMsg, isLoading = false) }
                     _events.trySend(SessionEvent.Error(errMsg))
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "发送消息异常", e)
-                messageRepository.saveMessage(
-                    sessionId = sessionKey,
-                    role = LocalMessageRole.USER,
-                    content = content,
-                    timestamp = userMessage.timestamp,
-                    status = MessageStatus.FAILED
-                )
+                messageRepository.updateMessageStatus(messageId, MessageStatus.FAILED)
                 _state.update { it.copy(error = "发送异常：${e.message}", isLoading = false) }
                 _events.trySend(SessionEvent.Error("发送异常：${e.message}"))
             }

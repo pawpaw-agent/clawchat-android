@@ -224,7 +224,7 @@ class EventDeduplicator(
      * @param seq 序列号（如果有）
      * @return true 如果是新事件，false 如果是重复事件
      */
-    suspend fun isDuplicate(eventId: String?, seq: Int?): Boolean = mutex.withLock {
+    suspend fun isAlreadySeen(eventId: String?, seq: Int?): Boolean = mutex.withLock {
         // 检查事件 ID
         if (eventId != null) {
             if (seenEventIds.contains(eventId)) {

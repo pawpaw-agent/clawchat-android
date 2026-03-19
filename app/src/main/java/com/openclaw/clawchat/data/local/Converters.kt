@@ -1,7 +1,6 @@
 package com.openclaw.clawchat.data.local
 
 import androidx.room.TypeConverter
-import java.time.Instant
 
 /**
  * Room 类型转换器
@@ -26,15 +25,5 @@ class Converters {
     @TypeConverter
     fun toMessageStatus(value: String): MessageStatus {
         return MessageStatus.valueOf(value)
-    }
-    
-    @TypeConverter
-    fun fromInstant(instant: Instant): Long {
-        return instant.toEpochMilli()
-    }
-    
-    @TypeConverter
-    fun toInstant(timestamp: Long): Instant {
-        return Instant.ofEpochMilli(timestamp)
     }
 }

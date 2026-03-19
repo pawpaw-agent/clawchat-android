@@ -65,6 +65,8 @@ class GatewayConnection(
         private const val RECONNECT_BACKOFF_FACTOR = 2.0
         private const val MAX_RECONNECT_ATTEMPTS = 15
 
+        private const val NONCE_LOG_PREFIX_LEN = 8
+
         private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     }
 
@@ -122,7 +124,6 @@ class GatewayConnection(
         try {
             val request = Request.Builder()
                 .url(url)
-                .addHeader("X-ClawChat-Protocol-Version", WebSocketProtocol.PROTOCOL_VERSION.toString())
                 .build()
 
             webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
@@ -230,7 +231,7 @@ class GatewayConnection(
             }
             val eventId = obj["stateVersion"]?.jsonPrimitive?.content
                 ?: if (seq != null) "$event-$seq" else "$event-${UUID.randomUUID()}"
-            if (eventDeduplicator.isDuplicate(eventId, seq)) return@launch
+            if (eventDeduplicator.isAlreadySeen(eventId, seq)) return@launch
 
             when (event) {
                 "connect.challenge" -> handleConnectChallenge(obj)
@@ -259,7 +260,7 @@ class GatewayConnection(
             }
 
             if (BuildConfig.DEBUG) {
-                Log.i(TAG, "connect.challenge received, nonce=${nonce.take(8)}...")
+                Log.i(TAG, "connect.challenge received, nonce=${nonce.take(NONCE_LOG_PREFIX_LEN)}...")
             } else {
                 Log.i(TAG, "connect.challenge received")
             }

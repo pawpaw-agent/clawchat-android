@@ -164,16 +164,10 @@ class SessionRepository @Inject constructor(
     }
 
     /**
-     * 清除所有已终止会话
+     * 清除所有已终止会话（单条 SQL，不循环删除）
      */
     suspend fun clearTerminatedSessions() {
-        val terminatedIds = _sessions.value
-            .filter { it.status == SessionStatus.TERMINATED }
-            .map { it.id }
-        
-        terminatedIds.forEach { id ->
-            sessionDao.deleteById(id)
-        }
+        sessionDao.deleteInactive()
         
         _sessions.update { sessions ->
             sessions.filter { it.status != SessionStatus.TERMINATED }
@@ -206,6 +200,8 @@ class SessionRepository @Inject constructor(
      * 清空所有会话
      */
     suspend fun clearAllSessions() {
+        sessionDao.deleteInactive()
+        // Also delete active ones by iterating (or add a deleteAll query)
         val allSessions = sessionDao.getAllSessions().firstOrNull() ?: emptyList()
         allSessions.forEach { sessionDao.delete(it) }
         

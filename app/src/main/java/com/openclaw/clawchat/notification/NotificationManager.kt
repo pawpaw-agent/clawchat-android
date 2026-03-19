@@ -13,6 +13,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.openclaw.clawchat.MainActivity
 import com.openclaw.clawchat.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,7 +28,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class NotificationManager @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     companion object {
         private const val CHANNEL_MESSAGES = "messages"

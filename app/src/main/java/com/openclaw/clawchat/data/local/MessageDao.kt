@@ -70,6 +70,12 @@ interface MessageDao {
     fun getAllSessionIds(): Flow<List<String>>
     
     /**
+     * 根据 ID 更新消息状态
+     */
+    @Query("UPDATE messages SET status = :status WHERE id = :id")
+    suspend fun updateStatusById(id: Long, status: String)
+
+    /**
      * 根据 ID 获取单条消息
      */
     @Query("SELECT * FROM messages WHERE id = :id")
