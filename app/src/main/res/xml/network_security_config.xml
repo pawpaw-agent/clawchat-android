@@ -6,24 +6,17 @@
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
+            <!-- 信任用户安装的证书（用于调试） -->
+            <certificates src="user" />
         </trust-anchors>
     </base-config>
 
     <!-- 信任 OpenClaw Gateway 内置证书 -->
     <domain-config cleartextTrafficPermitted="false">
-        <!-- 局域网 IP -->
+        <!-- 局域网 Gateway IP -->
         <domain includeSubdomains="false">192.168.0.213</domain>
-        <domain includeSubdomains="true">192.168.*</domain>
-        <domain includeSubdomains="true">10.*</domain>
-        <domain includeSubdomains="true">172.16.*</domain>
-        <domain includeSubdomains="true">172.17.*</domain>
-        <domain includeSubdomains="true">172.18.*</domain>
-        <domain includeSubdomains="true">172.19.*</domain>
-        <domain includeSubdomains="true">172.2*</domain>
-        <domain includeSubdomains="true">172.30.*</domain>
-        <domain includeSubdomains="true">172.31.*</domain>
         
-        <!-- 直接信任 raw 目录中的证书 -->
+        <!-- 直接信任 raw 目录中的 Gateway 证书 -->
         <certificates src="@raw/openclaw_gateway" />
     </domain-config>
 
