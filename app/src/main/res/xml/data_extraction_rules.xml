@@ -24,10 +24,7 @@
             domain="database" 
             path="clawchat_messages.db" />
         
-        <!-- Exclude keystore data -->
-        <exclude 
-            domain="keystore" 
-            path="clawchat_device_key" />
+        <!-- Note: Keystore data is automatically excluded (cannot be backed up) -->
         
         <!-- Exclude cache files -->
         <exclude 
@@ -53,8 +50,6 @@
         <exclude 
             domain="database" 
             path="clawchat_messages.db" />
-        <exclude 
-            domain="keystore" 
-            path="clawchat_device_key" />
+        <!-- Note: Keystore data is automatically excluded (cannot be backed up) -->
     </device-transfer>
 </data-extraction-rules>

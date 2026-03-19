@@ -17,6 +17,20 @@
 -keep class com.google.** { *; }
 
 # ─────────────────────────────────────────────────────────────
+# Tink / Error Prone Annotations (optional, for release builds)
+# ─────────────────────────────────────────────────────────────
+
+# These are compile-time only annotations, safe to ignore at runtime
+-dontwarn com.google.errorprone.annotations.**
+-dontnote com.google.errorprone.annotations.**
+-keep class com.google.errorprone.annotations.** { *; }
+
+# Google API client (used by Tink for key download, optional)
+-dontwarn com.google.api.client.**
+-dontnote com.google.api.client.**
+-keep class com.google.api.client.** { *; }
+
+# ─────────────────────────────────────────────────────────────
 # Kotlin
 # ─────────────────────────────────────────────────────────────
 
