@@ -6,15 +6,45 @@
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
-            <!-- 信任用户安装的证书（用于调试） -->
+            <!-- 信任用户安装的证书（用于手动安装 Gateway 证书） -->
             <certificates src="user" />
         </trust-anchors>
     </base-config>
 
-    <!-- 信任 OpenClaw Gateway 内置证书 -->
+    <!-- 信任 OpenClaw Gateway 内置证书 - 所有局域网 IP -->
     <domain-config cleartextTrafficPermitted="false">
-        <!-- 局域网 Gateway IP -->
+        <!-- 常见局域网 IP 地址 -->
+        <domain includeSubdomains="false">192.168.0.1</domain>
         <domain includeSubdomains="false">192.168.0.213</domain>
+        <domain includeSubdomains="false">192.168.0.254</domain>
+        <domain includeSubdomains="false">192.168.1.1</domain>
+        <domain includeSubdomains="false">192.168.1.254</domain>
+        <domain includeSubdomains="false">192.168.2.1</domain>
+        <domain includeSubdomains="false">192.168.2.254</domain>
+        <domain includeSubdomains="false">192.168.10.1</domain>
+        <domain includeSubdomains="false">192.168.10.254</domain>
+        <domain includeSubdomains="false">192.168.100.1</domain>
+        <domain includeSubdomains="false">192.168.100.254</domain>
+        <domain includeSubdomains="false">192.168.31.1</domain>
+        <domain includeSubdomains="false">192.168.31.254</domain>
+        <domain includeSubdomains="false">192.168.50.1</domain>
+        <domain includeSubdomains="false">192.168.50.254</domain>
+        <domain includeSubdomains="false">10.0.0.1</domain>
+        <domain includeSubdomains="false">10.0.0.254</domain>
+        <domain includeSubdomains="false">10.0.1.1</domain>
+        <domain includeSubdomains="false">10.0.1.254</domain>
+        <domain includeSubdomains="false">10.1.1.1</domain>
+        <domain includeSubdomains="false">10.1.1.254</domain>
+        <domain includeSubdomains="false">172.16.0.1</domain>
+        <domain includeSubdomains="false">172.16.0.254</domain>
+        <domain includeSubdomains="false">172.17.0.1</domain>
+        <domain includeSubdomains="false">172.17.0.254</domain>
+        
+        <!-- 本地域名 -->
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">openclaw.local</domain>
+        <domain includeSubdomains="true">gateway.openclaw.local</domain>
+        <domain includeSubdomains="true">*.local</domain>
         
         <!-- 直接信任 raw 目录中的 Gateway 证书 -->
         <certificates src="@raw/openclaw_gateway" />

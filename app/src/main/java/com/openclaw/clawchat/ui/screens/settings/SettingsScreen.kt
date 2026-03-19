@@ -450,9 +450,10 @@ private fun GatewayConfigDialog(
                 
                 Text(
                     text = if (useTls) "wss://${host.ifEmpty { "host" }}:${port.ifEmpty { "port" }}/ws"
-                           else "ws://${host.ifEmpty { "host" }}:${port.ifEmpty { "port" }}/ws",
+                           else "ws://${host.ifEmpty { "host" }}:${port.ifEmpty { "port" }}/ws ⚠️ 不安全",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (useTls) MaterialTheme.colorScheme.onSurfaceVariant
+                            else MaterialTheme.colorScheme.error
                 )
             }
         },

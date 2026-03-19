@@ -74,7 +74,7 @@ data class GatewayConfigInput(
     val name: String = "",
     val host: String = "",
     val port: Int = 18789,
-    val useTls: Boolean = false
+    val useTls: Boolean = true  // 默认启用 TLS（wss://）
 )
 
 /**
