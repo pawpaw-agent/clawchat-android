@@ -506,6 +506,13 @@ val signature = signer.generateSignature()
 - ✅ 日志自动脱敏敏感信息
 - ✅ 定期轮换设备令牌
 
+### ⚠️ 已知安全限制
+
+| 限制 | 影响范围 | 缓解措施 |
+|------|----------|----------|
+| **API 26-32 设备使用软件密钥存储** | Ed25519 私钥存储在 EncryptedSharedPreferences（AES-GCM 加密），MasterKey 存储在 Keystore。如果设备被 Root 且 Keystore 被提取，私钥存在理论风险。 | API 33+ 设备使用硬件级 Keystore；软件加密路径已用 AES-256-GCM 保护；建议高安全需求用户使用 API 33+ 设备。详见 [KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) |
+| **重连次数限制** | 网关不可达时，最多自动重连 **15 次**（指数退避，约 30 分钟）。超过后停止重连，需手动重启应用。 | 防止无限重连消耗电量和流量；连接失败时会显示明确错误提示；用户可手动重新连接。 |
+
 ---
 
 ## 🧪 测试
