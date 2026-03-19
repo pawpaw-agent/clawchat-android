@@ -131,18 +131,21 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Decode Keystore
+        id: keystore
         env:
           KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
         run: |
           if [ -z "$KEYSTORE_B64" ]; then
+            echo "has_keystore=false" >> $GITHUB_OUTPUT
             echo "⚠️ RELEASE_KEYSTORE_B64 secret is not set, building unsigned APK"
-            exit 0
+          else
+            echo "$KEYSTORE_B64" | base64 -d > keystore.jks
+            echo "has_keystore=true" >> $GITHUB_OUTPUT
+            echo "✅ Keystore decoded successfully"
           fi
-          echo "$KEYSTORE_B64" | base64 -d > keystore.jks
-          echo "✅ Keystore decoded successfully"
 
       - name: Build Signed Release APK
-        if: env.KEYSTORE_B64 != ''
+        if: steps.keystore.outputs.has_keystore == 'true'
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -155,7 +158,7 @@ jobs:
             -Pandroid.injected.signing.key.password=$KEY_PASSWORD
 
       - name: Build Unsigned Release APK
-        if: env.KEYSTORE_B64 == ''
+        if: steps.keystore.outputs.has_keystore != 'true'
         run: |
           ./gradlew assembleRelease --no-daemon --stacktrace
           echo "⚠️ Built unsigned APK (no keystore configured)"
