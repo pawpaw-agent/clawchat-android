@@ -30,9 +30,14 @@
     public <methods>;
 }
 
-# Keep Kotlin Serialization
+# ─────────────────────────────────────────────────────────────
+# Kotlin Serialization (complete rules)
+# ─────────────────────────────────────────────────────────────
+
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.AnnotationsKt
+
+# Keep serializer() companion methods
 -keepclassmembers class kotlinx.serialization.json.** {
     *** Companion;
 }
@@ -40,11 +45,37 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
-# Keep data classes for serialization
+# Keep @Serializable classes and their generated $serializer companions
+-keep,includedescriptorclasses class com.openclaw.clawchat.**$$serializer { *; }
 -keepclassmembers class com.openclaw.clawchat.** {
     *** Companion;
 }
 -keepclasseswithmembers class com.openclaw.clawchat.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# Keep @SerialName annotations (polymorphic dispatch depends on them)
+-keepattributes RuntimeVisibleAnnotations
+-keep class kotlinx.serialization.SerialName
+
+# Keep all @Serializable-annotated classes from being renamed
+-if @kotlinx.serialization.Serializable class **
+-keep class <1> {
+    static <1>$Companion Companion;
+}
+-if @kotlinx.serialization.Serializable class ** {
+    static **$* *;
+}
+-keepclassmembers class <2>$<3> {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# Also cover com.clawchat.android package (used in network layer)
+-keep,includedescriptorclasses class com.clawchat.android.**$$serializer { *; }
+-keepclassmembers class com.clawchat.android.** {
+    *** Companion;
+}
+-keepclasseswithmembers class com.clawchat.android.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
@@ -63,7 +94,10 @@
 # Hilt (Dependency Injection)
 # ─────────────────────────────────────────────────────────────
 
-# Hilt specific rules
+# ─────────────────────────────────────────────────────────────
+# Hilt / Dagger (Dependency Injection)
+# ─────────────────────────────────────────────────────────────
+
 -keep class dagger.hilt.** { *; }
 -keep class javax.inject.** { *; }
 -keep class * extends dagger.hilt.android.internal.managers.ComponentSupplier { *; }
@@ -73,6 +107,18 @@
 -keep class **$$ModuleAdapter { *; }
 -keep class **$$InjectAdapter { *; }
 -keep class **$$StaticAdapter { *; }
+
+# Keep @Inject annotated constructors (Dagger needs reflection on these)
+-keepclasseswithmembernames class * {
+    @javax.inject.Inject <init>(...);
+}
+
+# Keep @HiltViewModel annotated classes
+-keep @dagger.hilt.android.lifecycle.HiltViewModel class * { *; }
+
+# Keep @Module and @InstallIn annotated classes
+-keep @dagger.Module class * { *; }
+-keep @dagger.hilt.InstallIn class * { *; }
 
 # ─────────────────────────────────────────────────────────────
 # Room Database
@@ -111,10 +157,19 @@
 # Security & Keystore
 # ─────────────────────────────────────────────────────────────
 
+# ─────────────────────────────────────────────────────────────
+# Security & Keystore
+# ─────────────────────────────────────────────────────────────
+
+# Keep all security module classes (both package variants)
 -keep class com.openclaw.clawchat.security.** { *; }
--keepclassmembers class com.openclaw.clawchat.security.** {
-    *;
-}
+-keep class com.clawchat.android.security.** { *; }
+-keepclassmembers class com.openclaw.clawchat.security.** { *; }
+-keepclassmembers class com.clawchat.android.security.** { *; }
+
+# Keep KeystoreManager (uses reflection for Android Keystore)
+-keepnames class com.openclaw.clawchat.security.KeystoreManager
+-keepnames class com.openclaw.clawchat.security.SecurityModule
 
 # BouncyCastle Ed25519 (software key fallback for API < 33)
 -keep class org.bouncycastle.jcajce.provider.asymmetric.edec.** { *; }
