@@ -2,8 +2,9 @@
 <!-- Network Security Configuration for ClawChat -->
 <network-security-config>
 
-    <!-- Base configuration: allow cleartext for local dev, force TLS in release -->
-    <base-config cleartextTrafficPermitted="false">
+    <!-- Base configuration: TEMPORARY allow all cleartext for testing -->
+    <!-- TODO: Revert to false and properly configure domain-list for production -->
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
