@@ -81,12 +81,23 @@ class MainViewModel @Inject constructor(
             id = id,
             label = label,
             model = model,
-            status = status,
+            status = status.toUiStatus(),
             lastActivityAt = lastActivityAt,
             messageCount = messageCount,
             lastMessage = lastMessage,
             thinking = thinking
         )
+    }
+
+    /**
+     * Convert domain SessionStatus to UI SessionStatus
+     */
+    private fun com.openclaw.clawchat.domain.model.SessionStatus.toUiStatus(): SessionStatus {
+        return when (this) {
+            com.openclaw.clawchat.domain.model.SessionStatus.RUNNING -> SessionStatus.RUNNING
+            com.openclaw.clawchat.domain.model.SessionStatus.PAUSED -> SessionStatus.PAUSED
+            com.openclaw.clawchat.domain.model.SessionStatus.TERMINATED -> SessionStatus.TERMINATED
+        }
     }
 
     private fun observeConnectionState() {

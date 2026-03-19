@@ -7,7 +7,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.security.crypto.EncryptedSharedPreferences
-import com.clawchat.android.BuildConfig
+import com.openclaw.clawchat.BuildConfig
 import androidx.security.crypto.MasterKey
 import java.nio.charset.StandardCharsets
 import java.security.GeneralSecurityException
