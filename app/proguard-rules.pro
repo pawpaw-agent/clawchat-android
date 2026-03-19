@@ -30,6 +30,11 @@
 -dontnote com.google.api.client.**
 -keep class com.google.api.client.** { *; }
 
+# Joda Time (used by Tink for time operations, optional)
+-dontwarn org.joda.time.**
+-dontnote org.joda.time.**
+-keep class org.joda.time.** { *; }
+
 # ─────────────────────────────────────────────────────────────
 # Kotlin
 # ─────────────────────────────────────────────────────────────
