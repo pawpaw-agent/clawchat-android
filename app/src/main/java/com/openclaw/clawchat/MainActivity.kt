@@ -10,6 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -68,10 +69,14 @@ fun ClawChatNavHost(
     pairingViewModel: PairingViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
+    
+    // 检查是否已配对，决定初始目的地
+    val isPaired by mainViewModel.isPaired.collectAsStateWithLifecycle(initialValue = false)
+    val startDestination = if (isPaired) "main" else "pairing"
 
     NavHost(
         navController = navController,
-        startDestination = "pairing"
+        startDestination = startDestination
     ) {
         // 配对屏幕
         composable("pairing") {

@@ -42,6 +42,10 @@ class MainViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
+    // 是否已配对（用于决定初始导航目的地）
+    private val _isPaired = MutableStateFlow(encryptedStorage.isPaired())
+    val isPaired: StateFlow<Boolean> = _isPaired.asStateFlow()
+
     private val _events = Channel<UiEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
