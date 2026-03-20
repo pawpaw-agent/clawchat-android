@@ -207,7 +207,7 @@ class PairingViewModel @Inject constructor(
             try {
                 // 保存用户信任的证书指纹
                 fingerprintManager.trustCertificate(
-                    hostname = event.hostname,
+                    gatewayId = event.hostname,
                     fingerprint = event.fingerprint,
                     userVerified = true
                 )

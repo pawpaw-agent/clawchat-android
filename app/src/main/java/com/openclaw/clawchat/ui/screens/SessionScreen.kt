@@ -526,6 +526,7 @@ private fun formatTimestamp(timestamp: Long): String {
  * 使用 WindowInsets.ime 处理软键盘遮挡问题
  */
 @OptIn(ExperimentalLayoutApi::class)
+@Composable
 private fun Modifier.imePadding(): Modifier {
     return padding(WindowInsets.ime.asPaddingValues())
 }
