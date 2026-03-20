@@ -9,6 +9,33 @@ plugins {
     id("jacoco")
 }
 
+// ─────────────────────────────────────────────────────────────
+// Release Signing Configuration (Secure)
+// ─────────────────────────────────────────────────────────────
+// Reads signing config from:
+// 1. Environment variables (CI/CD priority)
+// 2. keystore.properties file (local development, excluded from git)
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = java.util.Properties()
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
+}
+
+val releaseKeystorePath = System.getenv("KEYSTORE_PATH")
+    ?: keystoreProperties.getProperty("storeFile")
+val releaseKeystorePassword = System.getenv("KEYSTORE_PASSWORD")
+    ?: keystoreProperties.getProperty("storePassword")
+val releaseKeyAlias = System.getenv("KEY_ALIAS")
+    ?: keystoreProperties.getProperty("keyAlias")
+val releaseKeyPassword = System.getenv("KEY_PASSWORD")
+    ?: keystoreProperties.getProperty("keyPassword")
+
+val hasReleaseSigningConfig = releaseKeystorePath != null &&
+    releaseKeystorePassword != null &&
+    releaseKeyAlias != null &&
+    releaseKeyPassword != null
+
 android {
     namespace = "com.openclaw.clawchat"
     compileSdk = 35
@@ -20,6 +47,15 @@ android {
             storePassword = "clawchat-debug"
             keyAlias = "clawchat-debug"
             keyPassword = "clawchat-debug"
+        }
+        
+        if (hasReleaseSigningConfig) {
+            create("release") {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = releaseKeystorePassword!!
+                keyAlias = releaseKeyAlias!!
+                keyPassword = releaseKeyPassword!!
+            }
         }
     }
 
@@ -47,6 +83,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (hasReleaseSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
             isDebuggable = true
