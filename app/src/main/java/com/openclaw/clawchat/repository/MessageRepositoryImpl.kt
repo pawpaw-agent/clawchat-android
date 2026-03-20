@@ -3,11 +3,8 @@ package com.openclaw.clawchat.repository
 import com.openclaw.clawchat.data.local.MessageDao
 import com.openclaw.clawchat.data.local.MessageEntity
 import com.openclaw.clawchat.data.local.MessageRole as LocalMessageRole
-import com.openclaw.clawchat.data.local.MessageStatus as LocalMessageStatus
-import com.openclaw.clawchat.domain.model.Message
-import com.openclaw.clawchat.domain.model.MessageRole
-import com.openclaw.clawchat.domain.model.MessageStatus
-import com.openclaw.clawchat.domain.repository.MessageRepository
+import com.openclaw.clawchat.ui.state.MessageUi
+import com.openclaw.clawchat.ui.state.MessageRole
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -16,30 +13,30 @@ import javax.inject.Singleton
 /**
  * 消息仓库实现
  *
- * 实现 Domain 层的 MessageRepository 接口。
- * 处理消息数据的本地缓存。
+ * 本地缓存层，用于离线查看消息历史。
+ * 实际消息数据来自 Gateway，这里只做缓存。
  */
 @Singleton
 class MessageRepositoryImpl @Inject constructor(
     private val messageDao: MessageDao
 ) : MessageRepository {
-    
+
     /**
-     * 获取会话消息流
+     * 观察会话消息
      */
-    override fun observeMessages(sessionId: String): Flow<List<Message>> {
+    override fun observeMessages(sessionId: String): Flow<List<MessageUi>> {
         return messageDao.getMessagesBySession(sessionId).map { entities ->
-            entities.map { it.toMessage() }
+            entities.map { it.toMessageUi() }
         }
     }
-    
+
     /**
-     * 获取最新 N 条消息
+     * 获取最新消息
      */
-    override suspend fun getLatestMessages(sessionId: String, limit: Int): List<Message> {
-        return messageDao.getLatestMessages(sessionId, limit).map { it.toMessage() }
+    override suspend fun getLatestMessages(sessionId: String, limit: Int): List<MessageUi> {
+        return messageDao.getLatestMessages(sessionId, limit).map { it.toMessageUi() }
     }
-    
+
     /**
      * 保存消息
      */
@@ -47,82 +44,31 @@ class MessageRepositoryImpl @Inject constructor(
         sessionId: String,
         role: MessageRole,
         content: String,
-        timestamp: Long,
-        status: MessageStatus,
-        metadata: String?
+        timestamp: Long
     ): String {
         val message = MessageEntity(
             sessionId = sessionId,
             role = role.toLocalRole(),
             content = content,
             timestamp = timestamp,
-            status = status.toLocalStatus(),
-            metadata = metadata
+            status = com.openclaw.clawchat.data.local.MessageStatus.SENT
         )
         val id = messageDao.insert(message)
         return id.toString()
     }
-    
+
     /**
-     * 批量保存消息
-     */
-    override suspend fun saveMessages(messages: List<Message>) {
-        val entities = messages.map { msg ->
-            MessageEntity(
-                sessionId = msg.sessionId,
-                role = msg.role.toLocalRole(),
-                content = msg.content,
-                timestamp = msg.timestamp,
-                status = msg.status.toLocalStatus(),
-                metadata = msg.metadata
-            )
-        }
-        messageDao.insertAll(entities)
-    }
-    
-    /**
-     * 更新消息状态
-     */
-    override suspend fun updateMessageStatus(messageId: String, status: MessageStatus) {
-        messageDao.updateStatusById(messageId.toLongOrNull() ?: 0L, status.toLocalStatus().name)
-    }
-    
-    /**
-     * 删除消息
-     */
-    override suspend fun deleteMessage(messageId: String) {
-        messageDao.getById(messageId.toLongOrNull() ?: 0L)?.let {
-            messageDao.delete(it)
-        }
-    }
-    
-    /**
-     * 删除会话的所有消息
+     * 删除会话消息
      */
     override suspend fun deleteSessionMessages(sessionId: String) {
         messageDao.deleteBySession(sessionId)
     }
-    
-    /**
-     * 清理旧消息
-     */
-    override suspend fun cleanupOldMessages(daysToKeep: Int): Int {
-        val cutoffTimestamp = System.currentTimeMillis() - (daysToKeep * 24 * 60 * 60 * 1000L)
-        return messageDao.deleteOlderThan(cutoffTimestamp)
-    }
-    
-    /**
-     * 获取消息数量
-     */
-    override suspend fun getMessageCount(sessionId: String): Int {
-        return messageDao.getCount(sessionId)
-    }
-    
+
     /**
      * 搜索消息
      */
-    override suspend fun searchMessages(query: String, limit: Int): List<Message> {
-        return messageDao.searchMessages("%$query%", limit).map { it.toMessage() }
+    override suspend fun searchMessages(query: String, limit: Int): List<MessageUi> {
+        return messageDao.searchMessages("%$query%", limit).map { it.toMessageUi() }
     }
 }
 
@@ -130,15 +76,12 @@ class MessageRepositoryImpl @Inject constructor(
 // 映射函数
 // ─────────────────────────────────────────────────────────────
 
-private fun MessageEntity.toMessage(): Message {
-    return Message(
+private fun MessageEntity.toMessageUi(): MessageUi {
+    return MessageUi(
         id = id.toString(),
-        sessionId = sessionId,
         content = content,
-        role = role.toDomainRole(),
-        timestamp = timestamp,
-        status = status.toDomainStatus(),
-        metadata = metadata
+        role = role.toUiRole(),
+        timestamp = timestamp
     )
 }
 
@@ -148,22 +91,8 @@ private fun MessageRole.toLocalRole(): LocalMessageRole = when (this) {
     MessageRole.SYSTEM -> LocalMessageRole.SYSTEM
 }
 
-private fun LocalMessageRole.toDomainRole(): MessageRole = when (this) {
+private fun LocalMessageRole.toUiRole(): MessageRole = when (this) {
     LocalMessageRole.USER -> MessageRole.USER
     LocalMessageRole.ASSISTANT -> MessageRole.ASSISTANT
     LocalMessageRole.SYSTEM -> MessageRole.SYSTEM
-}
-
-private fun MessageStatus.toLocalStatus(): LocalMessageStatus = when (this) {
-    MessageStatus.PENDING -> LocalMessageStatus.PENDING
-    MessageStatus.SENT -> LocalMessageStatus.SENT
-    MessageStatus.DELIVERED -> LocalMessageStatus.DELIVERED
-    MessageStatus.FAILED -> LocalMessageStatus.FAILED
-}
-
-private fun LocalMessageStatus.toDomainStatus(): MessageStatus = when (this) {
-    LocalMessageStatus.PENDING -> MessageStatus.PENDING
-    LocalMessageStatus.SENT -> MessageStatus.SENT
-    LocalMessageStatus.DELIVERED -> MessageStatus.DELIVERED
-    LocalMessageStatus.FAILED -> MessageStatus.FAILED
 }

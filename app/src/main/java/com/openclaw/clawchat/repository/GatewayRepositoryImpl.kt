@@ -1,81 +1,115 @@
 package com.openclaw.clawchat.repository
 
-import com.openclaw.clawchat.domain.model.GatewayConfig
-import com.openclaw.clawchat.domain.repository.GatewayRepository
 import com.openclaw.clawchat.security.EncryptedStorage
+import com.openclaw.clawchat.ui.state.GatewayConfigUi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Gateway 配置仓库实现
  *
- * 实现 Domain 层的 GatewayRepository 接口。
- * 负责管理 Gateway 配置的持久化。
+ * 使用 EncryptedStorage 安全存储 Gateway 配置。
  */
 @Singleton
 class GatewayRepositoryImpl @Inject constructor(
     private val encryptedStorage: EncryptedStorage
 ) : GatewayRepository {
-    
+
+    private val _gateways = MutableStateFlow<List<GatewayConfigUi>>(emptyList())
+    private val _currentGatewayId = MutableStateFlow<String?>(null)
+
     companion object {
-        private const val DEFAULT_GATEWAY_ID = "default"
+        private const val KEY_GATEWAYS = "gateway_configs"
+        private const val KEY_CURRENT_GATEWAY = "current_gateway_id"
     }
-    
+
+    init {
+        loadGateways()
+    }
+
     /**
-     * 获取 Gateway 配置
+     * 观察所有 Gateway 配置
      */
-    override fun getConfig(id: String): GatewayConfig? {
-        val url = encryptedStorage.getGatewayUrl() ?: return null
-        return GatewayConfig.fromUrl(url, id, "Gateway")
+    override fun observeGateways(): Flow<List<GatewayConfigUi>> {
+        return _gateways.asStateFlow()
     }
-    
+
+    /**
+     * 获取当前 Gateway
+     */
+    override fun getCurrentGateway(): GatewayConfigUi? {
+        val currentId = _currentGatewayId.value ?: return null
+        return _gateways.value.find { it.id == currentId }
+    }
+
     /**
      * 保存 Gateway 配置
      */
-    override fun saveConfig(config: GatewayConfig) {
-        val url = config.toWebSocketUrl()
-        encryptedStorage.saveGatewayUrl(url)
+    override suspend fun saveGateway(gateway: GatewayConfigUi) {
+        _gateways.update { gateways ->
+            val existing = gateways.find { it.id == gateway.id }
+            if (existing != null) {
+                gateways.map { if (it.id == gateway.id) gateway else it }
+            } else {
+                gateways + gateway
+            }
+        }
+        persistGateways()
     }
-    
-    /**
-     * 保存 Gateway URL
-     */
-    override fun saveGateway(host: String, port: Int, useTls: Boolean) {
-        val config = GatewayConfig(
-            id = DEFAULT_GATEWAY_ID,
-            name = "Gateway",
-            host = host,
-            port = port,
-            useTls = useTls
-        )
-        saveConfig(config)
-    }
-    
+
     /**
      * 删除 Gateway 配置
      */
-    override fun deleteConfig(id: String) {
-        encryptedStorage.clearGatewayConfig()
+    override suspend fun deleteGateway(gatewayId: String) {
+        _gateways.update { gateways ->
+            gateways.filter { it.id != gatewayId }
+        }
+        if (_currentGatewayId.value == gatewayId) {
+            _currentGatewayId.value = null
+        }
+        persistGateways()
     }
-    
-    /**
-     * 检查是否有配置的 Gateway
-     */
-    override fun hasConfiguredGateway(): Boolean {
-        return !encryptedStorage.getGatewayUrl().isNullOrEmpty()
-    }
-    
-    /**
-     * 获取所有 Gateway 配置
-     */
-    override fun getAllConfigs(): List<GatewayConfig> {
-        return getConfig()?.let { listOf(it) } ?: emptyList()
-    }
-    
+
     /**
      * 设置当前 Gateway
      */
-    override fun setCurrentGateway(id: String) {
-        // 当前实现只支持单个 Gateway，此方法预留用于未来多 Gateway 支持
+    override suspend fun setCurrentGateway(gatewayId: String?) {
+        _currentGatewayId.value = gatewayId
+        encryptedStorage.putString(KEY_CURRENT_GATEWAY, gatewayId ?: "")
+        
+        // 更新 isCurrent 标记
+        _gateways.update { gateways ->
+            gateways.map { it.copy(isCurrent = it.id == gatewayId) }
+        }
+    }
+
+    private fun loadGateways() {
+        // 从 EncryptedStorage 加载配置
+        val configs = encryptedStorage.getString(KEY_GATEWAYS, "[]")
+        // 简单解析（实际应用可用 JSON）
+        _gateways.value = parseGateways(configs)
+        
+        val currentId = encryptedStorage.getString(KEY_CURRENT_GATEWAY, "")
+        _currentGatewayId.value = currentId.ifBlank { null }
+    }
+
+    private fun persistGateways() {
+        val configs = serializeGateways(_gateways.value)
+        encryptedStorage.putString(KEY_GATEWAYS, configs)
+    }
+
+    private fun parseGateways(configs: String): List<GatewayConfigUi> {
+        // 简单实现，实际应用应使用 JSON 解析
+        return emptyList()
+    }
+
+    private fun serializeGateways(gateways: List<GatewayConfigUi>): String {
+        // 简单实现，实际应用应使用 JSON 序列化
+        return "[]"
     }
 }

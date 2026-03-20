@@ -2,6 +2,7 @@ package com.openclaw.clawchat.di
 
 import android.content.Context
 import com.openclaw.clawchat.data.local.*
+import com.openclaw.clawchat.repository.*
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,8 +16,7 @@ import javax.inject.Singleton
 /**
  * 应用级依赖注入模块
  *
- * 提供 Database、DAO 等基础组件。
- * Repository 接口绑定由 DomainModule 处理。
+ * 提供 Database、DAO、Repository 等基础组件。
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -56,5 +56,32 @@ object AppModule {
     @Singleton
     fun provideSessionDao(database: ClawChatDatabase): SessionDao {
         return database.sessionDao()
+    }
+
+    /**
+     * Session Repository
+     */
+    @Provides
+    @Singleton
+    fun provideSessionRepository(sessionDao: SessionDao): SessionRepository {
+        return SessionRepositoryImpl(sessionDao)
+    }
+
+    /**
+     * Message Repository
+     */
+    @Provides
+    @Singleton
+    fun provideMessageRepository(messageDao: MessageDao): MessageRepository {
+        return MessageRepositoryImpl(messageDao)
+    }
+
+    /**
+     * Gateway Repository
+     */
+    @Provides
+    @Singleton
+    fun provideGatewayRepository(encryptedStorage: com.openclaw.clawchat.security.EncryptedStorage): GatewayRepository {
+        return GatewayRepositoryImpl(encryptedStorage)
     }
 }

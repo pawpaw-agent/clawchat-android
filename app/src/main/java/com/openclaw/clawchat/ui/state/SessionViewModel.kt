@@ -4,12 +4,9 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.openclaw.clawchat.domain.model.Message
-import com.openclaw.clawchat.domain.model.MessageRole as DomainMessageRole
-import com.openclaw.clawchat.domain.model.MessageStatus
-import com.openclaw.clawchat.domain.repository.MessageRepository
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
+import com.openclaw.clawchat.repository.MessageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.channels.Channel
@@ -92,7 +89,7 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch(exceptionHandler) {
             val sessionId = savedStateHandle.get<String>("sessionId") ?: return@launch
             messageRepository.observeMessages(sessionId).collect { messages ->
-                _state.update { it.copy(messages = messages.map { m -> m.toMessageUi() }) }
+                _state.update { it.copy(messages = messages) }
             }
         }
     }
@@ -181,15 +178,13 @@ class SessionViewModel @Inject constructor(
         // 使用缓冲中的完整内容（如果有），否则用 final 的 content
         val finalContent = streamingBuffers.remove(runId)?.toString()?.ifEmpty { content } ?: content
         val uiRole = parseRole(role)
-        val domainRole = uiRole.toDomainRole()
 
-        // 写入 Room 缓存（使用 Domain 模型）
+        // 写入 Room 缓存
         messageRepository.saveMessage(
             sessionId = sessionId,
-            role = domainRole,
+            role = uiRole,
             content = finalContent,
-            timestamp = System.currentTimeMillis(),
-            status = MessageStatus.DELIVERED
+            timestamp = System.currentTimeMillis()
         )
 
         val finalMsg = MessageUi(
@@ -284,12 +279,11 @@ class SessionViewModel @Inject constructor(
                 timestamp = System.currentTimeMillis()
             )
 
-            val messageId = messageRepository.saveMessage(
+            messageRepository.saveMessage(
                 sessionId = sessionKey,
-                role = DomainMessageRole.USER,
+                role = MessageRole.USER,
                 content = content,
-                timestamp = userMessage.timestamp,
-                status = MessageStatus.PENDING
+                timestamp = userMessage.timestamp
             )
 
             _state.update {
@@ -300,82 +294,39 @@ class SessionViewModel @Inject constructor(
                 )
             }
 
-            // 通过 GatewayConnection.chatSend（含 idempotencyKey）
+            // 发送到 Gateway
             try {
-                val response = gateway.chatSend(sessionKey, content)
-
-                if (response.isSuccess()) {
-                    messageRepository.updateMessageStatus(messageId, MessageStatus.SENT)
-                } else {
-                    val errMsg = response.error?.message ?: "发送失败"
-                    messageRepository.updateMessageStatus(messageId, MessageStatus.FAILED)
-                    _state.update { it.copy(error = errMsg, isLoading = false) }
-                    _events.trySend(SessionEvent.Error(errMsg))
-                }
+                gateway.chatSend(sessionKey, content)
             } catch (e: Exception) {
-                Log.e(TAG, "发送消息异常", e)
-                messageRepository.updateMessageStatus(messageId, MessageStatus.FAILED)
-                _state.update { it.copy(error = "发送异常：${e.message}", isLoading = false) }
-                _events.trySend(SessionEvent.Error("发送异常：${e.message}"))
+                Log.e(TAG, "Failed to send message", e)
+                _state.update { it.copy(isLoading = false, error = "发送失败：${e.message}") }
+                _events.trySend(SessionEvent.Error("发送失败：${e.message}"))
             }
         }
     }
 
-    // ── UI 操作 ──
-
-    fun updateInputText(text: String) { _state.update { it.copy(inputText = text) } }
-    fun clearError() { _state.update { it.copy(error = null) } }
-    fun consumeEvent() { /* no-op: Channel events are consumed on receive */ }
-
-    fun setSessionId(sessionId: String) {
-        streamingBuffers.clear()
-        completedRuns.clear()
-        _state.update { it.copy(sessionId = sessionId, messages = emptyList()) }
+    fun updateInputText(text: String) {
+        _state.update { it.copy(inputText = text) }
     }
 
-    fun clearSession() {
-        streamingBuffers.clear()
-        completedRuns.clear()
-        _state.update {
-            it.copy(sessionId = null, session = null, messages = emptyList(),
-                inputText = "", isLoading = false, error = null)
-        }
+    fun clearError() {
+        _state.update { it.copy(error = null) }
     }
 
-    // ── 工具 ──
-
-    private fun parseRole(role: String): MessageRole = when (role) {
+    private fun parseRole(role: String): MessageRole = when (role.lowercase()) {
         "user" -> MessageRole.USER
+        "assistant" -> MessageRole.ASSISTANT
         "system" -> MessageRole.SYSTEM
         else -> MessageRole.ASSISTANT
     }
 }
 
+// ─────────────────────────────────────────────────────────────
+// Session Events
+// ─────────────────────────────────────────────────────────────
+
 sealed class SessionEvent {
     data class MessageReceived(val message: MessageUi) : SessionEvent()
     data class Error(val message: String) : SessionEvent()
-    data object SessionEnded : SessionEvent()
-}
-
-// ─────────────────────────────────────────────────────────────
-// 映射函数
-// ─────────────────────────────────────────────────────────────
-
-private fun Message.toMessageUi(): MessageUi = MessageUi(
-    id = id,
-    content = content,
-    role = role.toUiRole(),
-    timestamp = timestamp
-)
-
-private fun DomainMessageRole.toUiRole(): MessageRole = when (this) {
-    DomainMessageRole.USER -> MessageRole.USER
-    DomainMessageRole.ASSISTANT -> MessageRole.ASSISTANT
-    DomainMessageRole.SYSTEM -> MessageRole.SYSTEM
-}
-
-private fun MessageRole.toDomainRole(): DomainMessageRole = when (this) {
-    MessageRole.USER -> DomainMessageRole.USER
-    MessageRole.ASSISTANT -> DomainMessageRole.ASSISTANT
-    MessageRole.SYSTEM -> DomainMessageRole.SYSTEM
+    data object MessageSent : SessionEvent()
 }

@@ -3,12 +3,10 @@ package com.openclaw.clawchat.ui.state
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.openclaw.clawchat.domain.model.Session
-import com.openclaw.clawchat.domain.model.SessionStatus as DomainSessionStatus
 import com.openclaw.clawchat.network.GatewayUrlUtil
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
-import com.openclaw.clawchat.domain.repository.SessionRepository
+import com.openclaw.clawchat.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.channels.Channel
@@ -67,36 +65,9 @@ class MainViewModel @Inject constructor(
             sessionRepository.observeSessions().collect { cachedSessions ->
                 // 仅在没有 Gateway 数据时使用缓存
                 if (_uiState.value.connectionStatus !is ConnectionStatus.Connected) {
-                    _uiState.update { it.copy(sessions = cachedSessions.map { s -> s.toSessionUi() }) }
+                    _uiState.update { it.copy(sessions = cachedSessions) }
                 }
             }
-        }
-    }
-
-    /**
-     * Convert domain Session to UI SessionUi
-     */
-    private fun com.openclaw.clawchat.domain.model.Session.toSessionUi(): SessionUi {
-        return SessionUi(
-            id = id,
-            label = label,
-            model = model,
-            status = status.toUiStatus(),
-            lastActivityAt = lastActivityAt,
-            messageCount = messageCount,
-            lastMessage = lastMessage,
-            thinking = thinking
-        )
-    }
-
-    /**
-     * Convert domain SessionStatus to UI SessionStatus
-     */
-    private fun com.openclaw.clawchat.domain.model.SessionStatus.toUiStatus(): SessionStatus {
-        return when (this) {
-            com.openclaw.clawchat.domain.model.SessionStatus.RUNNING -> SessionStatus.RUNNING
-            com.openclaw.clawchat.domain.model.SessionStatus.PAUSED -> SessionStatus.PAUSED
-            com.openclaw.clawchat.domain.model.SessionStatus.TERMINATED -> SessionStatus.TERMINATED
         }
     }
 
@@ -190,17 +161,17 @@ class MainViewModel @Inject constructor(
                 val payload = response.payload?.jsonObject ?: return@launch
                 val sessionsArray = payload["sessions"]?.jsonArray ?: return@launch
 
-                // Parse to Domain Session
-                val domainSessions = sessionsArray.mapNotNull { element ->
+                // Parse to UI SessionUi directly
+                val uiSessions = sessionsArray.mapNotNull { element ->
                     try {
                         val obj = element.jsonObject
-                        Session(
+                        SessionUi(
                             id = obj["key"]?.jsonPrimitive?.content
                                 ?: obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
                             label = obj["label"]?.jsonPrimitive?.content
                                 ?: obj["derivedTitle"]?.jsonPrimitive?.content,
                             model = obj["model"]?.jsonPrimitive?.content,
-                            status = DomainSessionStatus.RUNNING,
+                            status = SessionStatus.RUNNING,
                             lastActivityAt = obj["lastActivityAt"]?.jsonPrimitive?.long
                                 ?: System.currentTimeMillis(),
                             messageCount = 0,
@@ -213,34 +184,16 @@ class MainViewModel @Inject constructor(
                     }
                 }
 
-                // Map Domain Session → UI SessionUi
-                val uiSessions = domainSessions.map { it.toSessionUi() }
-
                 // 更新 UI
                 _uiState.update { it.copy(sessions = uiSessions) }
 
-                // 同步到 Room 缓存（使用 Domain 模型）
-                syncSessionsToRoom(domainSessions)
+                // 同步到 Room 缓存
+                sessionRepository.saveSessions(uiSessions)
 
-                Log.i(TAG, "Loaded ${domainSessions.size} sessions from Gateway, synced to Room")
+                Log.i(TAG, "Loaded ${uiSessions.size} sessions from Gateway, synced to Room")
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to load sessions: ${e.message}")
             }
-        }
-    }
-
-    /**
-     * 将 Gateway 会话列表同步到 Room（全量替换，使用 Domain 模型）
-     */
-    private suspend fun syncSessionsToRoom(sessions: List<Session>) {
-        try {
-            // 清除旧缓存，写入新数据
-            sessionRepository.clearAllSessions()
-            sessions.forEach { session ->
-                sessionRepository.addSession(session)
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to sync sessions to Room: ${e.message}")
         }
     }
 
@@ -312,8 +265,6 @@ class MainViewModel @Inject constructor(
                         state.copy(sessions = updated)
                     } else state
                 }
-                // 同步到 Room
-                sessionRepository.updateSession(sessionId) { it.copy(label = newName) }
             } catch (e: Exception) {
                 Log.w(TAG, "Rename session failed: ${e.message}")
             }
@@ -345,35 +296,6 @@ class MainViewModel @Inject constructor(
     fun terminateSession(sessionId: String) { deleteSession(sessionId) }
     fun clearError() { _uiState.update { it.copy(error = null) } }
     fun consumeEvent() { /* no-op: Channel events are consumed on receive */ }
-}
-
-// ─────────────────────────────────────────────────────────────
-// 映射函数：Domain Session → UI SessionUi
-// ─────────────────────────────────────────────────────────────
-
-/**
- * Domain Session 转 UI SessionUi
- */
-private fun Session.toSessionUi(): SessionUi {
-    return SessionUi(
-        id = id,
-        label = label,
-        model = model,
-        status = status.toUiStatus(),
-        lastActivityAt = lastActivityAt,
-        messageCount = messageCount,
-        lastMessage = lastMessage,
-        thinking = thinking
-    )
-}
-
-/**
- * Domain SessionStatus 转 UI SessionStatus
- */
-private fun DomainSessionStatus.toUiStatus(): SessionStatus = when (this) {
-    DomainSessionStatus.RUNNING -> SessionStatus.RUNNING
-    DomainSessionStatus.PAUSED -> SessionStatus.PAUSED
-    DomainSessionStatus.TERMINATED -> SessionStatus.TERMINATED
 }
 
 // ─────────────────────────────────────────────────────────────
