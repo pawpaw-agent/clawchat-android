@@ -4,6 +4,7 @@ import android.content.Context
 import com.openclaw.clawchat.security.CertificateFingerprintManager
 import com.openclaw.clawchat.security.SecureLogger
 import com.openclaw.clawchat.security.getSha256Fingerprint
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.cert.CertificateException

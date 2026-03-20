@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.openclaw.clawchat.security.SecureLogger
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.security.cert.X509Certificate
 import javax.inject.Inject
 import javax.inject.Singleton
