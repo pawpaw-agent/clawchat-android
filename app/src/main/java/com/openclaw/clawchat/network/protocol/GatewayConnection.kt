@@ -2,6 +2,8 @@ package com.openclaw.clawchat.network.protocol
 
 import android.util.Log
 import com.openclaw.clawchat.BuildConfig
+import com.openclaw.clawchat.network.CertificateExceptionFirstTime
+import com.openclaw.clawchat.network.CertificateExceptionMismatch
 import com.openclaw.clawchat.network.DynamicTrustManager
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.security.SecurityModule
@@ -34,6 +36,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import java.security.cert.CertificateException
 import java.util.UUID
 
 /**
@@ -79,6 +82,10 @@ class GatewayConnection(
     /** All non-auth frames forwarded as raw JSON */
     private val _incomingMessages = MutableSharedFlow<String>(replay = 0)
     val incomingMessages: SharedFlow<String> = _incomingMessages.asSharedFlow()
+
+    /** Certificate events for TOFU flow */
+    private val _certificateEvent = MutableSharedFlow<CertificateEvent>(replay = 0)
+    val certificateEvent: SharedFlow<CertificateEvent> = _certificateEvent.asSharedFlow()
 
     /** hello-ok snapshot (available after connect) */
     var helloOkPayload: JsonObject? = null
@@ -148,8 +155,27 @@ class GatewayConnection(
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                     Log.e(TAG, "WebSocket failure: ${t.message}", t)
                     DynamicTrustManager.clearCurrentHostname()
-                    _connectionState.value = WebSocketConnectionState.Error(t)
-                    currentUrl?.let { scheduleReconnect(it, currentToken) }
+                    
+                    // 检查是否是证书问题
+                    val certException = findCertificateException(t)
+                    if (certException != null) {
+                        Log.i(TAG, "Certificate verification failed, emitting certificate event")
+                        appScope.launch {
+                            _certificateEvent.emit(
+                                CertificateEvent(
+                                    hostname = certException.hostname,
+                                    fingerprint = certException.fingerprint,
+                                    isMismatch = certException is CertificateExceptionMismatch,
+                                    storedFingerprint = (certException as? CertificateExceptionMismatch)?.storedFingerprint
+                                )
+                            )
+                        }
+                        // 不触发重连，等待用户确认
+                        _connectionState.value = WebSocketConnectionState.Error(t)
+                    } else {
+                        _connectionState.value = WebSocketConnectionState.Error(t)
+                        currentUrl?.let { scheduleReconnect(it, currentToken) }
+                    }
                 }
 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
@@ -491,4 +517,30 @@ class GatewayConnection(
             }
         }
     }
+
+    // ── Certificate handling ──
+
+    /**
+     * 递归查找证书异常
+     */
+    private fun findCertificateException(t: Throwable): CertificateException? {
+        var current: Throwable? = t
+        while (current != null) {
+            if (current is CertificateExceptionFirstTime || current is CertificateExceptionMismatch) {
+                return current as CertificateException
+            }
+            current = current.cause
+        }
+        return null
+    }
 }
+
+/**
+ * 证书事件（用于 TOFU 流程）
+ */
+data class CertificateEvent(
+    val hostname: String,
+    val fingerprint: String,
+    val isMismatch: Boolean,
+    val storedFingerprint: String? = null
+)

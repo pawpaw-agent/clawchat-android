@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.network.GatewayUrlUtil
+import com.openclaw.clawchat.network.protocol.CertificateEvent
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.security.CertificateFingerprintManager
 import com.openclaw.clawchat.security.SecurityModule
@@ -26,16 +27,6 @@ sealed class PairingEvent {
     data object PairingRejected : PairingEvent()
     data class PairingError(val message: String) : PairingEvent()
 }
-
-/**
- * 证书事件（首次连接或证书变更）
- */
-data class CertificateEvent(
-    val hostname: String,
-    val fingerprint: String,
-    val isMismatch: Boolean,
-    val storedFingerprint: String? = null
-)
 
 data class PairingState(
     val deviceId: String? = null,
@@ -73,6 +64,19 @@ class PairingViewModel @Inject constructor(
 
     init {
         observePairingEvents()
+        observeCertificateEvents()
+    }
+
+    /**
+     * 监听证书事件（TOFU 流程）
+     */
+    private fun observeCertificateEvents() {
+        viewModelScope.launch {
+            gateway.certificateEvent.collect { event ->
+                Log.i(TAG, "Certificate event received: ${event.hostname}, mismatch=${event.isMismatch}")
+                _state.value = _state.value.copy(certificateEvent = event)
+            }
+        }
     }
 
     /**
