@@ -329,11 +329,11 @@ class GatewayConnection(
 
             // 调试：打印请求内容
             Log.i(TAG, "connect request params: ${JsonObject(connectParams)}")
-            Log.i(TAG, "connect request frame (will send): $frameJson")
 
             // 3. Track request → send → await res
             val deferred = requestTracker.trackRequest(requestId, "connect")
             val frameJson = json.encodeToString(RequestFrame.serializer(), requestFrame)
+            Log.i(TAG, "connect request frame (will send): $frameJson")
             val sent = webSocket?.send(frameJson) ?: false
 
             if (!sent) {
