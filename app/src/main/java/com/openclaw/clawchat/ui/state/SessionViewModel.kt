@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.UUID
@@ -124,7 +127,7 @@ class SessionViewModel @Inject constructor(
                 val runId = payload["runId"]?.jsonPrimitive?.content ?: return@launch
                 val state = payload["state"]?.jsonPrimitive?.content ?: return@launch
                 val msgObj = payload["message"]?.jsonObject
-                val content = msgObj?.get("content")?.jsonPrimitive?.content ?: ""
+                val content = extractContent(msgObj?.get("content"))
                 val role = msgObj?.get("role")?.jsonPrimitive?.content ?: "assistant"
 
                 when (state) {
@@ -326,6 +329,26 @@ class SessionViewModel @Inject constructor(
         "assistant" -> MessageRole.ASSISTANT
         "system" -> MessageRole.SYSTEM
         else -> MessageRole.ASSISTANT
+    }
+
+    /**
+     * 提取 message.content，支持两种格式：
+     * - 字符串：`"content": "Hello"`
+     * - 数组：`"content": [{"type": "text", "text": "Hello"}]`
+     */
+    private fun extractContent(element: JsonElement?): String {
+        if (element == null) return ""
+        return when (element) {
+            is JsonPrimitive -> element.content
+            is JsonArray -> element.joinToString("\n") { part ->
+                if (part is JsonObject && part["type"]?.jsonPrimitive?.content == "text") {
+                    part["text"]?.jsonPrimitive?.content ?: ""
+                } else {
+                    part.jsonPrimitive?.content ?: ""
+                }
+            }
+            else -> element.jsonPrimitive?.content ?: ""
+        }
     }
 }
 
