@@ -195,6 +195,60 @@ class PairingViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 用户确认信任证书
+     */
+    fun confirmCertificateTrust() {
+        val event = _state.value.certificateEvent ?: return
+        val gatewayUrl = _state.value.gatewayUrl.trim()
+
+        viewModelScope.launch {
+            // 保存用户信任的证书指纹
+            try {
+                // TODO: 注入 CertificateFingerprintManager 并调用 trustCertificate
+                // fingerprintManager.trustCertificate(gatewayUrl, event.fingerprint, userVerified = true)
+                Log.i(TAG, "User confirmed certificate trust for ${event.hostname}")
+
+                // 清除证书事件，继续连接
+                _state.value = _state.value.copy(certificateEvent = null)
+
+                // 重试连接
+                when (_state.value.connectMode) {
+                    ConnectMode.TOKEN -> connectWithToken()
+                    ConnectMode.PAIRING -> startPairing()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to save certificate trust", e)
+                _state.value = _state.value.copy(
+                    certificateEvent = null,
+                    status = PairingStatus.Error("保存证书信任失败：${e.message}")
+                )
+            }
+        }
+    }
+
+    /**
+     * 用户拒绝证书
+     */
+    fun rejectCertificate() {
+        val event = _state.value.certificateEvent ?: return
+
+        viewModelScope.launch {
+            Log.w(TAG, "User rejected certificate for ${event.hostname}")
+
+            // 清除证书事件
+            _state.value = _state.value.copy(certificateEvent = null)
+
+            // 断开连接并返回错误状态
+            gateway.disconnect()
+            _state.value = _state.value.copy(
+                isPairing = false,
+                status = PairingStatus.Error("用户拒绝证书：${event.hostname}")
+            )
+            _events.emit(PairingEvent.PairingError("证书不被信任"))
+        }
+    }
+
     private fun emitError(message: String) {
         viewModelScope.launch { _events.emit(PairingEvent.PairingError(message)) }
     }

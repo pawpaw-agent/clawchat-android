@@ -4,11 +4,8 @@ import android.content.Context
 import com.openclaw.clawchat.security.CertificateFingerprintManager
 import com.openclaw.clawchat.security.SecureLogger
 import com.openclaw.clawchat.security.getSha256Fingerprint
-import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.cert.CertificateException
-import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,20 +16,18 @@ import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
 /**
- * Gateway 自签名证书信任管理器
+ * Gateway 证书信任管理器（TOFU 模式）
  *
- * 支持两种信任模式：
- * 1. 内置证书模式：信任 APK 嵌入的 Gateway 证书（CN=openclaw-gateway）
- * 2. 动态信任模式：用户首次连接时手动确认并保存证书指纹
+ * 使用 SSH 风格的首次信任（Trust On First Use）模型：
+ * 1. 首次连接时显示证书指纹，用户手动确认
+ * 2. 保存指纹到加密存储
+ * 3. 后续连接验证指纹匹配
  *
- * 使用场景：
- * - 局域网直连 Gateway（https://192.168.x.x:18789）
- * - Tailscale 远程连接（https://gateway.tailnet.ts.net:18789）
- * - 其他使用自签名证书的 Gateway 部署
+ * 不嵌入固定证书，支持任意 Gateway 部署。
  *
  * 安全特性：
  * - 系统证书仍然有效（可访问正常 HTTPS 服务）
- * - 用户手动确认首次连接的证书（SSH 风格 TOFU）
+ * - 用户手动确认首次连接的证书
  * - 证书变更时告警（防止中间人攻击）
  */
 @Singleton
@@ -42,7 +37,6 @@ class GatewayTrustManager @Inject constructor(
 ) {
     companion object {
         private const val TAG = "GatewayTrustManager"
-        private const val CERTIFICATE_RESOURCE = R.raw.openclaw_gateway
     }
 
     private val sslSocketFactory: SSLSocketFactory by lazy {
@@ -50,23 +44,6 @@ class GatewayTrustManager @Inject constructor(
         val sslContext = SSLContext.getInstance("TLS")
         sslContext.init(null, arrayOf<TrustManager>(trustManager), null)
         sslContext.socketFactory
-    }
-
-    /**
-     * 当前正在验证的服务器主机名
-     *
-     * 由 OkHttp 在握手前设置，用于查找已保存的证书指纹
-     */
-    private var currentHostname: String? = null
-
-    /**
-     * 设置当前连接的主机名
-     *
-     * 在 OkHttp EventListener 中调用，确保 TrustManager 知道正在连接哪个服务器
-     */
-    fun setCurrentHostname(hostname: String) {
-        currentHostname = hostname
-        SecureLogger.d("Setting current hostname: $hostname")
     }
 
     /**
@@ -247,21 +224,3 @@ class CompositeX509TrustManager(
         return (dynamicTm.acceptedIssuers + systemDelegate.acceptedIssuers).distinct().toTypedArray()
     }
 }
-
-/**
- * 使用示例（Hilt 模块）：
- *
- * @Provides
- * @Singleton
- * fun provideOkHttpClient(
- *     @ApplicationContext context: Context,
- *     gatewayTrustManager: GatewayTrustManager
- * ): OkHttpClient {
- *     return OkHttpClient.Builder()
- *         .sslSocketFactory(
- *             gatewayTrustManager.getSslSocketFactory(),
- *             gatewayTrustManager.createTrustManager()
- *         )
- *         .build()
- * }
- */

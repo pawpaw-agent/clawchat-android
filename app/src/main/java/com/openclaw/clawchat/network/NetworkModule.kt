@@ -49,8 +49,6 @@ object NetworkModule {
         val trustManager = gatewayTrustManager.createTrustManager()
         val sslSocketFactory = gatewayTrustManager.getSslSocketFactory()
 
-        SecureLogger.i("Gateway certificate fingerprint: ${gatewayTrustManager.getCertificateFingerprint()}")
-
         return OkHttpClient.Builder()
             .sslSocketFactory(sslSocketFactory, trustManager)
             .addInterceptor(loggingInterceptor)
