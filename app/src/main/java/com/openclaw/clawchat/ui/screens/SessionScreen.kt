@@ -383,14 +383,7 @@ private fun MarkdownText(
     // 使用 compose-markdown 渲染
     MarkdownText(
         markdown = content,
-        modifier = Modifier.fillMaxWidth(),
-        color = color,
-        fontSize = 14.sp,
-        // 代码块样式
-        codeBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
-        codeTextColor = color,
-        // 链接样式
-        linkColor = MaterialTheme.colorScheme.primary
+        modifier = Modifier.fillMaxWidth()
     )
 }
 
