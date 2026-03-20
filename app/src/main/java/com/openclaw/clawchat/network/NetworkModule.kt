@@ -19,6 +19,12 @@ import javax.inject.Singleton
  * 网络层依赖注入模块
  *
  * 提供 OkHttpClient、GatewayConnection、WebSocketService、TailscaleManager 等单例
+ *
+ * OkHttpClient 配置：
+ * - 信任系统证书 + Gateway 自签名证书
+ * - 30 秒超时
+ * - 30 秒 WebSocket 心跳
+ * - 自动重试
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -27,7 +33,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
+        gatewayTrustManager: GatewayTrustManager
     ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor { message ->
             LogSecure.d(message.redactSensitive())
@@ -39,7 +46,13 @@ object NetworkModule {
             }
         }
 
+        val trustManager = gatewayTrustManager.createTrustManager()
+        val sslSocketFactory = gatewayTrustManager.getSslSocketFactory()
+
+        SecureLogger.i("Gateway certificate fingerprint: ${gatewayTrustManager.getCertificateFingerprint()}")
+
         return OkHttpClient.Builder()
+            .sslSocketFactory(sslSocketFactory, trustManager)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -94,6 +107,20 @@ object LogSecure {
     fun i(message: String) { android.util.Log.i(TAG, message) }
     fun w(message: String) { android.util.Log.w(TAG, message) }
     fun e(message: String, throwable: Throwable? = null) { android.util.Log.e(TAG, message, throwable) }
+}
+
+/**
+ * 网络层安全日志（使用统一 SecureLogger）
+ */
+object SecureLogger {
+    private const val TAG = "ClawChat-Network"
+
+    fun d(message: String) { android.util.Log.d(TAG, message) }
+    fun i(message: String) { android.util.Log.i(TAG, message) }
+    fun w(message: String) { android.util.Log.w(TAG, message) }
+    fun e(message: String, throwable: Throwable? = null) {
+        android.util.Log.e(TAG, message, throwable)
+    }
 }
 
 private fun String.redactSensitive(): String {

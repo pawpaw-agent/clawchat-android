@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ClawChat Network Security Configuration -->
+<!-- ClawChat Network Security Configuration
+     信任系统证书 + Gateway 自签名证书
+     详见：app/src/main/java/com/openclaw/clawchat/network/GatewayTrustManager.kt
+-->
 <network-security-config>
 
-    <!-- 默认配置：信任系统证书 + Gateway 内置证书 + 用户安装的证书 -->
+    <!-- 默认配置：信任系统证书 + 用户安装的证书 -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
-            <!-- 信任用户手动安装的证书（用于自签名 CA） -->
             <certificates src="user" />
         </trust-anchors>
     </base-config>
 
     <!-- 特定域名配置：信任 Gateway 内置证书 -->
     <domain-config cleartextTrafficPermitted="false">
-        <!-- 局域网 Gateway IP -->
+        <!-- 局域网 Gateway IP（常见路由器网段） -->
         <domain includeSubdomains="false">192.168.0.213</domain>
         <domain includeSubdomains="false">192.168.0.1</domain>
         <domain includeSubdomains="false">192.168.1.1</domain>
@@ -33,7 +35,7 @@
         <domain includeSubdomains="true">openclaw.local</domain>
         <domain includeSubdomains="true">gateway.openclaw.local</domain>
         
-        <!-- 信任 Gateway 内置证书 -->
+        <!-- 信任 Gateway 内置证书（DER 格式） -->
         <certificates src="@raw/openclaw_gateway" overridePins="true" />
     </domain-config>
 
