@@ -8,7 +8,7 @@ import com.openclaw.clawchat.domain.model.SessionStatus as DomainSessionStatus
 import com.openclaw.clawchat.network.GatewayUrlUtil
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
-import com.openclaw.clawchat.repository.SessionRepository
+import com.openclaw.clawchat.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.channels.Channel

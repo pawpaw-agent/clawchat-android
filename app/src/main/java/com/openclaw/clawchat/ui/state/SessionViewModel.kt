@@ -4,13 +4,12 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.openclaw.clawchat.data.local.MessageEntity
-import com.openclaw.clawchat.data.local.MessageRole as LocalMessageRole
-import com.openclaw.clawchat.data.local.MessageStatus
-import com.openclaw.clawchat.domain.model.Session
+import com.openclaw.clawchat.domain.model.Message
+import com.openclaw.clawchat.domain.model.MessageRole
+import com.openclaw.clawchat.domain.model.MessageStatus
+import com.openclaw.clawchat.domain.repository.MessageRepository
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
-import com.openclaw.clawchat.repository.MessageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.channels.Channel
@@ -92,8 +91,8 @@ class SessionViewModel @Inject constructor(
     private fun loadMessageHistory() {
         viewModelScope.launch(exceptionHandler) {
             val sessionId = savedStateHandle.get<String>("sessionId") ?: return@launch
-            messageRepository.getMessages(sessionId).collect { entities ->
-                _state.update { it.copy(messages = entities.map { e -> e.toMessageUi() }) }
+            messageRepository.observeMessages(sessionId).collect { messages ->
+                _state.update { it.copy(messages = messages.map { m -> m.toMessageUi() }) }
             }
         }
     }
@@ -183,10 +182,10 @@ class SessionViewModel @Inject constructor(
         val finalContent = streamingBuffers.remove(runId)?.toString()?.ifEmpty { content } ?: content
         val messageRole = parseRole(role)
 
-        // 写入 Room 缓存
+        // 写入 Room 缓存（使用 Domain 模型）
         messageRepository.saveMessage(
             sessionId = sessionId,
-            role = messageRole.toLocalRole(),
+            role = messageRole,
             content = finalContent,
             timestamp = System.currentTimeMillis(),
             status = MessageStatus.DELIVERED
@@ -286,7 +285,7 @@ class SessionViewModel @Inject constructor(
 
             val messageId = messageRepository.saveMessage(
                 sessionId = sessionKey,
-                role = LocalMessageRole.USER,
+                role = MessageRole.USER,
                 content = content,
                 timestamp = userMessage.timestamp,
                 status = MessageStatus.PENDING
@@ -357,51 +356,13 @@ sealed class SessionEvent {
     data object SessionEnded : SessionEvent()
 }
 
-private fun MessageRole.toLocalRole(): LocalMessageRole = when (this) {
-    MessageRole.USER -> LocalMessageRole.USER
-    MessageRole.ASSISTANT -> LocalMessageRole.ASSISTANT
-    MessageRole.SYSTEM -> LocalMessageRole.SYSTEM
-}
+// ─────────────────────────────────────────────────────────────
+// 映射函数
+// ─────────────────────────────────────────────────────────────
 
-private fun LocalMessageRole.toUiRole(): MessageRole = when (this) {
-    LocalMessageRole.USER -> MessageRole.USER
-    LocalMessageRole.ASSISTANT -> MessageRole.ASSISTANT
-    LocalMessageRole.SYSTEM -> MessageRole.SYSTEM
-}
-
-private fun MessageEntity.toMessageUi(): MessageUi = MessageUi(
-    id = id.toString(),
+private fun Message.toMessageUi(): MessageUi = MessageUi(
+    id = id,
     content = content,
-    role = role.toUiRole(),
+    role = role,
     timestamp = timestamp
 )
-
-// ─────────────────────────────────────────────────────────────
-// 映射函数：Domain Session → UI SessionUi
-// ─────────────────────────────────────────────────────────────
-
-/**
- * Domain Session 转 UI SessionUi
- */
-private fun Session.toSessionUi(): SessionUi {
-    return SessionUi(
-        id = id,
-        label = label,
-        model = model,
-        status = status.toUiStatus(),
-        lastActivityAt = lastActivityAt,
-        messageCount = messageCount,
-        lastMessage = lastMessage,
-        thinking = thinking
-    )
-}
-
-/**
- * Domain SessionStatus 转 UI SessionStatus
- */
-private fun com.openclaw.clawchat.domain.model.SessionStatus.toUiStatus(): SessionStatus =
-    when (this) {
-        com.openclaw.clawchat.domain.model.SessionStatus.RUNNING -> SessionStatus.RUNNING
-        com.openclaw.clawchat.domain.model.SessionStatus.PAUSED -> SessionStatus.PAUSED
-        com.openclaw.clawchat.domain.model.SessionStatus.TERMINATED -> SessionStatus.TERMINATED
-    }

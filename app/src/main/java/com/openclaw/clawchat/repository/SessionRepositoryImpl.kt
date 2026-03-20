@@ -4,6 +4,8 @@ import com.openclaw.clawchat.data.local.SessionDao
 import com.openclaw.clawchat.data.local.SessionEntity
 import com.openclaw.clawchat.domain.model.Session
 import com.openclaw.clawchat.domain.model.SessionStatus
+import com.openclaw.clawchat.domain.repository.SessionRepository
+import com.openclaw.clawchat.domain.repository.SessionStats
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,20 +17,19 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * 会话仓库
+ * 会话仓库实现
  *
+ * 实现 Domain 层的 SessionRepository 接口。
  * 负责管理会话数据：
  * - 本地缓存 (Room)
  * - 会话列表排序
  * - 会话搜索
  * - 会话状态管理
- *
- * 使用 Domain 层的 Session 模型，而非 UI 层的 SessionUi。
  */
 @Singleton
-class SessionRepository @Inject constructor(
+class SessionRepositoryImpl @Inject constructor(
     private val sessionDao: SessionDao
-) {
+) : SessionRepository {
 
     private val _sessions = MutableStateFlow<List<Session>>(emptyList())
     val sessions: StateFlow<List<Session>> = _sessions.asStateFlow()
@@ -43,16 +44,23 @@ class SessionRepository @Inject constructor(
     /**
      * 从数据库加载会话列表（返回 Domain 模型）
      */
-    fun observeSessions(): Flow<List<Session>> {
+    override fun observeSessions(): Flow<List<Session>> {
         return sessionDao.getActiveSessions().map { entities ->
             entities.map { it.toSession() }
         }
     }
 
     /**
+     * 观察当前会话
+     */
+    override fun observeCurrentSession(): Flow<Session?> {
+        return _currentSession.asStateFlow()
+    }
+
+    /**
      * 添加会话（使用 Domain 模型）
      */
-    suspend fun addSession(session: Session) {
+    override suspend fun addSession(session: Session) {
         // 保存到数据库
         val entity = session.toSessionEntity()
         sessionDao.insert(entity)
@@ -70,7 +78,7 @@ class SessionRepository @Inject constructor(
     /**
      * 更新会话（使用 Domain 模型）
      */
-    suspend fun updateSession(sessionId: String, update: (Session) -> Session) {
+    override suspend fun updateSession(sessionId: String, update: (Session) -> Session) {
         val currentSessions = _sessions.value
         val sessionToUpdate = currentSessions.find { it.id == sessionId } ?: return
 
@@ -103,7 +111,7 @@ class SessionRepository @Inject constructor(
     /**
      * 删除会话
      */
-    suspend fun deleteSession(sessionId: String) {
+    override suspend fun deleteSession(sessionId: String) {
         // 从数据库删除
         sessionDao.deleteById(sessionId)
 
@@ -121,21 +129,21 @@ class SessionRepository @Inject constructor(
     /**
      * 获取会话（返回 Domain 模型）
      */
-    fun getSession(sessionId: String): Session? {
+    override fun getSession(sessionId: String): Session? {
         return _sessions.value.find { it.id == sessionId }
     }
 
     /**
      * 设置当前会话
      */
-    fun setCurrentSession(sessionId: String?) {
+    override fun setCurrentSession(sessionId: String?) {
         _currentSession.value = sessionId?.let { getSession(it) }
     }
 
     /**
      * 搜索会话（返回 Domain 模型）
      */
-    suspend fun searchSessions(query: String): List<Session> {
+    override suspend fun searchSessions(query: String): List<Session> {
         if (query.isBlank()) {
             return _sessions.value
         }
@@ -147,28 +155,28 @@ class SessionRepository @Inject constructor(
     /**
      * 获取活跃会话（返回 Domain 模型）
      */
-    fun getActiveSessions(): List<Session> {
+    override fun getActiveSessions(): List<Session> {
         return _sessions.value.filter { it.status == SessionStatus.RUNNING }
     }
 
     /**
      * 获取已暂停会话（返回 Domain 模型）
      */
-    fun getPausedSessions(): List<Session> {
+    override fun getPausedSessions(): List<Session> {
         return _sessions.value.filter { it.status == SessionStatus.PAUSED }
     }
 
     /**
      * 获取已终止会话（返回 Domain 模型）
      */
-    fun getTerminatedSessions(): List<Session> {
+    override fun getTerminatedSessions(): List<Session> {
         return _sessions.value.filter { it.status == SessionStatus.TERMINATED }
     }
 
     /**
      * 清除所有已终止会话（单条 SQL，不循环删除）
      */
-    suspend fun clearTerminatedSessions() {
+    override suspend fun clearTerminatedSessions() {
         sessionDao.deleteInactive()
 
         _sessions.update { sessions ->
@@ -193,7 +201,7 @@ class SessionRepository @Inject constructor(
     /**
      * 加载会话（从数据库）
      */
-    suspend fun loadSessions() {
+    override suspend fun loadSessions() {
         val entities = sessionDao.getActiveSessions().firstOrNull() ?: emptyList()
         _sessions.value = entities.map { it.toSession() }
     }
@@ -201,7 +209,7 @@ class SessionRepository @Inject constructor(
     /**
      * 清空所有会话
      */
-    suspend fun clearAllSessions() {
+    override suspend fun clearAllSessions() {
         sessionDao.deleteInactive()
         // Also delete active ones by iterating (or add a deleteAll query)
         val allSessions = sessionDao.getAllSessions().firstOrNull() ?: emptyList()
@@ -247,14 +255,3 @@ private fun SessionEntity.toSession(): Session {
         thinking = false
     )
 }
-
-/**
- * 会话统计
- */
-data class SessionStats(
-    val total: Int,
-    val running: Int,
-    val paused: Int,
-    val terminated: Int,
-    val totalMessages: Int
-)
