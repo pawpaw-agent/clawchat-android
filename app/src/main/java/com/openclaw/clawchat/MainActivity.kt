@@ -83,6 +83,7 @@ fun ClawChatNavHost(
             PairingScreen(
                 viewModel = pairingViewModel,
                 onPairingSuccess = {
+                    mainViewModel.refreshPairedState()
                     navController.navigate("main") {
                         popUpTo("pairing") { inclusive = true }
                     }

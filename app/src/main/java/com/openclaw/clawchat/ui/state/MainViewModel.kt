@@ -45,6 +45,13 @@ class MainViewModel @Inject constructor(
     // 是否已配对（用于决定初始导航目的地）
     private val _isPaired = MutableStateFlow(encryptedStorage.isPaired())
     val isPaired: StateFlow<Boolean> = _isPaired.asStateFlow()
+    
+    /**
+     * 刷新配对状态（供 PairingViewModel 在配对成功后调用）
+     */
+    fun refreshPairedState() {
+        _isPaired.value = encryptedStorage.isPaired()
+    }
 
     private val _events = Channel<UiEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
