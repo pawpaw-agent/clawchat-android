@@ -2,38 +2,27 @@
 <!-- ClawChat Network Security Configuration
      信任系统证书 + Gateway 自签名证书
      详见：app/src/main/java/com/openclaw/clawchat/network/GatewayTrustManager.kt
+
+     全局信任 Gateway 证书，支持任意 IP/域名连接（用户各自部署的 Gateway）
 -->
 <network-security-config>
 
-    <!-- 默认配置：信任系统证书 + 用户安装的证书 -->
+    <!-- 默认配置：信任系统证书 + Gateway 自签名证书 + 用户安装的证书 -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
+            <!-- 全局信任 Gateway 自签名证书（所有 IP/域名） -->
+            <certificates src="@raw/openclaw_gateway" />
             <certificates src="user" />
         </trust-anchors>
     </base-config>
 
-    <!-- 特定域名配置：信任 Gateway 内置证书 -->
+    <!-- 特定域名配置（可选）：为特定域名覆盖证书固定 -->
+    <!-- 注：base-config 已全局信任 Gateway 证书，此处仅用于文档说明 -->
     <domain-config cleartextTrafficPermitted="false">
-        <!-- 局域网 Gateway IP（常见路由器网段） -->
-        <domain includeSubdomains="false">192.168.0.213</domain>
-        <domain includeSubdomains="false">192.168.0.1</domain>
-        <domain includeSubdomains="false">192.168.1.1</domain>
-        <domain includeSubdomains="false">192.168.1.254</domain>
-        <domain includeSubdomains="false">192.168.2.1</domain>
-        <domain includeSubdomains="false">192.168.10.1</domain>
-        <domain includeSubdomains="false">192.168.31.1</domain>
-        <domain includeSubdomains="false">192.168.50.1</domain>
-        <domain includeSubdomains="false">10.0.0.1</domain>
-        <domain includeSubdomains="false">10.0.1.1</domain>
-        <domain includeSubdomains="false">10.1.1.1</domain>
-        <domain includeSubdomains="false">172.16.0.1</domain>
-        <domain includeSubdomains="false">172.17.0.1</domain>
-        
-        <!-- 本地域名 -->
-        <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">openclaw.local</domain>
-        <domain includeSubdomains="true">gateway.openclaw.local</domain>
+        <!-- 示例：Tailscale MagicDNS 域名 -->
+        <domain includeSubdomains="true">*.ts.net</domain>
+        <domain includeSubdomains="true">*.tailnet-name.ts.net</domain>
         
         <!-- 信任 Gateway 内置证书（DER 格式） -->
         <certificates src="@raw/openclaw_gateway" overridePins="true" />
