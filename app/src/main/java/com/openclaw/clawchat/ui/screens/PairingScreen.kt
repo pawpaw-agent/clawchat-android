@@ -58,10 +58,14 @@ fun PairingScreen(
         )
     }
 
-    LaunchedEffect(viewModel.events) {
+    // 监听配对成功事件 - 使用 Unit 作为 key 确保在整个生命周期内持续收集
+    LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is PairingEvent.PairingSuccess -> onPairingSuccess()
+                is PairingEvent.PairingSuccess -> {
+                    // 确保在主线程执行导航
+                    onPairingSuccess()
+                }
                 is PairingEvent.PairingTimeout,
                 is PairingEvent.PairingRejected -> {}
                 else -> {}

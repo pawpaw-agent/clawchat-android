@@ -262,6 +262,10 @@ dependencies {
     // Coil (Image Loading)
     implementation(libs.coil.compose)
 
+    // Markdown Rendering
+    implementation("com.halilibo.compose-richtext:richtext-commonmark:0.20.0")
+    implementation("com.halilibo.compose-richtext:richtext-ui-material3:0.20.0")
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

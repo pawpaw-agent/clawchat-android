@@ -235,11 +235,16 @@ class MainViewModel @Inject constructor(
                 val uiSessions = sessionsArray.mapNotNull { element ->
                     try {
                         val obj = element.jsonObject
+                        // 优先级：derivedTitle > label > displayName > model
+                        val displayLabel = obj["derivedTitle"]?.jsonPrimitive?.content
+                            ?: obj["label"]?.jsonPrimitive?.content
+                            ?: obj["displayName"]?.jsonPrimitive?.content
+                            ?: obj["model"]?.jsonPrimitive?.content?.let { "Agent: $it" }
+                        
                         SessionUi(
                             id = obj["key"]?.jsonPrimitive?.content
                                 ?: obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
-                            label = obj["label"]?.jsonPrimitive?.content
-                                ?: obj["derivedTitle"]?.jsonPrimitive?.content,
+                            label = displayLabel,
                             model = obj["model"]?.jsonPrimitive?.content,
                             status = SessionStatus.RUNNING,
                             lastActivityAt = obj["lastActivityAt"]?.jsonPrimitive?.long

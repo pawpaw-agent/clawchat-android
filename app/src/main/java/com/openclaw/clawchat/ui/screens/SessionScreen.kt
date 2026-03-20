@@ -24,6 +24,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.halilibo.richtext.commonmark.CommonmarkAstNodeParser
+import com.halilibo.richtext.commonmark.MarkdownParseOptions
+import com.halilibo.richtext.markdown.BasicMarkdown
+import com.halilibo.richtext.ui.RichTextStyle
+import com.halilibo.richtext.ui.material3.RichText
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
@@ -79,10 +84,13 @@ fun SessionScreen(
     }
 
     // 消息变化时滚动到底部
+    var lastMessageCount by remember { mutableStateOf(0) }
     LaunchedEffect(state.messages.size) {
-        if (state.messages.isNotEmpty()) {
-            listState.animateScrollToItem(state.messages.lastIndex)
+        if (state.messages.isNotEmpty() && state.messages.size > lastMessageCount) {
+            // 新消息到达，立即滚动到底部
+            listState.scrollToItem(state.messages.lastIndex)
         }
+        lastMessageCount = state.messages.size
     }
 
     Scaffold(
@@ -303,7 +311,7 @@ private fun MessageItem(message: MessageUi) {
         ) {
             Box(
                 modifier = Modifier
-                    .widthIn(max = 280.dp)
+                    .widthIn(max = 320.dp)
                     .clip(
                         RoundedCornerShape(
                             topStart = 16.dp,
@@ -322,15 +330,19 @@ private fun MessageItem(message: MessageUi) {
                     .padding(12.dp)
             ) {
                 Column {
-                    Text(
-                        text = message.content,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isUser) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                        }
-                    )
+                    // 助手消息使用 Markdown 渲染
+                    if (!isUser) {
+                        MarkdownText(
+                            content = message.content,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    } else {
+                        Text(
+                            text = message.content,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
 
                     if (message.isLoading) {
                         CircularProgressIndicator(
@@ -356,6 +368,29 @@ private fun MessageItem(message: MessageUi) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+/**
+ * Markdown 文本渲染组件
+ */
+@Composable
+private fun MarkdownText(
+    content: String,
+    color: Color
+) {
+    val richTextStyle = remember {
+        RichTextStyle()
+    }
+    
+    RichText(
+        style = richTextStyle,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        BasicMarkdown(
+            content = content,
+            color = color
+        )
     }
 }
 
