@@ -40,7 +40,7 @@ class GatewayTrustManager @Inject constructor(
         private const val TAG = "GatewayTrustManager"
     }
 
-    private val sslSocketFactory: SSLSocketFactory by lazy {
+    private val _sslSocketFactory: SSLSocketFactory by lazy {
         val trustManager = createTrustManager()
         val sslContext = SSLContext.getInstance("TLS")
         sslContext.init(null, arrayOf<TrustManager>(trustManager), null)
