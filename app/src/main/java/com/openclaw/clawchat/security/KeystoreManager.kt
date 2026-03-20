@@ -45,6 +45,11 @@ class KeystoreManager(
         /** API 33+ 支持 Keystore Ed25519 */
         private val USE_KEYSTORE_ED25519 = Build.VERSION.SDK_INT >= 33
 
+        /** Samsung 设备即使 API 33+ 也需要回退（Keystore Ed25519 格式不兼容） */
+        private fun isSamsungDevice(): Boolean {
+            return Build.MANUFACTURER.equals("Samsung", ignoreCase = true)
+        }
+
         /** 是否已回退到 BouncyCastle（某些设备 Keystore 不支持 Ed25519） */
         private var fallbackToBouncyCastle = false
 
@@ -74,6 +79,12 @@ class KeystoreManager(
         // 从持久化存储恢复 fallback 状态
         if (softwareKeyStore is EncryptedStorage) {
             fallbackToBouncyCastle = softwareKeyStore.getFallbackToSoftwareKeystore()
+        }
+        // Samsung 设备强制使用软件密钥存储（Keystore Ed25519 格式不兼容）
+        if (!fallbackToBouncyCastle && isSamsungDevice()) {
+            android.util.Log.w("KeystoreManager", "Samsung device detected, forcing software keystore")
+            fallbackToBouncyCastle = true
+            saveFallbackState(true)
         }
     }
 
