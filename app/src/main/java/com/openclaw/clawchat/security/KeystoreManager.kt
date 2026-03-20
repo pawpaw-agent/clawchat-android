@@ -45,11 +45,14 @@ class KeystoreManager(
         /** API 33+ 支持 Keystore Ed25519 */
         private val USE_KEYSTORE_ED25519 = Build.VERSION.SDK_INT >= 33
 
+        /** 是否已回退到 BouncyCastle（某些设备 Keystore 不支持 Ed25519） */
+        private var fallbackToBouncyCastle = false
+
         /** BouncyCastle raw key 长度 */
         private const val ED25519_KEY_SIZE = 32
     }
 
-    private val keyStore: KeyStore? = if (USE_KEYSTORE_ED25519) {
+    private val keyStore: KeyStore? = if (USE_KEYSTORE_ED25519 && !fallbackToBouncyCastle) {
         KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
     } else null
 
@@ -63,7 +66,7 @@ class KeystoreManager(
      * 检查密钥对是否已存在
      */
     fun hasKeyPair(): Boolean {
-        return if (USE_KEYSTORE_ED25519) {
+        return if (USE_KEYSTORE_ED25519 && !fallbackToBouncyCastle) {
             keyStore!!.containsAlias(alias)
         } else {
             softwareKeyStore?.hasKeyPair(alias) ?: false
@@ -81,10 +84,20 @@ class KeystoreManager(
         }
         clearBcCache()
 
-        if (USE_KEYSTORE_ED25519) {
-            generateKeystoreEd25519()
+        if (USE_KEYSTORE_ED25519 && !fallbackToBouncyCastle) {
+            try {
+                generateKeystoreEd25519()
+                fallbackToBouncyCastle = false
+            } catch (e: Exception) {
+                // 某些设备（如 Samsung）的 Keystore 不支持 Ed25519，回退到 BouncyCastle
+                android.util.Log.w("KeystoreManager", "Keystore Ed25519 not supported, falling back to BouncyCastle: ${e.message}")
+                clearBcCache()
+                generateBouncyCastleEd25519()
+                fallbackToBouncyCastle = true
+            }
         } else {
             generateBouncyCastleEd25519()
+            fallbackToBouncyCastle = true
         }
 
         return getPublicKeyBase64Url()
@@ -94,7 +107,7 @@ class KeystoreManager(
      * 获取公钥 raw bytes（32 bytes）
      */
     fun getPublicKeyRaw(): ByteArray {
-        return if (USE_KEYSTORE_ED25519) {
+        return if (USE_KEYSTORE_ED25519 && !fallbackToBouncyCastle) {
             val spki = getPublicKeySPKI()
             extractRawFromSPKI(spki)
         } else {
@@ -133,7 +146,7 @@ class KeystoreManager(
      * @return 签名 bytes（64 bytes）
      */
     fun sign(data: ByteArray): ByteArray {
-        return if (USE_KEYSTORE_ED25519) {
+        return if (USE_KEYSTORE_ED25519 && !fallbackToBouncyCastle) {
             signWithKeystore(data)
         } else {
             signWithBouncyCastle(data)
@@ -162,7 +175,7 @@ class KeystoreManager(
      * 删除密钥对
      */
     fun deleteKey() {
-        if (USE_KEYSTORE_ED25519) {
+        if (USE_KEYSTORE_ED25519 && !fallbackToBouncyCastle) {
             if (keyStore!!.containsAlias(alias)) {
                 keyStore.deleteEntry(alias)
             }
@@ -178,7 +191,7 @@ class KeystoreManager(
     fun getKeyInfo(): KeyInfo {
         if (!hasKeyPair()) return KeyInfo(null, null, false)
 
-        return if (USE_KEYSTORE_ED25519) {
+        return if (USE_KEYSTORE_ED25519 && !fallbackToBouncyCastle) {
             KeyInfo(
                 algorithm = "Ed25519",
                 format = "AndroidKeyStore (TEE/StrongBox)",
