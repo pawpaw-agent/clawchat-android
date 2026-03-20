@@ -225,6 +225,24 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
         return sharedPreferences.getString(KEY_GATEWAY_TLS_FINGERPRINT, null)
     }
     
+    // ==================== 通用字符串存储 ====================
+    
+    /**
+     * 存储任意字符串值
+     */
+    fun saveString(key: String, value: String) {
+        sharedPreferences.edit()
+            .putString(key, value)
+            .apply()
+    }
+    
+    /**
+     * 获取存储的字符串值
+     */
+    fun getString(key: String): String? {
+        return sharedPreferences.getString(key, null)
+    }
+    
     // ==================== 配对状态管理 ====================
     
     /**

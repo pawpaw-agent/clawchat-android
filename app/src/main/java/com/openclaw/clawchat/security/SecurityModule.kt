@@ -237,6 +237,20 @@ class SecurityModule(private val context: Context) {
         tlsFingerprint?.let { encryptedStorage.saveTlsFingerprint(it) }
     }
     
+    /**
+     * 保存 Gateway auth token（用户输入的 token）
+     */
+    fun saveGatewayAuthToken(token: String) {
+        encryptedStorage.saveString("gateway_auth_token", token)
+    }
+    
+    /**
+     * 获取 Gateway auth token（用户输入的 token）
+     */
+    fun getGatewayAuthToken(): String? {
+        return encryptedStorage.getString("gateway_auth_token")
+    }
+    
     fun getGatewayUrl(): String? = encryptedStorage.getGatewayUrl()
     fun getTlsFingerprint(): String? = encryptedStorage.getTlsFingerprint()
     
