@@ -94,6 +94,12 @@ interface SessionDao {
     suspend fun deleteInactive(): Int
 
     /**
+     * 删除所有会话
+     */
+    @Query("DELETE FROM sessions")
+    suspend fun deleteAll()
+
+    /**
      * 搜索会话标题
      */
     @Query("SELECT * FROM sessions WHERE title LIKE :query ORDER BY updatedAt DESC LIMIT :limit")

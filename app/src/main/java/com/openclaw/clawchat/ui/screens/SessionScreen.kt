@@ -522,6 +522,7 @@ private fun formatTimestamp(timestamp: Long): String {
  * IME Padding 修饰符
  */
 private fun Modifier.imePadding(): Modifier {
-    // 简单实现，实际应该使用 androidx.compose.foundation.layout.imePadding()
-    return this.padding(bottom = 0.dp)
+    // 使用 androidx.compose.foundation.layout.imePadding()
+    // 需要确保 compose-ui 版本支持
+    return androidx.compose.foundation.layout.imePadding()
 }

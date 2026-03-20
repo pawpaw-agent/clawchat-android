@@ -93,6 +93,25 @@ class DynamicTrustManager(
     private val fingerprintManager: CertificateFingerprintManager
 ) : X509TrustManager {
 
+    companion object {
+        // ThreadLocal 用于传递当前连接的主机名
+        private val currentHostname = ThreadLocal<String?>()
+        
+        /**
+         * 设置当前连接的主机名（在连接前调用）
+         */
+        fun setCurrentHostname(hostname: String?) {
+            currentHostname.set(hostname)
+        }
+        
+        /**
+         * 清除当前连接的主机名（在连接后调用）
+         */
+        fun clearCurrentHostname() {
+            currentHostname.remove()
+        }
+    }
+
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
         // 客户端验证：不处理
     }
@@ -134,10 +153,10 @@ class DynamicTrustManager(
     /**
      * 获取当前连接的主机名
      *
-     * TODO: 通过 OkHttp EventListener 或 ThreadLocal 传递主机名
+     * 通过 ThreadLocal 传递主机名（在连接前由调用方设置）
      */
     private fun getCurrentHostname(): String? {
-        return null // 暂时返回 null，由上层处理
+        return currentHostname.get()
     }
 }
 

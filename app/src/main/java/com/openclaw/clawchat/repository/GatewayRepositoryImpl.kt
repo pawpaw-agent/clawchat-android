@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,6 +25,12 @@ class GatewayRepositoryImpl @Inject constructor(
 
     private val _gateways = MutableStateFlow<List<GatewayConfigUi>>(emptyList())
     private val _currentGatewayId = MutableStateFlow<String?>(null)
+
+    private val json = Json { 
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        isLenient = true
+    }
 
     companion object {
         private const val KEY_GATEWAYS = "gateway_configs"
@@ -89,9 +98,7 @@ class GatewayRepositoryImpl @Inject constructor(
     }
 
     private fun loadGateways() {
-        // 从 EncryptedStorage 加载配置
         val configs = encryptedStorage.decryptAndRead(KEY_GATEWAYS) ?: "[]"
-        // 简单解析（实际应用可用 JSON）
         _gateways.value = parseGateways(configs)
         
         val currentId = encryptedStorage.decryptAndRead(KEY_CURRENT_GATEWAY) ?: ""
@@ -104,12 +111,52 @@ class GatewayRepositoryImpl @Inject constructor(
     }
 
     private fun parseGateways(configs: String): List<GatewayConfigUi> {
-        // 简单实现，实际应用应使用 JSON 解析
-        return emptyList()
+        return try {
+            if (configs.isBlank() || configs == "[]") return emptyList()
+            val dtos = json.decodeFromString<List<GatewayConfigDto>>(configs)
+            dtos.map { it.toUi() }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     private fun serializeGateways(gateways: List<GatewayConfigUi>): String {
-        // 简单实现，实际应用应使用 JSON 序列化
-        return "[]"
+        return try {
+            val dtos = gateways.map { GatewayConfigDto.fromUi(it) }
+            json.encodeToString(dtos)
+        } catch (e: Exception) {
+            "[]"
+        }
+    }
+}
+
+/**
+ * Gateway 配置 DTO（用于 JSON 序列化）
+ */
+@Serializable
+data class GatewayConfigDto(
+    val id: String,
+    val name: String,
+    val host: String,
+    val port: Int,
+    val useTls: Boolean
+) {
+    fun toUi(): GatewayConfigUi = GatewayConfigUi(
+        id = id,
+        name = name,
+        host = host,
+        port = port,
+        useTls = useTls,
+        isCurrent = false
+    )
+
+    companion object {
+        fun fromUi(ui: GatewayConfigUi): GatewayConfigDto = GatewayConfigDto(
+            id = ui.id,
+            name = ui.name,
+            host = ui.host,
+            port = ui.port,
+            useTls = ui.useTls
+        )
     }
 }

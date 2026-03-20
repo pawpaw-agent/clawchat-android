@@ -77,15 +77,15 @@ class RequestTracker(
     init {
         // Only start cleanup if an external scope is provided (avoids leaked coroutine)
         if (scope != null) {
-            startCleanupTask()
+            startCleanupTask(scope)
         }
     }
     
     /**
      * 启动定期清理任务（使用外部提供的 CoroutineScope）
      */
-    private fun startCleanupTask() {
-        cleanupJob = scope!!.launch {
+    private fun startCleanupTask(cleanupScope: CoroutineScope) {
+        cleanupJob = cleanupScope.launch {
             while (true) {
                 delay(CLEANUP_INTERVAL_MS)
                 cleanupExpiredRequests()

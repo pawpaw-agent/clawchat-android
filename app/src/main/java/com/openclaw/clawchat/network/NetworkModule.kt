@@ -4,6 +4,7 @@ import android.content.Context
 import com.openclaw.clawchat.BuildConfig
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.security.SecurityModule
+import com.openclaw.clawchat.security.SecureLogger
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -37,7 +38,7 @@ object NetworkModule {
         gatewayTrustManager: GatewayTrustManager
     ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor { message ->
-            LogSecure.d(message.redactSensitive())
+            SecureLogger.d(message.redactSensitive())
         }.apply {
             level = if (BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BODY
@@ -92,32 +93,6 @@ object NetworkModule {
         @ApplicationContext context: Context
     ): TailscaleManager {
         return TailscaleManager(context)
-    }
-}
-
-/**
- * 安全日志工具
- */
-object LogSecure {
-    private const val TAG = "Network"
-
-    fun d(message: String) { android.util.Log.d(TAG, message) }
-    fun i(message: String) { android.util.Log.i(TAG, message) }
-    fun w(message: String) { android.util.Log.w(TAG, message) }
-    fun e(message: String, throwable: Throwable? = null) { android.util.Log.e(TAG, message, throwable) }
-}
-
-/**
- * 网络层安全日志（使用统一 SecureLogger）
- */
-object SecureLogger {
-    private const val TAG = "ClawChat-Network"
-
-    fun d(message: String) { android.util.Log.d(TAG, message) }
-    fun i(message: String) { android.util.Log.i(TAG, message) }
-    fun w(message: String) { android.util.Log.w(TAG, message) }
-    fun e(message: String, throwable: Throwable? = null) {
-        android.util.Log.e(TAG, message, throwable)
     }
 }
 

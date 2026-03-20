@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.network.GatewayUrlUtil
 import com.openclaw.clawchat.network.protocol.GatewayConnection
+import com.openclaw.clawchat.security.CertificateFingerprintManager
 import com.openclaw.clawchat.security.SecurityModule
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -53,7 +54,8 @@ data class PairingState(
 @HiltViewModel
 class PairingViewModel @Inject constructor(
     private val securityModule: SecurityModule,
-    private val gateway: GatewayConnection
+    private val gateway: GatewayConnection,
+    private val fingerprintManager: CertificateFingerprintManager
 ) : ViewModel() {
 
     companion object {
@@ -200,13 +202,15 @@ class PairingViewModel @Inject constructor(
      */
     fun confirmCertificateTrust() {
         val event = _state.value.certificateEvent ?: return
-        val gatewayUrl = _state.value.gatewayUrl.trim()
 
         viewModelScope.launch {
-            // 保存用户信任的证书指纹
             try {
-                // TODO: 注入 CertificateFingerprintManager 并调用 trustCertificate
-                // fingerprintManager.trustCertificate(gatewayUrl, event.fingerprint, userVerified = true)
+                // 保存用户信任的证书指纹
+                fingerprintManager.trustCertificate(
+                    hostname = event.hostname,
+                    fingerprint = event.fingerprint,
+                    userVerified = true
+                )
                 Log.i(TAG, "User confirmed certificate trust for ${event.hostname}")
 
                 // 清除证书事件，继续连接
