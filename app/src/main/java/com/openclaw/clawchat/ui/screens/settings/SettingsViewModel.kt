@@ -40,10 +40,10 @@ class SettingsViewModel @Inject constructor(
             it.copy(
                 currentGateway = GatewayConfigUi(
                     id = "default", name = "未配置",
-                    host = "", port = 18789, useTls = false
+                    host = "", port = 18789
                 ),
                 gatewayConfigInput = GatewayConfigInput(
-                    name = "", host = "", port = 18789, useTls = false
+                    name = "", host = "", port = 18789
                 )
             )
         }
@@ -78,7 +78,7 @@ class SettingsViewModel @Inject constructor(
                     id = "default",
                     name = config.name.ifEmpty { "默认 Gateway" },
                     host = config.host, port = config.port,
-                    useTls = config.useTls, isCurrent = true
+                    isCurrent = true
                 )
             )
         }

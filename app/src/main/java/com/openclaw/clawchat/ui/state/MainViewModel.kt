@@ -97,7 +97,6 @@ class MainViewModel @Inject constructor(
                                 name = "Gateway",
                                 host = gatewayUrl,
                                 port = DEFAULT_GATEWAY_PORT,
-                                useTls = gatewayUrl.startsWith("https://"),
                                 isCurrent = true
                             ),
                             isLoading = false
@@ -170,7 +169,7 @@ class MainViewModel @Inject constructor(
                         it.copy(
                             currentGateway = GatewayConfigUi(
                                 id = "default", name = "Gateway", host = gatewayUrl,
-                                port = DEFAULT_GATEWAY_PORT, useTls = gatewayUrl.startsWith("https://"),
+                                port = DEFAULT_GATEWAY_PORT,
                                 isCurrent = true
                             ),
                             isLoading = false

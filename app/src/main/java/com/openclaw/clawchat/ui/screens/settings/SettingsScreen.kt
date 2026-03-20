@@ -397,7 +397,6 @@ private fun GatewayConfigDialog(
     var name by remember { mutableStateOf(currentConfig.name) }
     var host by remember { mutableStateOf(currentConfig.host) }
     var port by remember { mutableStateOf(currentConfig.port.toString()) }
-    var useTls by remember { mutableStateOf(currentConfig.useTls) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -419,41 +418,24 @@ private fun GatewayConfigDialog(
                     value = host,
                     onValueChange = { host = it },
                     label = { Text("主机地址") },
-                    placeholder = { Text("例如：192.168.1.100 或 gateway.tailnet-name.ts.net") },
+                    placeholder = { Text("例如：192.168.1.100") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    OutlinedTextField(
-                        value = port,
-                        onValueChange = { port = it },
-                        label = { Text("端口") },
-                        placeholder = { Text("18789") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                    
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = useTls,
-                            onCheckedChange = { useTls = it }
-                        )
-                        Text("TLS")
-                    }
-                }
+                OutlinedTextField(
+                    value = port,
+                    onValueChange = { port = it },
+                    label = { Text("端口") },
+                    placeholder = { Text("18789") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
                 
                 Text(
-                    text = if (useTls) "wss://${host.ifEmpty { "host" }}:${port.ifEmpty { "port" }}/ws"
-                           else "ws://${host.ifEmpty { "host" }}:${port.ifEmpty { "port" }}/ws ⚠️ 不安全",
+                    text = "ws://${host.ifEmpty { "host" }}:${port.ifEmpty { "port" }}/ws",
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (useTls) MaterialTheme.colorScheme.onSurfaceVariant
-                            else MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         },
@@ -464,8 +446,7 @@ private fun GatewayConfigDialog(
                         GatewayConfigInput(
                             name = name,
                             host = host,
-                            port = port.toIntOrNull() ?: 18789,
-                            useTls = useTls
+                            port = port.toIntOrNull() ?: 18789
                         )
                     )
                 }

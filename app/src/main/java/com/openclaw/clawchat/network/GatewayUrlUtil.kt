@@ -9,13 +9,9 @@ package com.openclaw.clawchat.network
  * - 192.168.0.213:18789
  * - 192.168.0.213
  * - http://192.168.0.213:18789
- * - https://192.168.0.213:18789
  * - ws://192.168.0.213:18789/ws
- * - wss://192.168.0.213:18789/ws
- * - gateway.tailnet.ts.net
- * - gateway.tailnet.ts.net:443
  *
- * 输出格式: ws://host:port/ws 或 wss://host:port/ws
+ * 注意：OpenClaw Gateway 不支持 TLS，统一使用 ws://
  */
 object GatewayUrlUtil {
 
@@ -25,33 +21,23 @@ object GatewayUrlUtil {
     /**
      * 将用户输入标准化为 WebSocket URL
      *
+     * 统一使用 ws://（OpenClaw Gateway 不支持 TLS）
+     *
      * @param input 用户输入的地址
-     * @return 标准化的 ws:// 或 wss:// URL，包含 /ws 路径
+     * @return 标准化的 ws:// URL，包含 /ws 路径
      */
     fun normalizeToWebSocketUrl(input: String): String {
         val trimmed = input.trim()
         if (trimmed.isEmpty()) return ""
 
-        // 已经是完整的 ws/wss URL
-        if (trimmed.startsWith("ws://") || trimmed.startsWith("wss://")) {
-            return ensureWsPath(trimmed)
-        }
+        // 去掉所有协议前缀，统一使用 ws://
+        val hostPort = trimmed
+            .removePrefix("ws://").removePrefix("wss://")
+            .removePrefix("http://").removePrefix("https://")
+            .removeSuffix("/ws").removeSuffix("/")
 
-        // http/https → ws/wss
-        if (trimmed.startsWith("http://")) {
-            val wsUrl = "ws://" + trimmed.removePrefix("http://")
-            return ensureWsPath(wsUrl)
-        }
-        if (trimmed.startsWith("https://")) {
-            val wsUrl = "wss://" + trimmed.removePrefix("https://")
-            return ensureWsPath(wsUrl)
-        }
-
-        // 裸地址: host 或 host:port
-        val useTls = looksLikeTlsHost(trimmed)
-        val protocol = if (useTls) "wss" else "ws"
-        val hostPort = ensurePort(trimmed, if (useTls) 443 else DEFAULT_PORT)
-        return "$protocol://$hostPort$WS_PATH"
+        val withPort = ensurePort(hostPort, DEFAULT_PORT)
+        return "ws://$withPort$WS_PATH"
     }
 
     /**
@@ -113,14 +99,6 @@ object GatewayUrlUtil {
     }
 
     /**
-     * 确保 URL 以 /ws 结尾
-     */
-    private fun ensureWsPath(url: String): String {
-        val base = url.removeSuffix("/")
-        return if (base.endsWith(WS_PATH)) base else "$base$WS_PATH"
-    }
-
-    /**
      * Ensure host:port format, with IPv6 bracket support.
      *
      * IPv6 examples: [::1]:18789, [fe80::1%25eth0]:18789
@@ -140,32 +118,5 @@ object GatewayUrlUtil {
 
         // IPv4 / hostname: check for exactly one colon (port separator)
         return if (clean.contains(":")) clean else "$clean:$defaultPort"
-    }
-
-    /**
-     * 猜测是否应该用 TLS
-     *
-     * 规则:
-     * - .ts.net / .tailnet 域名 → TLS
-     * - 局域网 IP (192.168.x.x, 10.x.x.x, 172.16-31.x.x) → TLS (默认安全)
-     * - localhost → TLS
-     * - 其他 → TLS (默认安全)
-     */
-    private fun looksLikeTlsHost(host: String): Boolean {
-        val clean = host.substringBefore(":").substringBefore("/")
-        
-        // .ts.net / .tailnet 域名
-        if (clean.endsWith(".ts.net") || clean.endsWith(".tailnet")) return true
-        
-        // localhost
-        if (clean.equals("localhost", ignoreCase = true)) return true
-        
-        // 局域网 IP 默认用 TLS (安全优先)
-        if (clean.matches(Regex("""192\.168\.\d+\.\d+"""))) return true
-        if (clean.matches(Regex("""10\.\d+\.\d+\.\d+"""))) return true
-        if (clean.matches(Regex("""172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+"""))) return true
-        
-        // 其他情况默认 TLS (安全优先)
-        return true
     }
 }

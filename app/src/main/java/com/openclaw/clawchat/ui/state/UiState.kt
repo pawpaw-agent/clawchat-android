@@ -35,7 +35,6 @@ data class GatewayConfigUi(
     val name: String,
     val host: String,
     val port: Int,
-    val useTls: Boolean,
     val isCurrent: Boolean = false
 )
 
@@ -73,8 +72,7 @@ data class SessionUiState(
 data class GatewayConfigInput(
     val name: String = "",
     val host: String = "",
-    val port: Int = 18789,
-    val useTls: Boolean = true  // 默认启用 TLS（wss://）
+    val port: Int = 18789
 )
 
 /**
