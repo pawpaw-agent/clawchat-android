@@ -404,7 +404,15 @@ class GatewayConnection(
             "commands" to JsonArray(emptyList()),
             "permissions" to JsonObject(emptyMap()),
             "auth" to buildJsonObject {
-                put("token", req.token ?: "")
+                // 首次配对使用 pairingToken，已配对使用 token
+                if (req.token != null && req.token.isNotBlank()) {
+                    // 检查是否是 setupCode 格式（通常是 4-8 位数字或字母）
+                    if (req.token.matches(Regex("^[A-Z0-9]{4,8}$"))) {
+                        put("pairingToken", req.token)
+                    } else {
+                        put("token", req.token)
+                    }
+                }
             },
             "device" to buildJsonObject {
                 put("id", req.device.id)
