@@ -71,7 +71,7 @@ class GatewayConnection(
 
         private const val NONCE_LOG_PREFIX_LEN = 8
 
-        private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+        private val json = Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
     }
 
     // ── Public state ──
@@ -329,6 +329,7 @@ class GatewayConnection(
 
             // 调试：打印请求内容
             Log.i(TAG, "connect request params: ${JsonObject(connectParams)}")
+            Log.i(TAG, "connect request frame (will send): $frameJson")
 
             // 3. Track request → send → await res
             val deferred = requestTracker.trackRequest(requestId, "connect")
