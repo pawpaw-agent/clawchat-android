@@ -27,7 +27,7 @@ import javax.inject.Singleton
  * - 管理通知权限
  */
 @Singleton
-class NotificationManager @Inject constructor(
+class ClawChatNotificationManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     companion object {
