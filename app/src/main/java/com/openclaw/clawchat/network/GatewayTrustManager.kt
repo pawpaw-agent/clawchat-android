@@ -75,7 +75,7 @@ class GatewayTrustManager @Inject constructor(
      *
      * 用于 OkHttpClient.Builder().sslSocketFactory()
      */
-    fun getSslSocketFactory(): SSLSocketFactory = sslSocketFactory
+    fun getSslSocketFactory(): SSLSocketFactory = _sslSocketFactory
 }
 
 /**
