@@ -63,8 +63,19 @@ class PairingViewModel @Inject constructor(
     val events: SharedFlow<PairingEvent> = _events.asSharedFlow()
 
     init {
+        loadSavedConfig()
         observePairingEvents()
         observeCertificateEvents()
+    }
+
+    /**
+     * 加载保存的 Gateway 配置
+     */
+    private fun loadSavedConfig() {
+        val savedUrl = securityModule.getGatewayUrl()
+        if (!savedUrl.isNullOrBlank()) {
+            _state.value = _state.value.copy(gatewayUrl = savedUrl)
+        }
     }
 
     /**
