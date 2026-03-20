@@ -94,8 +94,8 @@ class DynamicTrustManager(
 ) : X509TrustManager {
 
     companion object {
-        // ThreadLocal 用于传递当前连接的主机名
-        private val currentHostname = ThreadLocal<String?>()
+        // 使用 AtomicReference 跨线程传递 hostname（替代 ThreadLocal）
+        private val currentHostname = java.util.concurrent.atomic.AtomicReference<String?>(null)
         
         /**
          * 设置当前连接的主机名（在连接前调用）
@@ -108,7 +108,7 @@ class DynamicTrustManager(
          * 清除当前连接的主机名（在连接后调用）
          */
         fun clearCurrentHostname() {
-            currentHostname.remove()
+            currentHostname.set(null)
         }
     }
 
@@ -122,8 +122,14 @@ class DynamicTrustManager(
         }
 
         val serverCert = chain.first() as X509Certificate
-        val hostname = getCurrentHostname()
-            ?: throw CertificateException("Cannot verify certificate: unknown hostname")
+        
+        // 优先使用 AtomicReference 传递的 hostname，否则从证书 CN 提取
+        val hostname = currentHostname.get() ?: run {
+            // 从证书 Subject CN 提取 hostname
+            val subjectDN = serverCert.subjectDN.name
+            val cnMatch = Regex("CN=([^,]+)").find(subjectDN)
+            cnMatch?.groupValues?.get(1)?.trim()
+        } ?: throw CertificateException("Cannot verify certificate: unknown hostname")
 
         val fingerprint = serverCert.getSha256Fingerprint()
         val status = fingerprintManager.isTrusted(hostname, fingerprint)
@@ -148,15 +154,6 @@ class DynamicTrustManager(
 
     override fun getAcceptedIssuers(): Array<X509Certificate> {
         return emptyArray()
-    }
-
-    /**
-     * 获取当前连接的主机名
-     *
-     * 通过 ThreadLocal 传递主机名（在连接前由调用方设置）
-     */
-    private fun getCurrentHostname(): String? {
-        return currentHostname.get()
     }
 }
 
