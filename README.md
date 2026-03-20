@@ -37,11 +37,11 @@ ClawChat 是 OpenClaw 生态系统的**第三方** Android 客户端应用（非
 
 ### 产品定位
 
-- 🔐 **安全优先** - 硬件级密钥存储，端到端加密通信
+- 🔐 **安全优先** - Ed25519 密钥 + EncryptedSharedPreferences 加密存储
 - 📱 **原生体验** - Jetpack Compose + Material Design 3
 - 🌐 **灵活连接** - 支持局域网和 Tailscale 远程访问
-- 🔔 **实时通知** - WebSocket 推送 + 系统通知集成
-- 📦 **轻量高效** - APK < 15MB，低内存占用
+- 🔔 **实时通信** - WebSocket 推送，支持 Gateway 协议 v3
+- 📦 **轻量高效** - APK ~24MB，低内存占用
 
 ### 目标用户
 
@@ -77,24 +77,24 @@ ClawChat 是 OpenClaw 生态系统的**第三方** Android 客户端应用（非
 
 - ✅ 查看所有活动会话列表
 - ✅ 会话详情（模型、状态、耗时、消息数）
-- ✅ 完整消息历史（支持文本、图片、代码块）
+- ✅ 完整消息历史（文本、代码块）
 - ✅ 文本消息发送
-- ✅ 图片/文件附件上传
+- 🔄 图片/文件附件上传（开发中）
 - ✅ 会话操作（暂停、终止、删除）
 
 #### 🔔 通知系统
 
 - ✅ 新消息系统通知推送
-- ✅ 按会话/类型配置通知偏好
-- ✅ 勿扰模式（定时静音）
-- ✅ Cron 任务提醒
+- 🔄 按会话/类型配置通知偏好（开发中）
+- 🔄 勿扰模式（开发中）
+- 🔄 Cron 任务提醒（开发中）
 
 #### 🔐 安全功能
 
 - ✅ 设备配对（首次连接需管理员批准）
 - ✅ 设备令牌管理（查看/撤销）
-- ✅ 生物认证（指纹/面部解锁，可选）
-- ✅ Android Keystore 硬件级密钥存储
+- 🔄 生物认证（指纹/面部解锁，开发中）
+- ✅ Ed25519 密钥 + EncryptedSharedPreferences 安全存储
 
 ### 界面特性
 
@@ -402,12 +402,6 @@ Gateway 地址：ws://192.168.1.100:18789
 - 点击 **发送** 或按回车
 - 支持多行输入（Shift+Enter 换行）
 
-#### 发送附件
-
-1. 点击输入框旁的 **📎** 按钮
-2. 选择图片或文件
-3. 确认后发送
-
 #### 查看历史
 
 1. 在会话列表点击会话
@@ -419,17 +413,11 @@ Gateway 地址：ws://192.168.1.100:18789
 1. 进入 **设置** → **通知**
 2. 配置以下选项：
    - 启用/禁用通知
-   - 按会话配置通知
-   - 勿扰时间段
    - 通知音效/振动
 
+> 注：按会话配置通知、勿扰模式等功能开发中。
+
 ### 安全设置
-
-#### 生物认证
-
-1. 进入 **设置** → **安全**
-2. 启用 **指纹/面部解锁**
-3. 按提示录入生物特征
 
 #### 设备令牌管理
 
@@ -449,8 +437,8 @@ Gateway 地址：ws://192.168.1.100:18789
 ├─────────────────────────────────────────────────────────────┤
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │           Ed25519 密钥对 (Gateway Protocol v3)         │  │
-│  │  - API 33+: Android Keystore (TEE/StrongBox)           │  │
-│  │  - API 26-32: BouncyCastle + EncryptedSharedPreferences│  │
+│  │  - BouncyCastle 软件实现                               │  │
+│  │  - 私钥存储在 EncryptedSharedPreferences              │  │
 │  │  - deviceId = SHA-256(raw 32-byte pubkey).hex()        │  │
 │  └───────────────────────────────────────────────────────┘  │
 │                              │                               │
@@ -458,8 +446,7 @@ Gateway 地址：ws://192.168.1.100:18789
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │           EncryptedSharedPreferences                   │  │
 │  │  - AES256-GCM 加密（值）                               │  │
-│  │  - AES256-SIV 加密（密钥）                             │  │
-│  │  - MasterKey 存储在 Keystore                           │  │
+│  │  - MasterKey 存储在 Android Keystore                   │  │
 │  └───────────────────────────────────────────────────────┘  │
 │                              │                               │
 │                              ▼                               │
@@ -476,7 +463,7 @@ Gateway 地址：ws://192.168.1.100:18789
 
 | 数据类型 | 存储位置 | 加密方式 |
 |----------|----------|----------|
-| Ed25519 私钥 | EncryptedSharedPreferences (API<33) / Keystore (API 33+) | AES256-GCM / 硬件级 |
+| Ed25519 私钥 | EncryptedSharedPreferences | AES256-GCM |
 | 设备令牌 | EncryptedSharedPreferences | AES256-GCM |
 | Gateway 地址 | EncryptedSharedPreferences | AES256-GCM |
 | 消息缓存 | Room | 明文（本地存储） |
@@ -484,7 +471,7 @@ Gateway 地址：ws://192.168.1.100:18789
 ### 密钥管理
 
 ```kotlin
-// Ed25519 密钥对生成（BouncyCastle 回退路径）
+// Ed25519 密钥对生成（BouncyCastle 软件实现）
 val generator = Ed25519KeyPairGenerator()
 generator.init(Ed25519KeyGenerationParameters(SecureRandom()))
 val keyPair = generator.generateKeyPair()
@@ -506,12 +493,13 @@ val signature = signer.generateSignature()
 - ✅ 日志自动脱敏敏感信息
 - ✅ 定期轮换设备令牌
 
-### ⚠️ 已知安全限制
+### ⚠️ 已知限制
 
 | 限制 | 影响范围 | 缓解措施 |
 |------|----------|----------|
-| **API 26-32 设备使用软件密钥存储** | Ed25519 私钥存储在 EncryptedSharedPreferences（AES-GCM 加密），MasterKey 存储在 Keystore。如果设备被 Root 且 Keystore 被提取，私钥存在理论风险。 | API 33+ 设备使用硬件级 Keystore；软件加密路径已用 AES-256-GCM 保护；建议高安全需求用户使用 API 33+ 设备。详见 [KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) |
+| **软件密钥存储** | Ed25519 私钥使用 BouncyCastle 软件实现，存储在 EncryptedSharedPreferences（AES-GCM 加密）。如果设备被 Root 且 Keystore 被提取，私钥存在理论风险。 | 软件加密路径已用 AES-256-GCM 保护，MasterKey 存储在 Android Keystore。建议高安全需求用户避免使用 Root 设备。 |
 | **重连次数限制** | 网关不可达时，最多自动重连 **15 次**（指数退避，约 30 分钟）。超过后停止重连，需手动重启应用。 | 防止无限重连消耗电量和流量；连接失败时会显示明确错误提示；用户可手动重新连接。 |
+| **Markdown 渲染** | 消息中的 Markdown 格式（代码块、表格等）暂未渲染，以纯文本显示。 | 计划在后续版本添加 Markdown 渲染支持。 |
 
 ---
 
