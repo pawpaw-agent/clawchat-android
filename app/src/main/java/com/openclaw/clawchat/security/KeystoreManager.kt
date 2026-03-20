@@ -96,13 +96,30 @@ class KeystoreManager(
 
     /**
      * 检查密钥对是否已存在
+     * 
+     * 同时检查 Keystore 和软件存储，如果任一存在则返回 true。
+     * 这解决了从旧版本升级时 fallback 状态丢失的问题。
      */
     fun hasKeyPair(): Boolean {
-        return if (USE_KEYSTORE_ED25519 && !fallbackToBouncyCastle) {
-            keyStore!!.containsAlias(alias)
-        } else {
-            softwareKeyStore?.hasKeyPair(alias) ?: false
+        // 如果已知使用软件密钥存储，只检查软件存储
+        if (fallbackToBouncyCastle) {
+            return softwareKeyStore?.hasKeyPair(alias) ?: false
         }
+        
+        // 否则同时检查两种存储
+        val keystoreHasKey = if (USE_KEYSTORE_ED25519) {
+            keyStore?.containsAlias(alias) ?: false
+        } else false
+        
+        val softwareHasKey = softwareKeyStore?.hasKeyPair(alias) ?: false
+        
+        // 如果软件存储有密钥但 Keystore 没有，说明需要回退
+        if (softwareHasKey && !keystoreHasKey && USE_KEYSTORE_ED25519) {
+            fallbackToBouncyCastle = true
+            saveFallbackState(true)
+        }
+        
+        return keystoreHasKey || softwareHasKey
     }
 
     /**
