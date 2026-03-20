@@ -417,17 +417,49 @@ class KeystoreManager(
 
     /**
      * 从 SPKI DER 中提取 raw 32 bytes 公钥
+     * 
+     * 支持多种格式：
+     * - 标准格式 (44 bytes): 12 bytes 前缀 + 32 bytes raw key
+     * - 完整 DER 格式 (44+ bytes): 需要解析 DER 结构
+     * - Raw 格式 (32 bytes): 直接返回
      */
     private fun extractRawFromSPKI(spki: ByteArray): ByteArray {
+        // 如果已经是 raw 32 bytes，直接返回
+        if (spki.size == ED25519_KEY_SIZE) return spki
+        
+        // 标准格式 (44 bytes): 12 bytes 前缀 + 32 bytes raw key
         if (spki.size == ED25519_SPKI_PREFIX.size + ED25519_KEY_SIZE) {
             val prefix = spki.sliceArray(0 until ED25519_SPKI_PREFIX.size)
             if (prefix.contentEquals(ED25519_SPKI_PREFIX)) {
                 return spki.sliceArray(ED25519_SPKI_PREFIX.size until spki.size)
             }
         }
-        // 如果已经是 raw 32 bytes，直接返回
-        if (spki.size == ED25519_KEY_SIZE) return spki
-        throw IllegalStateException("Unexpected public key format: size=${spki.size}")
+        
+        // 完整 DER 格式：尝试解析
+        // Ed25519 OID: 1.3.101.112 = 06 03 2b 65 70
+        val ed25519Oid = byteArrayOf(0x06, 0x03, 0x2b, 0x65, 0x70)
+        
+        // 在 DER 中查找 Ed25519 OID
+        for (i in 0 until spki.size - ed25519Oid.size) {
+            if (spki.sliceArray(i until i + ed25519Oid.size).contentEquals(ed25519Oid)) {
+                // 找到 OID，后面的结构包含公钥
+                // BIT STRING 通常在 OID 后面，格式: 03 xx 00 [raw key]
+                // 查找 BIT STRING tag (0x03)
+                for (j in i + ed25519Oid.size until minOf(spki.size - 3, i + 50)) {
+                    if (spki[j] == 0x03.toByte()) {
+                        // BIT STRING: tag (0x03) + length + unused bits (0x00) + data
+                        val bitStringLength = spki[j + 1].toInt() and 0xFF
+                        val unusedBits = spki[j + 2].toInt()
+                        if (unusedBits == 0 && bitStringLength == ED25519_KEY_SIZE + 1) {
+                            // 找到正确的 BIT STRING，提取 raw key
+                            return spki.sliceArray(j + 3 until j + 3 + ED25519_KEY_SIZE)
+                        }
+                    }
+                }
+            }
+        }
+        
+        throw IllegalStateException("Unexpected public key format: size=${spki.size}, cannot extract Ed25519 raw key")
     }
 
     /**
