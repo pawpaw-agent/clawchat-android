@@ -63,6 +63,7 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
         const val KEY_GATEWAY_TLS_FINGERPRINT = "gateway_tls_fingerprint"
         const val KEY_PAIRING_STATUS = "pairing_status"
         const val KEY_LAST_CONNECTED = "last_connected_timestamp"
+        const val KEY_FALLBACK_TO_SOFTWARE_KEYSTORE = "fallback_to_software_keystore"
         
         // 配对状态枚举
         const val PAIRING_STATUS_NONE = "none"
@@ -113,6 +114,27 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
         )
     }
     
+    // ==================== 密钥存储类型标记 ====================
+
+    /**
+     * 保存是否回退到软件密钥存储的状态
+     * 
+     * Samsung 等设备的 Keystore 不支持 Ed25519，需要持久化这个状态，
+     * 否则每次应用启动都会重新尝试 Keystore 并生成新密钥。
+     */
+    fun saveFallbackToSoftwareKeystore(fallback: Boolean) {
+        sharedPreferences.edit()
+            .putBoolean(KEY_FALLBACK_TO_SOFTWARE_KEYSTORE, fallback)
+            .apply()
+    }
+
+    /**
+     * 获取是否回退到软件密钥存储
+     */
+    fun getFallbackToSoftwareKeystore(): Boolean {
+        return sharedPreferences.getBoolean(KEY_FALLBACK_TO_SOFTWARE_KEYSTORE, false)
+    }
+
     // ==================== 设备令牌管理 ====================
     
     /**

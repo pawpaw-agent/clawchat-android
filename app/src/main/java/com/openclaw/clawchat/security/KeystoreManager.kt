@@ -50,6 +50,31 @@ class KeystoreManager(
 
         /** BouncyCastle raw key 长度 */
         private const val ED25519_KEY_SIZE = 32
+
+        /**
+         * 检查是否应该使用软件密钥存储
+         * 
+         * 在实例创建时调用，从持久化存储读取 fallback 状态。
+         * 这解决了进程重启后静态变量丢失的问题。
+         */
+        fun shouldUseSoftwareKeystore(softwareKeyStore: SoftwareKeyStore?): Boolean {
+            // API < 33 始终使用软件密钥存储
+            if (!USE_KEYSTORE_ED25519) return true
+            
+            // 检查持久化的 fallback 状态
+            if (softwareKeyStore is EncryptedStorage) {
+                return softwareKeyStore.getFallbackToSoftwareKeystore()
+            }
+            
+            return false
+        }
+    }
+
+    init {
+        // 从持久化存储恢复 fallback 状态
+        if (softwareKeyStore is EncryptedStorage) {
+            fallbackToBouncyCastle = softwareKeyStore.getFallbackToSoftwareKeystore()
+        }
     }
 
     private val keyStore: KeyStore? = if (USE_KEYSTORE_ED25519 && !fallbackToBouncyCastle) {
@@ -59,6 +84,13 @@ class KeystoreManager(
     // BouncyCastle 密钥缓存（仅 API < 33）
     private var cachedBcPublicKey: Ed25519PublicKeyParameters? = null
     private var cachedBcPrivateKey: Ed25519PrivateKeyParameters? = null
+
+    /**
+     * 保存 fallback 状态到持久化存储
+     */
+    private fun saveFallbackState(fallback: Boolean) {
+        (softwareKeyStore as? EncryptedStorage)?.saveFallbackToSoftwareKeystore(fallback)
+    }
 
     // ==================== 公开 API ====================
 
@@ -88,16 +120,19 @@ class KeystoreManager(
             try {
                 generateKeystoreEd25519()
                 fallbackToBouncyCastle = false
+                saveFallbackState(false)
             } catch (e: Exception) {
                 // 某些设备（如 Samsung）的 Keystore 不支持 Ed25519，回退到 BouncyCastle
                 android.util.Log.w("KeystoreManager", "Keystore Ed25519 not supported, falling back to BouncyCastle: ${e.message}")
                 clearBcCache()
                 generateBouncyCastleEd25519()
                 fallbackToBouncyCastle = true
+                saveFallbackState(true)
             }
         } else {
             generateBouncyCastleEd25519()
             fallbackToBouncyCastle = true
+            saveFallbackState(true)
         }
 
         return getPublicKeyBase64Url()
