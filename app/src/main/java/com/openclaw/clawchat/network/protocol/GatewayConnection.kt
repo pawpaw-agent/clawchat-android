@@ -277,8 +277,13 @@ class GatewayConnection(
                 is SequenceManager.SequenceResult.Old -> return@launch
                 else -> {}
             }
-            val eventId = obj["stateVersion"]?.jsonPrimitive?.content
-                ?: if (seq != null) "$event-$seq" else "$event-${UUID.randomUUID()}"
+            // stateVersion may be a JsonObject { presence: number, health: number } or a primitive
+            val stateVersionElement = obj["stateVersion"]
+            val eventId = when (stateVersionElement) {
+                is JsonPrimitive -> stateVersionElement.content
+                is JsonObject -> stateVersionElement.toString()
+                else -> if (seq != null) "$event-$seq" else "$event-${UUID.randomUUID()}"
+            }
             if (eventDeduplicator.isAlreadySeen(eventId, seq)) return@launch
 
             when (event) {
