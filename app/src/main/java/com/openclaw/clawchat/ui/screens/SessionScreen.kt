@@ -2,6 +2,8 @@ package com.openclaw.clawchat.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -520,9 +522,10 @@ private fun formatTimestamp(timestamp: Long): String {
 
 /**
  * IME Padding 修饰符
+ * 
+ * 使用 WindowInsets.ime 处理软键盘遮挡问题
  */
+@OptIn(ExperimentalLayoutApi::class)
 private fun Modifier.imePadding(): Modifier {
-    // 使用 androidx.compose.foundation.layout.imePadding()
-    // 需要确保 compose-ui 版本支持
-    return androidx.compose.foundation.layout.imePadding()
+    return padding(WindowInsets.ime.asPaddingValues())
 }
