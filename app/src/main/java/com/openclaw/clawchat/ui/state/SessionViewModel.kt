@@ -104,9 +104,9 @@ class SessionViewModel @Inject constructor(
             val sessionId = savedStateHandle.get<String>("sessionId") ?: return@launch
             try {
                 val response = gateway.chatHistory(sessionId, limit = 50)
-                if (response.result is JsonObject) {
-                    val result = response.result as JsonObject
-                    val messagesArray = result["messages"]?.jsonArray
+                if (response.isSuccess() && response.payload is JsonObject) {
+                    val payload = response.payload as JsonObject
+                    val messagesArray = payload["messages"]?.jsonArray
                     if (messagesArray != null) {
                         messagesArray.forEach { msgElement ->
                             try {
@@ -119,8 +119,8 @@ class SessionViewModel @Inject constructor(
                                 // 保存到本地数据库
                                 messageRepository.saveMessage(
                                     sessionId = sessionId,
+                                    role = parseRole(role),
                                     content = content,
-                                    role = role,
                                     timestamp = timestamp
                                 )
                             } catch (e: Exception) {
