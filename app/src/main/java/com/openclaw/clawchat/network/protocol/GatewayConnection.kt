@@ -160,11 +160,21 @@ class GatewayConnection(
                     val certException = findCertificateException(t)
                     if (certException != null) {
                         Log.i(TAG, "Certificate verification failed, emitting certificate event")
+                        val hostname = when (certException) {
+                            is CertificateExceptionFirstTime -> certException.hostname
+                            is CertificateExceptionMismatch -> certException.hostname
+                            else -> "unknown"
+                        }
+                        val fingerprint = when (certException) {
+                            is CertificateExceptionFirstTime -> certException.fingerprint
+                            is CertificateExceptionMismatch -> certException.currentFingerprint
+                            else -> ""
+                        }
                         appScope.launch {
                             _certificateEvent.emit(
                                 CertificateEvent(
-                                    hostname = certException.hostname,
-                                    fingerprint = certException.fingerprint,
+                                    hostname = hostname,
+                                    fingerprint = fingerprint,
                                     isMismatch = certException is CertificateExceptionMismatch,
                                     storedFingerprint = (certException as? CertificateExceptionMismatch)?.storedFingerprint
                                 )
