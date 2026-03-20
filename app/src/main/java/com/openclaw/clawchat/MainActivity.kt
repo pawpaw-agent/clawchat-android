@@ -71,8 +71,8 @@ fun ClawChatNavHost(
     val navController = rememberNavController()
     
     // 检查是否已配对，决定初始目的地
-    val isPaired by mainViewModel.isPaired.collectAsStateWithLifecycle(initialValue = false)
-    val startDestination = if (isPaired) "main" else "pairing"
+    val isPairedState = mainViewModel.isPaired.collectAsStateWithLifecycle(initialValue = false)
+    val startDestination = if (isPairedState.value) "main" else "pairing"
 
     NavHost(
         navController = navController,
