@@ -263,9 +263,8 @@ dependencies {
     implementation(libs.coil.compose)
 
     // Markdown Rendering
-    // Markdown rendering - see: https://github.com/mikepenz/multiplatform-markdown-renderer
-    implementation("com.mikepenz:multiplatform-markdown-renderer:0.26.0")
-    implementation("com.mikepenz:multiplatform-markdown-renderer-coil3:0.26.0")
+    // Markdown rendering - simple Text for now, will add markdown later
+    // Note: mikepenz/markdown requires specific setup, using simple text temporarily
 
     // Testing
     testImplementation(libs.junit)

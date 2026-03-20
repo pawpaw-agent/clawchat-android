@@ -24,8 +24,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mikepenz.markdown.compose.Markdown
-import com.mikepenz.markdown.compose.MarkdownDefaults
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
@@ -370,18 +368,19 @@ private fun MessageItem(message: MessageUi) {
 
 /**
  * Markdown 文本渲染组件
+ * TODO: 添加 Markdown 渲染支持
  */
 @Composable
 private fun MarkdownText(
     content: String,
     color: Color
 ) {
-    Markdown(
-        content = content,
-        colors = MarkdownDefaults.mdColor(
-            text = color,
-            linkText = MaterialTheme.colorScheme.primary
-        )
+    // 简单文本显示，后续添加 Markdown 渲染
+    Text(
+        text = content,
+        color = color,
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.fillMaxWidth()
     )
 }
 
