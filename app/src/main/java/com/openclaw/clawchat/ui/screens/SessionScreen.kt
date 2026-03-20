@@ -20,10 +20,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.jeziellago.compose.markdowntext.MarkdownText
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
@@ -368,19 +371,26 @@ private fun MessageItem(message: MessageUi) {
 
 /**
  * Markdown 文本渲染组件
- * TODO: 添加 Markdown 渲染支持
+ * 
+ * 使用 compose-markdown 库渲染 Markdown 内容
+ * 支持：标题、粗体、斜体、代码块、列表、链接等
  */
 @Composable
 private fun MarkdownText(
     content: String,
     color: Color
 ) {
-    // 简单文本显示，后续添加 Markdown 渲染
-    Text(
-        text = content,
+    // 使用 compose-markdown 渲染
+    MarkdownText(
+        markdown = content,
+        modifier = Modifier.fillMaxWidth(),
         color = color,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.fillMaxWidth()
+        fontSize = 14.sp,
+        // 代码块样式
+        codeBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+        codeTextColor = color,
+        // 链接样式
+        linkColor = MaterialTheme.colorScheme.primary
     )
 }
 

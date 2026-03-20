@@ -263,8 +263,7 @@ dependencies {
     implementation(libs.coil.compose)
 
     // Markdown Rendering
-    // Markdown rendering - simple Text for now, will add markdown later
-    // Note: mikepenz/markdown requires specific setup, using simple text temporarily
+    implementation(libs.compose.markdown)
 
     // Testing
     testImplementation(libs.junit)
