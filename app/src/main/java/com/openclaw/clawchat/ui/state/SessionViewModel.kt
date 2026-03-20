@@ -92,8 +92,45 @@ class SessionViewModel @Inject constructor(
     private fun loadMessageHistory() {
         viewModelScope.launch(exceptionHandler) {
             val sessionId = savedStateHandle.get<String>("sessionId") ?: return@launch
+            
+            // 先从本地数据库加载（快速显示）
             messageRepository.observeMessages(sessionId).collect { messages ->
                 _state.update { it.copy(messages = messages) }
+            }
+        }
+        
+        // 同时从 Gateway 获取历史消息（确保完整）
+        viewModelScope.launch(exceptionHandler) {
+            val sessionId = savedStateHandle.get<String>("sessionId") ?: return@launch
+            try {
+                val response = gateway.chatHistory(sessionId, limit = 50)
+                if (response.result is JsonObject) {
+                    val result = response.result as JsonObject
+                    val messagesArray = result["messages"]?.jsonArray
+                    if (messagesArray != null) {
+                        messagesArray.forEach { msgElement ->
+                            try {
+                                val msgObj = msgElement.jsonObject
+                                val content = extractContent(msgObj["content"])
+                                val role = msgObj["role"]?.jsonPrimitive?.content ?: "assistant"
+                                val timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() 
+                                    ?: System.currentTimeMillis()
+                                
+                                // 保存到本地数据库
+                                messageRepository.saveMessage(
+                                    sessionId = sessionId,
+                                    content = content,
+                                    role = role,
+                                    timestamp = timestamp
+                                )
+                            } catch (e: Exception) {
+                                android.util.Log.w("SessionViewModel", "Failed to parse history message: ${e.message}")
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("SessionViewModel", "Failed to load chat history: ${e.message}")
             }
         }
     }
