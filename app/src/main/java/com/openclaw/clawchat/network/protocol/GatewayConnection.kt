@@ -328,7 +328,7 @@ class GatewayConnection(
             )
 
             // 调试：打印请求内容
-            Log.i(TAG, "connect request params: ${json.encodeToString(connectParams)}")
+            Log.i(TAG, "connect request params: ${JsonObject(connectParams)}")
 
             // 3. Track request → send → await res
             val deferred = requestTracker.trackRequest(requestId, "connect")
