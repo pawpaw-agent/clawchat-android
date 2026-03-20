@@ -25,7 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikepenz.markdown.compose.Markdown
-import com.mikepenz.markdown.model.markdownDimens
+import com.mikepenz.markdown.compose.MarkdownDefaults
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
@@ -378,7 +378,10 @@ private fun MarkdownText(
 ) {
     Markdown(
         content = content,
-        modifier = Modifier.fillMaxWidth()
+        colors = MarkdownDefaults.mdColor(
+            text = color,
+            linkText = MaterialTheme.colorScheme.primary
+        )
     )
 }
 
