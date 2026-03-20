@@ -138,15 +138,13 @@ data class GatewayConfigDto(
     val id: String,
     val name: String,
     val host: String,
-    val port: Int,
-    val useTls: Boolean
+    val port: Int
 ) {
     fun toUi(): GatewayConfigUi = GatewayConfigUi(
         id = id,
         name = name,
         host = host,
         port = port,
-        useTls = useTls,
         isCurrent = false
     )
 
@@ -155,8 +153,7 @@ data class GatewayConfigDto(
             id = ui.id,
             name = ui.name,
             host = ui.host,
-            port = ui.port,
-            useTls = ui.useTls
+            port = ui.port
         )
     }
 }
