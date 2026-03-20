@@ -248,7 +248,11 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
      * 检查是否已完成配对
      */
     fun isPaired(): Boolean {
-        return getPairingStatus() == PAIRING_STATUS_APPROVED && hasDeviceToken()
+        val status = getPairingStatus()
+        val hasToken = hasDeviceToken()
+        val result = status == PAIRING_STATUS_APPROVED && hasToken
+        android.util.Log.d("EncryptedStorage", "isPaired: status=$status, hasToken=$hasToken, result=$result")
+        return result
     }
     
     // ==================== 连接时间戳 ====================
