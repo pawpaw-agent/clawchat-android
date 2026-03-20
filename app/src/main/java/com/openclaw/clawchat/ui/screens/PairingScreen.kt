@@ -46,6 +46,18 @@ fun PairingScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
+    // 证书确认对话框
+    state.certificateEvent?.let { event ->
+        CertificateConfirmationDialog(
+            hostname = event.hostname,
+            fingerprint = event.fingerprint,
+            isMismatch = event.isMismatch,
+            storedFingerprint = event.storedFingerprint,
+            onTrust = { viewModel.confirmCertificateTrust() },
+            onReject = { viewModel.rejectCertificate() }
+        )
+    }
+
     LaunchedEffect(viewModel.events) {
         viewModel.events.collect { event ->
             when (event) {
@@ -54,7 +66,6 @@ fun PairingScreen(
                 is PairingEvent.PairingRejected -> {}
                 else -> {}
             }
-            // Channel events are consumed on receive, no manual consume needed
         }
     }
 
@@ -554,4 +565,115 @@ private fun HelpStep(number: String, text: String) {
 private fun copyToClipboard(context: Context, label: String, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
+}
+
+// ─────────────────────────────────────────────────────────────
+// 证书确认对话框
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 证书确认对话框（SSH 风格 TOFU）
+ *
+ * 首次连接或证书变更时显示，要求用户手动确认指纹
+ */
+@Composable
+private fun CertificateConfirmationDialog(
+    hostname: String,
+    fingerprint: String,
+    isMismatch: Boolean,
+    storedFingerprint: String?,
+    onTrust: () -> Unit,
+    onReject: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { }, // 不允许点击外部关闭
+        icon = {
+            Icon(
+                if (isMismatch) Icons.Default.Warning else Icons.Default.Security,
+                null,
+                tint = if (isMismatch) MaterialTheme.colorScheme.error
+                       else MaterialTheme.colorScheme.primary
+            )
+        },
+        title = {
+            Text(
+                text = if (isMismatch) "⚠️ 证书已变更" else "🔐 首次连接",
+                color = if (isMismatch) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurface
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "正在连接：$hostname",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (isMismatch && storedFingerprint != null) {
+                    Text(
+                        text = "原证书指纹：",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = storedFingerprint.formatFingerprint(),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                Text(
+                    text = if (isMismatch) "新证书指纹：" else "证书指纹：",
+                    style = MaterialTheme.typography.labelMedium
+                )
+                Text(
+                    text = fingerprint.formatFingerprint(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = FontFamily.Monospace
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = if (isMismatch)
+                        "⚠️ 这可能是中间人攻击，也可能是服务器证书正常更新。\n" +
+                        "请联系管理员确认后再继续。"
+                    else
+                        "ℹ️ 这是您首次连接此服务器。\n" +
+                        "请通过安全渠道（如管理员提供的二维码或面对面）验证指纹。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onTrust) {
+                Text(if (isMismatch) "信任新证书" else "信任并继续")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onReject,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("取消连接")
+            }
+        }
+    )
+}
+
+/**
+ * 格式化指纹为人类可读格式
+ */
+private fun String.formatFingerprint(): String {
+    return this
+        .replace(":", "")
+        .chunked(8)
+        .joinToString(" ") { it.chunked(2).joinToString(":") }
 }

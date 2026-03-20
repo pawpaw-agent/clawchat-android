@@ -23,6 +23,16 @@ sealed class PairingEvent {
     data class PairingError(val message: String) : PairingEvent()
 }
 
+/**
+ * 证书事件（首次连接或证书变更）
+ */
+data class CertificateEvent(
+    val hostname: String,
+    val fingerprint: String,
+    val isMismatch: Boolean,
+    val storedFingerprint: String? = null
+)
+
 data class PairingState(
     val deviceId: String? = null,
     val publicKey: String? = null,
@@ -31,7 +41,8 @@ data class PairingState(
     val isInitializing: Boolean = false,
     val isPairing: Boolean = false,
     val connectMode: ConnectMode = ConnectMode.TOKEN,
-    val token: String = ""
+    val token: String = "",
+    val certificateEvent: CertificateEvent? = null
 )
 
 /**

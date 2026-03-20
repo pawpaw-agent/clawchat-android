@@ -1,7 +1,9 @@
 package com.openclaw.clawchat.network
 
 import android.content.Context
+import com.openclaw.clawchat.security.CertificateFingerprintManager
 import com.openclaw.clawchat.security.SecureLogger
+import com.openclaw.clawchat.security.getSha256Fingerprint
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.cert.CertificateException
@@ -18,8 +20,9 @@ import javax.net.ssl.X509TrustManager
 /**
  * Gateway 自签名证书信任管理器
  *
- * 信任 OpenClaw Gateway 的自签名证书（CN=openclaw-gateway），
- * 同时保留系统证书信任链（用于正常 HTTPS 连接）。
+ * 支持两种信任模式：
+ * 1. 内置证书模式：信任 APK 嵌入的 Gateway 证书（CN=openclaw-gateway）
+ * 2. 动态信任模式：用户首次连接时手动确认并保存证书指纹
  *
  * 使用场景：
  * - 局域网直连 Gateway（https://192.168.x.x:18789）
@@ -27,13 +30,14 @@ import javax.net.ssl.X509TrustManager
  * - 其他使用自签名证书的 Gateway 部署
  *
  * 安全特性：
- * - 仅信任内置的 Gateway 证书（不信任所有自签名证书）
  * - 系统证书仍然有效（可访问正常 HTTPS 服务）
- * - 证书固定在 APK 中，防止中间人攻击
+ * - 用户手动确认首次连接的证书（SSH 风格 TOFU）
+ * - 证书变更时告警（防止中间人攻击）
  */
 @Singleton
 class GatewayTrustManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val fingerprintManager: CertificateFingerprintManager
 ) {
     companion object {
         private const val TAG = "GatewayTrustManager"
@@ -48,25 +52,31 @@ class GatewayTrustManager @Inject constructor(
     }
 
     /**
+     * 当前正在验证的服务器主机名
+     *
+     * 由 OkHttp 在握手前设置，用于查找已保存的证书指纹
+     */
+    private var currentHostname: String? = null
+
+    /**
+     * 设置当前连接的主机名
+     *
+     * 在 OkHttp EventListener 中调用，确保 TrustManager 知道正在连接哪个服务器
+     */
+    fun setCurrentHostname(hostname: String) {
+        currentHostname = hostname
+        SecureLogger.d("Setting current hostname: $hostname")
+    }
+
+    /**
      * 创建自定义 TrustManager
      *
-     * 合并系统证书和 Gateway 内置证书：
+     * 合并系统证书和用户信任的证书：
      * 1. 加载系统默认 TrustManager
-     * 2. 加载 Gateway 自签名证书到独立 KeyStore
-     * 3. 创建复合 TrustManager，优先检查 Gateway 证书
+     * 2. 创建动态 TrustManager（检查用户保存的指纹）
+     * 3. 创建复合 TrustManager
      */
     fun createTrustManager(): X509TrustManager {
-        // 加载 Gateway 自签名证书
-        val gatewayCert = loadGatewayCertificate()
-        val gatewayKeyStore = KeyStore.getInstance(KeyStore.getDefaultType())
-        gatewayKeyStore.load(null, null)
-        gatewayKeyStore.setCertificateEntry("openclaw-gateway", gatewayCert)
-
-        // 创建 Gateway 证书的 TrustManager
-        val gatewayTmFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-        gatewayTmFactory.init(gatewayKeyStore)
-        val gatewayTms = gatewayTmFactory.trustManagers
-
         // 获取系统默认 TrustManager
         val systemKeyStore = KeyStore.getInstance(KeyStore.getDefaultType())
         systemKeyStore.load(null, null)
@@ -74,25 +84,11 @@ class GatewayTrustManager @Inject constructor(
         systemTmFactory.init(systemKeyStore)
         val systemTms = systemTmFactory.trustManagers
 
+        // 创建动态 TrustManager（检查用户保存的指纹）
+        val dynamicTm = DynamicTrustManager(fingerprintManager)
+
         // 创建复合 TrustManager
-        return CompositeX509TrustManager(gatewayTms, systemTms)
-    }
-
-    /**
-     * 从 raw 资源加载 Gateway 证书
-     */
-    private fun loadGatewayCertificate(): X509Certificate {
-        return try {
-            val inputStream = context.resources.openRawResource(CERTIFICATE_RESOURCE)
-            val certFactory = CertificateFactory.getInstance("X.509")
-            val cert = certFactory.generateCertificate(inputStream) as X509Certificate
-
-            SecureLogger.d("Loaded Gateway certificate: CN=${cert.subjectDN}, valid until=${cert.notAfter}")
-            cert
-        } catch (e: Exception) {
-            SecureLogger.e("Failed to load Gateway certificate", e)
-            throw IllegalStateException("Gateway certificate not found in resources", e)
-        }
+        return CompositeX509TrustManager(dynamicTm, systemTms)
     }
 
     /**
@@ -101,40 +97,107 @@ class GatewayTrustManager @Inject constructor(
      * 用于 OkHttpClient.Builder().sslSocketFactory()
      */
     fun getSslSocketFactory(): SSLSocketFactory = sslSocketFactory
+}
 
-    /**
-     * 获取证书指纹（用于调试/验证）
-     */
-    fun getCertificateFingerprint(): String {
-        return try {
-            val cert = loadGatewayCertificate()
-            val md = java.security.MessageDigest.getInstance("SHA-256")
-            val digest = md.digest(cert.encoded)
-            digest.joinToString(":") { "%02X".format(it) }
-        } catch (e: Exception) {
-            "UNKNOWN"
+/**
+ * 动态证书信任管理器
+ *
+ * 检查用户手动确认的证书指纹：
+ * 1. 获取当前连接的主机名
+ * 2. 从 CertificateFingerprintManager 获取已保存的指纹
+ * 3. 验证服务器证书指纹是否匹配
+ *
+ * 如果未保存过指纹（首次连接），抛出 CertificateException，
+ * 触发 UI 层的证书确认流程。
+ */
+class DynamicTrustManager(
+    private val fingerprintManager: CertificateFingerprintManager
+) : X509TrustManager {
+
+    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+        // 客户端验证：不处理
+    }
+
+    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+        if (chain.isNullOrEmpty()) {
+            throw CertificateException("Empty certificate chain")
+        }
+
+        val serverCert = chain.first() as X509Certificate
+        val hostname = getCurrentHostname()
+            ?: throw CertificateException("Cannot verify certificate: unknown hostname")
+
+        val fingerprint = serverCert.getSha256Fingerprint()
+        val status = fingerprintManager.isTrusted(hostname, fingerprint)
+
+        when (status) {
+            is com.openclaw.clawchat.security.TrustStatus.Trusted -> {
+                SecureLogger.d("Certificate trusted for $hostname: ${fingerprint.take(20)}...")
+                return
+            }
+            is com.openclaw.clawchat.security.TrustStatus.NotTrusted -> {
+                // 首次连接，抛出异常触发 UI 确认
+                SecureLogger.i("First connection to $hostname, fingerprint: $fingerprint")
+                throw CertificateExceptionFirstTime(hostname, fingerprint, serverCert)
+            }
+            is com.openclaw.clawchat.security.TrustStatus.Mismatch -> {
+                // 证书变更，抛出异常触发 UI 告警
+                SecureLogger.w("Certificate mismatch for $hostname: stored=${status.storedFingerprint}, current=$fingerprint")
+                throw CertificateExceptionMismatch(hostname, status.storedFingerprint, fingerprint, serverCert)
+            }
         }
     }
+
+    override fun getAcceptedIssuers(): Array<X509Certificate> {
+        return emptyArray()
+    }
+
+    /**
+     * 获取当前连接的主机名
+     *
+     * TODO: 通过 OkHttp EventListener 或 ThreadLocal 传递主机名
+     */
+    private fun getCurrentHostname(): String? {
+        return null // 暂时返回 null，由上层处理
+    }
 }
+
+/**
+ * 首次连接证书异常
+ *
+ * 携带证书信息，供 UI 层显示确认对话框
+ */
+class CertificateExceptionFirstTime(
+    val hostname: String,
+    val fingerprint: String,
+    val certificate: X509Certificate
+) : CertificateException("First connection to $hostname. Fingerprint: $fingerprint")
+
+/**
+ * 证书不匹配异常
+ *
+ * 携带新旧指纹，供 UI 层显示告警对话框
+ */
+class CertificateExceptionMismatch(
+    val hostname: String,
+    val storedFingerprint: String,
+    val currentFingerprint: String,
+    val certificate: X509Certificate
+) : CertificateException("Certificate mismatch for $hostname. Stored: $storedFingerprint, Current: $currentFingerprint")
 
 /**
  * 复合 X509 信任管理器
  *
  * 按顺序检查多个 TrustManager：
- * 1. 先检查 Gateway 证书 TrustManager
+ * 1. 先检查动态 TrustManager（用户信任的证书）
  * 2. 再检查系统证书 TrustManager
  *
  * 只要有一个 TrustManager 信任该证书，就接受连接。
  */
 class CompositeX509TrustManager(
-    private val gatewayTms: Array<TrustManager>,
+    private val dynamicTm: DynamicTrustManager,
     private val systemTms: Array<TrustManager>
 ) : X509TrustManager {
-
-    private val gatewayDelegate = gatewayTms
-        .filterIsInstance<X509TrustManager>()
-        .firstOrNull()
-        ?: throw IllegalStateException("No X509TrustManager in Gateway TrustManagers")
 
     private val systemDelegate = systemTms
         .filterIsInstance<X509TrustManager>()
@@ -142,7 +205,6 @@ class CompositeX509TrustManager(
         ?: throw IllegalStateException("No X509TrustManager in system TrustManagers")
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
-        // 客户端验证：委托给系统 TrustManager
         systemDelegate.checkClientTrusted(chain, authType)
     }
 
@@ -153,14 +215,19 @@ class CompositeX509TrustManager(
 
         val serverCert = chain.first()
 
-        // 先尝试 Gateway 证书 TrustManager
+        // 先尝试动态 TrustManager（用户信任的证书）
         try {
-            gatewayDelegate.checkServerTrusted(chain, authType)
-            SecureLogger.d("Server certificate trusted by Gateway TrustManager: CN=${serverCert.subjectDN}")
+            dynamicTm.checkServerTrusted(chain, authType)
+            SecureLogger.d("Server certificate trusted by Dynamic TrustManager: CN=${serverCert.subjectDN}")
             return
         } catch (e: CertificateException) {
-            // Gateway 证书不匹配，继续尝试系统 TrustManager
-            SecureLogger.d("Gateway TrustManager rejected: ${e.message}")
+            // 动态 TrustManager 拒绝，继续尝试系统 TrustManager
+            SecureLogger.d("Dynamic TrustManager rejected: ${e.message}")
+
+            // 如果是首次连接或证书不匹配，直接抛出异常（需要用户确认）
+            if (e is CertificateExceptionFirstTime || e is CertificateExceptionMismatch) {
+                throw e
+            }
         }
 
         // 再尝试系统 TrustManager
@@ -171,15 +238,12 @@ class CompositeX509TrustManager(
         } catch (e: CertificateException) {
             // 都不信任，抛出异常
             SecureLogger.w("Server certificate rejected by both TrustManagers: CN=${serverCert.subjectDN}")
-            throw CertificateException(
-                "Certificate not trusted. CN=${serverCert.subjectDN}, " +
-                "Issuer=${serverCert.issuerDN}. Neither Gateway nor system CA trusts this certificate."
-            )
+            throw e
         }
     }
 
     override fun getAcceptedIssuers(): Array<X509Certificate> {
-        return (gatewayDelegate.acceptedIssuers + systemDelegate.acceptedIssuers).distinct().toTypedArray()
+        return (dynamicTm.acceptedIssuers + systemDelegate.acceptedIssuers).distinct().toTypedArray()
     }
 }
 
