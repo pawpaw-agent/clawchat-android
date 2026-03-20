@@ -84,7 +84,7 @@ class MessageRepositoryImpl @Inject constructor(
      * 更新消息状态
      */
     override suspend fun updateMessageStatus(messageId: String, status: MessageStatus) {
-        messageDao.updateStatusById(messageId.toLongOrNull() ?: 0L, status.toLocalStatus())
+        messageDao.updateStatusById(messageId.toLongOrNull() ?: 0L, status.toLocalStatus().name)
     }
     
     /**

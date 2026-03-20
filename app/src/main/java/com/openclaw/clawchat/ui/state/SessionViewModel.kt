@@ -5,7 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.domain.model.Message
-import com.openclaw.clawchat.domain.model.MessageRole
+import com.openclaw.clawchat.domain.model.MessageRole as DomainMessageRole
 import com.openclaw.clawchat.domain.model.MessageStatus
 import com.openclaw.clawchat.domain.repository.MessageRepository
 import com.openclaw.clawchat.network.WebSocketConnectionState
@@ -180,12 +180,13 @@ class SessionViewModel @Inject constructor(
 
         // 使用缓冲中的完整内容（如果有），否则用 final 的 content
         val finalContent = streamingBuffers.remove(runId)?.toString()?.ifEmpty { content } ?: content
-        val messageRole = parseRole(role)
+        val uiRole = parseRole(role)
+        val domainRole = uiRole.toDomainRole()
 
         // 写入 Room 缓存（使用 Domain 模型）
         messageRepository.saveMessage(
             sessionId = sessionId,
-            role = messageRole,
+            role = domainRole,
             content = finalContent,
             timestamp = System.currentTimeMillis(),
             status = MessageStatus.DELIVERED
@@ -194,7 +195,7 @@ class SessionViewModel @Inject constructor(
         val finalMsg = MessageUi(
             id = runId,
             content = finalContent,
-            role = messageRole,
+            role = uiRole,
             timestamp = System.currentTimeMillis(),
             isLoading = false
         )
@@ -285,7 +286,7 @@ class SessionViewModel @Inject constructor(
 
             val messageId = messageRepository.saveMessage(
                 sessionId = sessionKey,
-                role = MessageRole.USER,
+                role = DomainMessageRole.USER,
                 content = content,
                 timestamp = userMessage.timestamp,
                 status = MessageStatus.PENDING
@@ -363,6 +364,18 @@ sealed class SessionEvent {
 private fun Message.toMessageUi(): MessageUi = MessageUi(
     id = id,
     content = content,
-    role = role,
+    role = role.toUiRole(),
     timestamp = timestamp
 )
+
+private fun DomainMessageRole.toUiRole(): MessageRole = when (this) {
+    DomainMessageRole.USER -> MessageRole.USER
+    DomainMessageRole.ASSISTANT -> MessageRole.ASSISTANT
+    DomainMessageRole.SYSTEM -> MessageRole.SYSTEM
+}
+
+private fun MessageRole.toDomainRole(): DomainMessageRole = when (this) {
+    MessageRole.USER -> DomainMessageRole.USER
+    MessageRole.ASSISTANT -> DomainMessageRole.ASSISTANT
+    MessageRole.SYSTEM -> DomainMessageRole.SYSTEM
+}
