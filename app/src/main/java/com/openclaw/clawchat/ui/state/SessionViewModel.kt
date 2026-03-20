@@ -313,6 +313,14 @@ class SessionViewModel @Inject constructor(
         _state.update { it.copy(error = null) }
     }
 
+    fun setSessionId(sessionId: String) {
+        _state.update { it.copy(sessionId = sessionId) }
+    }
+
+    fun consumeEvent() {
+        // Events are consumed via Channel.receiveAsFlow()
+    }
+
     private fun parseRole(role: String): MessageRole = when (role.lowercase()) {
         "user" -> MessageRole.USER
         "assistant" -> MessageRole.ASSISTANT

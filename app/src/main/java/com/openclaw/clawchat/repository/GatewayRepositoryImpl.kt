@@ -80,7 +80,7 @@ class GatewayRepositoryImpl @Inject constructor(
      */
     override suspend fun setCurrentGateway(gatewayId: String?) {
         _currentGatewayId.value = gatewayId
-        encryptedStorage.putString(KEY_CURRENT_GATEWAY, gatewayId ?: "")
+        encryptedStorage.encryptAndStore(KEY_CURRENT_GATEWAY, gatewayId ?: "")
         
         // 更新 isCurrent 标记
         _gateways.update { gateways ->
@@ -90,17 +90,17 @@ class GatewayRepositoryImpl @Inject constructor(
 
     private fun loadGateways() {
         // 从 EncryptedStorage 加载配置
-        val configs = encryptedStorage.getString(KEY_GATEWAYS, "[]")
+        val configs = encryptedStorage.decryptAndRead(KEY_GATEWAYS) ?: "[]"
         // 简单解析（实际应用可用 JSON）
         _gateways.value = parseGateways(configs)
         
-        val currentId = encryptedStorage.getString(KEY_CURRENT_GATEWAY, "")
+        val currentId = encryptedStorage.decryptAndRead(KEY_CURRENT_GATEWAY) ?: ""
         _currentGatewayId.value = currentId.ifBlank { null }
     }
 
     private fun persistGateways() {
         val configs = serializeGateways(_gateways.value)
-        encryptedStorage.putString(KEY_GATEWAYS, configs)
+        encryptedStorage.encryptAndStore(KEY_GATEWAYS, configs)
     }
 
     private fun parseGateways(configs: String): List<GatewayConfigUi> {
