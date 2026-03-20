@@ -140,7 +140,7 @@ class ChallengeResponseAuth(
             signedAt = signedAtMs,
             role = role,
             scopes = scopes,
-            token = securityModule.getAuthToken()
+            token = gatewayToken ?: securityModule.getAuthToken()
         )
     }
 
