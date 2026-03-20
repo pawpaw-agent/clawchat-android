@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
 
 sealed class PairingEvent {
@@ -67,6 +70,63 @@ class PairingViewModel @Inject constructor(
 
     private val _events = MutableSharedFlow<PairingEvent>(extraBufferCapacity = 10)
     val events: SharedFlow<PairingEvent> = _events.asSharedFlow()
+
+    init {
+        observePairingEvents()
+    }
+
+    /**
+     * 监听 device.pairing.approved/rejected 事件
+     */
+    private fun observePairingEvents() {
+        viewModelScope.launch {
+            gateway.incomingMessages.collect { rawJson ->
+                try {
+                    val json = Json { ignoreUnknownKeys = true }
+                    val obj = json.parseToJsonElement(rawJson).jsonObject
+                    
+                    val type = obj["type"]?.jsonPrimitive?.content
+                    val event = obj["event"]?.jsonPrimitive?.content
+                    
+                    if (type == "event" && event?.startsWith("device.pairing.") == true) {
+                        handlePairingEvent(event, obj)
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to parse pairing event: ${e.message}")
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理配对事件
+     */
+    private fun handlePairingEvent(event: String, obj: kotlinx.serialization.json.JsonObject) {
+        when (event) {
+            "device.pairing.approved" -> {
+                Log.i(TAG, "Pairing approved by gateway")
+                _state.value = _state.value.copy(
+                    isPairing = false,
+                    status = PairingStatus.Approved
+                )
+                viewModelScope.launch {
+                    _events.emit(PairingEvent.PairingSuccess)
+                }
+            }
+            "device.pairing.rejected" -> {
+                val payload = obj["payload"]?.jsonObject
+                val reason = payload?.get("reason")?.jsonPrimitive?.content ?: "Unknown reason"
+                Log.w(TAG, "Pairing rejected: $reason")
+                _state.value = _state.value.copy(
+                    isPairing = false,
+                    status = PairingStatus.Rejected
+                )
+                viewModelScope.launch {
+                    _events.emit(PairingEvent.PairingRejected)
+                }
+            }
+        }
+    }
 
     fun setConnectMode(mode: ConnectMode) {
         _state.value = _state.value.copy(connectMode = mode)

@@ -2,6 +2,7 @@ package com.openclaw.clawchat.network.protocol
 
 import android.util.Log
 import com.openclaw.clawchat.BuildConfig
+import com.openclaw.clawchat.network.DynamicTrustManager
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.security.SecurityModule
 import kotlinx.coroutines.CoroutineScope
@@ -115,6 +116,15 @@ class GatewayConnection(
         helloOkPayload = null
         defaultSessionKey = null
 
+        // 提取 hostname 用于证书验证
+        val hostname = try {
+            val uri = java.net.URI(url)
+            uri.host ?: url
+        } catch (e: Exception) {
+            url
+        }
+        DynamicTrustManager.setCurrentHostname(hostname)
+
         // Rebuild auth handler with token
         authHandler = ChallengeResponseAuth(
             securityModule = securityModule,
@@ -137,12 +147,14 @@ class GatewayConnection(
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                     Log.e(TAG, "WebSocket failure: ${t.message}", t)
+                    DynamicTrustManager.clearCurrentHostname()
                     _connectionState.value = WebSocketConnectionState.Error(t)
                     currentUrl?.let { scheduleReconnect(it, currentToken) }
                 }
 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                     Log.i(TAG, "WebSocket closed: $code $reason")
+                    DynamicTrustManager.clearCurrentHostname()
                     _connectionState.value = WebSocketConnectionState.Disconnected
                     this@GatewayConnection.webSocket = null
                     heartbeatJob?.cancel()

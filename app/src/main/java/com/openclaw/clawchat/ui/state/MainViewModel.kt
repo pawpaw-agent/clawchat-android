@@ -7,6 +7,7 @@ import com.openclaw.clawchat.network.GatewayUrlUtil
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.SessionRepository
+import com.openclaw.clawchat.security.EncryptedStorage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.channels.Channel
@@ -28,12 +29,14 @@ import javax.inject.Inject
  *
  * 数据流：
  * - 启动时从 Room 加载缓存的会话列表（离线可用）
+ * - 自动连接：如果已配对，自动连接到已保存的 Gateway
  * - 连接成功后从 Gateway 拉取最新列表 → 同步到 Room
  */
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val gateway: GatewayConnection,
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    private val encryptedStorage: EncryptedStorage
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -55,6 +58,63 @@ class MainViewModel @Inject constructor(
     init {
         loadSessionsFromCache()
         observeConnectionState()
+        autoConnectIfNeeded()
+    }
+
+    /**
+     * 自动连接：如果已配对且有保存的 Gateway URL，自动连接
+     */
+    private fun autoConnectIfNeeded() {
+        viewModelScope.launch(exceptionHandler) {
+            // 检查是否已配对
+            if (!encryptedStorage.isPaired()) {
+                Log.i(TAG, "Not paired, skipping auto-connect")
+                return@launch
+            }
+
+            // 获取保存的 Gateway URL 和 deviceToken
+            val gatewayUrl = encryptedStorage.getGatewayUrl()
+            val deviceToken = encryptedStorage.getDeviceToken()
+
+            if (gatewayUrl.isNullOrBlank()) {
+                Log.i(TAG, "No saved gateway URL, skipping auto-connect")
+                return@launch
+            }
+
+            Log.i(TAG, "Auto-connecting to $gatewayUrl...")
+            _uiState.update { it.copy(isLoading = true) }
+
+            try {
+                val wsUrl = GatewayUrlUtil.normalizeToWebSocketUrl(gatewayUrl)
+                val result = gateway.connect(wsUrl, deviceToken)
+
+                result.onSuccess {
+                    Log.i(TAG, "Auto-connect successful")
+                    _uiState.update {
+                        it.copy(
+                            currentGateway = GatewayConfigUi(
+                                id = "default",
+                                name = "Gateway",
+                                host = gatewayUrl,
+                                port = DEFAULT_GATEWAY_PORT,
+                                useTls = gatewayUrl.startsWith("https://"),
+                                isCurrent = true
+                            ),
+                            isLoading = false
+                        )
+                    }
+                }
+
+                result.onFailure { error ->
+                    Log.w(TAG, "Auto-connect failed: ${error.message}")
+                    _uiState.update { it.copy(isLoading = false) }
+                    // 不显示错误，让用户手动连接
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Auto-connect exception: ${e.message}")
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
     }
 
     /**
@@ -237,12 +297,18 @@ class MainViewModel @Inject constructor(
 
     fun createSession(model: String = "default", thinking: Boolean = false) {
         viewModelScope.launch(exceptionHandler) {
-            val sessionKey = gateway.defaultSessionKey ?: "agent:main:main"
             try {
-                gateway.call("sessions.reset", mapOf(
-                    "key" to JsonPrimitive(sessionKey),
-                    "reason" to JsonPrimitive("new")
-                ))
+                // 使用 sessions.reset 创建新会话（如果默认会话存在则重置）
+                val sessionKey = gateway.defaultSessionKey
+                if (sessionKey != null) {
+                    gateway.call("sessions.reset", mapOf(
+                        "key" to JsonPrimitive(sessionKey),
+                        "reason" to JsonPrimitive("new")
+                    ))
+                } else {
+                    // 如果没有默认会话，创建新会话需要通过 chat.send 触发
+                    Log.w(TAG, "No default session key, sessions will be created on first message")
+                }
                 refreshSessions()
             } catch (e: Exception) {
                 Log.w(TAG, "Create session failed: ${e.message}")
