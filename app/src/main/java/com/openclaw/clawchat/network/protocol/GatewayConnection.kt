@@ -487,10 +487,17 @@ class GatewayConnection(
     }
 
     /** sessions.list */
-    suspend fun sessionsList(limit: Int? = null, activeMinutes: Int? = null): ResponseFrame {
+    suspend fun sessionsList(
+        limit: Int? = null,
+        activeMinutes: Int? = null,
+        includeDerivedTitles: Boolean = true,
+        includeLastMessage: Boolean = true
+    ): ResponseFrame {
         val params = mutableMapOf<String, JsonElement>()
         if (limit != null) params["limit"] = JsonPrimitive(limit)
         if (activeMinutes != null) params["activeMinutes"] = JsonPrimitive(activeMinutes)
+        params["includeDerivedTitles"] = JsonPrimitive(includeDerivedTitles)
+        params["includeLastMessage"] = JsonPrimitive(includeLastMessage)
         return call("sessions.list", params.ifEmpty { null })
     }
 
