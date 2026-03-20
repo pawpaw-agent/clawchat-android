@@ -58,6 +58,8 @@ object NetworkModule {
             .writeTimeout(30, TimeUnit.SECONDS)
             .pingInterval(30, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
+            // 允许 IP 地址连接（证书 CN 可能不匹配 IP）
+            .hostnameVerifier { _, _ -> true }
             .build()
     }
 
