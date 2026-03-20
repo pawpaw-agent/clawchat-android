@@ -24,11 +24,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.halilibo.richtext.commonmark.CommonmarkAstNodeParser
-import com.halilibo.richtext.commonmark.MarkdownParseOptions
-import com.halilibo.richtext.markdown.BasicMarkdown
-import com.halilibo.richtext.ui.RichTextStyle
-import com.halilibo.richtext.ui.material3.RichText
+import com.mikepenz.markdown.compose.Markdown
+import com.mikepenz.markdown.model.markdownDimens
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
@@ -379,19 +376,10 @@ private fun MarkdownText(
     content: String,
     color: Color
 ) {
-    val richTextStyle = remember {
-        RichTextStyle()
-    }
-    
-    RichText(
-        style = richTextStyle,
+    Markdown(
+        content = content,
         modifier = Modifier.fillMaxWidth()
-    ) {
-        BasicMarkdown(
-            content = content,
-            color = color
-        )
-    }
+    )
 }
 
 /**

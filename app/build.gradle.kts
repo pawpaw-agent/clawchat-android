@@ -263,8 +263,9 @@ dependencies {
     implementation(libs.coil.compose)
 
     // Markdown Rendering
-    implementation("com.halilibo.compose-richtext:richtext-commonmark:0.20.0")
-    implementation("com.halilibo.compose-richtext:richtext-ui-material3:0.20.0")
+    // Markdown rendering - see: https://github.com/mikepenz/multiplatform-markdown-renderer
+    implementation("com.mikepenz:multiplatform-markdown-renderer:0.26.0")
+    implementation("com.mikepenz:multiplatform-markdown-renderer-coil3:0.26.0")
 
     // Testing
     testImplementation(libs.junit)
