@@ -523,9 +523,10 @@ private fun formatTimestamp(timestamp: Long): String {
 /**
  * IME Padding 修饰符
  * 
- * 使用 WindowInsets.ime 处理软键盘遮挡问题
+ * 注意：imePadding() 需要 ExperimentalLayoutApi
+ * 暂时使用空实现，后续版本再完善
  */
-@OptIn(ExperimentalLayoutApi::class)
 private fun Modifier.imePadding(): Modifier {
-    return androidx.compose.foundation.layout.imePadding()
+    // TODO: 实现 IME padding（需要 Compose 1.7+）
+    return this
 }
