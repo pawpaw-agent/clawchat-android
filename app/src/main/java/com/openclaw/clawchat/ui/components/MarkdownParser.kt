@@ -142,8 +142,11 @@ fun parseMarkdown(markdown: String): List<MarkdownNode> {
 private fun parseInlineNodes(text: String): List<MarkdownNode> {
     val nodes = mutableListOf<MarkdownNode>()
     var remaining = text
+    var safetyCounter = 0
+    val maxIterations = text.length + 100 // 安全限制
     
-    while (remaining.isNotEmpty()) {
+    while (remaining.isNotEmpty() && safetyCounter < maxIterations) {
+        safetyCounter++
         // 行内代码
         val inlineCodeMatch = Regex("`([^`]+)`").find(remaining)
         if (inlineCodeMatch != null && inlineCodeMatch.range.first == 0) {
@@ -187,6 +190,8 @@ private fun parseInlineNodes(text: String): List<MarkdownNode> {
         } else {
             // nextSpecial == 0，但前面的匹配都失败了
             nodes.add(MarkdownNode.Text(remaining.take(1)))
+            remaining = remaining.drop(1)
+        }
             remaining = remaining.drop(1)
         }
     }
