@@ -373,6 +373,7 @@ private fun MessageGroupList(
 private fun MessageGroupItem(group: MessageGroup) {
     val isUser = group.role == MessageRole.USER
     val isSystem = group.role == MessageRole.SYSTEM
+    val isTool = group.role == MessageRole.TOOL
 
     if (isSystem) {
         // 系统消息组
@@ -382,6 +383,18 @@ private fun MessageGroupItem(group: MessageGroup) {
         ) {
             group.messages.forEach { message ->
                 SystemMessageItem(message = message)
+            }
+        }
+    } else if (isTool) {
+        // 工具消息组：折叠显示
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            group.messages.forEach { message ->
+                ToolMessageCard(message = message)
             }
         }
     } else {

@@ -113,7 +113,7 @@ class SessionViewModel @Inject constructor(
                             try {
                                 val msgObj = msgElement.jsonObject
                                 val contentItems = extractContent(msgObj["content"])
-                                val role = msgObj["role"]?.jsonPrimitive?.content ?: "assistant"
+                                val originalRole = msgObj["role"]?.jsonPrimitive?.content ?: "assistant"
                                 val timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() 
                                     ?: System.currentTimeMillis()
                                 
@@ -141,10 +141,10 @@ class SessionViewModel @Inject constructor(
                                     }
                                 )
                                 
-                                // 保存到本地数据库
+                                // 保存到本地数据库（使用 resolveMessageRole 检测工具消息）
                                 messageRepository.saveMessage(
                                     sessionId = sessionId,
-                                    role = parseRole(role),
+                                    role = resolveMessageRole(msgObj, originalRole),
                                     content = contentJson,
                                     timestamp = timestamp
                                 )
@@ -191,11 +191,13 @@ class SessionViewModel @Inject constructor(
                 val state = payload["state"]?.jsonPrimitive?.content ?: return@launch
                 val msgObj = payload["message"]?.jsonObject
                 val contentItems = extractContent(msgObj?.get("content"))
-                val role = msgObj?.get("role")?.jsonPrimitive?.content ?: "assistant"
+                val originalRole = msgObj?.get("role")?.jsonPrimitive?.content ?: "assistant"
+                // 使用 resolveMessageRole 检测工具消息
+                val uiRole = resolveMessageRole(msgObj, originalRole)
 
                 when (state) {
-                    "delta" -> handleDelta(runId, contentItems, role)
-                    "final" -> handleFinal(runId, contentItems, role, sessionId)
+                    "delta" -> handleDelta(runId, contentItems, uiRole)
+                    "final" -> handleFinal(runId, contentItems, uiRole, sessionId)
                     "aborted" -> handleAborted(runId, sessionId)
                     "error" -> {
                         val errorMsg = payload["errorMessage"]?.jsonPrimitive?.content ?: "Unknown error"
@@ -209,7 +211,7 @@ class SessionViewModel @Inject constructor(
     }
 
     /** delta: 追加到流式缓冲，更新 UI 显示 */
-    private fun handleDelta(runId: String, contentItems: List<MessageContentItem>, role: String) {
+    private fun handleDelta(runId: String, contentItems: List<MessageContentItem>, role: MessageRole) {
         if (completedRuns.contains(runId)) return
 
         // 提取文本内容追加到缓冲
@@ -238,7 +240,7 @@ class SessionViewModel @Inject constructor(
             val streamingMsg = MessageUi(
                 id = runId,
                 content = mergedItems,
-                role = parseRole(role),
+                role = role,
                 timestamp = System.currentTimeMillis(),
                 isLoading = true
             )
@@ -254,7 +256,7 @@ class SessionViewModel @Inject constructor(
     }
 
     /** final: 完成消息，写入缓存 */
-    private suspend fun handleFinal(runId: String, contentItems: List<MessageContentItem>, role: String, sessionId: String) {
+    private suspend fun handleFinal(runId: String, contentItems: List<MessageContentItem>, role: MessageRole, sessionId: String) {
         completedRuns.add(runId)
         evictOldRuns()
 
@@ -270,8 +272,6 @@ class SessionViewModel @Inject constructor(
         } else {
             contentItems
         }
-        
-        val uiRole = parseRole(role)
 
         // 写入 Room 缓存（存储为 JSON 字符串）
         val contentJson = json.encodeToString(
@@ -300,7 +300,7 @@ class SessionViewModel @Inject constructor(
         
         messageRepository.saveMessage(
             sessionId = sessionId,
-            role = uiRole,
+            role = role,
             content = contentJson,
             timestamp = System.currentTimeMillis()
         )
@@ -308,7 +308,7 @@ class SessionViewModel @Inject constructor(
         val finalMsg = MessageUi(
             id = runId,
             content = finalItems,
-            role = uiRole,
+            role = role,
             timestamp = System.currentTimeMillis(),
             isLoading = false
         )
@@ -450,17 +450,69 @@ class SessionViewModel @Inject constructor(
         // Events are consumed via Channel.receiveAsFlow()
     }
 
-    private fun parseRole(role: String): MessageRole = when (role.lowercase()) {
+    private fun parseRole(role: String): MessageRole = when (role.lowercase().replace("_", "")) {
         "user" -> MessageRole.USER
         "assistant" -> MessageRole.ASSISTANT
         "system" -> MessageRole.SYSTEM
+        "toolresult", "tool" -> MessageRole.TOOL
         else -> MessageRole.ASSISTANT
+    }
+    
+    /**
+     * 解析消息角色，结合原始角色和工具消息检测
+     * 参考 webchat message-normalizer.ts
+     */
+    private fun resolveMessageRole(msgObj: JsonObject?, originalRole: String): MessageRole {
+        if (msgObj == null) return parseRole(originalRole)
+        
+        // 检测是否为工具消息
+        if (detectToolMessage(msgObj)) {
+            return MessageRole.TOOL
+        }
+        
+        return parseRole(originalRole)
+    }
+    
+    /**
+     * 检测消息是否为工具消息
+     * 参考 webchat message-normalizer.ts 的 hasToolId/hasToolContent/hasToolName 检测
+     */
+    private fun detectToolMessage(msgObj: JsonObject): Boolean {
+        // 检测工具 ID 字段
+        if (msgObj.containsKey("toolCallId") || msgObj.containsKey("tool_call_id")) {
+            return true
+        }
+        
+        // 检测工具名称字段
+        if (msgObj.containsKey("toolName") || msgObj.containsKey("tool_name")) {
+            return true
+        }
+        
+        // 检测内容中是否包含工具结果
+        val content = msgObj["content"]
+        if (content is JsonArray) {
+            content.forEach { part ->
+                if (part is JsonObject) {
+                    val type = part["type"]?.jsonPrimitive?.content?.lowercase()?.replace("_", "")
+                    if (type == "toolresult") {
+                        return true
+                    }
+                }
+            }
+        }
+        
+        return false
     }
 
     /**
  * 提取 message.content，支持多种格式：
  * - 字符串：`"content": "Hello"`
  * - 数组：`"content": [{"type": "text", "text": "Hello"}, {"type": "tool_call", ...}]`
+ * 
+ * 支持 webchat 兼容的类型别名：
+ * - tool_call / toolcall / tool_use / tooluse
+ * - tool_result / toolresult
+ * - image / imageurl
  * 
  * 返回 MessageContentItem 列表，包含 text、tool_call、tool_result 等
  */
@@ -472,29 +524,49 @@ class SessionViewModel @Inject constructor(
             is JsonArray -> element.mapNotNull { part ->
                 when {
                     part is JsonObject -> {
-                        val type = part["type"]?.jsonPrimitive?.content
+                        val type = part["type"]?.jsonPrimitive?.content?.lowercase()?.replace("_", "")
                         when (type) {
                             "text" -> MessageContentItem.Text(
                                 text = part["text"]?.jsonPrimitive?.content ?: ""
                             )
-                            "tool_call" -> MessageContentItem.ToolCall(
+                            // 工具调用：支持 toolcall, tool_call, tooluse, tool_use
+                            "toolcall", "tooluse" -> MessageContentItem.ToolCall(
                                 id = part["id"]?.jsonPrimitive?.content,
                                 name = part["name"]?.jsonPrimitive?.content ?: "unknown",
-                                args = part["args"] as? JsonObject
+                                args = part["args"] as? JsonObject ?: part["arguments"] as? JsonObject
                             )
-                            "tool_result" -> MessageContentItem.ToolResult(
-                                toolCallId = part["toolCallId"]?.jsonPrimitive?.content,
-                                name = part["name"]?.jsonPrimitive?.content,
+                            // 工具结果：支持 toolresult, tool_result
+                            "toolresult" -> MessageContentItem.ToolResult(
+                                toolCallId = part["toolCallId"]?.jsonPrimitive?.content 
+                                    ?: part["tool_call_id"]?.jsonPrimitive?.content,
+                                name = part["name"]?.jsonPrimitive?.content 
+                                    ?: part["toolName"]?.jsonPrimitive?.content 
+                                    ?: part["tool_name"]?.jsonPrimitive?.content,
                                 text = part["text"]?.jsonPrimitive?.content 
                                     ?: part["content"]?.jsonPrimitive?.content ?: "",
                                 isError = part["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
                             )
-                            "image" -> MessageContentItem.Image(
-                                url = part["url"]?.jsonPrimitive?.content,
+                            // 图片：支持 image, imageurl
+                            "image", "imageurl" -> MessageContentItem.Image(
+                                url = part["url"]?.jsonPrimitive?.content 
+                                    ?: part["imageUrl"]?.jsonPrimitive?.content,
                                 base64 = part["base64"]?.jsonPrimitive?.content,
                                 mimeType = part["mimeType"]?.jsonPrimitive?.content
                             )
-                            else -> null
+                            else -> {
+                                // 尝试检测带有 name + arguments 的工具调用
+                                val name = part["name"]?.jsonPrimitive?.content
+                                val args = part["arguments"] ?: part["args"]
+                                if (name != null && args != null) {
+                                    MessageContentItem.ToolCall(
+                                        id = part["id"]?.jsonPrimitive?.content,
+                                        name = name,
+                                        args = args as? JsonObject
+                                    )
+                                } else {
+                                    null
+                                }
+                            }
                         }
                     }
                     part is JsonPrimitive -> MessageContentItem.Text(part.content)

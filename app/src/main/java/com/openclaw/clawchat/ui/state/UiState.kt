@@ -215,7 +215,8 @@ sealed class MessageContentItem {
 enum class MessageRole {
     USER,
     ASSISTANT,
-    SYSTEM
+    SYSTEM,
+    TOOL        // 工具消息（工具调用结果）
 }
 
 /**
