@@ -583,10 +583,23 @@ class SessionViewModel @Inject constructor(
                                 mimeType = part["mimeType"]?.jsonPrimitive?.content
                             )
                             else -> {
-                                // 尝试检测带有 name + arguments 的工具调用
+                                // 尝试检测工具调用或工具结果
                                 val name = part["name"]?.jsonPrimitive?.content
                                 val argsElement = part["arguments"] ?: part["args"]
-                                if (name != null && argsElement != null) {
+                                val textContent = part["text"]?.jsonPrimitive?.content ?: part["content"]?.jsonPrimitive?.content
+                                val toolCallId = part["toolCallId"]?.jsonPrimitive?.content ?: part["tool_call_id"]?.jsonPrimitive?.content
+                                
+                                // 如果有 toolCallId 或 text，这是 tool_result
+                                if (toolCallId != null || textContent != null) {
+                                    MessageContentItem.ToolResult(
+                                        toolCallId = toolCallId,
+                                        name = name ?: "tool",
+                                        text = textContent ?: "",
+                                        isError = part["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
+                                    )
+                                }
+                                // 否则如果有 name + arguments，这是 tool_call
+                                else if (name != null && argsElement != null) {
                                     val args = when (argsElement) {
                                         is JsonObject -> argsElement
                                         is JsonPrimitive -> {
