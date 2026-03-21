@@ -488,13 +488,18 @@ class SessionViewModel @Inject constructor(
             return true
         }
         
-        // 检测内容中是否包含工具结果
+        // 检测内容中是否包含工具调用或工具结果
         val content = msgObj["content"]
         if (content is JsonArray) {
             content.forEach { part ->
                 if (part is JsonObject) {
                     val type = part["type"]?.jsonPrimitive?.content?.lowercase()?.replace("_", "")
-                    if (type == "toolresult") {
+                    // 检测工具调用和工具结果
+                    if (type == "toolresult" || type == "toolcall" || type == "tooluse") {
+                        return true
+                    }
+                    // 检测有 name + arguments 的工具调用
+                    if (part.containsKey("name") && (part.containsKey("arguments") || part.containsKey("args"))) {
                         return true
                     }
                 }
