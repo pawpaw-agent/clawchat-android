@@ -18,8 +18,11 @@ sealed class MarkdownNode {
     data class Bold(val text: String) : MarkdownNode()
     data class Italic(val text: String) : MarkdownNode()
     data class Text(val text: String) : MarkdownNode()
-    data class HorizontalRule : MarkdownNode()
-    data class LineBreak : MarkdownNode()
+    data class Strikethrough(val text: String) : MarkdownNode()
+    data class Image(val alt: String, val url: String) : MarkdownNode()
+    object HorizontalRule : MarkdownNode()
+    object LineBreak : MarkdownNode()
+    object SoftLineBreak : MarkdownNode()
 }
 
 /**
@@ -153,7 +156,7 @@ private fun parseInlineNodes(text: String): List<MarkdownNode> {
         val linkMatch = Regex("\\[([^\\]]+)\\]\\(([^)]+)\\)").find(remaining)
         if (linkMatch != null && linkMatch.range.first == 0) {
             nodes.add(MarkdownNode.Link(linkMatch.groupValues[1], linkMatch.groupValues[2]))
-            remaining = remaining.removeRange(linkMatchMatch.range)
+            remaining = remaining.removeRange(linkMatch.range)
             continue
         }
         
