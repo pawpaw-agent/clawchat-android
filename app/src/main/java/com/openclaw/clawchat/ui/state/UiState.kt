@@ -3,6 +3,7 @@ package com.openclaw.clawchat.ui.state
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import kotlinx.serialization.json.JsonObject
 
 /**
  * 会话数据模型
@@ -140,16 +141,73 @@ sealed class PairingStatus {
     data class Error(val message: String) : PairingStatus()
 }
 
+// ─────────────────────────────────────────────────────────────
+// 消息相关数据模型
+// ─────────────────────────────────────────────────────────────
+
 /**
- * 消息数据模型
+ * 消息数据模型 - 支持丰富的内容类型
  */
 data class MessageUi(
     val id: String,
-    val content: String,
+    val content: List<MessageContentItem>,
     val role: MessageRole,
     val timestamp: Long,
     val isLoading: Boolean = false
-)
+) {
+    /**
+     * 获取纯文本内容（用于简化显示）
+     */
+    fun getTextContent(): String {
+        return content
+            .filterIsInstance<MessageContentItem.Text>()
+            .joinToString("\n") { it.text }
+    }
+    
+    /**
+     * 获取工具调用列表
+     */
+    fun getToolCalls(): List<MessageContentItem.ToolCall> {
+        return content.filterIsInstance<MessageContentItem.ToolCall>()
+    }
+    
+    /**
+     * 获取工具结果列表
+     */
+    fun getToolResults(): List<MessageContentItem.ToolResult> {
+        return content.filterIsInstance<MessageContentItem.ToolResult>()
+    }
+    
+    /**
+     * 是否包含工具内容
+     */
+    fun hasToolContent(): Boolean = content.any { 
+        it is MessageContentItem.ToolCall || it is MessageContentItem.ToolResult 
+    }
+}
+
+/**
+ * 消息内容项 - 支持 text、tool_call、tool_result、image
+ */
+sealed class MessageContentItem {
+    data class Text(val text: String) : MessageContentItem()
+    data class ToolCall(
+        val id: String? = null,
+        val name: String,
+        val args: JsonObject? = null
+    ) : MessageContentItem()
+    data class ToolResult(
+        val toolCallId: String? = null,
+        val name: String? = null,
+        val text: String,
+        val isError: Boolean = false
+    ) : MessageContentItem()
+    data class Image(
+        val url: String? = null,
+        val base64: String? = null,
+        val mimeType: String? = null
+    ) : MessageContentItem()
+}
 
 /**
  * 消息角色
@@ -159,6 +217,46 @@ enum class MessageRole {
     ASSISTANT,
     SYSTEM
 }
+
+/**
+ * 消息分组（Slack 风格）- 连续同角色消息合并显示
+ */
+data class MessageGroup(
+    val role: MessageRole,
+    val messages: List<MessageUi>,
+    val timestamp: Long,
+    val isStreaming: Boolean = false
+) {
+    val firstMessage: MessageUi? get() = messages.firstOrNull()
+    val lastMessage: MessageUi? get() = messages.lastOrNull()
+    
+    /**
+     * 获取分组显示文本（合并所有文本内容）
+     */
+    fun getDisplayContent(): String {
+        return messages.joinToString("\n\n") { it.getTextContent() }
+    }
+}
+
+/**
+ * 工具卡片数据
+ */
+data class ToolCard(
+    val kind: ToolCardKind,
+    val name: String,
+    val args: JsonObject? = null,
+    val text: String? = null,
+    val isError: Boolean = false
+)
+
+enum class ToolCardKind {
+    CALL,
+    RESULT
+}
+
+// ─────────────────────────────────────────────────────────────
+// 连接状态
+// ─────────────────────────────────────────────────────────────
 
 /**
  * 连接状态
