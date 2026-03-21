@@ -198,11 +198,14 @@ class SessionViewModel @Inject constructor(
 
                 // 调试日志
                 android.util.Log.d("ClawChat", "=== handleIncomingFrame: runId=$runId, state=$state, role=$uiRole")
+                android.util.Log.d("ClawChat", "=== msgObj: $msgObj")
                 
                 // 检查是否是 toolResult 消息（跨消息配对）
                 if (uiRole == MessageRole.TOOL) {
                     val toolCallId = msgObj?.get("toolCallId")?.jsonPrimitive?.content
                         ?: msgObj?.get("tool_call_id")?.jsonPrimitive?.content
+                    
+                    android.util.Log.d("ClawChat", "=== TOOL role detected, toolCallId=$toolCallId")
                     
                     if (toolCallId != null) {
                         // 这是独立的 toolResult 消息，需要更新之前的 toolCall 卡片
@@ -250,6 +253,9 @@ class SessionViewModel @Inject constructor(
         _state.update { currentState ->
             val existingIdx = currentState.messages.indexOfFirst { it.id == runId }
             
+            // 提取 contentItems 中的 ToolResult（来自 extractContent 的配对结果）
+            val newToolResults = contentItems.filterIsInstance<MessageContentItem.ToolResult>()
+            
             // 合并已有内容和新增内容
             val existingItems = if (existingIdx >= 0) {
                 currentState.messages[existingIdx].content
@@ -257,10 +263,16 @@ class SessionViewModel @Inject constructor(
                 emptyList()
             }
             
-            // 合并工具调用（保留）和文本（更新）
-            val mergedItems = existingItems.filter { 
-                it is MessageContentItem.ToolCall || it is MessageContentItem.ToolResult 
-            } + listOf(MessageContentItem.Text(buffer.toString()))
+            // 合并：保留已有的 ToolResult，添加新的 ToolResult，更新文本
+            val existingToolResults = existingItems.filterIsInstance<MessageContentItem.ToolResult>()
+            val mergedToolResults = if (newToolResults.isNotEmpty()) {
+                // 有新的 ToolResult，替换旧的
+                newToolResults
+            } else {
+                existingToolResults
+            }
+            
+            val mergedItems = mergedToolResults + listOf(MessageContentItem.Text(buffer.toString()))
             
             val streamingMsg = MessageUi(
                 id = runId,
