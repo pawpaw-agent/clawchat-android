@@ -4,7 +4,9 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
@@ -164,49 +166,82 @@ private fun HorizontalRuleRenderer() {
 
 /**
  * 表格渲染器
- * 对标 webchat: 边框 + 表头背景
+ * 对标 webchat: 边框 + 表头背景 + 水平滚动
  */
 @Composable
 private fun TableRenderer(node: MarkdownNode.Table) {
+    val scrollState = rememberScrollState()
+    
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0x10000000), RoundedCornerShape(4.dp))
-            .padding(1.dp)
+            .background(Color(0x15000000), RoundedCornerShape(6.dp))
     ) {
-        // 表头
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0x20000000))
+                .horizontalScroll(scrollState)
+                .padding(1.dp)
         ) {
-            node.header.cells.forEach { cell ->
-                Text(
-                    text = cell,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
+            Column {
+                // 表头
+                Row(
                     modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp)
-                )
-            }
-        }
-        
-        // 数据行
-        node.rows.forEach { row ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 1.dp)
-            ) {
-                row.cells.forEach { cell ->
-                    Text(
-                        text = cell,
-                        fontSize = 13.sp,
+                        .background(Color(0x25000000))
+                ) {
+                    node.header.cells.forEach { cell ->
+                        Text(
+                            text = cell,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = Color(0xFFE0E0E0),
+                            modifier = Modifier
+                                .defaultMinSize(minWidth = 80.dp)
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                        // 分隔线
+                        if (cell != node.header.cells.last()) {
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(20.dp)
+                                    .background(Color(0x40000000))
+                                    .align(Alignment.CenterVertically)
+                            )
+                        }
+                    }
+                }
+                
+                // 数据行
+                node.rows.forEachIndexed { index, row ->
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .padding(8.dp)
-                    )
+                            .fillMaxWidth()
+                            .background(
+                                if (index % 2 == 0) Color.Transparent 
+                                else Color(0x08000000)
+                            )
+                    ) {
+                        row.cells.forEach { cell ->
+                            Text(
+                                text = cell,
+                                fontSize = 13.sp,
+                                color = Color(0xFFE0E0E0),
+                                modifier = Modifier
+                                    .defaultMinSize(minWidth = 80.dp)
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                            // 分隔线
+                            if (cell != row.cells.last()) {
+                                Box(
+                                    modifier = Modifier
+                                        .width(1.dp)
+                                        .height(18.dp)
+                                        .background(Color(0x30000000))
+                                        .align(Alignment.CenterVertically)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
