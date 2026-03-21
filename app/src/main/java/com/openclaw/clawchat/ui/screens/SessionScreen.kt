@@ -104,15 +104,12 @@ fun SessionScreen(
                 connectionStatus = state.connectionStatus,
                 onNavigateBack = onNavigateBack
             )
-        },
-        // IME 适配：使用 WindowInsets.ime
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                // 添加 IME padding 确保键盘弹出时内容上移
                 .imePadding()
         ) {
             Column(
