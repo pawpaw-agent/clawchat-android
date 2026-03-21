@@ -23,17 +23,13 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.jeziellago.compose.markdowntext.MarkdownText
+import com.openclaw.clawchat.ui.components.MarkdownWebView
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MessageContentItem
 import com.openclaw.clawchat.ui.state.MessageGroup
@@ -44,7 +40,6 @@ import com.openclaw.clawchat.ui.state.SessionViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.regex.Pattern
 
 /**
  * 会话界面屏幕
@@ -497,11 +492,11 @@ private fun MessageContentCard(
                     )
                     .padding(12.dp)
             ) {
-                // 助手消息使用 Markdown 渲染
+                // 助手消息使用 MarkdownWebView 渲染（与 webchat 一致）
                 if (!isUser) {
-                    MarkdownText(
+                    MarkdownWebView(
                         content = textContent,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        modifier = Modifier.fillMaxWidth()
                     )
                 } else {
                     Text(
@@ -811,11 +806,11 @@ private fun MessageItem(message: MessageUi) {
                     // 渲染文本内容
                     val textContent = message.getTextContent()
                     if (textContent.isNotBlank()) {
-                        // 助手消息使用 Markdown 渲染
+                        // 助手消息使用 MarkdownWebView 渲染
                         if (!isUser) {
-                            MarkdownText(
+                            MarkdownWebView(
                                 content = textContent,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                                modifier = Modifier.fillMaxWidth()
                             )
                         } else {
                             Text(
@@ -849,177 +844,6 @@ private fun MessageItem(message: MessageUi) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
-    }
-}
-
-/**
- * Markdown 文本渲染组件
- * 
- * 使用 compose-markdown 库渲染 Markdown 内容
- * 支持：标题、粗体、斜体、代码块、列表、链接、表格等
- * 
- * 改进：
- * - 代码块样式：背景色、圆角
- * - 链接颜色优化
- * - 字体大小优化
- */
-@Composable
-private fun MarkdownText(
-    content: String,
-    color: Color
-) {
-    val clipboardManager = LocalClipboardManager.current
-    var showCopiedToast by remember { mutableStateOf(false) }
-    
-    // 解析代码块并添加复制功能
-    val codeBlocks = remember(content) { extractCodeBlocks(content) }
-    
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // 使用 compose-markdown 渲染
-        dev.jeziellago.compose.markdowntext.MarkdownText(
-            markdown = content,
-            modifier = Modifier.fillMaxWidth()
-        )
-        
-        // 代码块复制按钮（如果有代码块）
-        if (codeBlocks.isNotEmpty()) {
-            codeBlocks.forEachIndexed { index, block ->
-                CodeBlockWithCopy(
-                    code = block.code,
-                    language = block.language,
-                    onCopy = {
-                        clipboardManager.setText(AnnotatedString(block.code))
-                        showCopiedToast = true
-                    }
-                )
-            }
-        }
-    }
-    
-    // 复制成功提示
-    if (showCopiedToast) {
-        LaunchedEffect(showCopiedToast) {
-            kotlinx.coroutines.delay(1500)
-            showCopiedToast = false
-        }
-        
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(4.dp)
-            ) {
-                Text(
-                    text = "已复制到剪贴板",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                )
-            }
-        }
-    }
-}
-
-/**
- * 代码块数据
- */
-private data class CodeBlock(
-    val language: String?,
-    val code: String
-)
-
-/**
- * 从 Markdown 内容中提取代码块
- */
-private fun extractCodeBlocks(content: String): List<CodeBlock> {
-    val blocks = mutableListOf<CodeBlock>()
-    val pattern = Pattern.compile("```(\\w*)\\n([\\s\\S]*?)```", Pattern.MULTILINE)
-    val matcher = pattern.matcher(content)
-    
-    while (matcher.find()) {
-        val language = matcher.group(1)?.takeIf { it.isNotBlank() }
-        val code = matcher.group(2) ?: ""
-        blocks.add(CodeBlock(language, code))
-    }
-    
-    return blocks
-}
-
-/**
- * 带复制按钮的代码块
- */
-@Composable
-private fun CodeBlockWithCopy(
-    code: String,
-    language: String?,
-    onCopy: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-        ),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // 标题栏：语言标签 + 复制按钮
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 语言标签
-                language?.let { lang ->
-                    Text(
-                        text = lang.uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontFamily = FontFamily.Monospace
-                    )
-                } ?: Text(
-                    text = "CODE",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontFamily = FontFamily.Monospace
-                )
-                
-                // 复制按钮
-                IconButton(
-                    onClick = onCopy,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ContentCopy,
-                        contentDescription = "复制代码",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-            
-            // 代码内容
-            SelectionContainer {
-                Text(
-                    text = code.trim(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontFamily = FontFamily.Monospace,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp)
-                )
-            }
         }
     }
 }
