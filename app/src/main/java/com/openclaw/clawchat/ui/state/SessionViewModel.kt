@@ -538,46 +538,42 @@ class SessionViewModel @Inject constructor(
                             "tool" -> MessageContentItem.Text(
                                 text = part["text"]?.jsonPrimitive?.content ?: ""
                             )
-                            // 工具调用：暂时直接显示为文本
+                            // 工具调用：返回 ToolCall 类型
                             "toolcall", "tool_call", "tooluse", "tool_use" -> {
                                 val toolName = part["name"]?.jsonPrimitive?.content ?: "tool"
                                 val argsElement = part["arguments"] ?: part["args"]
-                                val argsText = when (argsElement) {
-                                    is JsonObject -> argsElement.toString()
-                                    is JsonPrimitive -> argsElement.content
+                                val args = when (argsElement) {
+                                    is JsonObject -> argsElement
+                                    is JsonPrimitive -> {
+                                        try {
+                                            json.parseToJsonElement(argsElement.content).jsonObject
+                                        } catch (e: Exception) { null }
+                                    }
                                     else -> null
                                 }
-                                // 解析 JSON 字符串提取 command
-                                val displayText = if (argsText != null) {
-                                    try {
-                                        val argsObj = json.parseToJsonElement(argsText).jsonObject
-                                        val command = argsObj["command"]?.jsonPrimitive?.content
-                                        if (command != null) "$toolName: $command" else "$toolName: $argsText"
-                                    } catch (e: Exception) {
-                                        "$toolName: $argsText"
-                                    }
-                                } else {
-                                    toolName
-                                }
-                                MessageContentItem.Text(text = displayText)
+                                MessageContentItem.ToolCall(
+                                    id = part["id"]?.jsonPrimitive?.content,
+                                    name = toolName,
+                                    args = args
+                                )
                             }
-                            // 工具结果：直接显示为文本
+                            // 工具结果：返回 ToolResult 类型
                             "toolresult" -> {
                                 val toolName = part["name"]?.jsonPrimitive?.content 
                                     ?: part["toolName"]?.jsonPrimitive?.content 
                                     ?: part["tool_name"]?.jsonPrimitive?.content ?: "tool"
-                                // 优先使用 text，其次 content，最后 arguments
                                 val resultText = part["text"]?.jsonPrimitive?.content 
                                     ?: part["content"]?.jsonPrimitive?.content
                                     ?: part["arguments"]?.jsonPrimitive?.content
                                     ?: part["args"]?.jsonPrimitive?.content ?: ""
                                 val isError = part["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
-                                val displayText = if (resultText.isNotBlank()) {
-                                    if (isError) "❌ $toolName: $resultText" else "✅ $toolName: $resultText"
-                                } else {
-                                    toolName
-                                }
-                                MessageContentItem.Text(text = displayText)
+                                MessageContentItem.ToolResult(
+                                    toolCallId = part["toolCallId"]?.jsonPrimitive?.content 
+                                        ?: part["tool_call_id"]?.jsonPrimitive?.content,
+                                    name = toolName,
+                                    text = resultText,
+                                    isError = isError
+                                )
                             }
                             // 图片：支持 image, imageurl
                             "image", "imageurl" -> MessageContentItem.Image(
@@ -587,27 +583,24 @@ class SessionViewModel @Inject constructor(
                                 mimeType = part["mimeType"]?.jsonPrimitive?.content
                             )
                             else -> {
-                                // 尝试检测带有 name + arguments 的工具调用，显示为文本
+                                // 尝试检测带有 name + arguments 的工具调用
                                 val name = part["name"]?.jsonPrimitive?.content
                                 val argsElement = part["arguments"] ?: part["args"]
                                 if (name != null && argsElement != null) {
-                                    val argsText = when (argsElement) {
-                                        is JsonObject -> argsElement.toString()
-                                        is JsonPrimitive -> argsElement.content
+                                    val args = when (argsElement) {
+                                        is JsonObject -> argsElement
+                                        is JsonPrimitive -> {
+                                            try {
+                                                json.parseToJsonElement(argsElement.content).jsonObject
+                                            } catch (e: Exception) { null }
+                                        }
                                         else -> null
                                     }
-                                    val displayText = if (argsText != null) {
-                                        try {
-                                            val argsObj = json.parseToJsonElement(argsText).jsonObject
-                                            val command = argsObj["command"]?.jsonPrimitive?.content
-                                            if (command != null) "$name: $command" else "$name: $argsText"
-                                        } catch (e: Exception) {
-                                            "$name: $argsText"
-                                        }
-                                    } else {
-                                        name
-                                    }
-                                    MessageContentItem.Text(text = displayText)
+                                    MessageContentItem.ToolCall(
+                                        id = part["id"]?.jsonPrimitive?.content,
+                                        name = name,
+                                        args = args
+                                    )
                                 } else {
                                     null
                                 }
