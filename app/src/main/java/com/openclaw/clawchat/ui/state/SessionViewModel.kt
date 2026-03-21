@@ -534,7 +534,7 @@ class SessionViewModel @Inject constructor(
                                 text = part["text"]?.jsonPrimitive?.content ?: ""
                             )
                             // 工具调用：支持 toolcall, tool_call, tooluse, tool_use
-                            "toolcall", "tooluse" -> {
+                            "toolcall", "tool_call", "tooluse", "tool_use" -> {
                                 // 解析 arguments：可能是 JsonObject 或 JSON 字符串
                                 val argsElement = part["arguments"] ?: part["args"]
                                 val args = when (argsElement) {
