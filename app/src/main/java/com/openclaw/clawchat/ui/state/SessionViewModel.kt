@@ -529,6 +529,10 @@ class SessionViewModel @Inject constructor(
                             "text" -> MessageContentItem.Text(
                                 text = part["text"]?.jsonPrimitive?.content ?: ""
                             )
+                            // 工具消息：格式化后的工具执行结果（直接显示文本）
+                            "tool" -> MessageContentItem.Text(
+                                text = part["text"]?.jsonPrimitive?.content ?: ""
+                            )
                             // 工具调用：支持 toolcall, tool_call, tooluse, tool_use
                             "toolcall", "tooluse" -> MessageContentItem.ToolCall(
                                 id = part["id"]?.jsonPrimitive?.content,
