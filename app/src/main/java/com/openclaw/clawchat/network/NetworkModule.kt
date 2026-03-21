@@ -11,10 +11,20 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+/**
+ * 应用级 CoroutineScope 限定符
+ */
+@Qualifier
+@Retention(AnnotationRetention.RUNTIME)
+annotation class ApplicationScope
 
 /**
  * 网络层依赖注入模块
@@ -30,6 +40,13 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+
+    @Provides
+    @Singleton
+    @ApplicationScope
+    fun provideApplicationScope(): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    }
 
     @Provides
     @Singleton
@@ -73,7 +90,7 @@ object NetworkModule {
     fun provideGatewayConnection(
         okHttpClient: OkHttpClient,
         securityModule: SecurityModule,
-        appScope: CoroutineScope
+        @ApplicationScope appScope: CoroutineScope
     ): GatewayConnection {
         return GatewayConnection(okHttpClient, securityModule, appScope)
     }
