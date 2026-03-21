@@ -577,15 +577,7 @@ class SessionViewModel @Inject constructor(
         }
     }
     
-    /**
-     * 提取纯文本内容（用于简化存储和显示）
-     */
-    private fun extractTextContent(element: JsonElement?): String {
-        return extractContent(element)
-            .filterIsInstance<MessageContentItem.Text>()
-            .joinToString("\n") { it.text }
     }
-}
 
 // ─────────────────────────────────────────────────────────────
 // Session Events
