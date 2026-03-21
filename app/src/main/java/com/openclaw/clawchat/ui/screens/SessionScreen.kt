@@ -867,7 +867,15 @@ private fun InlineToolCard(toolCard: ToolCard) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // 参数
-                    if (toolCard.args != null && toolCard.args.toString().isNotBlank()) {
+                    val hasArgs = toolCard.args != null && 
+                        toolCard.args.toString().isNotBlank() && 
+                        toolCard.args.toString() != "{}"
+                    if (hasArgs) {
+                        Text(
+                            text = "参数:",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         SelectionContainer {
                             Text(
                                 text = toolCard.args.toString(),
@@ -879,13 +887,19 @@ private fun InlineToolCard(toolCard: ToolCard) {
                     }
                     
                     // 结果
-                    if (toolCard.result != null && toolCard.result.isNotBlank()) {
-                        if (toolCard.args != null) {
+                    val hasResult = toolCard.result != null && toolCard.result.isNotBlank()
+                    if (hasResult) {
+                        if (hasArgs) {
                             Spacer(modifier = Modifier.height(4.dp))
                         }
+                        Text(
+                            text = "结果:",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         SelectionContainer {
                             Text(
-                                text = toolCard.result,
+                                text = toolCard.result.take(2000) + if (toolCard.result.length > 2000) "\n..." else "",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
                                 color = if (toolCard.isError) {
@@ -895,6 +909,15 @@ private fun InlineToolCard(toolCard: ToolCard) {
                                 }
                             )
                         }
+                    }
+                    
+                    // 如果没有参数和结果
+                    if (!hasArgs && !hasResult) {
+                        Text(
+                            text = "(无详情)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
                     }
                 }
             }
