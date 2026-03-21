@@ -28,7 +28,8 @@ okhttp = "4.12.0"
 coil = "2.7.0"
 
 # Markdown
-compose-markdown = "0.5.7"
+markdown-renderer = "0.27.0-rc02"
+markdown-renderer-m3 = "0.27.0-rc02"
 
 # Testing
 junit = "4.13.2"
@@ -87,7 +88,8 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
 # Markdown
-compose-markdown = { group = "com.github.jeziellago", name = "compose-markdown", version.ref = "compose-markdown" }
+markdown-renderer = { group = "com.mikepenz", name = "multiplatform-markdown-renderer", version.ref = "markdown-renderer" }
+markdown-renderer-m3 = { group = "com.mikepenz", name = "multiplatform-markdown-renderer-m3", version.ref = "markdown-renderer-m3" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

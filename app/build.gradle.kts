@@ -263,7 +263,8 @@ dependencies {
     implementation(libs.coil.compose)
 
     // Markdown Rendering
-    implementation(libs.compose.markdown)
+    implementation(libs.markdown.renderer)
+    implementation(libs.markdown.renderer.m3)
 
     // Testing
     testImplementation(libs.junit)
