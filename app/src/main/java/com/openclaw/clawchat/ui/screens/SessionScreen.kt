@@ -613,19 +613,27 @@ private fun ToolTag(
  */
 @Composable
 private fun ToolDetailCard(toolCard: ToolCard) {
+    var expanded by remember { mutableStateOf(toolCard.kind == ToolCardKind.CALL) } // tool_call 默认展开
+    val hasContent = when (toolCard.kind) {
+        ToolCardKind.CALL -> toolCard.args != null && toolCard.args.isNotBlank()
+        ToolCardKind.RESULT -> toolCard.result != null && toolCard.result.isNotBlank()
+    }
+    
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = hasContent) { expanded = !expanded },
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (toolCard.isError) {
-                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = when {
+                toolCard.isError -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                toolCard.kind == ToolCardKind.CALL -> Color(0xFFFFEBEE) // 浅红色背景
+                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             }
         )
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // 工具名称行
+            // 头部行
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -633,13 +641,14 @@ private fun ToolDetailCard(toolCard: ToolCard) {
                 Icon(
                     imageVector = when {
                         toolCard.isError -> Icons.Default.ErrorOutline
-                        toolCard.kind == ToolCardKind.CALL -> Icons.Default.Terminal
+                        toolCard.kind == ToolCardKind.CALL -> Icons.Default.Bolt // 红色闪电
                         else -> Icons.Default.CheckCircle
                     },
                     contentDescription = null,
                     tint = when {
                         toolCard.isError -> MaterialTheme.colorScheme.error
-                        else -> MaterialTheme.colorScheme.primary
+                        toolCard.kind == ToolCardKind.CALL -> Color(0xFFE53935) // 红色
+                        else -> Color(0xFF2196F3) // 蓝色
                     },
                     modifier = Modifier.size(16.dp)
                 )
@@ -654,38 +663,34 @@ private fun ToolDetailCard(toolCard: ToolCard) {
                         MaterialTheme.colorScheme.onErrorContainer
                     } else {
                         MaterialTheme.colorScheme.onSurface
-                    }
+                    },
+                    modifier = Modifier.weight(1f)
                 )
-                // tool_result 显示工具名称标签
-                if (toolCard.kind == ToolCardKind.RESULT && toolCard.name != "tool") {
-                    Text(
-                        text = "(${toolCard.name})",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                // 展开/折叠图标
+                if (hasContent) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = when {
+                            toolCard.kind == ToolCardKind.CALL -> Color(0xFFE53935)
+                            else -> Color(0xFF2196F3)
+                        },
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
             
-            // tool_call: 显示参数
-            if (toolCard.kind == ToolCardKind.CALL && toolCard.args != null && toolCard.args.isNotBlank()) {
+            // 展开内容
+            if (expanded && hasContent) {
                 Spacer(modifier = Modifier.height(8.dp))
                 SelectionContainer {
                     Text(
-                        text = toolCard.args,
+                        text = when (toolCard.kind) {
+                            ToolCardKind.CALL -> toolCard.args ?: ""
+                            ToolCardKind.RESULT -> toolCard.result ?: ""
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-            
-            // tool_result: 显示结果
-            if (toolCard.kind == ToolCardKind.RESULT && toolCard.result != null && toolCard.result.isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                SelectionContainer {
-                    Text(
-                        text = toolCard.result,
-                        style = MaterialTheme.typography.bodySmall,
                         color = if (toolCard.isError) {
                             MaterialTheme.colorScheme.error
                         } else {
@@ -789,68 +794,36 @@ private fun SystemMessageItem(message: MessageUi) {
  */
 @Composable
 private fun ToolMessageCard(message: MessageUi) {
-    var expanded by remember { mutableStateOf(false) }
-    val textContent = message.getTextContent()
+    val toolCards = remember(message) { pairToolCards(message) }
     
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { expanded = !expanded },
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Column {
-            // 头部：⚡ Tool output
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Bolt,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = "Tool output",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                )
-                if (textContent.isNotBlank()) {
-                    Text(
-                        text = if (expanded) "View" else "View",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
+        toolCards.forEach { toolCard ->
+            ToolDetailCard(toolCard = toolCard)
+        }
+        
+        // 如果没有 ToolCard，显示原始文本
+        if (toolCards.isEmpty()) {
+            val textContent = message.getTextContent()
+            if (textContent.isNotBlank()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                     )
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-            
-            // 展开内容
-            if (expanded && textContent.isNotBlank()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    SelectionContainer {
-                        Text(
-                            text = textContent,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        SelectionContainer {
+                            Text(
+                                text = textContent,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
