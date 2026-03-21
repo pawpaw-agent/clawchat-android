@@ -2,11 +2,10 @@ package com.openclaw.clawchat.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -20,7 +19,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,8 +41,9 @@ import java.util.*
  * - 消息输入框
  * - 发送按钮
  * - 连接状态指示
+ * - 滚动到底部按钮
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SessionScreen(
     viewModel: SessionViewModel,
@@ -53,7 +52,6 @@ fun SessionScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
-    val keyboard: Any? = null
     val focusRequester = remember { FocusRequester() }
 
     // 初始化会话 ID
@@ -91,6 +89,13 @@ fun SessionScreen(
         lastMessageCount = state.messages.size
     }
 
+    // 是否显示滚动到底部按钮
+    val showScrollToBottom by remember {
+        derivedStateOf {
+            listState.canScrollForward && state.messages.isNotEmpty()
+        }
+    }
+
     Scaffold(
         topBar = {
             SessionTopAppBar(
@@ -98,17 +103,21 @@ fun SessionScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        modifier = Modifier.imePadding()
+        // IME 适配：使用 WindowInsets.ime
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                // 添加 IME padding 确保键盘弹出时内容上移
+                .consumedWindowInsets(paddingValues)
+                .imePadding()
         ) {
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // 消息列表
+                // 消息列表区域
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -124,6 +133,20 @@ fun SessionScreen(
                         MessageList(
                             messages = state.messages,
                             listState = listState
+                        )
+                    }
+
+                    // 滚动到底部按钮
+                    if (showScrollToBottom) {
+                        ScrollToBottomButton(
+                            onClick = {
+                                if (state.messages.isNotEmpty()) {
+                                    listState.animateScrollToItem(state.messages.lastIndex)
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(16.dp)
                         )
                     }
 
@@ -151,6 +174,29 @@ fun SessionScreen(
                 )
             }
         }
+    }
+}
+
+/**
+ * 滚动到底部按钮
+ */
+@Composable
+private fun ScrollToBottomButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    SmallFloatingActionButton(
+        onClick = onClick,
+        modifier = modifier.size(44.dp),
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        shape = CircleShape
+    ) {
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowDown,
+            contentDescription = "滚动到底部",
+            modifier = Modifier.size(24.dp)
+        )
     }
 }
 
@@ -546,15 +592,4 @@ private fun formatTimestamp(timestamp: Long): String {
         diff < 86400_000 -> "${diff / 3600_000}小时前"
         else -> SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(timestamp))
     }
-}
-
-/**
- * IME Padding 修饰符
- * 
- * 注意：imePadding() 需要 ExperimentalLayoutApi
- * 暂时使用空实现，后续版本再完善
- */
-private fun Modifier.imePadding(): Modifier {
-    // TODO: 实现 IME padding（需要 Compose 1.7+）
-    return this
 }
