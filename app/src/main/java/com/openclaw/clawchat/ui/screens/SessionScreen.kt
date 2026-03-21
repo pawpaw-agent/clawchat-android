@@ -776,63 +776,13 @@ private fun SystemMessageItem(message: MessageUi) {
 }
 
 /**
- * 工具消息卡片
- * 区分 tool_call（红色闪电）和 tool_result（蓝色闪电）
+ * 工具消息卡片（对标 webchat 样式）
+ * 显示 Tool output 折叠区域
  */
 @Composable
 private fun ToolMessageCard(message: MessageUi) {
-    val toolCalls = remember(message) { message.getToolCalls() }
-    val toolResults = remember(message) { message.getToolResults() }
-    
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        // 显示 tool_call 卡片（红色闪电 + 工具名称）
-        toolCalls.forEach { call ->
-            ToolCallCard(call = call)
-        }
-        
-        // 显示 tool_result 卡片（蓝色闪电 + Tool output）
-        toolResults.forEach { result ->
-            ToolResultCard(result = result)
-        }
-        
-        // 如果没有解析到 ToolCall/ToolResult，显示原始文本
-        if (toolCalls.isEmpty() && toolResults.isEmpty()) {
-            val textContent = message.getTextContent()
-            if (textContent.isNotBlank()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        SelectionContainer {
-                            Text(
-                                text = textContent,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * 工具调用卡片（红色闪电 + 工具名称）
- */
-@Composable
-private fun ToolCallCard(call: MessageContentItem.ToolCall) {
-    var expanded by remember { mutableStateOf(true) } // 默认展开
-    val toolInfo = getToolInfo(call.name)
-    val detailText = call.args?.let { getToolDetail(call.name, it) }
+    var expanded by remember { mutableStateOf(false) }
+    val textContent = message.getTextContent()
     
     Card(
         modifier = Modifier
@@ -840,10 +790,11 @@ private fun ToolCallCard(call: MessageContentItem.ToolCall) {
             .clickable { expanded = !expanded },
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFFEBEE) // 浅红色背景
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
         )
     ) {
         Column {
+            // 头部：⚡ Tool output
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -854,116 +805,32 @@ private fun ToolCallCard(call: MessageContentItem.ToolCall) {
                 Icon(
                     imageVector = Icons.Default.Bolt,
                     contentDescription = null,
-                    tint = Color(0xFFE53935), // 红色
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = toolInfo.displayName,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    tint = Color(0xFFE53935),
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-            
-            if (expanded && (detailText != null || call.args != null)) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                ) {
-                    SelectionContainer {
-                        Text(
-                            text = detailText ?: call.args.toString(),
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * 工具结果卡片（蓝色闪电 + Tool output）
- */
-@Composable
-private fun ToolResultCard(result: MessageContentItem.ToolResult) {
-    var expanded by remember { mutableStateOf(false) } // 默认折叠
-    val hasContent = result.text.isNotBlank()
-    val previewText = if (hasContent) {
-        val lines = result.text.lines()
-        if (lines.size > 2 || result.text.length > 100) {
-            lines.take(2).joinToString("\n").take(100) + "..."
-        } else {
-            result.text
-        }
-    } else ""
-    
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = hasContent) { expanded = !expanded },
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFE3F2FD) // 浅蓝色背景
-        )
-    ) {
-        Column {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Bolt,
-                    contentDescription = null,
-                    tint = Color(0xFF2196F3), // 蓝色
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
                     text = "Tool output",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f)
                 )
-                if (result.isError) {
-                    Icon(
-                        imageVector = Icons.Default.Error,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(14.dp)
+                if (textContent.isNotBlank()) {
+                    Text(
+                        text = if (expanded) "View" else "View",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
                     )
-                } else if (hasContent) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-                if (hasContent) {
                     Icon(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = null,
-                        tint = Color(0xFF2196F3),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
                 }
             }
             
-            if (hasContent) {
+            // 展开内容
+            if (expanded && textContent.isNotBlank()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -971,56 +838,15 @@ private fun ToolResultCard(result: MessageContentItem.ToolResult) {
                 ) {
                     SelectionContainer {
                         Text(
-                            text = if (expanded) result.text else previewText,
+                            text = textContent,
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-            } else {
-                Text(
-                    text = "Completed",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                )
             }
         }
-    }
-}
-
-private fun getToolInfo(toolName: String): ToolDisplayInfo {
-    return when (toolName.lowercase()) {
-        "exec", "bash" -> ToolDisplayInfo("Exec")
-        "read" -> ToolDisplayInfo("Read")
-        "write" -> ToolDisplayInfo("Write")
-        "edit" -> ToolDisplayInfo("Edit")
-        "web_search" -> ToolDisplayInfo("Web Search")
-        "web_fetch" -> ToolDisplayInfo("Web Fetch")
-        else -> ToolDisplayInfo(toolName.replace("_", " ").replaceFirstChar { it.uppercase() })
-    }
-}
-
-private data class ToolDisplayInfo(val displayName: String)
-
-private fun getToolDetail(toolName: String, args: JsonObject): String? {
-    return when (toolName.lowercase()) {
-        "exec", "bash" -> args["command"]?.jsonPrimitive?.content
-        "read" -> {
-            val path = args["path"]?.jsonPrimitive?.content ?: args["file_path"]?.jsonPrimitive?.content
-            val offset = args["offset"]?.jsonPrimitive?.content
-            val limit = args["limit"]?.jsonPrimitive?.content
-            if (path != null) {
-                if (offset != null && limit != null) "$path (lines $offset-${offset.toInt() + limit.toInt() - 1})"
-                else path
-            } else null
-        }
-        "write" -> args["path"]?.jsonPrimitive?.content ?: args["file_path"]?.jsonPrimitive?.content
-        "edit" -> args["path"]?.jsonPrimitive?.content ?: args["file_path"]?.jsonPrimitive?.content
-        "web_search" -> args["query"]?.jsonPrimitive?.content
-        "web_fetch" -> args["url"]?.jsonPrimitive?.content
-        else -> null
     }
 }
 
