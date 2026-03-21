@@ -676,6 +676,7 @@ class SessionViewModel @Inject constructor(
             else -> listOf(MessageContentItem.Text(element.jsonPrimitive?.content ?: ""))
         }
     }
+}
 
 // ─────────────────────────────────────────────────────────────
 // Session Events
@@ -685,5 +686,4 @@ sealed class SessionEvent {
     data class MessageReceived(val message: MessageUi) : SessionEvent()
     data class Error(val message: String) : SessionEvent()
     data object MessageSent : SessionEvent()
-}
 }
