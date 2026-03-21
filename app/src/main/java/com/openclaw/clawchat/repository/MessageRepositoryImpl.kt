@@ -124,11 +124,12 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
                     "tool_call" -> MessageContentItem.ToolCall(
                         id = obj["id"]?.jsonPrimitive?.content,
                         name = obj["name"]?.jsonPrimitive?.content ?: "unknown",
-                        args = null
+                        args = obj["arguments"]?.jsonObject
                     )
                     "tool_result" -> MessageContentItem.ToolResult(
                         toolCallId = obj["toolCallId"]?.jsonPrimitive?.content,
                         name = obj["name"]?.jsonPrimitive?.content,
+                        args = obj["args"]?.jsonObject,
                         text = obj["text"]?.jsonPrimitive?.content ?: "",
                         isError = obj["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
                     )
