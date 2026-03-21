@@ -2,17 +2,12 @@ package com.openclaw.clawchat.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import com.halilibo.richtext.commonmark.CommonmarkAstNodeParser
-import com.halilibo.richtext.commonmark.MarkdownParseOptions
-import com.halilibo.richtext.markdown.BasicMarkdown
-import com.halilibo.richtext.ui.RichTextStyle
-import com.halilibo.richtext.ui.material3.RichText
+import dev.jeziellago.compose.markdowntext.MarkdownText
 
 /**
- * 原生 Markdown 渲染组件
- * 使用 richtext-commonmark 实现高性能 Markdown 渲染
+ * Markdown 渲染组件
+ * 使用 compose-markdown 库
  * 
  * 特性：
  * - GFM 支持（表格、列表、标题等）
@@ -24,13 +19,8 @@ fun MarkdownText(
     content: String,
     modifier: Modifier = Modifier
 ) {
-    val parser = remember { CommonmarkAstNodeParser(MarkdownParseOptions.Default) }
-    val astNode = remember(content) { parser.parse(content) }
-    
-    RichText(
-        modifier = modifier.fillMaxWidth(),
-        style = RichTextStyle()
-    ) {
-        BasicMarkdown(astNode)
-    }
+    MarkdownText(
+        markdown = content,
+        modifier = modifier.fillMaxWidth()
+    )
 }
