@@ -199,6 +199,7 @@ sealed class MessageContentItem {
     data class ToolResult(
         val toolCallId: String? = null,
         val name: String? = null,
+        val args: JsonObject? = null,  // 工具调用参数（从配对的 toolCall 获取）
         val text: String,
         val isError: Boolean = false
     ) : MessageContentItem()

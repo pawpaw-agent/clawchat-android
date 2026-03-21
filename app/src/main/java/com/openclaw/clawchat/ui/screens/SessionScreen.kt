@@ -705,40 +705,64 @@ private fun ToolDetailCard(toolCard: ToolCard) {
 
 /**
  * 配对工具调用和结果
- * webchat 的做法：tool_call 和 tool_result 分开显示，不配对
+ * extractContent 已经完成配对，ToolResult 包含了 args（参数）和 text（结果）
+ * 这里只需要将 ToolResult 转换为 ToolCard 显示
  */
 private fun pairToolCards(message: MessageUi): List<ToolCard> {
-    val calls = message.getToolCalls()
     val results = message.getToolResults()
     val cards = mutableListOf<ToolCard>()
     
-    // tool_call: 显示工具名称 + 参数
-    calls.forEach { call ->
-        val displayArgs = if (call.name == "exec" && call.args != null) {
-            call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
-        } else {
-            call.args?.toString()
-        }
-        cards.add(ToolCard(
-            kind = ToolCardKind.CALL,
-            name = call.name,
-            args = displayArgs,
-            result = null,  // tool_call 没有结果
-            isError = false,
-            callId = call.id
-        ))
-    }
-    
-    // tool_result: 显示工具结果
+    // ToolResult 已经包含配对信息：
+    // - 有 args 有 text：配对成功，显示参数和结果
+    // - 有 args 无 text：只有调用，暂无结果
+    // - 无 args 有 text：只有结果（旧格式兼容）
     results.forEach { result ->
-        cards.add(ToolCard(
-            kind = ToolCardKind.RESULT,
-            name = result.name ?: "tool",
-            args = null,  // tool_result 没有参数
-            result = result.text,
-            isError = result.isError,
-            callId = result.toolCallId
-        ))
+        val hasArgs = result.args != null && result.args.keys.isNotEmpty()
+        val hasResult = result.text.isNotBlank()
+        
+        // 有参数也有结果：显示为 RESULT（合并卡片）
+        if (hasArgs && hasResult) {
+            val displayArgs = if (result.name == "exec" && result.args != null) {
+                result.args?.get("command")?.jsonPrimitive?.content ?: result.args.toString()
+            } else {
+                result.args?.toString()
+            }
+            cards.add(ToolCard(
+                kind = ToolCardKind.RESULT,
+                name = result.name ?: "tool",
+                args = displayArgs,
+                result = result.text,
+                isError = result.isError,
+                callId = result.toolCallId
+            ))
+        }
+        // 只有参数：显示为 CALL（等待结果）
+        else if (hasArgs) {
+            val displayArgs = if (result.name == "exec" && result.args != null) {
+                result.args?.get("command")?.jsonPrimitive?.content ?: result.args.toString()
+            } else {
+                result.args?.toString()
+            }
+            cards.add(ToolCard(
+                kind = ToolCardKind.CALL,
+                name = result.name ?: "tool",
+                args = displayArgs,
+                result = null,
+                isError = false,
+                callId = result.toolCallId
+            ))
+        }
+        // 只有结果：显示为 RESULT（兼容旧格式）
+        else {
+            cards.add(ToolCard(
+                kind = ToolCardKind.RESULT,
+                name = result.name ?: "tool",
+                args = null,
+                result = result.text,
+                isError = result.isError,
+                callId = result.toolCallId
+            ))
+        }
     }
     
     return cards

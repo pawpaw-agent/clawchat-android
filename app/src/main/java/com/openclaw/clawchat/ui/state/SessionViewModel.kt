@@ -131,6 +131,7 @@ class SessionViewModel @Inject constructor(
                                             is MessageContentItem.ToolResult -> mapOf(
                                                 "type" to "tool_result",
                                                 "name" to item.name,
+                                                "args" to item.args?.toString(),
                                                 "text" to item.text
                                             )
                                             is MessageContentItem.Image -> mapOf(
@@ -287,6 +288,7 @@ class SessionViewModel @Inject constructor(
                     is MessageContentItem.ToolResult -> mapOf(
                         "type" to "tool_result",
                         "name" to item.name,
+                        "args" to item.args?.toString(),
                         "text" to item.text,
                         "isError" to item.isError.toString()
                     )
@@ -505,93 +507,45 @@ class SessionViewModel @Inject constructor(
  * - image / imageurl
  * 
  * 返回 MessageContentItem 列表，包含 text、tool_call、tool_result 等
+ * 
+ * 配对逻辑：当同时有 toolCall 和 toolResult 时，按 toolCallId 配对合并为一个 ToolResult
  */
     private fun extractContent(element: JsonElement?): List<MessageContentItem> {
         if (element == null) return emptyList()
         
-        // 打印原始消息内容
         android.util.Log.d("ClawChat", "=== extractContent raw: $element")
         
         return when (element) {
             is JsonPrimitive -> listOf(MessageContentItem.Text(element.content))
-            is JsonArray -> element.mapNotNull { part ->
-                when {
-                    part is JsonObject -> {
-                        // 打印每个 part 的内容
-                        android.util.Log.d("ClawChat", "=== part: $part")
-                        
-                        val type = part["type"]?.jsonPrimitive?.content?.lowercase()
-                        val typeNormalized = type?.replace("_", "")
-                        when (typeNormalized) {
-                            "text" -> MessageContentItem.Text(
-                                text = part["text"]?.jsonPrimitive?.content ?: ""
-                            )
-                            // 工具消息：格式化后的工具执行结果（直接显示文本）
-                            "tool" -> MessageContentItem.Text(
-                                text = part["text"]?.jsonPrimitive?.content ?: ""
-                            )
-                            // 工具调用：返回 ToolCall 类型
-                            "toolcall", "tooluse" -> {
-                                val toolName = part["name"]?.jsonPrimitive?.content ?: "tool"
-                                val argsElement = part["arguments"] ?: part["args"]
-                                val args = when (argsElement) {
-                                    is JsonObject -> argsElement
-                                    is JsonPrimitive -> {
-                                        try {
-                                            json.parseToJsonElement(argsElement.content).jsonObject
-                                        } catch (e: Exception) { null }
-                                    }
-                                    else -> null
+            is JsonArray -> {
+                // 第一遍：解析所有内容项
+                val textItems = mutableListOf<MessageContentItem.Text>()
+                val toolCalls = mutableListOf<MessageContentItem.ToolCall>()
+                val toolResults = mutableListOf<MessageContentItem.ToolResult>()
+                val imageItems = mutableListOf<MessageContentItem.Image>()
+                
+                element.forEach { part ->
+                    when {
+                        part is JsonObject -> {
+                            android.util.Log.d("ClawChat", "=== part: $part")
+                            
+                            val type = part["type"]?.jsonPrimitive?.content?.lowercase()
+                            val typeNormalized = type?.replace("_", "")
+                            
+                            when (typeNormalized) {
+                                "text" -> {
+                                    textItems.add(MessageContentItem.Text(
+                                        text = part["text"]?.jsonPrimitive?.content ?: ""
+                                    ))
                                 }
-                                MessageContentItem.ToolCall(
-                                    id = part["id"]?.jsonPrimitive?.content,
-                                    name = toolName,
-                                    args = args
-                                )
-                            }
-                            // 工具结果：返回 ToolResult 类型
-                            "toolresult" -> {
-                                val toolName = part["name"]?.jsonPrimitive?.content 
-                                    ?: part["toolName"]?.jsonPrimitive?.content 
-                                    ?: part["tool_name"]?.jsonPrimitive?.content ?: "tool"
-                                val resultText = part["text"]?.jsonPrimitive?.content 
-                                    ?: part["content"]?.jsonPrimitive?.content
-                                    ?: part["arguments"]?.jsonPrimitive?.content
-                                    ?: part["args"]?.jsonPrimitive?.content ?: ""
-                                val isError = part["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
-                                MessageContentItem.ToolResult(
-                                    toolCallId = part["toolCallId"]?.jsonPrimitive?.content 
-                                        ?: part["tool_call_id"]?.jsonPrimitive?.content,
-                                    name = toolName,
-                                    text = resultText,
-                                    isError = isError
-                                )
-                            }
-                            // 图片：支持 image, imageurl
-                            "image", "imageurl" -> MessageContentItem.Image(
-                                url = part["url"]?.jsonPrimitive?.content 
-                                    ?: part["imageUrl"]?.jsonPrimitive?.content,
-                                base64 = part["base64"]?.jsonPrimitive?.content,
-                                mimeType = part["mimeType"]?.jsonPrimitive?.content
-                            )
-                            else -> {
-                                // 尝试检测工具调用或工具结果
-                                val name = part["name"]?.jsonPrimitive?.content
-                                val argsElement = part["arguments"] ?: part["args"]
-                                val textContent = part["text"]?.jsonPrimitive?.content ?: part["content"]?.jsonPrimitive?.content
-                                val toolCallId = part["toolCallId"]?.jsonPrimitive?.content ?: part["tool_call_id"]?.jsonPrimitive?.content
-                                
-                                // 优先检测 tool_result：有 toolCallId 或有 text 但没有 arguments
-                                if (toolCallId != null || (textContent != null && argsElement == null)) {
-                                    MessageContentItem.ToolResult(
-                                        toolCallId = toolCallId,
-                                        name = name ?: "tool",
-                                        text = textContent ?: "",
-                                        isError = part["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
-                                    )
+                                "tool" -> {
+                                    textItems.add(MessageContentItem.Text(
+                                        text = part["text"]?.jsonPrimitive?.content ?: ""
+                                    ))
                                 }
-                                // 否则如果有 name + arguments，这是 tool_call
-                                else if (name != null && argsElement != null) {
+                                "toolcall", "tooluse" -> {
+                                    val toolName = part["name"]?.jsonPrimitive?.content ?: "tool"
+                                    val argsElement = part["arguments"] ?: part["args"]
                                     val args = when (argsElement) {
                                         is JsonObject -> argsElement
                                         is JsonPrimitive -> {
@@ -601,25 +555,126 @@ class SessionViewModel @Inject constructor(
                                         }
                                         else -> null
                                     }
-                                    MessageContentItem.ToolCall(
+                                    toolCalls.add(MessageContentItem.ToolCall(
                                         id = part["id"]?.jsonPrimitive?.content,
-                                        name = name,
+                                        name = toolName,
                                         args = args
-                                    )
-                                } else {
-                                    null
+                                    ))
+                                }
+                                "toolresult" -> {
+                                    val toolName = part["name"]?.jsonPrimitive?.content 
+                                        ?: part["toolName"]?.jsonPrimitive?.content 
+                                        ?: part["tool_name"]?.jsonPrimitive?.content ?: "tool"
+                                    val resultText = part["text"]?.jsonPrimitive?.content 
+                                        ?: part["content"]?.jsonPrimitive?.content
+                                        ?: part["arguments"]?.jsonPrimitive?.content
+                                        ?: part["args"]?.jsonPrimitive?.content ?: ""
+                                    val isError = part["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
+                                    toolResults.add(MessageContentItem.ToolResult(
+                                        toolCallId = part["toolCallId"]?.jsonPrimitive?.content 
+                                            ?: part["tool_call_id"]?.jsonPrimitive?.content,
+                                        name = toolName,
+                                        text = resultText,
+                                        isError = isError
+                                    ))
+                                }
+                                "image", "imageurl" -> {
+                                    imageItems.add(MessageContentItem.Image(
+                                        url = part["url"]?.jsonPrimitive?.content 
+                                            ?: part["imageUrl"]?.jsonPrimitive?.content,
+                                        base64 = part["base64"]?.jsonPrimitive?.content,
+                                        mimeType = part["mimeType"]?.jsonPrimitive?.content
+                                    ))
+                                }
+                                else -> {
+                                    // 尝试检测工具调用或工具结果
+                                    val name = part["name"]?.jsonPrimitive?.content
+                                    val argsElement = part["arguments"] ?: part["args"]
+                                    val textContent = part["text"]?.jsonPrimitive?.content ?: part["content"]?.jsonPrimitive?.content
+                                    val toolCallId = part["toolCallId"]?.jsonPrimitive?.content ?: part["tool_call_id"]?.jsonPrimitive?.content
+                                    
+                                    if (toolCallId != null || (textContent != null && argsElement == null)) {
+                                        toolResults.add(MessageContentItem.ToolResult(
+                                            toolCallId = toolCallId,
+                                            name = name ?: "tool",
+                                            text = textContent ?: "",
+                                            isError = part["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
+                                        ))
+                                    } else if (name != null && argsElement != null) {
+                                        val args = when (argsElement) {
+                                            is JsonObject -> argsElement
+                                            is JsonPrimitive -> {
+                                                try {
+                                                    json.parseToJsonElement(argsElement.content).jsonObject
+                                                } catch (e: Exception) { null }
+                                            }
+                                            else -> null
+                                        }
+                                        toolCalls.add(MessageContentItem.ToolCall(
+                                            id = part["id"]?.jsonPrimitive?.content,
+                                            name = name,
+                                            args = args
+                                        ))
+                                    } else if (textContent != null) {
+                                        textItems.add(MessageContentItem.Text(textContent))
+                                    }
                                 }
                             }
                         }
+                        part is JsonPrimitive -> {
+                            textItems.add(MessageContentItem.Text(part.content))
+                        }
+                        else -> {}
                     }
-                    part is JsonPrimitive -> MessageContentItem.Text(part.content)
-                    else -> null
                 }
+                
+                // 配对 toolCalls 和 toolResults
+                val mergedResults = mutableListOf<MessageContentItem.ToolResult>()
+                val callsById = toolCalls.associateBy { it.id }
+                val resultsById = toolResults.associateBy { it.toolCallId }
+                
+                // 已配对的 ID
+                val pairedIds = mutableSetOf<String?>()
+                
+                // 遍历 toolCalls，尝试配对
+                toolCalls.forEach { call ->
+                    val callId = call.id
+                    val matchingResult = if (callId != null) resultsById[callId] else null
+                    
+                    if (matchingResult != null) {
+                        // 配对成功：合并为包含参数的 ToolResult
+                        mergedResults.add(MessageContentItem.ToolResult(
+                            toolCallId = callId,
+                            name = call.name,
+                            args = call.args,  // 从 toolCall 获取参数
+                            text = matchingResult.text,
+                            isError = matchingResult.isError
+                        ))
+                        pairedIds.add(callId)
+                    } else {
+                        // 没有配对：保留 toolCall（等待结果）
+                        mergedResults.add(MessageContentItem.ToolResult(
+                            toolCallId = callId,
+                            name = call.name,
+                            args = call.args,
+                            text = "",  // 暂无结果
+                            isError = false
+                        ))
+                    }
+                }
+                
+                // 添加未配对的 toolResults
+                toolResults.forEach { result ->
+                    if (result.toolCallId !in pairedIds) {
+                        mergedResults.add(result)
+                    }
+                }
+                
+                // 组合所有内容：文本 + 合并的工具结果 + 图片
+                textItems + mergedResults + imageItems
             }
             else -> listOf(MessageContentItem.Text(element.jsonPrimitive?.content ?: ""))
         }
-    }
-    
     }
 
 // ─────────────────────────────────────────────────────────────
