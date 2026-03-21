@@ -710,7 +710,7 @@ private fun pairToolCards(message: MessageUi): List<ToolCard> {
         }
         cards.add(ToolCard(
             name = call.name,
-            args = call.args,
+            args = call.args,  // 现在是 String?
             result = result?.text,
             isError = result?.isError ?: false,
             callId = call.id
@@ -738,7 +738,7 @@ private fun pairToolCards(message: MessageUi): List<ToolCard> {
  */
 private data class ToolCard(
     val name: String,
-    val args: JsonObject?,
+    val args: String?,  // 改为 String?
     val result: String?,
     val isError: Boolean,
     val callId: String?
@@ -866,19 +866,12 @@ private fun InlineToolCard(toolCard: ToolCard) {
                     modifier = Modifier.padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // 参数
-                    val hasArgs = toolCard.args != null && 
-                        toolCard.args.toString().isNotBlank() && 
-                        toolCard.args.toString() != "{}"
+                    // 参数 - 显示为 "with <args>"
+                    val hasArgs = !toolCard.args.isNullOrBlank()
                     if (hasArgs) {
-                        Text(
-                            text = "参数:",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                         SelectionContainer {
                             Text(
-                                text = toolCard.args.toString(),
+                                text = "with ${toolCard.args}",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -887,16 +880,11 @@ private fun InlineToolCard(toolCard: ToolCard) {
                     }
                     
                     // 结果
-                    val hasResult = toolCard.result != null && toolCard.result.isNotBlank()
+                    val hasResult = !toolCard.result.isNullOrBlank()
                     if (hasResult) {
                         if (hasArgs) {
                             Spacer(modifier = Modifier.height(4.dp))
                         }
-                        Text(
-                            text = "结果:",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                         SelectionContainer {
                             Text(
                                 text = toolCard.result.take(2000) + if (toolCard.result.length > 2000) "\n..." else "",
@@ -909,15 +897,6 @@ private fun InlineToolCard(toolCard: ToolCard) {
                                 }
                             )
                         }
-                    }
-                    
-                    // 如果没有参数和结果
-                    if (!hasArgs && !hasResult) {
-                        Text(
-                            text = "(无详情)",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        )
                     }
                 }
             }
