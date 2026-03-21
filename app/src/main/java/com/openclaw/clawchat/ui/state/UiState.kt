@@ -19,11 +19,7 @@ data class SessionUi(
     val lastMessage: String? = null,
     val thinking: Boolean = false
 ) {
-    /**
-     * 获取显示名称：优先 agentId > label > model
-     */
     fun getDisplayName(): String {
-        // 从 agentId 提取显示名称（去掉前缀如 "agent:"）
         val agentName = agentId?.removePrefix("agent:")?.substringBefore(":") ?: agentId
         return when {
             !agentName.isNullOrBlank() -> agentName
@@ -34,18 +30,12 @@ data class SessionUi(
     }
 }
 
-/**
- * 会话状态
- */
 enum class SessionStatus {
-    RUNNING,      // 运行中
-    PAUSED,       // 已暂停
-    TERMINATED    // 已终止
+    RUNNING,
+    PAUSED,
+    TERMINATED
 }
 
-/**
- * 网关配置数据模型
- */
 data class GatewayConfigUi(
     val id: String,
     val name: String,
@@ -54,9 +44,6 @@ data class GatewayConfigUi(
     val isCurrent: Boolean = false
 )
 
-/**
- * 主界面 UI 状态
- */
 data class MainUiState(
     val connectionStatus: ConnectionStatus = ConnectionStatus.Disconnected,
     val sessions: List<SessionUi> = emptyList(),
@@ -69,7 +56,7 @@ data class MainUiState(
 )
 
 /**
- * 会话界面 UI 状态（一比一复刻 webchat ChatState）
+ * 会话界面 UI 状态（1:1 对应 webchat ChatState + ToolStreamHost）
  */
 data class SessionUiState(
     // 连接状态
@@ -82,40 +69,45 @@ data class SessionUiState(
     val sessionId: String? = null,
     val session: SessionUi? = null,
     
-    // 消息（参考 webchat chatMessages）
-    val messages: List<MessageUi> = emptyList(),
+    // 消息状态（1:1 对应 webchat）
+    val chatMessages: List<MessageUi> = emptyList(),           // 历史消息
+    val chatStream: String? = null,                             // 当前流式文本
+    val chatStreamStartedAt: Long? = null,                      // 流式开始时间
+    val chatRunId: String? = null,                              // 当前 runId
+    val chatStreamSegments: List<StreamSegment> = emptyList(),  // 已提交的文本段
     
-    // 工具消息（参考 webchat chatToolMessages，从 toolStreamById 构建）
-    val toolMessages: List<MessageUi> = emptyList(),
-    
-    // 流式文本（参考 webchat chatStream）
-    val streamText: String? = null,
-    val streamRunId: String? = null,
-    
-    // 工具流状态（参考 webchat）
-    val toolStreamById: Map<String, ToolState> = emptyMap(),
+    // 工具流状态（1:1 对应 webchat ToolStreamHost）
+    val toolStreamById: Map<String, ToolStreamEntry> = emptyMap(),
     val toolStreamOrder: List<String> = emptyList(),
+    val chatToolMessages: List<MessageUi> = emptyList(),
     
     // 输入
     val inputText: String = ""
 )
 
 /**
- * 工具流状态（一比一复刻 webchat ToolState）
+ * 文本段（工具执行前提交的文本）
  */
-data class ToolState(
+data class StreamSegment(
+    val text: String,
+    val ts: Long
+)
+
+/**
+ * 工具流条目（1:1 对应 webchat ToolStreamEntry）
+ */
+data class ToolStreamEntry(
     val toolCallId: String,
-    val runId: String? = null,
+    val runId: String,
     val sessionKey: String? = null,
     val name: String = "tool",
     val args: JsonObject? = null,
     val output: String? = null,
-    val isError: Boolean = false,
-    val startedAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val startedAt: Long,
+    val updatedAt: Long
 ) {
     /**
-     * 构建工具消息（一比一复刻 webchat Fp(e)）
+     * 构建工具消息（1:1 对应 webchat buildToolStreamMessage）
      */
     fun buildMessage(): MessageUi {
         val content = mutableListOf<MessageContentItem>()
@@ -132,9 +124,7 @@ data class ToolState(
             content.add(MessageContentItem.ToolResult(
                 toolCallId = toolCallId,
                 name = name,
-                args = args,
-                text = output,
-                isError = isError
+                text = output
             ))
         }
         
@@ -148,18 +138,12 @@ data class ToolState(
     }
 }
 
-/**
- * Gateway 配置（输入用）
- */
 data class GatewayConfigInput(
     val name: String = "",
     val host: String = "",
     val port: Int = 18789
 )
 
-/**
- * 设置界面 UI 状态
- */
 data class SettingsUiState(
     val currentGateway: GatewayConfigUi? = null,
     val gatewayConfigInput: GatewayConfigInput = GatewayConfigInput(),
@@ -169,17 +153,11 @@ data class SettingsUiState(
     val appVersion: String = "1.0.0"
 )
 
-/**
- * 连接模式
- */
 enum class ConnectMode {
-    TOKEN,       // Token 直连
-    PAIRING      // 设备配对（Ed25519 签名 + 管理员批准）
+    TOKEN,
+    PAIRING
 }
 
-/**
- * 配对界面 UI 状态
- */
 data class PairingUiState(
     val connectMode: ConnectMode = ConnectMode.TOKEN,
     val gatewayUrl: String = "",
@@ -191,13 +169,9 @@ data class PairingUiState(
     val deviceToken: String? = null,
     val pairingStartTime: Long? = null,
     val error: String? = null,
-    // Token 模式
     val token: String = ""
 )
 
-/**
- * 配对状态
- */
 sealed class PairingStatus {
     data object Initializing : PairingStatus()
     data object WaitingForApproval : PairingStatus()
@@ -212,7 +186,7 @@ sealed class PairingStatus {
 // ─────────────────────────────────────────────────────────────
 
 /**
- * 消息数据模型 - 支持丰富的内容类型
+ * 消息数据模型
  */
 data class MessageUi(
     val id: String,
@@ -221,39 +195,27 @@ data class MessageUi(
     val timestamp: Long,
     val isLoading: Boolean = false
 ) {
-    /**
-     * 获取纯文本内容（用于简化显示）
-     */
     fun getTextContent(): String {
         return content
             .filterIsInstance<MessageContentItem.Text>()
             .joinToString("\n") { it.text }
     }
     
-    /**
-     * 获取工具调用列表
-     */
     fun getToolCalls(): List<MessageContentItem.ToolCall> {
         return content.filterIsInstance<MessageContentItem.ToolCall>()
     }
     
-    /**
-     * 获取工具结果列表
-     */
     fun getToolResults(): List<MessageContentItem.ToolResult> {
         return content.filterIsInstance<MessageContentItem.ToolResult>()
     }
     
-    /**
-     * 是否包含工具内容
-     */
     fun hasToolContent(): Boolean = content.any { 
         it is MessageContentItem.ToolCall || it is MessageContentItem.ToolResult 
     }
 }
 
 /**
- * 消息内容项 - 支持 text、tool_call、tool_result、image
+ * 消息内容项
  */
 sealed class MessageContentItem {
     data class Text(val text: String) : MessageContentItem()
@@ -265,7 +227,6 @@ sealed class MessageContentItem {
     data class ToolResult(
         val toolCallId: String? = null,
         val name: String? = null,
-        val args: JsonObject? = null,  // 工具调用参数（从配对的 toolCall 获取）
         val text: String,
         val isError: Boolean = false
     ) : MessageContentItem()
@@ -276,18 +237,27 @@ sealed class MessageContentItem {
     ) : MessageContentItem()
 }
 
-/**
- * 消息角色
- */
 enum class MessageRole {
     USER,
     ASSISTANT,
     SYSTEM,
-    TOOL        // 工具消息（工具调用结果）
+    TOOL;
+
+    companion object {
+        fun fromString(role: String): MessageRole {
+            return when (role.lowercase().replace("_", "")) {
+                "user" -> USER
+                "assistant" -> ASSISTANT
+                "system" -> SYSTEM
+                "toolresult", "tool" -> TOOL
+                else -> ASSISTANT
+            }
+        }
+    }
 }
 
 /**
- * 消息分组（Slack 风格）- 连续同角色消息合并显示
+ * 消息分组
  */
 data class MessageGroup(
     val role: MessageRole,
@@ -298,9 +268,6 @@ data class MessageGroup(
     val firstMessage: MessageUi? get() = messages.firstOrNull()
     val lastMessage: MessageUi? get() = messages.lastOrNull()
     
-    /**
-     * 获取分组显示文本（合并所有文本内容）
-     */
     fun getDisplayContent(): String {
         return messages.joinToString("\n\n") { it.getTextContent() }
     }
@@ -312,9 +279,10 @@ data class MessageGroup(
 data class ToolCard(
     val kind: ToolCardKind,
     val name: String,
-    val args: JsonObject? = null,
-    val text: String? = null,
-    val isError: Boolean = false
+    val args: String? = null,
+    val result: String? = null,
+    val isError: Boolean = false,
+    val callId: String? = null
 )
 
 enum class ToolCardKind {
@@ -326,9 +294,6 @@ enum class ToolCardKind {
 // 连接状态
 // ─────────────────────────────────────────────────────────────
 
-/**
- * 连接状态
- */
 sealed class ConnectionStatus {
     data object Disconnected : ConnectionStatus()
     data object Connecting : ConnectionStatus()
@@ -336,18 +301,10 @@ sealed class ConnectionStatus {
     data object Disconnecting : ConnectionStatus()
     data class Error(val message: String, val throwable: Throwable? = null) : ConnectionStatus()
 
-    val isConnected: Boolean
-        get() = this is Connected
-
-    val isConnecting: Boolean
-        get() = this is Connecting || this is Disconnecting
+    val isConnected: Boolean get() = this is Connected
+    val isConnecting: Boolean get() = this is Connecting || this is Disconnecting
 }
 
-/**
- * 连接状态（UI 显示用）
- * 
- * 包含 UI 特定的辅助属性，用于 SettingsScreen 等显示
- */
 sealed class ConnectionStatusUi {
     data object Disconnected : ConnectionStatusUi()
     data object Connecting : ConnectionStatusUi()
@@ -355,9 +312,7 @@ sealed class ConnectionStatusUi {
     data class Connected(val latency: Long = 0) : ConnectionStatusUi()
     data class Error(val message: String) : ConnectionStatusUi()
 
-    val isConnected: Boolean
-        get() = this is Connected
-
+    val isConnected: Boolean get() = this is Connected
     val displayText: String
         get() = when (this) {
             is Disconnected -> "未连接"
@@ -368,11 +323,6 @@ sealed class ConnectionStatusUi {
         }
 }
 
-/**
- * 获取连接状态的颜色（Composable 函数）
- * 
- * 使用 MaterialTheme 颜色，自动适配深色/浅色模式
- */
 @Composable
 fun ConnectionStatusUi.getStatusColor(): Color {
     return when (this) {
@@ -384,9 +334,6 @@ fun ConnectionStatusUi.getStatusColor(): Color {
     }
 }
 
-/**
- * 将 ConnectionStatus 转换为 ConnectionStatusUi
- */
 fun ConnectionStatus.toUiStatus(): ConnectionStatusUi {
     return when (this) {
         is ConnectionStatus.Disconnected -> ConnectionStatusUi.Disconnected

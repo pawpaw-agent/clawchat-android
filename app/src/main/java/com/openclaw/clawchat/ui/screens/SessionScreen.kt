@@ -38,6 +38,7 @@ import com.openclaw.clawchat.ui.state.MessageGroup
 import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
 import com.openclaw.clawchat.ui.state.SessionEvent
+import com.openclaw.clawchat.ui.state.StreamSegment
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import com.openclaw.clawchat.ui.state.SessionViewModel
@@ -46,14 +47,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * 会话界面屏幕
- * 
- * 显示：
- * - 消息列表（用户/助手/系统消息，分组显示）
- * - 消息输入框
- * - 发送按钮
- * - 连接状态指示
- * - 滚动到底部按钮
+ * 会话界面屏幕（1:1 复刻 webchat）
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -83,32 +77,31 @@ fun SessionScreen(
                 is SessionEvent.MessageReceived -> {
                     // 滚动到底部
                     if (listState.canScrollForward) {
-                        listState.animateScrollToItem(state.messages.lastIndex)
+                        listState.animateScrollToItem(state.chatMessages.lastIndex)
                     }
                 }
                 else -> {}
             }
-            viewModel.consumeEvent()
         }
     }
 
-    // 分组消息
-    val messageGroups = remember(state.messages) { groupMessages(state.messages) }
+    // 分组消息（使用 chatMessages）
+    val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
 
     // 消息变化时滚动到底部
     var lastMessageCount by remember { mutableStateOf(0) }
-    LaunchedEffect(state.messages.size) {
-        if (state.messages.isNotEmpty() && state.messages.size > lastMessageCount) {
+    LaunchedEffect(state.chatMessages.size) {
+        if (state.chatMessages.isNotEmpty() && state.chatMessages.size > lastMessageCount) {
             // 新消息到达，立即滚动到底部
-            listState.scrollToItem(state.messages.lastIndex)
+            listState.scrollToItem(state.chatMessages.lastIndex)
         }
-        lastMessageCount = state.messages.size
+        lastMessageCount = state.chatMessages.size
     }
 
     // 是否显示滚动到底部按钮
     val showScrollToBottom by remember {
         derivedStateOf {
-            listState.canScrollForward && state.messages.isNotEmpty()
+            listState.canScrollForward && state.chatMessages.isNotEmpty()
         }
     }
 
@@ -135,7 +128,7 @@ fun SessionScreen(
                         .weight(1f)
                         .fillMaxWidth()
                 ) {
-                    if (state.messages.isEmpty()) {
+                    if (state.chatMessages.isEmpty()) {
                         // 空状态
                         EmptySessionContent(
                             connectionStatus = state.connectionStatus
@@ -145,7 +138,9 @@ fun SessionScreen(
                         MessageGroupList(
                             groups = messageGroups,
                             listState = listState,
-                            toolMessages = state.toolMessages
+                            streamSegments = state.chatStreamSegments,
+                            toolMessages = state.chatToolMessages,
+                            chatStream = state.chatStream
                         )
                     }
 
@@ -153,9 +148,9 @@ fun SessionScreen(
                     if (showScrollToBottom) {
                         ScrollToBottomButton(
                             onClick = {
-                                if (state.messages.isNotEmpty()) {
+                                if (state.chatMessages.isNotEmpty()) {
                                     scope.launch {
-                                        listState.animateScrollToItem(state.messages.lastIndex)
+                                        listState.animateScrollToItem(state.chatMessages.lastIndex)
                                     }
                                 }
                             },
@@ -356,13 +351,21 @@ private fun EmptySessionContent(
 }
 
 /**
- * 消息分组列表
+ * 消息分组列表（1:1 复刻 webchat）
+ * 
+ * 显示顺序：
+ * 1. chatMessages（历史消息）
+ * 2. chatStreamSegments（工具执行前的文本段）
+ * 3. chatToolMessages（工具消息）
+ * 4. chatStream（当前流式文本）
  */
 @Composable
 private fun MessageGroupList(
     groups: List<MessageGroup>,
     listState: androidx.compose.foundation.lazy.LazyListState,
-    toolMessages: List<MessageUi> = emptyList()
+    streamSegments: List<com.openclaw.clawchat.ui.state.StreamSegment> = emptyList(),
+    toolMessages: List<MessageUi> = emptyList(),
+    chatStream: String? = null
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -370,14 +373,48 @@ private fun MessageGroupList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // 1. 历史消息
         items(groups, key = { it.messages.first().id }) { group ->
             MessageGroupItem(group = group)
         }
         
-        // 显示工具流消息（参考 webchat toolMessages）
+        // 2. 文本段（工具执行前提交的文本）
+        if (streamSegments.isNotEmpty()) {
+            items(streamSegments, key = { "segment_${it.ts}" }) { segment ->
+                MessageContentCard(
+                    message = MessageUi(
+                        id = "segment_${segment.ts}",
+                        content = listOf(MessageContentItem.Text(segment.text)),
+                        role = MessageRole.ASSISTANT,
+                        timestamp = segment.ts
+                    ),
+                    isUser = false,
+                    isLastInGroup = true
+                )
+            }
+        }
+        
+        // 3. 工具消息
         if (toolMessages.isNotEmpty()) {
             items(toolMessages, key = { "tool_${it.id}" }) { toolMessage ->
                 ToolMessageCard(message = toolMessage)
+            }
+        }
+        
+        // 4. 当前流式文本
+        if (!chatStream.isNullOrBlank()) {
+            item(key = "stream") {
+                MessageContentCard(
+                    message = MessageUi(
+                        id = "stream",
+                        content = listOf(MessageContentItem.Text(chatStream)),
+                        role = MessageRole.ASSISTANT,
+                        timestamp = System.currentTimeMillis(),
+                        isLoading = true
+                    ),
+                    isUser = false,
+                    isLastInGroup = true
+                )
             }
         }
     }
