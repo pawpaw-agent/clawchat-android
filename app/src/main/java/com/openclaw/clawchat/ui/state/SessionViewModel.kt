@@ -196,6 +196,30 @@ class SessionViewModel @Inject constructor(
                 // 使用 resolveMessageRole 检测工具消息
                 val uiRole = resolveMessageRole(msgObj, originalRole)
 
+                // 调试日志
+                android.util.Log.d("ClawChat", "=== handleIncomingFrame: runId=$runId, state=$state, role=$uiRole")
+                
+                // 检查是否是 toolResult 消息（跨消息配对）
+                if (uiRole == MessageRole.TOOL) {
+                    val toolCallId = msgObj?.get("toolCallId")?.jsonPrimitive?.content
+                        ?: msgObj?.get("tool_call_id")?.jsonPrimitive?.content
+                    
+                    if (toolCallId != null) {
+                        // 这是独立的 toolResult 消息，需要更新之前的 toolCall 卡片
+                        val toolName = msgObj?.get("toolName")?.jsonPrimitive?.content
+                            ?: msgObj?.get("tool_name")?.jsonPrimitive?.content ?: "tool"
+                        val isError = msgObj?.get("isError")?.jsonPrimitive?.content?.toBoolean() ?: false
+                        val resultText = contentItems.filterIsInstance<MessageContentItem.Text>()
+                            .joinToString("") { it.text }
+                        
+                        android.util.Log.d("ClawChat", "=== toolResult message: toolCallId=$toolCallId, toolName=$toolName, isError=$isError, text=${resultText.take(50)}")
+                        
+                        // 更新之前的 toolCall 卡片
+                        updateToolCallResult(toolCallId, toolName, resultText, isError, runId)
+                        return@launch
+                    }
+                }
+
                 when (state) {
                     "delta" -> handleDelta(runId, contentItems, uiRole)
                     "final" -> handleFinal(runId, contentItems, uiRole, sessionId)
@@ -362,6 +386,65 @@ class SessionViewModel @Inject constructor(
 
         _state.update { it.copy(error = errorMsg, isLoading = false) }
         _events.trySend(SessionEvent.Error(errorMsg))
+    }
+    
+    /**
+     * 更新 toolCall 的执行结果（跨消息配对）
+     * 当收到独立的 toolResult 消息时调用
+     */
+    private fun updateToolCallResult(toolCallId: String, toolName: String, resultText: String, isError: Boolean, runId: String) {
+        _state.update { currentState ->
+            // 遍历所有消息，找到包含该 toolCallId 的 ToolResult
+            val newMessages = currentState.messages.map { message ->
+                val hasMatchingToolCall = message.content.any { item ->
+                    item is MessageContentItem.ToolResult && item.toolCallId == toolCallId
+                }
+                
+                if (hasMatchingToolCall) {
+                    // 找到了，更新 ToolResult
+                    android.util.Log.d("ClawChat", "=== Found matching ToolResult for toolCallId=$toolCallId")
+                    val updatedContent = message.content.map { item ->
+                        if (item is MessageContentItem.ToolResult && item.toolCallId == toolCallId) {
+                            // 更新 text 和 isError
+                            item.copy(text = resultText, isError = isError)
+                        } else {
+                            item
+                        }
+                    }
+                    message.copy(content = updatedContent)
+                } else {
+                    message
+                }
+            }
+            
+            // 如果没有找到匹配的，创建一个新的 ToolResult（兼容旧格式）
+            val hasMatch = newMessages.any { message ->
+                message.content.any { item ->
+                    item is MessageContentItem.ToolResult && item.toolCallId == toolCallId && item.text.isNotBlank()
+                }
+            }
+            
+            if (!hasMatch) {
+                android.util.Log.d("ClawChat", "=== No matching ToolResult found, creating new one for toolCallId=$toolCallId")
+                // 没有找到匹配的，创建新的 ToolResult 消息
+                val newToolResult = MessageUi(
+                    id = runId,
+                    content = listOf(MessageContentItem.ToolResult(
+                        toolCallId = toolCallId,
+                        name = toolName,
+                        args = null,
+                        text = resultText,
+                        isError = isError
+                    )),
+                    role = MessageRole.TOOL,
+                    timestamp = System.currentTimeMillis(),
+                    isLoading = false
+                )
+                currentState.copy(messages = newMessages + newToolResult)
+            } else {
+                currentState.copy(messages = newMessages)
+            }
+        }
     }
 
     // ── 容量管理 ──
