@@ -29,6 +29,7 @@ coil = "2.7.0"
 
 # Markdown
 compose-markdown = "0.5.7"
+richtext = "1.0.0-beta02"
 
 # Testing
 junit = "4.13.2"
@@ -88,6 +89,8 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 
 # Markdown
 compose-markdown = { group = "com.github.jeziellago", name = "compose-markdown", version.ref = "compose-markdown" }
+richtext-commonmark = { group = "com.halilibo.richtext", name = "richtext-commonmark", version.ref = "richtext" }
+richtext-ui-material3 = { group = "com.halilibo.richtext", name = "richtext-ui-material3", version.ref = "richtext" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

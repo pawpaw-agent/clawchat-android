@@ -264,6 +264,8 @@ dependencies {
 
     // Markdown Rendering
     implementation(libs.compose.markdown)
+    implementation(libs.richtext.commonmark)
+    implementation(libs.richtext.ui.material3)
 
     // Testing
     testImplementation(libs.junit)

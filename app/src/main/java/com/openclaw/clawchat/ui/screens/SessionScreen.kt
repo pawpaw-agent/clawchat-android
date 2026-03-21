@@ -29,7 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.openclaw.clawchat.ui.components.MarkdownWebView
+import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MessageContentItem
 import com.openclaw.clawchat.ui.state.MessageGroup
@@ -492,9 +492,9 @@ private fun MessageContentCard(
                     )
                     .padding(12.dp)
             ) {
-                // 助手消息使用 MarkdownWebView 渲染（与 webchat 一致）
+                // 助手消息使用原生 Markdown 渲染
                 if (!isUser) {
-                    MarkdownWebView(
+                    MarkdownText(
                         content = textContent,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -806,9 +806,9 @@ private fun MessageItem(message: MessageUi) {
                     // 渲染文本内容
                     val textContent = message.getTextContent()
                     if (textContent.isNotBlank()) {
-                        // 助手消息使用 MarkdownWebView 渲染
+                        // 助手消息使用原生 Markdown 渲染
                         if (!isUser) {
-                            MarkdownWebView(
+                            MarkdownText(
                                 content = textContent,
                                 modifier = Modifier.fillMaxWidth()
                             )
