@@ -816,10 +816,10 @@ private fun ToolMessageCard(message: MessageUi) {
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // 显示工具卡片（合并）
+                    // 显示工具标签
                     val toolCards = pairToolCards(message)
-                    toolCards.forEach { toolCard ->
-                        MergedToolCard(toolCard = toolCard)
+                    if (toolCards.isNotEmpty()) {
+                        ToolTagsRow(toolCards = toolCards)
                     }
                     
                     // 文本内容
@@ -901,11 +901,11 @@ private fun MessageItem(message: MessageUi) {
                     )
                     .padding(12.dp)
             ) {
-                Column {
-                    // 渲染工具卡片（合并）
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // 渲染工具标签
                     val toolCards = pairToolCards(message)
-                    toolCards.forEach { toolCard ->
-                        MergedToolCard(toolCard = toolCard)
+                    if (toolCards.isNotEmpty()) {
+                        ToolTagsRow(toolCards = toolCards)
                     }
                     
                     // 渲染文本内容
