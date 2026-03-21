@@ -710,7 +710,7 @@ private fun pairToolCards(message: MessageUi): List<ToolCard> {
         }
         cards.add(ToolCard(
             name = call.name,
-            args = call.args,  // 现在是 String?
+            args = call.args?.toString(),  // JsonObject? -> String?
             result = result?.text,
             isError = result?.isError ?: false,
             callId = call.id
