@@ -292,15 +292,15 @@ class SessionViewModel @Inject constructor(
                 currentState.toolStreamOrder
             }
             
-            // 构建 chatToolMessages（参考 webchat Lp(e)）
-            val newChatToolMessages = newToolStreamOrder.mapNotNull { id ->
+            // 构建 toolMessages（参考 webchat Lp(e)）
+            val newToolMessages = newToolStreamOrder.mapNotNull { id ->
                 newToolStreamById[id]?.buildMessage()
             }
             
             currentState.copy(
                 toolStreamById = newToolStreamById,
                 toolStreamOrder = newToolStreamOrder,
-                chatToolMessages = newChatToolMessages
+                toolMessages = newToolMessages
             )
         }
     }
@@ -330,19 +330,19 @@ class SessionViewModel @Inject constructor(
                 currentState.toolStreamOrder
             }
             
-            val newChatToolMessages = newToolStreamOrder.mapNotNull { id ->
+            val newToolMessages = newToolStreamOrder.mapNotNull { id ->
                 newToolStreamById[id]?.buildMessage()
             }
             
             currentState.copy(
                 toolStreamById = newToolStreamById,
                 toolStreamOrder = newToolStreamOrder,
-                chatToolMessages = newChatToolMessages
+                toolMessages = newToolMessages
             )
         }
     }
 
-    /** delta: 追加到流式缓冲，更新 UI 显示 */
+    /** delta: 追加到流式缓冲，更新 UI 显示（参考 webchat delta 处理） */
     private fun handleDelta(runId: String, contentItems: List<MessageContentItem>, role: MessageRole) {
         if (completedRuns.contains(runId)) return
 
@@ -353,14 +353,17 @@ class SessionViewModel @Inject constructor(
         val buffer = streamingBuffers.getOrPut(runId) { StringBuilder() }
         buffer.append(textContent)
 
-        // 更新或添加流式消息
+        // 更新流式文本状态
         _state.update { currentState ->
-            val existingIdx = currentState.messages.indexOfFirst { it.id == runId }
+            // 更新流式文本
+            val newStreamText = buffer.toString()
+            val newStreamRunId = if (currentState.streamRunId == null) runId else currentState.streamRunId
             
             // 提取 contentItems 中的 ToolResult（来自 extractContent 的配对结果）
             val newToolResults = contentItems.filterIsInstance<MessageContentItem.ToolResult>()
             
-            // 合并已有内容和新增内容
+            // 更新消息列表
+            val existingIdx = currentState.messages.indexOfFirst { it.id == runId }
             val existingItems = if (existingIdx >= 0) {
                 currentState.messages[existingIdx].content
             } else {
@@ -370,13 +373,12 @@ class SessionViewModel @Inject constructor(
             // 合并：保留已有的 ToolResult，添加新的 ToolResult，更新文本
             val existingToolResults = existingItems.filterIsInstance<MessageContentItem.ToolResult>()
             val mergedToolResults = if (newToolResults.isNotEmpty()) {
-                // 有新的 ToolResult，替换旧的
                 newToolResults
             } else {
                 existingToolResults
             }
             
-            val mergedItems = mergedToolResults + listOf(MessageContentItem.Text(buffer.toString()))
+            val mergedItems = mergedToolResults + listOf(MessageContentItem.Text(newStreamText))
             
             val streamingMsg = MessageUi(
                 id = runId,
@@ -392,7 +394,12 @@ class SessionViewModel @Inject constructor(
                 currentState.messages + streamingMsg
             }
 
-            currentState.copy(messages = newMessages, isLoading = true)
+            currentState.copy(
+                messages = newMessages,
+                streamText = newStreamText,
+                streamRunId = newStreamRunId,
+                isLoading = true
+            )
         }
     }
 
@@ -462,7 +469,13 @@ class SessionViewModel @Inject constructor(
             } else {
                 currentState.messages + finalMsg
             }
-            currentState.copy(messages = newMessages, isLoading = false)
+            // 清理流式文本状态
+            currentState.copy(
+                messages = newMessages,
+                streamText = null,
+                streamRunId = null,
+                isLoading = false
+            )
         }
 
         _events.trySend(SessionEvent.MessageReceived(finalMsg))

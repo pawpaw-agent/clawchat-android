@@ -145,7 +145,7 @@ fun SessionScreen(
                         MessageGroupList(
                             groups = messageGroups,
                             listState = listState,
-                            chatToolMessages = state.chatToolMessages
+                            toolMessages = state.toolMessages
                         )
                     }
 
@@ -362,7 +362,7 @@ private fun EmptySessionContent(
 private fun MessageGroupList(
     groups: List<MessageGroup>,
     listState: androidx.compose.foundation.lazy.LazyListState,
-    chatToolMessages: List<MessageUi> = emptyList()
+    toolMessages: List<MessageUi> = emptyList()
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -374,9 +374,9 @@ private fun MessageGroupList(
             MessageGroupItem(group = group)
         }
         
-        // 显示工具流消息（参考 webchat chatToolMessages）
-        if (chatToolMessages.isNotEmpty()) {
-            items(chatToolMessages, key = { "tool_${it.id}" }) { toolMessage ->
+        // 显示工具流消息（参考 webchat toolMessages）
+        if (toolMessages.isNotEmpty()) {
+            items(toolMessages, key = { "tool_${it.id}" }) { toolMessage ->
                 ToolMessageCard(message = toolMessage)
             }
         }

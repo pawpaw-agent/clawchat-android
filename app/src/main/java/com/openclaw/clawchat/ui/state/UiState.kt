@@ -69,36 +69,53 @@ data class MainUiState(
 )
 
 /**
- * 会话界面 UI 状态
+ * 会话界面 UI 状态（一比一复刻 webchat ChatState）
  */
 data class SessionUiState(
+    // 连接状态
+    val connectionStatus: ConnectionStatus = ConnectionStatus.Disconnected,
+    val isLoading: Boolean = false,
+    val isSending: Boolean = false,
+    val error: String? = null,
+    
+    // 会话信息
     val sessionId: String? = null,
     val session: SessionUi? = null,
+    
+    // 消息（参考 webchat chatMessages）
     val messages: List<MessageUi> = emptyList(),
-    val inputText: String = "",
-    val isSending: Boolean = false,
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val connectionStatus: ConnectionStatus = ConnectionStatus.Disconnected,
-    // 工具流状态管理（参考 webchat）
+    
+    // 工具消息（参考 webchat chatToolMessages，从 toolStreamById 构建）
+    val toolMessages: List<MessageUi> = emptyList(),
+    
+    // 流式文本（参考 webchat chatStream）
+    val streamText: String? = null,
+    val streamRunId: String? = null,
+    
+    // 工具流状态（参考 webchat）
     val toolStreamById: Map<String, ToolState> = emptyMap(),
     val toolStreamOrder: List<String> = emptyList(),
-    val chatToolMessages: List<MessageUi> = emptyList()
+    
+    // 输入
+    val inputText: String = ""
 )
 
 /**
- * 工具流状态（参考 webchat toolStreamById）
+ * 工具流状态（一比一复刻 webchat ToolState）
  */
 data class ToolState(
     val toolCallId: String,
+    val runId: String? = null,
+    val sessionKey: String? = null,
     val name: String = "tool",
     val args: JsonObject? = null,
     val output: String? = null,
+    val isError: Boolean = false,
     val startedAt: Long = System.currentTimeMillis(),
-    val runId: String? = null
+    val updatedAt: Long = System.currentTimeMillis()
 ) {
     /**
-     * 构建工具消息（参考 webchat Fp(e)）
+     * 构建工具消息（一比一复刻 webchat Fp(e)）
      */
     fun buildMessage(): MessageUi {
         val content = mutableListOf<MessageContentItem>()
@@ -117,12 +134,12 @@ data class ToolState(
                 name = name,
                 args = args,
                 text = output,
-                isError = false
+                isError = isError
             ))
         }
         
         return MessageUi(
-            id = runId ?: toolCallId,
+            id = "tool:$toolCallId",
             content = content,
             role = MessageRole.ASSISTANT,
             timestamp = startedAt,
