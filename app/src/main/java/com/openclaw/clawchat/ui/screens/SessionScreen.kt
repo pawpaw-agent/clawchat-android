@@ -692,60 +692,60 @@ private fun ToolDetailCard(toolCard: ToolCard) {
 
 /**
  * 配对工具调用和结果
+ * webchat 的做法：tool_call 和 tool_result 分开显示，不配对
  */
 private fun pairToolCards(message: MessageUi): List<ToolCard> {
     val calls = message.getToolCalls()
     val results = message.getToolResults()
     val cards = mutableListOf<ToolCard>()
     
-    // 按 name 配对
-    val resultsByName = results.groupBy { it.name ?: "tool" }
-    val matchedResults = mutableSetOf<Int>()
-    
+    // tool_call: 显示工具名称 + 参数
     calls.forEach { call ->
-        val result = resultsByName[call.name]?.firstOrNull { 
-            results.indexOf(it) !in matchedResults 
-        }
-        if (result != null) {
-            matchedResults.add(results.indexOf(result))
-        }
-        // 提取显示参数：对于 exec 工具，提取 command 字段
         val displayArgs = if (call.name == "exec" && call.args != null) {
             call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
         } else {
             call.args?.toString()
         }
         cards.add(ToolCard(
+            kind = ToolCardKind.CALL,
             name = call.name,
             args = displayArgs,
-            result = result?.text,
-            isError = result?.isError ?: false,
+            result = null,  // tool_call 没有结果
+            isError = false,
             callId = call.id
         ))
     }
     
-    // 添加未匹配的结果
-    results.forEachIndexed { index, result ->
-        if (index !in matchedResults) {
-            cards.add(ToolCard(
-                name = result.name ?: "tool",
-                args = null,
-                result = result.text,
-                isError = result.isError,
-                callId = null
-            ))
-        }
+    // tool_result: 显示工具结果
+    results.forEach { result ->
+        cards.add(ToolCard(
+            kind = ToolCardKind.RESULT,
+            name = result.name ?: "tool",
+            args = null,  // tool_result 没有参数
+            result = result.text,
+            isError = result.isError,
+            callId = result.toolCallId
+        ))
     }
     
     return cards
 }
 
 /**
+ * 工具卡片类型
+ */
+private enum class ToolCardKind {
+    CALL,    // tool_call: 显示工具名称 + 参数
+    RESULT   // tool_result: 显示结果文本
+}
+
+/**
  * 合并的工具卡片数据
  */
 private data class ToolCard(
+    val kind: ToolCardKind,
     val name: String,
-    val args: String?,  // 改为 String?
+    val args: String?,
     val result: String?,
     val isError: Boolean,
     val callId: String?
