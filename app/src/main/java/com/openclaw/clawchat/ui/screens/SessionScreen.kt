@@ -104,13 +104,13 @@ fun SessionScreen(
                 connectionStatus = state.connectionStatus,
                 onNavigateBack = onNavigateBack
             )
-        }
+        },
+        contentWindowInsets = WindowInsets.ime
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .imePadding()
         ) {
             Column(
                 modifier = Modifier.fillMaxSize()
