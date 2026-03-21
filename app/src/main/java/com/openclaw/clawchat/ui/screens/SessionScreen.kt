@@ -224,18 +224,6 @@ private fun groupMessages(messages: List<MessageUi>): List<MessageGroup> {
     
     return groups
 }
-                        MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    },
-                    maxLines = 5,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-        }
-    }
-}
 
 /**
  * 滚动到底部按钮
