@@ -265,6 +265,7 @@ dependencies {
     // Markdown Rendering
     implementation(libs.markdown.renderer)
     implementation(libs.markdown.renderer.m3)
+    implementation(libs.markdown.renderer.code)
 
     // Testing
     testImplementation(libs.junit)
