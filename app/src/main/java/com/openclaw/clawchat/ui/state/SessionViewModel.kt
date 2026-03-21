@@ -534,11 +534,24 @@ class SessionViewModel @Inject constructor(
                                 text = part["text"]?.jsonPrimitive?.content ?: ""
                             )
                             // 工具调用：支持 toolcall, tool_call, tooluse, tool_use
-                            "toolcall", "tooluse" -> MessageContentItem.ToolCall(
-                                id = part["id"]?.jsonPrimitive?.content,
-                                name = part["name"]?.jsonPrimitive?.content ?: "unknown",
-                                args = part["args"] as? JsonObject ?: part["arguments"] as? JsonObject
-                            )
+                            "toolcall", "tooluse" -> {
+                                // 解析 arguments：可能是 JsonObject 或 JSON 字符串
+                                val argsElement = part["arguments"] ?: part["args"]
+                                val args = when (argsElement) {
+                                    is JsonObject -> argsElement
+                                    is JsonPrimitive -> {
+                                        try {
+                                            json.parseToJsonElement(argsElement.content).jsonObject
+                                        } catch (e: Exception) { null }
+                                    }
+                                    else -> null
+                                }
+                                MessageContentItem.ToolCall(
+                                    id = part["id"]?.jsonPrimitive?.content,
+                                    name = part["name"]?.jsonPrimitive?.content ?: "unknown",
+                                    args = args
+                                )
+                            }
                             // 工具结果：支持 toolresult, tool_result
                             "toolresult" -> MessageContentItem.ToolResult(
                                 toolCallId = part["toolCallId"]?.jsonPrimitive?.content 
@@ -560,12 +573,21 @@ class SessionViewModel @Inject constructor(
                             else -> {
                                 // 尝试检测带有 name + arguments 的工具调用
                                 val name = part["name"]?.jsonPrimitive?.content
-                                val args = part["arguments"] ?: part["args"]
-                                if (name != null && args != null) {
+                                val argsElement = part["arguments"] ?: part["args"]
+                                if (name != null && argsElement != null) {
+                                    val args = when (argsElement) {
+                                        is JsonObject -> argsElement
+                                        is JsonPrimitive -> {
+                                            try {
+                                                json.parseToJsonElement(argsElement.content).jsonObject
+                                            } catch (e: Exception) { null }
+                                        }
+                                        else -> null
+                                    }
                                     MessageContentItem.ToolCall(
                                         id = part["id"]?.jsonPrimitive?.content,
                                         name = name,
-                                        args = args as? JsonObject
+                                        args = args
                                     )
                                 } else {
                                     null
