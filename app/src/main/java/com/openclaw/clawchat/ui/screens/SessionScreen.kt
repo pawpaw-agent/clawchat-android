@@ -528,7 +528,10 @@ private fun ToolTagsRow(toolCards: List<ToolCard>) {
         ) {
             toolCards.forEachIndexed { index, card ->
                 ToolTag(
-                    name = card.name,
+                    name = when (card.kind) {
+                        ToolCardKind.CALL -> card.name
+                        ToolCardKind.RESULT -> "output"
+                    },
                     isError = card.isError,
                     isExpanded = expandedIndex == index,
                     onClick = { 
@@ -628,17 +631,23 @@ private fun ToolDetailCard(toolCard: ToolCard) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    imageVector = if (toolCard.isError) Icons.Default.ErrorOutline else Icons.Default.CheckCircle,
+                    imageVector = when {
+                        toolCard.isError -> Icons.Default.ErrorOutline
+                        toolCard.kind == ToolCardKind.CALL -> Icons.Default.Terminal
+                        else -> Icons.Default.CheckCircle
+                    },
                     contentDescription = null,
-                    tint = if (toolCard.isError) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.primary
+                    tint = when {
+                        toolCard.isError -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.primary
                     },
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
-                    text = toolCard.name,
+                    text = when (toolCard.kind) {
+                        ToolCardKind.CALL -> toolCard.name.replaceFirstChar { it.uppercase() }
+                        ToolCardKind.RESULT -> "Tool output"
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (toolCard.isError) {
@@ -647,42 +656,41 @@ private fun ToolDetailCard(toolCard: ToolCard) {
                         MaterialTheme.colorScheme.onSurface
                     }
                 )
-            }
-            
-            // 参数
-            if (toolCard.args != null && toolCard.args.toString().isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "参数:",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                SelectionContainer {
+                // tool_result 显示工具名称标签
+                if (toolCard.kind == ToolCardKind.RESULT && toolCard.name != "tool") {
                     Text(
-                        text = toolCard.args.toString(),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 4.dp)
+                        text = "(${toolCard.name})",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             
-            // 结果
-            if (toolCard.result != null && toolCard.result.isNotBlank()) {
+            // tool_call: 显示参数
+            if (toolCard.kind == ToolCardKind.CALL && toolCard.args != null && toolCard.args.isNotBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "结果:",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                SelectionContainer {
+                    Text(
+                        text = toolCard.args,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+            
+            // tool_result: 显示结果
+            if (toolCard.kind == ToolCardKind.RESULT && toolCard.result != null && toolCard.result.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
                 SelectionContainer {
                     Text(
                         text = toolCard.result,
                         style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 4.dp)
+                        color = if (toolCard.isError) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
                     )
                 }
             }
