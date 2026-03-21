@@ -134,10 +134,12 @@ private fun MessageRole.toLocalRole(): LocalMessageRole = when (this) {
     MessageRole.USER -> LocalMessageRole.USER
     MessageRole.ASSISTANT -> LocalMessageRole.ASSISTANT
     MessageRole.SYSTEM -> LocalMessageRole.SYSTEM
+    MessageRole.TOOL -> LocalMessageRole.TOOL
 }
 
 private fun LocalMessageRole.toUiRole(): MessageRole = when (this) {
     LocalMessageRole.USER -> MessageRole.USER
     LocalMessageRole.ASSISTANT -> MessageRole.ASSISTANT
     LocalMessageRole.SYSTEM -> MessageRole.SYSTEM
+    LocalMessageRole.TOOL -> MessageRole.TOOL
 }

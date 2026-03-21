@@ -37,7 +37,8 @@ data class MessageEntity(
 enum class MessageRole {
     USER,
     ASSISTANT,
-    SYSTEM
+    SYSTEM,
+    TOOL        // 工具消息
 }
 
 /**

@@ -531,6 +531,107 @@ private fun SystemMessageItem(message: MessageUi) {
 }
 
 /**
+ * 工具消息卡片（折叠显示）
+ */
+@Composable
+private fun ToolMessageCard(message: MessageUi) {
+    var isExpanded by remember { mutableStateOf(false) }
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 标题行：工具图标 + 名称 + 展开/折叠按钮
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Build,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "工具消息",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    // 显示工具调用数量
+                    val toolCallCount = message.getToolCalls().size
+                    val toolResultCount = message.getToolResults().size
+                    if (toolCallCount > 0 || toolResultCount > 0) {
+                        Text(
+                            text = "(${toolCallCount + toolResultCount})",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                
+                // 展开/折叠按钮
+                IconButton(
+                    onClick = { isExpanded = !isExpanded },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (isExpanded) "折叠" else "展开",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            
+            // 折叠内容
+            if (isExpanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // 显示工具调用
+                    message.getToolCalls().forEach { toolCall ->
+                        ToolCallCard(toolCall = toolCall)
+                    }
+                    
+                    // 显示工具结果
+                    message.getToolResults().forEach { toolResult ->
+                        ToolResultCard(toolResult = toolResult)
+                    }
+                    
+                    // 文本内容
+                    val textContent = message.getTextContent()
+                    if (textContent.isNotBlank()) {
+                        Text(
+                            text = textContent,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 10,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
  * 工具调用卡片
  */
 @Composable
@@ -633,6 +734,7 @@ private fun ToolResultCard(toolResult: MessageContentItem.ToolResult) {
 private fun MessageItem(message: MessageUi) {
     val isUser = message.role == MessageRole.USER
     val isSystem = message.role == MessageRole.SYSTEM
+    val isTool = message.role == MessageRole.TOOL
 
     if (isSystem) {
         // 系统消息
@@ -653,6 +755,9 @@ private fun MessageItem(message: MessageUi) {
                     .padding(8.dp)
             )
         }
+    } else if (isTool) {
+        // 工具消息
+        ToolMessageCard(message = message)
     } else {
         // 用户/助手消息
         Column(
