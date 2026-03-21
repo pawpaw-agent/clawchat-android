@@ -524,11 +524,17 @@ class SessionViewModel @Inject constructor(
     private fun extractContent(element: JsonElement?): List<MessageContentItem> {
         if (element == null) return emptyList()
         
+        // 打印原始消息内容
+        android.util.Log.d("ClawChat", "=== extractContent raw: $element")
+        
         return when (element) {
             is JsonPrimitive -> listOf(MessageContentItem.Text(element.content))
             is JsonArray -> element.mapNotNull { part ->
                 when {
                     part is JsonObject -> {
+                        // 打印每个 part 的内容
+                        android.util.Log.d("ClawChat", "=== part: $part")
+                        
                         val type = part["type"]?.jsonPrimitive?.content?.lowercase()
                         val typeNormalized = type?.replace("_", "")
                         when (typeNormalized) {
