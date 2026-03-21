@@ -494,8 +494,8 @@ class SessionViewModel @Inject constructor(
             content.forEach { part ->
                 if (part is JsonObject) {
                     val type = part["type"]?.jsonPrimitive?.content?.lowercase()?.replace("_", "")
-                    // 检测工具调用和工具结果
-                    if (type == "toolresult" || type == "toolcall" || type == "tooluse") {
+                    // 只检测工具结果，不检测工具调用（toolCall 是助手消息的一部分）
+                    if (type == "toolresult") {
                         return true
                     }
                     // 检测有 name + arguments 的工具调用
