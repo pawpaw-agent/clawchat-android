@@ -686,3 +686,4 @@ sealed class SessionEvent {
     data class Error(val message: String) : SessionEvent()
     data object MessageSent : SessionEvent()
 }
+}
