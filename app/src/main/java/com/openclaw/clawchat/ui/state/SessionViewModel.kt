@@ -561,8 +561,11 @@ class SessionViewModel @Inject constructor(
                                 val toolName = part["name"]?.jsonPrimitive?.content 
                                     ?: part["toolName"]?.jsonPrimitive?.content 
                                     ?: part["tool_name"]?.jsonPrimitive?.content ?: "tool"
+                                // 优先使用 text，其次 content，最后 arguments
                                 val resultText = part["text"]?.jsonPrimitive?.content 
-                                    ?: part["content"]?.jsonPrimitive?.content ?: ""
+                                    ?: part["content"]?.jsonPrimitive?.content
+                                    ?: part["arguments"]?.jsonPrimitive?.content
+                                    ?: part["args"]?.jsonPrimitive?.content ?: ""
                                 val isError = part["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
                                 val displayText = if (resultText.isNotBlank()) {
                                     if (isError) "❌ $toolName: $resultText" else "✅ $toolName: $resultText"
