@@ -457,18 +457,14 @@ private fun MessageContentCard(
     isUser: Boolean,
     isLastInGroup: Boolean
 ) {
+    val toolCards = pairToolCards(message)
+    val textContent = message.getTextContent()
+    
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // 合并工具调用和结果
-        val toolCards = pairToolCards(message)
-        toolCards.forEach { toolCard ->
-            MergedToolCard(toolCard = toolCard)
-        }
-        
-        // 文本内容
-        val textContent = message.getTextContent()
-        if (textContent.isNotBlank()) {
+        // 文本内容 + 工具标签
+        if (textContent.isNotBlank() || toolCards.isNotEmpty()) {
             Box(
                 modifier = Modifier
                     .widthIn(max = 320.dp)
@@ -489,17 +485,172 @@ private fun MessageContentCard(
                     )
                     .padding(12.dp)
             ) {
-                // 助手消息使用原生 Markdown 渲染
-                if (!isUser) {
-                    MarkdownText(
-                        content = textContent,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // 助手消息使用原生 Markdown 渲染
+                    if (!isUser && textContent.isNotBlank()) {
+                        MarkdownText(
+                            content = textContent,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else if (textContent.isNotBlank()) {
+                        Text(
+                            text = textContent,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    
+                    // 工具标签（exec 标签）
+                    if (toolCards.isNotEmpty()) {
+                        ToolTagsRow(toolCards = toolCards)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 工具标签行
+ */
+@Composable
+private fun ToolTagsRow(toolCards: List<ToolCard>) {
+    var expandedIndex by remember { mutableStateOf(-1) }
+    
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        // 标签行
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            toolCards.forEachIndexed { index, card ->
+                ToolTag(
+                    name = card.name,
+                    isError = card.isError,
+                    isExpanded = expandedIndex == index,
+                    onClick = { 
+                        expandedIndex = if (expandedIndex == index) -1 else index 
+                    }
+                )
+            }
+        }
+        
+        // 展开的详情
+        if (expandedIndex >= 0 && expandedIndex < toolCards.size) {
+            val card = toolCards[expandedIndex]
+            ToolDetailCard(toolCard = card)
+        }
+    }
+}
+
+/**
+ * 单个工具标签
+ */
+@Composable
+private fun ToolTag(
+    name: String,
+    isError: Boolean,
+    isExpanded: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(4.dp),
+        color = if (isError) {
+            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+        },
+        modifier = Modifier.height(24.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = if (isError) Icons.Default.ErrorOutline else Icons.Default.Terminal,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = if (isError) {
+                    MaterialTheme.colorScheme.error
                 } else {
+                    MaterialTheme.colorScheme.primary
+                }
+            )
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isError) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = if (isError) {
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                }
+            )
+        }
+    }
+}
+
+/**
+ * 工具详情卡片
+ */
+@Composable
+private fun ToolDetailCard(toolCard: ToolCard) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (toolCard.isError) {
+                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            }
+        )
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            // 参数
+            if (toolCard.args != null && toolCard.args.toString().isNotBlank()) {
+                Text(
+                    text = "参数:",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                SelectionContainer {
                     Text(
-                        text = textContent,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        text = toolCard.args.toString(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                if (toolCard.result != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+            
+            // 结果
+            if (toolCard.result != null && toolCard.result.isNotBlank()) {
+                Text(
+                    text = "结果:",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                SelectionContainer {
+                    Text(
+                        text = toolCard.result,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
@@ -566,109 +717,6 @@ private data class ToolCard(
  * 合并的工具卡片组件
  */
 @Composable
-private fun MergedToolCard(toolCard: ToolCard) {
-    var expanded by remember { mutableStateOf(false) }
-    val hasDetails = (toolCard.args != null && toolCard.args.toString().isNotBlank()) || 
-                     (toolCard.result != null && toolCard.result.isNotBlank())
-    
-    Card(
-        modifier = Modifier
-            .widthIn(max = 320.dp)
-            .clickable(enabled = hasDetails) { expanded = !expanded },
-        colors = CardDefaults.cardColors(
-            containerColor = if (toolCard.isError) {
-                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-            } else {
-                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
-            }
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column {
-            // 标题栏：图标 + 名称 + 状态 + 展开按钮
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = if (toolCard.isError) Icons.Default.ErrorOutline else Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = if (toolCard.isError) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = toolCard.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (toolCard.isError) {
-                        MaterialTheme.colorScheme.onErrorContainer
-                    } else {
-                        MaterialTheme.colorScheme.onTertiaryContainer
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-                // 展开按钮
-                if (hasDetails) {
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = if (expanded) "收起" else "展开",
-                        tint = if (toolCard.isError) {
-                            MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
-                        } else {
-                            MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
-                        },
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-            
-            // 展开内容
-            if (expanded && hasDetails) {
-                // 参数
-                if (toolCard.args != null && toolCard.args.toString().isNotBlank()) {
-                    SelectionContainer {
-                        Text(
-                            text = toolCard.args.toString(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (toolCard.isError) {
-                                MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
-                            } else {
-                                MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 12.dp, end = 12.dp, bottom = 8.dp)
-                        )
-                    }
-                }
-                
-                // 结果
-                if (toolCard.result != null && toolCard.result.isNotBlank()) {
-                    SelectionContainer {
-                        Text(
-                            text = toolCard.result,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (toolCard.isError) {
-                                MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
-                            } else {
-                                MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 /**
  * 系统消息项
