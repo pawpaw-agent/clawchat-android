@@ -714,11 +714,6 @@ private data class ToolCard(
 )
 
 /**
- * 合并的工具卡片组件
- */
-@Composable
-
-/**
  * 系统消息项
  */
 @Composable
