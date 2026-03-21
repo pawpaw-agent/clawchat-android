@@ -603,6 +603,7 @@ private fun ToolTag(
 
 /**
  * 工具详情卡片
+ * 显示工具名称、参数和结果
  */
 @Composable
 private fun ToolDetailCard(toolCard: ToolCard) {
@@ -617,9 +618,37 @@ private fun ToolDetailCard(toolCard: ToolCard) {
             }
         )
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            // 工具名称行
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = if (toolCard.isError) Icons.Default.ErrorOutline else Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = if (toolCard.isError) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = toolCard.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (toolCard.isError) {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            }
+            
             // 参数
             if (toolCard.args != null && toolCard.args.toString().isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "参数:",
                     style = MaterialTheme.typography.labelSmall,
@@ -629,17 +658,16 @@ private fun ToolDetailCard(toolCard: ToolCard) {
                     Text(
                         text = toolCard.args.toString(),
                         style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(top = 4.dp)
                     )
-                }
-                if (toolCard.result != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
             
             // 结果
             if (toolCard.result != null && toolCard.result.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "结果:",
                     style = MaterialTheme.typography.labelSmall,
@@ -649,6 +677,7 @@ private fun ToolDetailCard(toolCard: ToolCard) {
                     Text(
                         text = toolCard.result,
                         style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(top = 4.dp)
                     )
