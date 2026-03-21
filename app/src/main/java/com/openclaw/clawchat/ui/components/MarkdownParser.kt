@@ -32,8 +32,11 @@ fun parseMarkdown(markdown: String): List<MarkdownNode> {
     val nodes = mutableListOf<MarkdownNode>()
     val lines = markdown.lines()
     var i = 0
+    var safetyCounter = 0
+    val maxIterations = lines.size + 1000 // 安全限制
     
-    while (i < lines.size) {
+    while (i < lines.size && safetyCounter < maxIterations) {
+        safetyCounter++
         val line = lines[i]
         
         // 代码块
@@ -41,12 +44,18 @@ fun parseMarkdown(markdown: String): List<MarkdownNode> {
             val language = line.removePrefix("```").trim()
             val codeLines = mutableListOf<String>()
             i++
-            while (i < lines.size && !lines[i].startsWith("```")) {
+            var codeLineCount = 0
+            while (i < lines.size && !lines[i].startsWith("```") && codeLineCount < 1000) {
                 codeLines.add(lines[i])
                 i++
+                codeLineCount++
             }
-            i++ // skip closing ```
-            nodes.add(MarkdownNode.CodeBlock(language.ifEmpty { null }, codeLines.joinToString("\n")))
+            if (i < lines.size && lines[i].startsWith("```")) {
+                i++ // skip closing ```
+            }
+            // 限制代码块长度
+            val code = codeLines.joinToString("\n").take(5000)
+            nodes.add(MarkdownNode.CodeBlock(language.ifEmpty { null }, code))
             continue
         }
         
