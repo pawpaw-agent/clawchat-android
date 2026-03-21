@@ -342,7 +342,9 @@ class SessionViewModel @Inject constructor(
         }
     }
 
-    /** delta: 追加到流式缓冲，更新 UI 显示（参考 webchat delta 处理） */
+    /** delta: 追加到流式缓冲，更新 UI 显示（参考 webchat delta 处理）
+     * 支持跨消息 toolCall/toolResult 配对
+     */
     private fun handleDelta(runId: String, contentItems: List<MessageContentItem>, role: MessageRole) {
         if (completedRuns.contains(runId)) return
 
@@ -353,14 +355,90 @@ class SessionViewModel @Inject constructor(
         val buffer = streamingBuffers.getOrPut(runId) { StringBuilder() }
         buffer.append(textContent)
 
+        // 提取 ToolCall（可能需要跨消息配对）
+        val toolCalls = contentItems.filterIsInstance<MessageContentItem.ToolCall>()
+        val toolResults = contentItems.filterIsInstance<MessageContentItem.ToolResult>()
+        
         // 更新流式文本状态
         _state.update { currentState ->
             // 更新流式文本
             val newStreamText = buffer.toString()
             val newStreamRunId = if (currentState.streamRunId == null) runId else currentState.streamRunId
             
-            // 提取 contentItems 中的 ToolResult（来自 extractContent 的配对结果）
-            val newToolResults = contentItems.filterIsInstance<MessageContentItem.ToolResult>()
+            // 处理跨消息配对
+            var newToolStreamById = currentState.toolStreamById.toMutableMap()
+            var newToolStreamOrder = currentState.toolStreamOrder.toMutableList()
+            
+            // 如果有新的 ToolCall，添加到 toolStreamById（等待结果）
+            toolCalls.forEach { call ->
+                val toolCallId = call.id ?: return@forEach
+                if (toolCallId !in newToolStreamById) {
+                    newToolStreamById[toolCallId] = ToolState(
+                        toolCallId = toolCallId,
+                        runId = runId,
+                        name = call.name,
+                        args = call.args,
+                        startedAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    if (toolCallId !in newToolStreamOrder) {
+                        newToolStreamOrder.add(toolCallId)
+                    }
+                    android.util.Log.d("ClawChat", "=== ToolCall added to stream: id=$toolCallId, name=${call.name}")
+                }
+            }
+            
+            // 如果有 text 但没有 ToolCall/ToolResult，检查是否应该作为等待中 toolCall 的结果
+            if (toolCalls.isEmpty() && toolResults.isEmpty() && textContent.isNotBlank()) {
+                // 查找最近一个没有 output 的 toolCall
+                val pendingToolCallId = newToolStreamOrder.lastOrNull { id ->
+                    newToolStreamById[id]?.output.isNullOrBlank()
+                }
+                
+                if (pendingToolCallId != null) {
+                    // 找到等待中的 toolCall，将 text 作为其 output
+                    val existingTool = newToolStreamById[pendingToolCallId]
+                    if (existingTool != null) {
+                        newToolStreamById[pendingToolCallId] = existingTool.copy(
+                            output = textContent,
+                            updatedAt = System.currentTimeMillis()
+                        )
+                        android.util.Log.d("ClawChat", "=== Text assigned to pending toolCall: id=$pendingToolCallId, text=${textContent.take(50)}")
+                    }
+                }
+            }
+            
+            // 如果有 ToolResult，更新对应的 toolStreamById
+            toolResults.forEach { result ->
+                val toolCallId = result.toolCallId ?: return@forEach
+                val existingTool = newToolStreamById[toolCallId]
+                if (existingTool != null) {
+                    newToolStreamById[toolCallId] = existingTool.copy(
+                        output = result.text,
+                        isError = result.isError,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                } else {
+                    newToolStreamById[toolCallId] = ToolState(
+                        toolCallId = toolCallId,
+                        runId = runId,
+                        name = result.name ?: "tool",
+                        args = result.args,
+                        output = result.text,
+                        isError = result.isError,
+                        startedAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    if (toolCallId !in newToolStreamOrder) {
+                        newToolStreamOrder.add(toolCallId)
+                    }
+                }
+            }
+            
+            // 构建 toolMessages
+            val newToolMessages = newToolStreamOrder.mapNotNull { id ->
+                newToolStreamById[id]?.buildMessage()
+            }
             
             // 更新消息列表
             val existingIdx = currentState.messages.indexOfFirst { it.id == runId }
@@ -370,10 +448,10 @@ class SessionViewModel @Inject constructor(
                 emptyList()
             }
             
-            // 合并：保留已有的 ToolResult，添加新的 ToolResult，更新文本
+            // 合并内容
             val existingToolResults = existingItems.filterIsInstance<MessageContentItem.ToolResult>()
-            val mergedToolResults = if (newToolResults.isNotEmpty()) {
-                newToolResults
+            val mergedToolResults = if (toolResults.isNotEmpty()) {
+                toolResults
             } else {
                 existingToolResults
             }
@@ -398,7 +476,10 @@ class SessionViewModel @Inject constructor(
                 messages = newMessages,
                 streamText = newStreamText,
                 streamRunId = newStreamRunId,
-                isLoading = true
+                isLoading = true,
+                toolStreamById = newToolStreamById,
+                toolStreamOrder = newToolStreamOrder,
+                toolMessages = newToolMessages
             )
         }
     }
