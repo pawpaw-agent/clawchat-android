@@ -26,8 +26,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import com.openclaw.clawchat.ui.state.ConnectionStatus
+import com.openclaw.clawchat.ui.state.MessageContentItem
 import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
+import com.openclaw.clawchat.ui.state.MessageGroup
+import com.openclaw.clawchat.ui.state.MessageContentItem
 import com.openclaw.clawchat.ui.state.SessionEvent
 import com.openclaw.clawchat.ui.state.SessionViewModel
 import kotlinx.coroutines.launch
@@ -38,7 +41,7 @@ import java.util.*
  * 会话界面屏幕
  * 
  * 显示：
- * - 消息列表（用户/助手/系统消息）
+ * - 消息列表（用户/助手/系统消息，分组显示）
  * - 消息输入框
  * - 发送按钮
  * - 连接状态指示
@@ -80,6 +83,9 @@ fun SessionScreen(
             viewModel.consumeEvent()
         }
     }
+
+    // 分组消息
+    val messageGroups = remember(state.messages) { groupMessages(state.messages) }
 
     // 消息变化时滚动到底部
     var lastMessageCount by remember { mutableStateOf(0) }
@@ -127,9 +133,9 @@ fun SessionScreen(
                             connectionStatus = state.connectionStatus
                         )
                     } else {
-                        // 消息列表
-                        MessageList(
-                            messages = state.messages,
+                        // 消息列表（分组显示）
+                        MessageGroupList(
+                            groups = messageGroups,
                             listState = listState
                         )
                     }
@@ -171,6 +177,154 @@ fun SessionScreen(
                 ErrorSnackbar(
                     message = error,
                     onDismiss = { viewModel.clearError() }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 消息分组函数 - Slack 风格连续同角色消息合并
+ */
+private fun groupMessages(messages: List<MessageUi>): List<MessageGroup> {
+    if (messages.isEmpty()) return emptyList()
+    
+    val groups = mutableListOf<MessageGroup>()
+    var currentGroup: MutableList<MessageUi>? = null
+    var currentRole: MessageRole? = null
+    
+    for (message in messages) {
+        if (message.role != currentRole) {
+            // 角色变化，创建新分组
+            currentGroup?.let { msgs ->
+                groups.add(MessageGroup(
+                    role = currentRole!!,
+                    messages = msgs,
+                    timestamp = msgs.first().timestamp,
+                    isStreaming = msgs.any { it.isLoading }
+                ))
+            }
+            currentGroup = mutableListOf(message)
+            currentRole = message.role
+        } else {
+            // 同角色，追加到当前分组
+            currentGroup?.add(message)
+        }
+    }
+    
+    // 添加最后一个分组
+    currentGroup?.let { msgs ->
+        groups.add(MessageGroup(
+            role = currentRole!!,
+            messages = msgs,
+            timestamp = msgs.first().timestamp,
+            isStreaming = msgs.any { it.isLoading }
+        ))
+    }
+    
+    return groups
+}
+
+/**
+ * 工具调用卡片
+ */
+@Composable
+private fun ToolCallCard(toolCall: MessageContentItem.ToolCall) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Build,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = toolCall.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+            }
+            toolCall.args?.let { args ->
+                Text(
+                    text = args.toString().take(200) + if (args.toString().length > 200) "..." else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 工具结果卡片
+ */
+@Composable
+private fun ToolResultCard(toolResult: MessageContentItem.ToolResult) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (toolResult.isError) {
+                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            }
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (toolResult.isError) Icons.Default.Error else Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = if (toolResult.isError) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    }
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = toolResult.name ?: "Result",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (toolResult.isError) {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
+            if (toolResult.text.isNotBlank()) {
+                Text(
+                    text = toolResult.text.take(200) + if (toolResult.text.length > 200) "..." else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (toolResult.isError) {
+                        MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    },
+                    maxLines = 5,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp)
                 )
             }
         }
@@ -299,21 +453,268 @@ private fun EmptySessionContent(
 }
 
 /**
- * 消息列表
+ * 消息分组列表
  */
 @Composable
-private fun MessageList(
-    messages: List<MessageUi>,
+private fun MessageGroupList(
+    groups: List<MessageGroup>,
     listState: androidx.compose.foundation.lazy.LazyListState
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        items(messages, key = { it.id }) { message ->
-            MessageItem(message = message)
+        items(groups, key = { it.messages.first().id }) { group ->
+            MessageGroupItem(group = group)
+        }
+    }
+}
+
+/**
+ * 消息分组项（Slack 风格）
+ */
+@Composable
+private fun MessageGroupItem(group: MessageGroup) {
+    val isUser = group.role == MessageRole.USER
+    val isSystem = group.role == MessageRole.SYSTEM
+
+    if (isSystem) {
+        // 系统消息组
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            group.messages.forEach { message ->
+                SystemMessageItem(message = message)
+            }
+        }
+    } else {
+        // 用户/助手消息组
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
+        ) {
+            // 分组内所有消息
+            group.messages.forEachIndexed { index, message ->
+                // 显示消息内容
+                MessageContentCard(
+                    message = message,
+                    isUser = isUser,
+                    isLastInGroup = index == group.messages.lastIndex
+                )
+                
+                // 消息间分隔
+                if (index < group.messages.lastIndex) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+            
+            // 时间戳（只在最后一个显示）
+            group.lastMessage?.let { msg ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = formatTimestamp(msg.timestamp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            // 流式指示器
+            if (group.isStreaming) {
+                Spacer(modifier = Modifier.height(8.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 消息内容卡片（支持文本和工具）
+ */
+@Composable
+private fun MessageContentCard(
+    message: MessageUi,
+    isUser: Boolean,
+    isLastInGroup: Boolean
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // 工具调用卡片
+        message.getToolCalls().forEach { toolCall ->
+            ToolCallCard(toolCall = toolCall)
+        }
+        
+        // 工具结果卡片
+        message.getToolResults().forEach { toolResult ->
+            ToolResultCard(toolResult = toolResult)
+        }
+        
+        // 文本内容
+        val textContent = message.getTextContent()
+        if (textContent.isNotBlank()) {
+            Box(
+                modifier = Modifier
+                    .widthIn(max = 320.dp)
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 16.dp,
+                            topEnd = 16.dp,
+                            bottomStart = if (isUser) 16.dp else if (isLastInGroup) 4.dp else 4.dp,
+                            bottomEnd = if (isUser) if (isLastInGroup) 4.dp else 4.dp else 16.dp
+                        )
+                    )
+                    .background(
+                        if (isUser) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        }
+                    )
+                    .padding(12.dp)
+            ) {
+                // 助手消息使用 Markdown 渲染
+                if (!isUser) {
+                    MarkdownText(
+                        content = textContent,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                } else {
+                    Text(
+                        text = textContent,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 系统消息项
+ */
+@Composable
+private fun SystemMessageItem(message: MessageUi) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Text(
+            text = message.getTextContent(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .padding(8.dp)
+        )
+    }
+}
+
+/**
+ * 工具调用卡片
+ */
+@Composable
+private fun ToolCallCard(toolCall: MessageContentItem.ToolCall) {
+    Card(
+        modifier = Modifier.widthIn(max = 320.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Build,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(18.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = toolCall.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+                toolCall.args?.let { args ->
+                    Text(
+                        text = args.toString().take(100) + if (args.toString().length > 100) "..." else "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                        maxLines = 2
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 工具结果卡片
+ */
+@Composable
+private fun ToolResultCard(toolResult: MessageContentItem.ToolResult) {
+    Card(
+        modifier = Modifier.widthIn(max = 320.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (toolResult.isError) {
+                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            }
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = if (toolResult.isError) Icons.Default.ErrorOutline else Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = if (toolResult.isError) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+                modifier = Modifier.size(18.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                toolResult.name?.let { name ->
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Text(
+                    text = toolResult.text.take(200) + if (toolResult.text.length > 200) "..." else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    maxLines = 4
+                )
+            }
         }
     }
 }
@@ -334,7 +735,7 @@ private fun MessageItem(message: MessageUi) {
                 .padding(vertical = 8.dp)
         ) {
             Text(
-                text = message.content,
+                text = message.getTextContent(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -374,18 +775,34 @@ private fun MessageItem(message: MessageUi) {
                     .padding(12.dp)
             ) {
                 Column {
-                    // 助手消息使用 Markdown 渲染
-                    if (!isUser) {
-                        MarkdownText(
-                            content = message.content,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    } else {
-                        Text(
-                            text = message.content,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
+                    // 渲染工具调用
+                    message.getToolCalls().forEach { toolCall ->
+                        ToolCallCard(toolCall = toolCall)
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    
+                    // 渲染工具结果
+                    message.getToolResults().forEach { toolResult ->
+                        ToolResultCard(toolResult = toolResult)
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    
+                    // 渲染文本内容
+                    val textContent = message.getTextContent()
+                    if (textContent.isNotBlank()) {
+                        // 助手消息使用 Markdown 渲染
+                        if (!isUser) {
+                            MarkdownText(
+                                content = textContent,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        } else {
+                            Text(
+                                text = textContent,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
                     }
 
                     if (message.isLoading) {
