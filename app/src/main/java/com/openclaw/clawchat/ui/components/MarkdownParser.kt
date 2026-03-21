@@ -192,8 +192,6 @@ private fun parseInlineNodes(text: String): List<MarkdownNode> {
             nodes.add(MarkdownNode.Text(remaining.take(1)))
             remaining = remaining.drop(1)
         }
-            remaining = remaining.drop(1)
-        }
     }
     
     return nodes
