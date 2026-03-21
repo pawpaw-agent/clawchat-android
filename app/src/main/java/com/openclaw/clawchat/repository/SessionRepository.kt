@@ -1,8 +1,6 @@
 package com.openclaw.clawchat.repository
 
-import com.openclaw.clawchat.data.local.SessionEntity
 import com.openclaw.clawchat.ui.state.SessionUi
-import com.openclaw.clawchat.ui.state.SessionStatus
 import kotlinx.coroutines.flow.Flow
 
 /**

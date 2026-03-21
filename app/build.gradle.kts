@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.room)
     id("jacoco")
 }
 
@@ -251,11 +250,6 @@ dependencies {
     // JSON (用于协议解析)
     implementation("org.json:json:20231013")
 
-    // Local Storage
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
-
     // DataStore
     implementation(libs.androidx.datastore.preferences)
 
@@ -283,17 +277,4 @@ dependencies {
     
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-}
-
-// ─────────────────────────────────────────────────────────────
-// Room Configuration
-// ─────────────────────────────────────────────────────────────
-
-room {
-    schemaDirectory("$projectDir/schemas")
-}
-
-ksp {
-    arg("room.incremental", "true")
-    arg("room.expandProjection", "true")
 }
