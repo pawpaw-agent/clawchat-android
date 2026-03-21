@@ -529,8 +529,9 @@ class SessionViewModel @Inject constructor(
             is JsonArray -> element.mapNotNull { part ->
                 when {
                     part is JsonObject -> {
-                        val type = part["type"]?.jsonPrimitive?.content?.lowercase()?.replace("_", "")
-                        when (type) {
+                        val type = part["type"]?.jsonPrimitive?.content?.lowercase()
+                        val typeNormalized = type?.replace("_", "")
+                        when (typeNormalized) {
                             "text" -> MessageContentItem.Text(
                                 text = part["text"]?.jsonPrimitive?.content ?: ""
                             )
@@ -539,7 +540,7 @@ class SessionViewModel @Inject constructor(
                                 text = part["text"]?.jsonPrimitive?.content ?: ""
                             )
                             // 工具调用：返回 ToolCall 类型
-                            "toolcall", "tool_call", "tooluse", "tool_use" -> {
+                            "toolcall", "tooluse" -> {
                                 val toolName = part["name"]?.jsonPrimitive?.content ?: "tool"
                                 val argsElement = part["arguments"] ?: part["args"]
                                 val args = when (argsElement) {
@@ -589,8 +590,8 @@ class SessionViewModel @Inject constructor(
                                 val textContent = part["text"]?.jsonPrimitive?.content ?: part["content"]?.jsonPrimitive?.content
                                 val toolCallId = part["toolCallId"]?.jsonPrimitive?.content ?: part["tool_call_id"]?.jsonPrimitive?.content
                                 
-                                // 如果有 toolCallId 或 text，这是 tool_result
-                                if (toolCallId != null || textContent != null) {
+                                // 优先检测 tool_result：有 toolCallId 或有 text 但没有 arguments
+                                if (toolCallId != null || (textContent != null && argsElement == null)) {
                                     MessageContentItem.ToolResult(
                                         toolCallId = toolCallId,
                                         name = name ?: "tool",
