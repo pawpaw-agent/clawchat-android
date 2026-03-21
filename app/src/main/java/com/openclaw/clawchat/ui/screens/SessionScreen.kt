@@ -777,19 +777,75 @@ private fun SystemMessageItem(message: MessageUi) {
 
 /**
  * 工具消息卡片（对标 webchat 样式）
- * 行内小卡片，点击 View 展开详情
+ * 显示 Tool output 折叠区域
  */
 @Composable
 private fun ToolMessageCard(message: MessageUi) {
-    val toolCards = remember(message) { pairToolCards(message) }
+    var expanded by remember { mutableStateOf(false) }
+    val textContent = message.getTextContent()
     
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        )
     ) {
-        // 每个工具一个小卡片
-        toolCards.forEach { toolCard ->
-            InlineToolCard(toolCard = toolCard)
+        Column {
+            // 头部：⚡ Tool output
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Bolt,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "Tool output",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                if (textContent.isNotBlank()) {
+                    Text(
+                        text = if (expanded) "View" else "View",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+            
+            // 展开内容
+            if (expanded && textContent.isNotBlank()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    SelectionContainer {
+                        Text(
+                            text = textContent,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
         }
     }
 }
