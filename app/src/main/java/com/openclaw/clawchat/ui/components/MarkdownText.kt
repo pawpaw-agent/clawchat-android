@@ -404,6 +404,3 @@ private fun HighlightedCodeContent(
         )
     }
 }
-
-// 辅助扩展
-private fun Modifier.height(dp: Dp) = this.then(androidx.compose.foundation.layout.height(dp))
