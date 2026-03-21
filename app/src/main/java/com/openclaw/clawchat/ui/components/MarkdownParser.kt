@@ -62,7 +62,7 @@ fun parseMarkdown(markdown: String): List<MarkdownNode> {
         
         // 水平线
         if (line.matches(Regex("^(---+|\\*\\*\\*+|___+)$"))) {
-            nodes.add(MarkdownNode.HorizontalRule())
+            nodes.add(MarkdownNode.HorizontalRule)
             i++
             continue
         }
