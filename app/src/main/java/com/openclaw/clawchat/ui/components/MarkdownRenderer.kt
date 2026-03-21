@@ -62,6 +62,8 @@ private fun RenderNode(node: MarkdownNode) {
         is MarkdownNode.Strikethrough -> Text(text = node.text, textDecoration = TextDecoration.LineThrough, fontSize = 14.sp)
         is MarkdownNode.Image -> Text(text = "[${node.alt}]", fontSize = 14.sp, color = Color.Gray)
         is MarkdownNode.ListItem -> node.children.forEach { child -> RenderNode(child) }
+        is MarkdownNode.Table -> TableRenderer(node)
+        is MarkdownNode.TableRow -> {} // 表格行在 TableRenderer 中处理
     }
 }
 
@@ -158,4 +160,55 @@ private fun OrderedListRenderer(node: MarkdownNode.OrderedList) {
 @Composable
 private fun HorizontalRuleRenderer() {
     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF404040)))
+}
+
+/**
+ * 表格渲染器
+ * 对标 webchat: 边框 + 表头背景
+ */
+@Composable
+private fun TableRenderer(node: MarkdownNode.Table) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0x10000000), RoundedCornerShape(4.dp))
+            .padding(1.dp)
+    ) {
+        // 表头
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0x20000000))
+        ) {
+            node.header.cells.forEach { cell ->
+                Text(
+                    text = cell,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(8.dp)
+                )
+            }
+        }
+        
+        // 数据行
+        node.rows.forEach { row ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 1.dp)
+            ) {
+                row.cells.forEach { cell ->
+                    Text(
+                        text = cell,
+                        fontSize = 13.sp,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp)
+                    )
+                }
+            }
+        }
+    }
 }

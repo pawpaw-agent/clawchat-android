@@ -20,6 +20,8 @@ sealed class MarkdownNode {
     data class Text(val text: String) : MarkdownNode()
     data class Strikethrough(val text: String) : MarkdownNode()
     data class Image(val alt: String, val url: String) : MarkdownNode()
+    data class Table(val header: TableRow, val rows: List<TableRow>) : MarkdownNode()
+    data class TableRow(val cells: List<String>) : MarkdownNode()
     object HorizontalRule : MarkdownNode()
     object LineBreak : MarkdownNode()
     object SoftLineBreak : MarkdownNode()
@@ -115,6 +117,20 @@ fun parseMarkdown(markdown: String): List<MarkdownNode> {
                 }
             }
             nodes.add(MarkdownNode.OrderedList(items, start))
+            continue
+        }
+        
+        // 表格
+        if (line.startsWith("|") && i + 1 < lines.size && lines[i + 1].matches(Regex("^\\|[-:| ]+\\|$"))) {
+            val headerCells = parseTableRow(line)
+            i++ // skip header
+            i++ // skip separator
+            val rows = mutableListOf<MarkdownNode.TableRow>()
+            while (i < lines.size && lines[i].startsWith("|")) {
+                rows.add(MarkdownNode.TableRow(parseTableRow(lines[i])))
+                i++
+            }
+            nodes.add(MarkdownNode.Table(MarkdownNode.TableRow(headerCells), rows))
             continue
         }
         
@@ -225,4 +241,16 @@ private fun findNextSpecialIndex(text: String): Int {
     }
     
     return minIndex
+}
+
+/**
+ * 解析表格行
+ */
+private fun parseTableRow(line: String): List<String> {
+    return line
+        .trim()
+        .removePrefix("|")
+        .removeSuffix("|")
+        .split("|")
+        .map { it.trim() }
 }
