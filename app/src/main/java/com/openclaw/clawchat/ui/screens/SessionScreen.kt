@@ -882,20 +882,7 @@ private fun MarkdownText(
         // 使用 compose-markdown 渲染
         dev.jeziellago.compose.markdowntext.MarkdownText(
             markdown = content,
-            modifier = Modifier.fillMaxWidth(),
-            color = color,
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-            // 代码块样式
-            codeBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-            codeTextColor = MaterialTheme.colorScheme.onSurface,
-            codeStrokeColor = Color.Transparent,
-            // 行内代码样式
-            inlineCodeBackground = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-            inlineCodeTextColor = color,
-            inlineCodeStrokeColor = Color.Transparent,
-            // 链接样式
-            linkColor = MaterialTheme.colorScheme.primary
+            modifier = Modifier.fillMaxWidth()
         )
         
         // 代码块复制按钮（如果有代码块）
