@@ -628,6 +628,16 @@ class SessionViewModel @Inject constructor(
                     }
                 }
                 
+                // 调试日志：打印解析结果
+                android.util.Log.d("ClawChat", "=== toolCalls count: ${toolCalls.size}")
+                toolCalls.forEach { call ->
+                    android.util.Log.d("ClawChat", "=== toolCall: id=${call.id}, name=${call.name}")
+                }
+                android.util.Log.d("ClawChat", "=== toolResults count: ${toolResults.size}")
+                toolResults.forEach { result ->
+                    android.util.Log.d("ClawChat", "=== toolResult: toolCallId=${result.toolCallId}, name=${result.name}, text=${result.text.take(50)}")
+                }
+                
                 // 配对 toolCalls 和 toolResults
                 val mergedResults = mutableListOf<MessageContentItem.ToolResult>()
                 val callsById = toolCalls.associateBy { it.id }
@@ -668,6 +678,12 @@ class SessionViewModel @Inject constructor(
                     if (result.toolCallId !in pairedIds) {
                         mergedResults.add(result)
                     }
+                }
+                
+                // 调试日志：打印配对结果
+                android.util.Log.d("ClawChat", "=== mergedResults count: ${mergedResults.size}")
+                mergedResults.forEach { result ->
+                    android.util.Log.d("ClawChat", "=== mergedResult: toolCallId=${result.toolCallId}, name=${result.name}, hasArgs=${result.args != null}, text=${result.text.take(50)}")
                 }
                 
                 // 组合所有内容：文本 + 合并的工具结果 + 图片
