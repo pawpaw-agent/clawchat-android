@@ -795,13 +795,6 @@ private fun ToolMessageCard(message: MessageUi) {
  * 工具调用卡片
  */
 /**
- * 工具调用卡片
- * 标题栏：图标 + 名称 + 展开按钮
- */
-@Composable
-}
-
-/**
  * 单条消息组件
  */
 @Composable
