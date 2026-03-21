@@ -38,8 +38,9 @@ import com.openclaw.clawchat.ui.state.MessageGroup
 import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
 import com.openclaw.clawchat.ui.state.SessionEvent
-import com.openclaw.clawchat.ui.state.SessionViewModel
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import com.openclaw.clawchat.ui.state.SessionViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -708,9 +709,15 @@ private fun pairToolCards(message: MessageUi): List<ToolCard> {
         if (result != null) {
             matchedResults.add(results.indexOf(result))
         }
+        // 提取显示参数：对于 exec 工具，提取 command 字段
+        val displayArgs = if (call.name == "exec" && call.args != null) {
+            call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
+        } else {
+            call.args?.toString()
+        }
         cards.add(ToolCard(
             name = call.name,
-            args = call.args?.toString(),  // JsonObject? -> String?
+            args = displayArgs,
             result = result?.text,
             isError = result?.isError ?: false,
             callId = call.id
