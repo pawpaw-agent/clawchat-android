@@ -475,37 +475,22 @@ class SessionViewModel @Inject constructor(
     
     /**
      * 检测消息是否为工具消息
-     * 参考 webchat message-normalizer.ts 的 hasToolId/hasToolContent/hasToolName 检测
+     * 只有 toolResult（工具执行结果）才应该标记为 TOOL 角色
+     * toolCall 是助手消息的一部分，不应标记为 TOOL
      */
     private fun detectToolMessage(msgObj: JsonObject): Boolean {
-        // 检测工具 ID 字段
-        if (msgObj.containsKey("toolCallId") || msgObj.containsKey("tool_call_id")) {
-            return true
-        }
-        
-        // 检测工具名称字段
-        if (msgObj.containsKey("toolName") || msgObj.containsKey("tool_name")) {
-            return true
-        }
-        
-        // 检测内容中是否包含工具调用或工具结果
         val content = msgObj["content"]
         if (content is JsonArray) {
             content.forEach { part ->
                 if (part is JsonObject) {
                     val type = part["type"]?.jsonPrimitive?.content?.lowercase()?.replace("_", "")
-                    // 只检测工具结果，不检测工具调用（toolCall 是助手消息的一部分）
+                    // 只检测工具结果，不检测工具调用
                     if (type == "toolresult") {
-                        return true
-                    }
-                    // 检测有 name + arguments 的工具调用
-                    if (part.containsKey("name") && (part.containsKey("arguments") || part.containsKey("args"))) {
                         return true
                     }
                 }
             }
         }
-        
         return false
     }
 
