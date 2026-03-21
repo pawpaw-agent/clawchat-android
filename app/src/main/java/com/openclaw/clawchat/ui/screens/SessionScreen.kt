@@ -30,6 +30,7 @@ import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
 import com.openclaw.clawchat.ui.state.SessionEvent
 import com.openclaw.clawchat.ui.state.SessionViewModel
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -53,6 +54,7 @@ fun SessionScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
+    val scope = rememberCoroutineScope()
 
     // 初始化会话 ID
     LaunchedEffect(sessionId) {
@@ -111,7 +113,6 @@ fun SessionScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 // 添加 IME padding 确保键盘弹出时内容上移
-                .consumedWindowInsets(paddingValues)
                 .imePadding()
         ) {
             Column(
@@ -141,7 +142,9 @@ fun SessionScreen(
                         ScrollToBottomButton(
                             onClick = {
                                 if (state.messages.isNotEmpty()) {
-                                    listState.animateScrollToItem(state.messages.lastIndex)
+                                    scope.launch {
+                                        listState.animateScrollToItem(state.messages.lastIndex)
+                                    }
                                 }
                             },
                             modifier = Modifier
