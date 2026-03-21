@@ -155,8 +155,7 @@ fun MainScreen(
                             sessions = filterSessions(state.sessions, searchQuery),
                             currentSession = state.currentSession,
                             onSelectSession = { viewModel.selectSession(it) },
-                            onSessionLongPress = { showSessionOptions = it },
-                            onDeleteSession = { viewModel.deleteSession(it) }
+                            onSessionLongPress = { showSessionOptions = it }
                         )
                     }
                 }
@@ -338,8 +337,7 @@ private fun SessionList(
     sessions: List<SessionUi>,
     currentSession: SessionUi?,
     onSelectSession: (String) -> Unit,
-    onSessionLongPress: (SessionUi) -> Unit,
-    onDeleteSession: (String) -> Unit
+    onSessionLongPress: (SessionUi) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -351,8 +349,7 @@ private fun SessionList(
                 session = session,
                 isSelected = session.id == currentSession?.id,
                 onSelect = { onSelectSession(session.id) },
-                onSessionLongPress = { onSessionLongPress(session) },
-                onDelete = { onDeleteSession(session.id) }
+                onSessionLongPress = { onSessionLongPress(session) }
             )
         }
     }
@@ -367,8 +364,7 @@ private fun SessionItem(
     session: SessionUi,
     isSelected: Boolean,
     onSelect: () -> Unit,
-    onSessionLongPress: (() -> Unit)? = null,
-    onDelete: () -> Unit
+    onSessionLongPress: (() -> Unit)? = null
 ) {
     Card(
         modifier = Modifier
@@ -391,59 +387,48 @@ private fun SessionItem(
             }
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            // 会话名称（显示 agent 名称）
+            Text(
+                text = session.getDisplayName(),
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            // 时间和消息数
+            Row {
                 Text(
-                    text = session.label ?: "未命名会话",
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    text = formatTimeAgo(session.lastActivityAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Row {
+                if (session.messageCount > 0) {
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = formatTimeAgo(session.lastActivityAt),
+                        text = "• ${session.messageCount} 条消息",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    
-                    if (session.messageCount > 0) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "• ${session.messageCount} 条消息",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                
-                if (session.lastMessage != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = session.lastMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
             
-            IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "删除会话",
-                    tint = MaterialTheme.colorScheme.error
+            // 最后一条消息
+            if (session.lastMessage != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = session.lastMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -518,6 +503,7 @@ private fun filterSessions(sessions: List<SessionUi>, query: String): List<Sessi
     }
     val lowerQuery = query.lowercase()
     return sessions.filter { session ->
+        session.getDisplayName().lowercase().contains(lowerQuery) ||
         session.label?.lowercase()?.contains(lowerQuery) == true ||
         session.lastMessage?.lowercase()?.contains(lowerQuery) == true
     }
@@ -536,7 +522,7 @@ private fun SessionOptionsDialog(
     onDelete: () -> Unit
 ) {
     var showRenameDialog by remember { mutableStateOf(false) }
-    var newName by remember { mutableStateOf(session.label ?: "") }
+    var newName by remember { mutableStateOf(session.label ?: session.getDisplayName()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -544,7 +530,7 @@ private fun SessionOptionsDialog(
         text = {
             Column {
                 Text(
-                    text = session.label ?: "未命名会话",
+                    text = session.getDisplayName(),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))

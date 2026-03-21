@@ -11,12 +11,27 @@ data class SessionUi(
     val id: String,
     val label: String?,
     val model: String?,
+    val agentId: String? = null,
     val status: SessionStatus,
     val lastActivityAt: Long,
     val messageCount: Int = 0,
     val lastMessage: String? = null,
     val thinking: Boolean = false
-)
+) {
+    /**
+     * 获取显示名称：优先 agentId > label > model
+     */
+    fun getDisplayName(): String {
+        // 从 agentId 提取显示名称（去掉前缀如 "agent:"）
+        val agentName = agentId?.removePrefix("agent:")?.substringBefore(":") ?: agentId
+        return when {
+            !agentName.isNullOrBlank() -> agentName
+            !label.isNullOrBlank() -> label
+            !model.isNullOrBlank() -> model
+            else -> "未命名会话"
+        }
+    }
+}
 
 /**
  * 会话状态
