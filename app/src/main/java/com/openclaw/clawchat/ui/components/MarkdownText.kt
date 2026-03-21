@@ -2,25 +2,28 @@ package com.openclaw.clawchat.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import dev.jeziellago.compose.markdowntext.MarkdownText
 
 /**
  * Markdown 渲染组件
- * 使用 compose-markdown 库
+ * 自定义渲染器，对标 webchat 效果
  * 
  * 特性：
- * - GFM 支持（表格、列表、标题等）
- * - 代码块
- * - 纯 Compose 实现，性能好
+ * - GFM 支持（代码块、表格、列表等）
+ * - 代码块：语言标签 + 复制按钮 + 圆角背景
+ * - 行内代码：半透明背景 + 圆角
+ * - 链接：下划线 + accent 颜色
+ * - 引用块：左边框 + 半透明背景
  */
 @Composable
 fun MarkdownText(
     content: String,
     modifier: Modifier = Modifier
 ) {
-    MarkdownText(
-        markdown = content,
+    val nodes = remember(content) { parseMarkdown(content) }
+    MarkdownRenderer(
+        nodes = nodes,
         modifier = modifier.fillMaxWidth()
     )
 }
