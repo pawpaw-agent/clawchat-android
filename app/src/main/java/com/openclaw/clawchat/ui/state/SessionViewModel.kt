@@ -556,17 +556,21 @@ class SessionViewModel @Inject constructor(
                                 }
                                 MessageContentItem.Text(text = displayText)
                             }
-                            // 工具结果：支持 toolresult, tool_result
-                            "toolresult" -> MessageContentItem.ToolResult(
-                                toolCallId = part["toolCallId"]?.jsonPrimitive?.content 
-                                    ?: part["tool_call_id"]?.jsonPrimitive?.content,
-                                name = part["name"]?.jsonPrimitive?.content 
+                            // 工具结果：直接显示为文本
+                            "toolresult" -> {
+                                val toolName = part["name"]?.jsonPrimitive?.content 
                                     ?: part["toolName"]?.jsonPrimitive?.content 
-                                    ?: part["tool_name"]?.jsonPrimitive?.content,
-                                text = part["text"]?.jsonPrimitive?.content 
-                                    ?: part["content"]?.jsonPrimitive?.content ?: "",
-                                isError = part["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
-                            )
+                                    ?: part["tool_name"]?.jsonPrimitive?.content ?: "tool"
+                                val resultText = part["text"]?.jsonPrimitive?.content 
+                                    ?: part["content"]?.jsonPrimitive?.content ?: ""
+                                val isError = part["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
+                                val displayText = if (resultText.isNotBlank()) {
+                                    if (isError) "❌ $toolName: $resultText" else "✅ $toolName: $resultText"
+                                } else {
+                                    toolName
+                                }
+                                MessageContentItem.Text(text = displayText)
+                            }
                             // 图片：支持 image, imageurl
                             "image", "imageurl" -> MessageContentItem.Image(
                                 url = part["url"]?.jsonPrimitive?.content 
