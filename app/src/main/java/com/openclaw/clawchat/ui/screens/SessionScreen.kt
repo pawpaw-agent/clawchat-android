@@ -739,94 +739,85 @@ private fun SystemMessageItem(message: MessageUi) {
 
 /**
  * 工具消息卡片（折叠显示）
+ * 对标 webchat: 摘要行显示工具名称列表，点击展开
  */
 @Composable
 private fun ToolMessageCard(message: MessageUi) {
     var isExpanded by remember { mutableStateOf(false) }
+    val toolCards = remember(message) { pairToolCards(message) }
+    val toolNames = remember(toolCards) { toolCards.map { it.name }.distinct() }
     
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        shape = RoundedCornerShape(8.dp)
+            .padding(vertical = 2.dp)
+            .clickable { isExpanded = !isExpanded },
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // 标题行：工具图标 + 名称 + 展开/折叠按钮
+            // 摘要行：图标 + "Tool output" + 工具名称列表 + 展开按钮
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Build,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
+                Icon(
+                    imageVector = Icons.Default.Build,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "Tool output",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                // 工具名称列表
+                if (toolNames.isNotEmpty()) {
                     Text(
-                        text = "工具消息",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    // 显示工具调用数量
-                    val toolCallCount = message.getToolCalls().size
-                    val toolResultCount = message.getToolResults().size
-                    if (toolCallCount > 0 || toolResultCount > 0) {
-                        Text(
-                            text = "(${toolCallCount + toolResultCount})",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                
-                // 展开/折叠按钮
-                IconButton(
-                    onClick = { isExpanded = !isExpanded },
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = if (isExpanded) "折叠" else "展开",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+                        text = toolNames.joinToString(", "),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
+                // 展开图标
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (isExpanded) "折叠" else "展开",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
             }
             
-            // 折叠内容
+            // 展开内容
             if (isExpanded) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // 显示工具标签
-                    val toolCards = pairToolCards(message)
-                    if (toolCards.isNotEmpty()) {
-                        ToolTagsRow(toolCards = toolCards)
+                    // 每个工具的详情
+                    toolCards.forEach { toolCard ->
+                        ToolDetailCard(toolCard = toolCard)
                     }
                     
                     // 文本内容
                     val textContent = message.getTextContent()
                     if (textContent.isNotBlank()) {
-                        Text(
-                            text = textContent,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 10,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        SelectionContainer {
+                            Text(
+                                text = textContent,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
