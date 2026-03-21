@@ -769,25 +769,46 @@ private fun SystemMessageItem(message: MessageUi) {
 }
 
 /**
- * 工具消息卡片（折叠显示）
- * 对标 webchat: 摘要行显示工具名称列表，点击展开
+ * 工具消息卡片（对标 webchat 样式）
+ * 行内小卡片，点击 View 展开详情
  */
 @Composable
 private fun ToolMessageCard(message: MessageUi) {
-    var isExpanded by remember { mutableStateOf(false) }
     val toolCards = remember(message) { pairToolCards(message) }
-    val toolNames = remember(toolCards) { toolCards.map { it.name }.distinct() }
     
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp)
-            .clickable { isExpanded = !isExpanded },
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // 摘要行：图标 + "Tool output" + 工具名称列表 + 展开按钮
+        // 每个工具一个小卡片
+        toolCards.forEach { toolCard ->
+            InlineToolCard(toolCard = toolCard)
+        }
+    }
+}
+
+/**
+ * 行内工具卡片（对标 webchat chat-tool-card）
+ */
+@Composable
+private fun InlineToolCard(toolCard: ToolCard) {
+    var expanded by remember { mutableStateOf(false) }
+    
+    Card(
+        modifier = Modifier
+            .widthIn(max = 320.dp)
+            .clickable { expanded = !expanded },
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (toolCard.isError) {
+                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            }
+        )
+    ) {
+        Column {
+            // 头部：图标 + 名称 + View 按钮
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -795,64 +816,130 @@ private fun ToolMessageCard(message: MessageUi) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // 工具图标
                 Icon(
-                    imageVector = Icons.Default.Build,
+                    imageVector = getToolIcon(toolCard.name),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = if (toolCard.isError) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
                     modifier = Modifier.size(16.dp)
                 )
+                
+                // 工具名称
                 Text(
-                    text = "Tool output",
+                    text = getToolDisplayName(toolCard.name),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
                 )
-                // 工具名称列表
-                if (toolNames.isNotEmpty()) {
+                
+                // View 按钮
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
                     Text(
-                        text = toolNames.joinToString(", "),
+                        text = "View",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(14.dp)
                     )
                 }
-                // 展开图标
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (isExpanded) "折叠" else "展开",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp)
-                )
             }
             
-            // 展开内容
-            if (isExpanded) {
+            // 展开的详情
+            if (expanded) {
+                Divider(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                )
+                
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                    modifier = Modifier.padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // 每个工具的详情
-                    toolCards.forEach { toolCard ->
-                        ToolDetailCard(toolCard = toolCard)
-                    }
-                    
-                    // 文本内容
-                    val textContent = message.getTextContent()
-                    if (textContent.isNotBlank()) {
+                    // 参数
+                    if (toolCard.args != null && toolCard.args.toString().isNotBlank()) {
                         SelectionContainer {
                             Text(
-                                text = textContent,
+                                text = toolCard.args.toString(),
                                 style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    
+                    // 结果
+                    if (toolCard.result != null && toolCard.result.isNotBlank()) {
+                        if (toolCard.args != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                        SelectionContainer {
+                            Text(
+                                text = toolCard.result,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace,
+                                color = if (toolCard.isError) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
                             )
                         }
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * 获取工具图标
+ */
+private fun getToolIcon(toolName: String): androidx.compose.ui.graphics.vector.ImageVector {
+    return when (toolName.lowercase()) {
+        "read", "cat" -> Icons.Default.Description
+        "edit", "write" -> Icons.Default.Edit
+        "exec", "bash", "shell" -> Icons.Default.Terminal
+        "search", "grep", "find" -> Icons.Default.Search
+        "web", "fetch", "curl" -> Icons.Default.Language
+        "list", "ls" -> Icons.Default.Folder
+        "delete", "rm" -> Icons.Default.Delete
+        else -> Icons.Default.Build
+    }
+}
+
+/**
+ * 获取工具显示名称
+ */
+private fun getToolDisplayName(toolName: String): String {
+    return when (toolName.lowercase()) {
+        "read" -> "Read file"
+        "edit" -> "Edit file"
+        "write" -> "Write file"
+        "exec" -> "Execute command"
+        "bash" -> "Bash"
+        "shell" -> "Shell"
+        "search" -> "Search"
+        "grep" -> "Grep"
+        "find" -> "Find"
+        "web" -> "Web request"
+        "fetch" -> "Fetch"
+        "curl" -> "Curl"
+        "list" -> "List directory"
+        "ls" -> "List"
+        "delete" -> "Delete"
+        "rm" -> "Remove"
+        else -> toolName.replaceFirstChar { it.uppercase() }
     }
 }
 
