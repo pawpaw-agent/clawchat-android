@@ -79,8 +79,57 @@ data class SessionUiState(
     val isSending: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val connectionStatus: ConnectionStatus = ConnectionStatus.Disconnected
+    val connectionStatus: ConnectionStatus = ConnectionStatus.Disconnected,
+    // 工具流状态管理（参考 webchat）
+    val toolStreamById: Map<String, ToolState> = emptyMap(),
+    val toolStreamOrder: List<String> = emptyList(),
+    val chatToolMessages: List<MessageUi> = emptyList()
 )
+
+/**
+ * 工具流状态（参考 webchat toolStreamById）
+ */
+data class ToolState(
+    val toolCallId: String,
+    val name: String = "tool",
+    val args: JsonObject? = null,
+    val output: String? = null,
+    val startedAt: Long = System.currentTimeMillis(),
+    val runId: String? = null
+) {
+    /**
+     * 构建工具消息（参考 webchat Fp(e)）
+     */
+    fun buildMessage(): MessageUi {
+        val content = mutableListOf<MessageContentItem>()
+        
+        // 添加 toolcall
+        content.add(MessageContentItem.ToolCall(
+            id = toolCallId,
+            name = name,
+            args = args
+        ))
+        
+        // 添加 toolresult（如果有输出）
+        if (!output.isNullOrBlank()) {
+            content.add(MessageContentItem.ToolResult(
+                toolCallId = toolCallId,
+                name = name,
+                args = args,
+                text = output,
+                isError = false
+            ))
+        }
+        
+        return MessageUi(
+            id = runId ?: toolCallId,
+            content = content,
+            role = MessageRole.ASSISTANT,
+            timestamp = startedAt,
+            isLoading = output.isNullOrBlank()
+        )
+    }
+}
 
 /**
  * Gateway 配置（输入用）

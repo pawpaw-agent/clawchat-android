@@ -188,6 +188,13 @@ class SessionViewModel @Inject constructor(
                 // 仅处理当前会话的事件
                 if (eventSessionKey != sessionId) return@launch
 
+                // 检查是否是工具流事件（参考 webchat Kp(e, t)）
+                val stream = payload["stream"]?.jsonPrimitive?.content
+                if (stream == "tool") {
+                    handleToolStreamEvent(payload)
+                    return@launch
+                }
+
                 val runId = payload["runId"]?.jsonPrimitive?.content ?: return@launch
                 val state = payload["state"]?.jsonPrimitive?.content ?: return@launch
                 val msgObj = payload["message"]?.jsonObject
@@ -217,8 +224,8 @@ class SessionViewModel @Inject constructor(
                         
                         android.util.Log.d("ClawChat", "=== toolResult message: toolCallId=$toolCallId, toolName=$toolName, isError=$isError, text=${resultText.take(50)}")
                         
-                        // 更新之前的 toolCall 卡片
-                        updateToolCallResult(toolCallId, toolName, resultText, isError, runId)
+                        // 更新工具流状态
+                        updateToolStreamResult(toolCallId, toolName, resultText, isError)
                         return@launch
                     }
                 }
@@ -235,6 +242,103 @@ class SessionViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to parse chat event: ${e.message}")
             }
+        }
+    }
+    
+    /**
+     * 处理工具流事件（参考 webchat Kp(e, t)）
+     */
+    private fun handleToolStreamEvent(payload: JsonObject) {
+        val data = payload["data"]?.jsonObject ?: return
+        val toolCallId = data["toolCallId"]?.jsonPrimitive?.content ?: return
+        val name = data["name"]?.jsonPrimitive?.content ?: "tool"
+        val phase = data["phase"]?.jsonPrimitive?.content ?: "start"
+        val runId = payload["runId"]?.jsonPrimitive?.content
+        
+        android.util.Log.d("ClawChat", "=== Tool stream event: toolCallId=$toolCallId, name=$name, phase=$phase")
+        
+        _state.update { currentState ->
+            // 获取或创建工具状态
+            val existingTool = currentState.toolStreamById[toolCallId]
+            val updatedTool = when (phase) {
+                "start" -> {
+                    // 开始阶段：设置 args
+                    val args = data["args"]?.jsonObject
+                    ToolState(
+                        toolCallId = toolCallId,
+                        name = name,
+                        args = args,
+                        output = null,
+                        startedAt = System.currentTimeMillis(),
+                        runId = runId
+                    )
+                }
+                "result" -> {
+                    // 结果阶段：设置 output
+                    val result = data["result"]?.jsonPrimitive?.content ?: ""
+                    (existingTool ?: ToolState(toolCallId = toolCallId, name = name, runId = runId))
+                        .copy(output = result)
+                }
+                else -> existingTool ?: ToolState(toolCallId = toolCallId, name = name, runId = runId)
+            }
+            
+            // 更新 toolStreamById
+            val newToolStreamById = currentState.toolStreamById + (toolCallId to updatedTool)
+            
+            // 更新 toolStreamOrder
+            val newToolStreamOrder = if (toolCallId !in currentState.toolStreamOrder) {
+                currentState.toolStreamOrder + toolCallId
+            } else {
+                currentState.toolStreamOrder
+            }
+            
+            // 构建 chatToolMessages（参考 webchat Lp(e)）
+            val newChatToolMessages = newToolStreamOrder.mapNotNull { id ->
+                newToolStreamById[id]?.buildMessage()
+            }
+            
+            currentState.copy(
+                toolStreamById = newToolStreamById,
+                toolStreamOrder = newToolStreamOrder,
+                chatToolMessages = newChatToolMessages
+            )
+        }
+    }
+    
+    /**
+     * 更新工具流的结果（从独立的 toolResult 消息）
+     */
+    private fun updateToolStreamResult(toolCallId: String, toolName: String, resultText: String, isError: Boolean) {
+        _state.update { currentState ->
+            val existingTool = currentState.toolStreamById[toolCallId]
+            val updatedTool = if (existingTool != null) {
+                existingTool.copy(output = resultText)
+            } else {
+                ToolState(
+                    toolCallId = toolCallId,
+                    name = toolName,
+                    output = resultText,
+                    startedAt = System.currentTimeMillis()
+                )
+            }
+            
+            val newToolStreamById = currentState.toolStreamById + (toolCallId to updatedTool)
+            
+            val newToolStreamOrder = if (toolCallId !in currentState.toolStreamOrder) {
+                currentState.toolStreamOrder + toolCallId
+            } else {
+                currentState.toolStreamOrder
+            }
+            
+            val newChatToolMessages = newToolStreamOrder.mapNotNull { id ->
+                newToolStreamById[id]?.buildMessage()
+            }
+            
+            currentState.copy(
+                toolStreamById = newToolStreamById,
+                toolStreamOrder = newToolStreamOrder,
+                chatToolMessages = newChatToolMessages
+            )
         }
     }
 
@@ -400,65 +504,6 @@ class SessionViewModel @Inject constructor(
         _events.trySend(SessionEvent.Error(errorMsg))
     }
     
-    /**
-     * 更新 toolCall 的执行结果（跨消息配对）
-     * 当收到独立的 toolResult 消息时调用
-     */
-    private fun updateToolCallResult(toolCallId: String, toolName: String, resultText: String, isError: Boolean, runId: String) {
-        _state.update { currentState ->
-            // 遍历所有消息，找到包含该 toolCallId 的 ToolResult
-            val newMessages = currentState.messages.map { message ->
-                val hasMatchingToolCall = message.content.any { item ->
-                    item is MessageContentItem.ToolResult && item.toolCallId == toolCallId
-                }
-                
-                if (hasMatchingToolCall) {
-                    // 找到了，更新 ToolResult
-                    android.util.Log.d("ClawChat", "=== Found matching ToolResult for toolCallId=$toolCallId")
-                    val updatedContent = message.content.map { item ->
-                        if (item is MessageContentItem.ToolResult && item.toolCallId == toolCallId) {
-                            // 更新 text 和 isError
-                            item.copy(text = resultText, isError = isError)
-                        } else {
-                            item
-                        }
-                    }
-                    message.copy(content = updatedContent)
-                } else {
-                    message
-                }
-            }
-            
-            // 如果没有找到匹配的，创建一个新的 ToolResult（兼容旧格式）
-            val hasMatch = newMessages.any { message ->
-                message.content.any { item ->
-                    item is MessageContentItem.ToolResult && item.toolCallId == toolCallId && item.text.isNotBlank()
-                }
-            }
-            
-            if (!hasMatch) {
-                android.util.Log.d("ClawChat", "=== No matching ToolResult found, creating new one for toolCallId=$toolCallId")
-                // 没有找到匹配的，创建新的 ToolResult 消息
-                val newToolResult = MessageUi(
-                    id = runId,
-                    content = listOf(MessageContentItem.ToolResult(
-                        toolCallId = toolCallId,
-                        name = toolName,
-                        args = null,
-                        text = resultText,
-                        isError = isError
-                    )),
-                    role = MessageRole.TOOL,
-                    timestamp = System.currentTimeMillis(),
-                    isLoading = false
-                )
-                currentState.copy(messages = newMessages + newToolResult)
-            } else {
-                currentState.copy(messages = newMessages)
-            }
-        }
-    }
-
     // ── 容量管理 ──
 
     /** 清理超出容量的旧 run 记录 */
