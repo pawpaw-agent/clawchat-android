@@ -638,40 +638,65 @@ private fun ToolMessageCard(message: MessageUi) {
 /**
  * 工具调用卡片
  */
+/**
+ * 工具调用卡片
+ * 标题栏：图标 + 名称 + 展开按钮
+ */
 @Composable
 private fun ToolCallCard(toolCall: MessageContentItem.ToolCall) {
+    var expanded by remember { mutableStateOf(false) }
+    val hasArgs = toolCall.args != null && toolCall.args.toString().isNotBlank()
+    
     Card(
-        modifier = Modifier.widthIn(max = 320.dp),
+        modifier = Modifier
+            .widthIn(max = 320.dp)
+            .clickable(enabled = hasArgs) { expanded = !expanded },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
         ),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.Build,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.size(18.dp)
-            )
-            Column(modifier = Modifier.weight(1f)) {
+        Column {
+            // 标题栏：图标 + 名称 + 展开按钮
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Build,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier.size(18.dp)
+                )
                 Text(
                     text = toolCall.name,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier.weight(1f)
                 )
-                toolCall.args?.let { args ->
+                // 展开按钮
+                if (hasArgs) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (expanded) "收起" else "展开",
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            // 内容（展开时显示）
+            if (expanded && hasArgs) {
+                SelectionContainer {
                     Text(
-                        text = args.toString().take(100) + if (args.toString().length > 100) "..." else "",
+                        text = toolCall.args.toString(),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
-                        maxLines = 2
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
                     )
                 }
             }
@@ -681,11 +706,18 @@ private fun ToolCallCard(toolCall: MessageContentItem.ToolCall) {
 
 /**
  * 工具结果卡片
+ * 标题栏：图标 + 名称 + 展开按钮
  */
 @Composable
 private fun ToolResultCard(toolResult: MessageContentItem.ToolResult) {
+    var expanded by remember { mutableStateOf(false) }
+    val hasText = toolResult.text.isNotBlank()
+    val isLongText = toolResult.text.length > 200
+    
     Card(
-        modifier = Modifier.widthIn(max = 320.dp),
+        modifier = Modifier
+            .widthIn(max = 320.dp)
+            .clickable(enabled = isLongText) { expanded = !expanded },
         colors = CardDefaults.cardColors(
             containerColor = if (toolResult.isError) {
                 MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
@@ -695,37 +727,55 @@ private fun ToolResultCard(toolResult: MessageContentItem.ToolResult) {
         ),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            Icon(
-                imageVector = if (toolResult.isError) Icons.Default.ErrorOutline else Icons.Default.CheckCircle,
-                contentDescription = null,
-                tint = if (toolResult.isError) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.primary
-                },
-                modifier = Modifier.size(18.dp)
-            )
-            Column(modifier = Modifier.weight(1f)) {
+        Column {
+            // 标题栏：图标 + 名称 + 展开按钮
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (toolResult.isError) Icons.Default.ErrorOutline else Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = if (toolResult.isError) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    modifier = Modifier.size(18.dp)
+                )
                 toolResult.name?.let { name ->
                     Text(
                         text = name,
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
                     )
                 }
-                Text(
-                    text = toolResult.text.take(200) + if (toolResult.text.length > 200) "..." else "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    maxLines = 4
-                )
+                // 展开按钮
+                if (isLongText) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (expanded) "收起" else "展开",
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            // 内容
+            if (hasText) {
+                SelectionContainer {
+                    Text(
+                        text = if (expanded || !isLongText) toolResult.text else toolResult.text.take(200) + "...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
+                    )
+                }
             }
         }
     }
