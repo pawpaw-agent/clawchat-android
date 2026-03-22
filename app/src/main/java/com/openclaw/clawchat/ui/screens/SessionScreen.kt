@@ -36,24 +36,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
-import com.openclaw.clawchat.ui.state.ConnectionStatus
-import com.openclaw.clawchat.ui.state.ChatAttachment
-import com.openclaw.clawchat.ui.state.MessageContentItem
-import com.openclaw.clawchat.ui.state.SLASH_COMMANDS
-import com.openclaw.clawchat.ui.state.SlashCommandCategory
-import com.openclaw.clawchat.ui.state.SlashCommandDef
-import com.openclaw.clawchat.ui.state.getSlashCommandCompletions
-import com.openclaw.clawchat.ui.state.MessageGroup
-import com.openclaw.clawchat.ui.state.MessageRole
-import com.openclaw.clawchat.ui.state.MessageUi
+import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.state.SessionEvent
 import com.openclaw.clawchat.ui.state.StreamSegment
+import com.openclaw.clawchat.ui.screens.session.*
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import com.openclaw.clawchat.ui.state.SessionViewModel
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
 
 /**
  * 会话界面屏幕（1:1 复刻 webchat）
@@ -858,45 +847,6 @@ private fun MessageActionDropdownMenu(
 /**
  * 格式化消息为 Markdown
  */
-private fun formatMessageAsMarkdown(message: MessageUi): String {
-    val sb = StringBuilder()
-    
-    // 添加角色标识
-    val roleLabel = when (message.role) {
-        MessageRole.USER -> "**User:**"
-        MessageRole.ASSISTANT -> "**Assistant:**"
-        MessageRole.SYSTEM -> "**System:**"
-        MessageRole.TOOL -> "**Tool:**"
-    }
-    sb.appendLine(roleLabel)
-    sb.appendLine()
-    
-    // 添加内容
-    message.content.forEach { item ->
-        when (item) {
-            is MessageContentItem.Text -> {
-                sb.appendLine(item.text)
-            }
-            is MessageContentItem.Image -> {
-                sb.appendLine("![image](data:${item.mimeType ?: "image/png"};base64,${item.base64 ?: ""})")
-            }
-            is MessageContentItem.ToolCall -> {
-                sb.appendLine("```json")
-                sb.appendLine("// Tool: ${item.name}")
-                item.args?.let { sb.appendLine(it.toString()) }
-                sb.appendLine("```")
-            }
-            is MessageContentItem.ToolResult -> {
-                sb.appendLine("```")
-                sb.appendLine(item.text)
-                sb.appendLine("```")
-            }
-        }
-    }
-    
-    return sb.toString().trim()
-}
-
 /**
  * 消息图片内容渲染
  */
@@ -2019,21 +1969,6 @@ private fun ErrorSnackbar(
                 )
             }
         }
-    }
-}
-
-/**
- * 格式化时间戳
- */
-private fun formatTimestamp(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-
-    return when {
-        diff < 60_000 -> "刚刚"
-        diff < 3600_000 -> "${diff / 60_000}分钟前"
-        diff < 86400_000 -> "${diff / 3600_000}小时前"
-        else -> SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(timestamp))
     }
 }
 

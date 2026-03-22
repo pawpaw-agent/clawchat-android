@@ -5,56 +5,6 @@ import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
 
 /**
- * 消息分组逻辑
- * 对应 WebChat groupMessages
- */
-data class MessageGroup(
-    val role: MessageRole,
-    val messages: List<MessageUi>,
-    val isStreaming: Boolean = false
-) {
-    val lastMessage: MessageUi? get() = messages.lastOrNull()
-    val firstMessage: MessageUi? get() = messages.firstOrNull()
-}
-
-/**
- * 将消息按角色分组（Slack 风格）
- * 相邻的同角色消息合并为一组
- */
-fun groupMessages(messages: List<MessageUi>): List<MessageGroup> {
-    if (messages.isEmpty()) return emptyList()
-    
-    val groups = mutableListOf<MessageGroup>()
-    var currentRole = messages.first().role
-    var currentMessages = mutableListOf<MessageUi>()
-    
-    messages.forEach { message ->
-        if (message.role == currentRole) {
-            currentMessages.add(message)
-        } else {
-            // 保存当前组
-            groups.add(MessageGroup(
-                role = currentRole,
-                messages = currentMessages.toList()
-            ))
-            // 开始新组
-            currentRole = message.role
-            currentMessages = mutableListOf(message)
-        }
-    }
-    
-    // 保存最后一组
-    if (currentMessages.isNotEmpty()) {
-        groups.add(MessageGroup(
-            role = currentRole,
-            messages = currentMessages.toList()
-        ))
-    }
-    
-    return groups
-}
-
-/**
  * 格式化时间戳
  */
 fun formatTimestamp(timestamp: Long): String {
