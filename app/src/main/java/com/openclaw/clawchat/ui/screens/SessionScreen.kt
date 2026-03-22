@@ -664,13 +664,7 @@ private fun MessageContentCard(
     // 只渲染文本内容，工具卡片在分组级别渲染
     if (textContent.isBlank()) return
     
-    // 统一字体大小
-    val textStyle = when (messageFontSize) {
-        FontSize.SMALL -> MaterialTheme.typography.bodySmall
-        FontSize.MEDIUM -> MaterialTheme.typography.bodyMedium
-        FontSize.LARGE -> MaterialTheme.typography.bodyLarge
-    }
-    
+    // 统一字体大小（sp）
     val textSize = when (messageFontSize) {
         FontSize.SMALL -> 14.sp
         FontSize.MEDIUM -> 16.sp
@@ -700,7 +694,7 @@ private fun MessageContentCard(
                 )
                 .padding(8.dp)
         ) {
-            // 助手消息使用原生 Markdown 渲染
+            // 助手消息使用 Markdown 渲染
             if (!isUser) {
                 MarkdownText(
                     content = textContent,
@@ -708,9 +702,10 @@ private fun MessageContentCard(
                     fontSize = textSize
                 )
             } else {
+                // 用户消息也使用统一的字体大小
                 Text(
                     text = textContent,
-                    style = textStyle,
+                    fontSize = textSize,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             }
