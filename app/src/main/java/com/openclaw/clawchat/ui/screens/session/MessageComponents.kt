@@ -344,3 +344,95 @@ fun pairToolCards(message: MessageUi): List<ToolCard> {
         )
     }
 }
+
+/**
+ * 工具标签行
+ */
+@Composable
+fun ToolTagsRow(toolCards: List<ToolCard>) {
+    var expandedIndex by remember { mutableStateOf(-1) }
+    
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            toolCards.forEachIndexed { index, card ->
+                ToolTag(
+                    name = when (card.kind) {
+                        ToolCardKind.CALL -> card.name
+                        ToolCardKind.RESULT -> "output"
+                    },
+                    isError = card.isError,
+                    isExpanded = expandedIndex == index,
+                    onClick = { 
+                        expandedIndex = if (expandedIndex == index) -1 else index 
+                    }
+                )
+            }
+        }
+        
+        if (expandedIndex >= 0 && expandedIndex < toolCards.size) {
+            val card = toolCards[expandedIndex]
+            ToolDetailCard(toolCard = card)
+        }
+    }
+}
+
+/**
+ * 单个工具标签
+ */
+@Composable
+fun ToolTag(
+    name: String,
+    isError: Boolean,
+    isExpanded: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(4.dp),
+        color = if (isError) {
+            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+        },
+        modifier = Modifier.height(24.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = if (isError) Icons.Default.ErrorOutline else Icons.Default.Terminal,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = if (isError) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.primary
+                }
+            )
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isError) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = if (isError) {
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                }
+            )
+        }
+    }
+}
