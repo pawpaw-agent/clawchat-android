@@ -670,7 +670,8 @@ private fun ToolTag(
  */
 @Composable
 private fun ToolDetailCard(toolCard: ToolCard) {
-    var expanded by remember { mutableStateOf(toolCard.kind == ToolCardKind.CALL) } // tool_call 默认展开
+    // 默认折叠，点击展开
+    var expanded by remember { mutableStateOf(false) }
     val hasContent = when (toolCard.kind) {
         ToolCardKind.CALL -> toolCard.args != null && toolCard.args.isNotBlank()
         ToolCardKind.RESULT -> toolCard.result != null && toolCard.result.isNotBlank()
