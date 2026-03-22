@@ -529,10 +529,14 @@ class SessionViewModel @Inject constructor(
         // 设置 verboseLevel 为 "full" 以接收工具流事件
         viewModelScope.launch {
             try {
-                gateway.sessionsPatch(sessionId, verboseLevel = "full")
-                Log.d(TAG, "=== setSessionId: verboseLevel set to 'full'")
+                val response = gateway.sessionsPatch(sessionId, verboseLevel = "full")
+                if (response.isSuccess()) {
+                    Log.d(TAG, "=== setSessionId: verboseLevel set to 'full' - SUCCESS")
+                } else {
+                    Log.w(TAG, "=== setSessionId: sessionsPatch FAILED: code=${response.error?.code}, message=${response.error?.message}")
+                }
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to set verboseLevel: ${e.message}")
+                Log.w(TAG, "=== setSessionId: Exception setting verboseLevel: ${e.message}")
             }
         }
     }
