@@ -1360,12 +1360,13 @@ private fun MessageItem(message: MessageUi) {
                         if (!isUser) {
                             MarkdownText(
                                 content = textContent,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                fontSize = textSize
                             )
                         } else {
                             Text(
                                 text = textContent,
-                                style = MaterialTheme.typography.bodyMedium,
+                                fontSize = textSize,
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
