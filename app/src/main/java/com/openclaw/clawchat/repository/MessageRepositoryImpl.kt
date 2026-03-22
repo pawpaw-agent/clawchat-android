@@ -124,12 +124,12 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
                     "text" -> MessageContentItem.Text(
                         text = obj["text"]?.jsonPrimitive?.content ?: ""
                     )
-                    "tool_call", "tool_use" -> MessageContentItem.ToolCall(
+                    "tool_call", "tool_use", "toolCall", "toolUse" -> MessageContentItem.ToolCall(
                         id = obj["id"]?.jsonPrimitive?.content,
                         name = obj["name"]?.jsonPrimitive?.content ?: "unknown",
                         args = obj["arguments"]?.jsonObject ?: obj["args"]?.jsonObject
                     )
-                    "tool_result" -> MessageContentItem.ToolResult(
+                    "tool_result", "toolResult" -> MessageContentItem.ToolResult(
                         toolCallId = obj["toolCallId"]?.jsonPrimitive?.content ?: obj["tool_call_id"]?.jsonPrimitive?.content,
                         name = obj["name"]?.jsonPrimitive?.content,
                         args = obj["args"]?.jsonObject,
@@ -139,7 +139,7 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
                     "image" -> MessageContentItem.Image(
                         url = obj["url"]?.jsonPrimitive?.content
                     )
-                    else -> null
+                    else -> null // 跳过未知类型如 thinking
                 }
             } ?: listOf(MessageContentItem.Text(content))
         } catch (e: Exception) {
