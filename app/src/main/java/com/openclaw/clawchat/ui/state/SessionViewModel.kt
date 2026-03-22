@@ -896,6 +896,62 @@ class SessionViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 删除消息
+     */
+    fun deleteMessage(messageId: String) {
+        _state.update { state ->
+            state.copy(
+                chatMessages = state.chatMessages.filter { it.id != messageId }
+            )
+        }
+        // TODO: 同步到 Gateway/Room
+    }
+    
+    /**
+     * 重新生成最后一条助手消息
+     */
+    fun regenerateLastMessage() {
+        viewModelScope.launch {
+            val sessionId = _state.value.sessionId ?: return@launch
+            val messages = _state.value.chatMessages
+            
+            // 找到最后一条用户消息
+            val lastUserMessage = messages.lastOrNull { it.role == MessageRole.USER }
+            if (lastUserMessage == null) {
+                Log.w(TAG, "No user message to regenerate from")
+                return@launch
+            }
+            
+            // 移除最后一条助手消息及其后的所有消息
+            val lastAssistantIndex = messages.indexOfLast { it.role == MessageRole.ASSISTANT }
+            val updatedMessages = if (lastAssistantIndex >= 0) {
+                messages.subList(0, lastAssistantIndex)
+            } else {
+                messages
+            }
+            
+            _state.update { it.copy(
+                chatMessages = updatedMessages,
+                isLoading = true,
+                isSending = true,
+                chatStream = null,
+                chatStreamSegments = emptyList(),
+                chatToolMessages = emptyList(),
+                toolStreamById = emptyMap(),
+                toolStreamOrder = emptyList()
+            )}
+            
+            // 重新发送最后一条用户消息
+            try {
+                gateway.chatSend(sessionId, lastUserMessage.getTextContent())
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to regenerate message", e)
+                _state.update { it.copy(error = "重新生成失败：${e.message}", isLoading = false, isSending = false) }
+            }
+        }
+    }
+
     fun clearError() {
         _state.update { it.copy(error = null) }
     }

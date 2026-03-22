@@ -1,7 +1,9 @@
 package com.openclaw.clawchat.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -161,7 +163,9 @@ fun SessionScreen(
                             streamSegments = state.chatStreamSegments,
                             toolMessages = state.chatToolMessages,
                             chatStream = state.chatStream,
-                            messageFontSize = messageFontSize
+                            messageFontSize = messageFontSize,
+                            onDeleteMessage = { viewModel.deleteMessage(it) },
+                            onRegenerate = { viewModel.regenerateLastMessage() }
                         )
                     }
 
@@ -402,7 +406,9 @@ private fun MessageGroupList(
     streamSegments: List<com.openclaw.clawchat.ui.state.StreamSegment> = emptyList(),
     toolMessages: List<MessageUi> = emptyList(),
     chatStream: String? = null,
-    messageFontSize: FontSize = FontSize.MEDIUM
+    messageFontSize: FontSize = FontSize.MEDIUM,
+    onDeleteMessage: (String) -> Unit = {},
+    onRegenerate: () -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -412,7 +418,12 @@ private fun MessageGroupList(
     ) {
         // 1. 历史消息
         items(groups, key = { it.messages.first().id }) { group ->
-            MessageGroupItem(group = group, messageFontSize = messageFontSize)
+            MessageGroupItem(
+                group = group, 
+                messageFontSize = messageFontSize,
+                onDeleteMessage = onDeleteMessage,
+                onRegenerate = onRegenerate
+            )
         }
         
         // 2. 文本段（工具执行前提交的文本）
@@ -466,7 +477,12 @@ private fun MessageGroupList(
  * 消息分组项（Slack 风格）
  */
 @Composable
-private fun MessageGroupItem(group: MessageGroup, messageFontSize: FontSize = FontSize.MEDIUM) {
+private fun MessageGroupItem(
+    group: MessageGroup, 
+    messageFontSize: FontSize = FontSize.MEDIUM,
+    onDeleteMessage: (String) -> Unit = {},
+    onRegenerate: () -> Unit = {}
+) {
     val isUser = group.role == MessageRole.USER
     val isSystem = group.role == MessageRole.SYSTEM
     val isTool = group.role == MessageRole.TOOL
@@ -603,7 +619,9 @@ private fun MessageGroupItem(group: MessageGroup, messageFontSize: FontSize = Fo
                             message = message,
                             isUser = isUser,
                             isLastInGroup = index == group.messages.lastIndex,
-                            messageFontSize = messageFontSize
+                            messageFontSize = messageFontSize,
+                            onDelete = { onDeleteMessage(message.id) },
+                            onRegenerate = onRegenerate
                         )
                         
                         // 如果这条消息有 ToolCall，立即显示工具卡片
@@ -663,12 +681,16 @@ private fun MessageGroupItem(group: MessageGroup, messageFontSize: FontSize = Fo
 /**
  * 消息内容卡片（支持文本和工具）
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MessageContentCard(
     message: MessageUi,
     isUser: Boolean,
     isLastInGroup: Boolean,
-    messageFontSize: FontSize = FontSize.MEDIUM
+    messageFontSize: FontSize = FontSize.MEDIUM,
+    onCopy: (String) -> Unit = {},
+    onDelete: () -> Unit = {},
+    onRegenerate: () -> Unit = {}
 ) {
     val textContent = message.getTextContent()
     val images = message.content.filterIsInstance<MessageContentItem.Image>()
@@ -682,6 +704,10 @@ private fun MessageContentCard(
         FontSize.MEDIUM -> 13.sp
         FontSize.LARGE -> 16.sp
     }
+    
+    // 长按菜单状态
+    var showMenu by remember { mutableStateOf(false) }
+    val clipboardManager = LocalClipboardManager.current
     
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -711,6 +737,10 @@ private fun MessageContentCard(
                             MaterialTheme.colorScheme.secondaryContainer
                         }
                     )
+                    .combinedClickable(
+                        onClick = {},
+                        onLongClick = { showMenu = true }
+                    )
                     .padding(8.dp)
             ) {
                 // 助手消息使用 Markdown 渲染
@@ -729,9 +759,141 @@ private fun MessageContentCard(
                         textColor = MaterialTheme.colorScheme.onPrimary
                     )
                 }
+                
+                // 长按菜单
+                if (showMenu) {
+                    MessageActionDropdownMenu(
+                        isUser = isUser,
+                        onCopy = {
+                            val markdown = formatMessageAsMarkdown(message)
+                            clipboardManager.setText(AnnotatedString(markdown))
+                            showMenu = false
+                        },
+                        onDelete = {
+                            onDelete()
+                            showMenu = false
+                        },
+                        onRegenerate = {
+                            onRegenerate()
+                            showMenu = false
+                        },
+                        onDismiss = { showMenu = false }
+                    )
+                }
             }
         }
     }
+}
+
+/**
+ * 消息操作下拉菜单
+ */
+@Composable
+private fun MessageActionDropdownMenu(
+    isUser: Boolean,
+    onCopy: () -> Unit,
+    onDelete: () -> Unit,
+    onRegenerate: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    DropdownMenu(
+        expanded = true,
+        onDismissRequest = onDismiss
+    ) {
+        // 复制
+        DropdownMenuItem(
+            text = { 
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("复制")
+                }
+            },
+            onClick = onCopy
+        )
+        
+        // 复制为 Markdown
+        DropdownMenuItem(
+            text = { 
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("复制为 Markdown")
+                }
+            },
+            onClick = onCopy
+        )
+        
+        HorizontalDivider()
+        
+        // 删除
+        DropdownMenuItem(
+            text = { 
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("删除", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            onClick = onDelete
+        )
+        
+        // 重新生成（仅助手消息）
+        if (!isUser) {
+            DropdownMenuItem(
+                text = { 
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("重新生成")
+                    }
+                },
+                onClick = onRegenerate
+            )
+        }
+    }
+}
+
+/**
+ * 格式化消息为 Markdown
+ */
+private fun formatMessageAsMarkdown(message: MessageUi): String {
+    val sb = StringBuilder()
+    
+    // 添加角色标识
+    val roleLabel = when (message.role) {
+        MessageRole.USER -> "**User:**"
+        MessageRole.ASSISTANT -> "**Assistant:**"
+        MessageRole.SYSTEM -> "**System:**"
+        MessageRole.TOOL -> "**Tool:**"
+    }
+    sb.appendLine(roleLabel)
+    sb.appendLine()
+    
+    // 添加内容
+    message.content.forEach { item ->
+        when (item) {
+            is MessageContentItem.Text -> {
+                sb.appendLine(item.text)
+            }
+            is MessageContentItem.Image -> {
+                sb.appendLine("![image](data:${item.mimeType ?: "image/png"};base64,${item.base64 ?: ""})")
+            }
+            is MessageContentItem.ToolCall -> {
+                sb.appendLine("```json")
+                sb.appendLine("// Tool: ${item.name}")
+                item.args?.let { sb.appendLine(it.toString()) }
+                sb.appendLine("```")
+            }
+            is MessageContentItem.ToolResult -> {
+                sb.appendLine("```")
+                sb.appendLine(item.text)
+                sb.appendLine("```")
+            }
+        }
+    }
+    
+    return sb.toString().trim()
 }
 
 /**
