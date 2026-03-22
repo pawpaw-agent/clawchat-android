@@ -28,6 +28,9 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.UUID
 import javax.inject.Inject
+import com.openclaw.clawchat.ui.state.SLASH_COMMANDS
+import com.openclaw.clawchat.ui.state.SlashCommandCategory
+import com.openclaw.clawchat.ui.state.SlashCommandDef
 
 /**
  * 会话界面 ViewModel（1:1 复刻 webchat）
@@ -711,6 +714,102 @@ class SessionViewModel @Inject constructor(
      */
     fun clearAttachments() {
         _state.update { it.copy(attachments = emptyList()) }
+    }
+    
+    /**
+     * 执行斜杠命令
+     */
+    fun executeSlashCommand(command: SlashCommandDef, args: String) {
+        Log.d(TAG, "=== executeSlashCommand: ${command.name}, args=$args")
+        
+        when (command.name) {
+            "clear" -> {
+                // 清空聊天历史
+                viewModelScope.launch {
+                    val sessionId = _state.value.sessionId ?: return@launch
+                    messageRepository.clearMessages(sessionId)
+                    _state.update { it.copy(
+                        chatMessages = emptyList(),
+                        chatStream = null,
+                        chatStreamSegments = emptyList(),
+                        chatToolMessages = emptyList(),
+                        toolStreamById = emptyMap(),
+                        toolStreamOrder = emptyList(),
+                        inputText = ""
+                    )}
+                }
+            }
+            "help" -> {
+                // 显示帮助信息
+                val helpText = buildString {
+                    appendLine("## 可用命令")
+                    appendLine()
+                    SLASH_COMMANDS.groupBy { it.category }.forEach { (category, commands) ->
+                        val categoryLabel = when (category) {
+                            SlashCommandCategory.SESSION -> "会话"
+                            SlashCommandCategory.MODEL -> "模型"
+                            SlashCommandCategory.AGENTS -> "Agents"
+                            SlashCommandCategory.TOOLS -> "工具"
+                        }
+                        appendLine("### $categoryLabel")
+                        commands.forEach { cmd ->
+                            val argsHint = if (cmd.args != null) " ${cmd.args}" else ""
+                            appendLine("- `/${cmd.name}$argsHint` - ${cmd.description}")
+                        }
+                        appendLine()
+                    }
+                }
+                _state.update { it.copy(
+                    inputText = "",
+                    chatMessages = it.chatMessages + MessageUi(
+                        id = "help-${System.currentTimeMillis()}",
+                        content = listOf(MessageContentItem.Text(helpText)),
+                        role = MessageRole.ASSISTANT,
+                        timestamp = System.currentTimeMillis()
+                    )
+                )}
+            }
+            "new" -> {
+                // 新会话 - 通过事件通知上层
+                _state.update { it.copy(inputText = "") }
+                // TODO: 导航到新会话
+            }
+            "reset" -> {
+                // 重置会话
+                viewModelScope.launch {
+                    val sessionId = _state.value.sessionId ?: return@launch
+                    // 发送 reset 请求
+                    try {
+                        gateway.call("sessions.reset", mapOf("key" to JsonPrimitive(sessionId)))
+                        // 清空本地状态
+                        _state.update { it.copy(
+                            chatMessages = emptyList(),
+                            chatStream = null,
+                            chatStreamSegments = emptyList(),
+                            chatToolMessages = emptyList(),
+                            toolStreamById = emptyMap(),
+                            toolStreamOrder = emptyList(),
+                            inputText = ""
+                        )}
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to reset session", e)
+                    }
+                }
+            }
+            else -> {
+                // 其他命令发送到 Gateway
+                viewModelScope.launch {
+                    val sessionId = _state.value.sessionId ?: return@launch
+                    val message = "/${command.name}${if (args.isNotBlank()) " $args" else ""}"
+                    try {
+                        gateway.chatSend(sessionId, message)
+                        _state.update { it.copy(inputText = "", isSending = true, isLoading = true) }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to send command", e)
+                    }
+                }
+            }
+        }
     }
 
     fun clearError() {

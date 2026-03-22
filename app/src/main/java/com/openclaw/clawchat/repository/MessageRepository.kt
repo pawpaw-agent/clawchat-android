@@ -38,6 +38,11 @@ interface MessageRepository {
      * 删除会话消息
      */
     suspend fun deleteSessionMessages(sessionId: String)
+    
+    /**
+     * 清空会话消息（别名）
+     */
+    suspend fun clearMessages(sessionId: String) = deleteSessionMessages(sessionId)
 
     /**
      * 搜索消息

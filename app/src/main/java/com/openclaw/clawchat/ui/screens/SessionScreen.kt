@@ -36,6 +36,10 @@ import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.ChatAttachment
 import com.openclaw.clawchat.ui.state.MessageContentItem
+import com.openclaw.clawchat.ui.state.SLASH_COMMANDS
+import com.openclaw.clawchat.ui.state.SlashCommandCategory
+import com.openclaw.clawchat.ui.state.SlashCommandDef
+import com.openclaw.clawchat.ui.state.getSlashCommandCompletions
 import com.openclaw.clawchat.ui.state.MessageGroup
 import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
@@ -192,7 +196,10 @@ fun SessionScreen(
                     focusRequester = focusRequester,
                     attachments = state.attachments,
                     onAddAttachment = { viewModel.addAttachment(it) },
-                    onRemoveAttachment = { viewModel.removeAttachment(it) }
+                    onRemoveAttachment = { viewModel.removeAttachment(it) },
+                    onExecuteCommand = { cmd, args ->
+                        viewModel.executeSlashCommand(cmd, args)
+                    }
                 )
             }
 
@@ -1447,7 +1454,7 @@ private fun LoadingOverlay() {
 }
 
 /**
- * 消息输入框（支持附件）
+ * 消息输入框（支持附件和斜杠命令）
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -1459,9 +1466,71 @@ private fun MessageInputBar(
     focusRequester: FocusRequester,
     attachments: List<ChatAttachment> = emptyList(),
     onAddAttachment: (ChatAttachment) -> Unit = {},
-    onRemoveAttachment: (String) -> Unit = {}
+    onRemoveAttachment: (String) -> Unit = {},
+    onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> }
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    
+    // 斜杠命令菜单状态
+    var slashMenuOpen by remember { mutableStateOf(false) }
+    var slashMenuItems by remember { mutableStateOf<List<SlashCommandDef>>(emptyList()) }
+    var slashMenuIndex by remember { mutableStateOf(0) }
+    var slashMenuCommand by remember { mutableStateOf<SlashCommandDef?>(null) }
+    var slashMenuArgItems by remember { mutableStateOf<List<String>>(emptyList()) }
+    var slashMenuMode by remember { mutableStateOf("command") } // "command" or "args"
+    
+    // 更新斜杠菜单
+    LaunchedEffect(value) {
+        val trimmed = value.trim()
+        
+        // 参数模式: /command <partial-arg>
+        val argMatch = Regex("^/(\\S+)\\s+(.*)$").find(trimmed)
+        if (argMatch != null) {
+            val cmdName = argMatch.groupValues[1].lowercase()
+            val argFilter = argMatch.groupValues[2].lowercase()
+            val cmd = SLASH_COMMANDS.find { it.name == cmdName }
+            if (cmd != null && cmd.argOptions.isNotEmpty()) {
+                val filtered = if (argFilter.isNotEmpty()) {
+                    cmd.argOptions.filter { it.lowercase().startsWith(argFilter) }
+                } else {
+                    cmd.argOptions
+                }
+                if (filtered.isNotEmpty()) {
+                    slashMenuMode = "args"
+                    slashMenuCommand = cmd
+                    slashMenuArgItems = filtered
+                    slashMenuOpen = true
+                    slashMenuIndex = 0
+                    slashMenuItems = emptyList()
+                    return@LaunchedEffect
+                }
+            }
+            slashMenuOpen = false
+            slashMenuMode = "command"
+            slashMenuCommand = null
+            slashMenuArgItems = emptyList()
+            return@LaunchedEffect
+        }
+        
+        // 命令模式: /partial-command
+        val commandMatch = Regex("^/(\\S*)$").find(trimmed)
+        if (commandMatch != null) {
+            val filter = commandMatch.groupValues[1]
+            val items = getSlashCommandCompletions(filter)
+            slashMenuItems = items
+            slashMenuOpen = items.isNotEmpty()
+            slashMenuIndex = 0
+            slashMenuMode = "command"
+            slashMenuCommand = null
+            slashMenuArgItems = emptyList()
+        } else {
+            slashMenuOpen = false
+            slashMenuMode = "command"
+            slashMenuCommand = null
+            slashMenuArgItems = emptyList()
+            slashMenuItems = emptyList()
+        }
+    }
     
     // 图片选择器
     val imagePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -1498,6 +1567,35 @@ private fun MessageInputBar(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
+            // 斜杠命令菜单
+            if (slashMenuOpen) {
+                SlashCommandMenu(
+                    items = if (slashMenuMode == "command") slashMenuItems else emptyList(),
+                    argItems = if (slashMenuMode == "args") slashMenuArgItems else emptyList(),
+                    command = slashMenuCommand,
+                    selectedIndex = slashMenuIndex,
+                    onSelect = { cmd ->
+                        if (cmd.argOptions.isNotEmpty()) {
+                            onValueChange("/${cmd.name} ")
+                        } else {
+                            onValueChange("/${cmd.name}")
+                            if (cmd.executeLocal) {
+                                onExecuteCommand(cmd, "")
+                            } else {
+                                onSend()
+                            }
+                        }
+                        slashMenuOpen = false
+                    },
+                    onSelectArg = { arg ->
+                        val cmd = slashMenuCommand ?: return@SlashCommandMenu
+                        onValueChange("/${cmd.name} $arg ")
+                        slashMenuOpen = false
+                    },
+                    onDismiss = { slashMenuOpen = false }
+                )
+            }
+            
             // 附件预览
             if (attachments.isNotEmpty()) {
                 FlowRow(
@@ -1715,5 +1813,163 @@ private fun formatTimestamp(timestamp: Long): String {
         diff < 3600_000 -> "${diff / 60_000}分钟前"
         diff < 86400_000 -> "${diff / 3600_000}小时前"
         else -> SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(timestamp))
+    }
+}
+
+/**
+ * 斜杠命令菜单
+ */
+@Composable
+private fun SlashCommandMenu(
+    items: List<SlashCommandDef>,
+    argItems: List<String>,
+    command: SlashCommandDef?,
+    selectedIndex: Int,
+    onSelect: (SlashCommandDef) -> Unit,
+    onSelectArg: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        LazyColumn(
+            modifier = Modifier.heightIn(max = 240.dp),
+            contentPadding = PaddingValues(vertical = 4.dp)
+        ) {
+            // 命令列表
+            if (items.isNotEmpty()) {
+                items(items, key = { it.name }) { cmd ->
+                    SlashCommandMenuItem(
+                        command = cmd,
+                        isSelected = items.indexOf(cmd) == selectedIndex,
+                        onClick = { onSelect(cmd) }
+                    )
+                }
+            }
+            
+            // 参数列表
+            if (argItems.isNotEmpty() && command != null) {
+                item {
+                    Text(
+                        text = command.description,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
+                items(argItems, key = { it }) { arg ->
+                    SlashCommandArgItem(
+                        arg = arg,
+                        isSelected = argItems.indexOf(arg) == selectedIndex,
+                        onClick = { onSelectArg(arg) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 斜杠命令菜单项
+ */
+@Composable
+private fun SlashCommandMenuItem(
+    command: SlashCommandDef,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val categoryLabel = when (command.category) {
+        SlashCommandCategory.SESSION -> "会话"
+        SlashCommandCategory.MODEL -> "模型"
+        SlashCommandCategory.AGENTS -> "Agents"
+        SlashCommandCategory.TOOLS -> "工具"
+    }
+    
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        } else {
+            Color.Transparent
+        }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 命令名称
+            Text(
+                text = "/${command.name}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.width(80.dp)
+            )
+            
+            // 描述
+            Text(
+                text = command.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            
+            // 分类标签
+            Text(
+                text = categoryLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/**
+ * 斜杠命令参数项
+ */
+@Composable
+private fun SlashCommandArgItem(
+    arg: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        } else {
+            Color.Transparent
+        }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = arg,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
