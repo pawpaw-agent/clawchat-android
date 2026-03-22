@@ -433,4 +433,5 @@ private data class DefaultMarkdownTypography(
     override val list = TextStyle(fontSize = fontSize)
     override val quote = TextStyle(fontSize = fontSize)
     override val paragraph = TextStyle(fontSize = fontSize)
+    override val link = TextStyle(fontSize = fontSize)
 }
