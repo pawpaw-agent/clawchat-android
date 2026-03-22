@@ -71,21 +71,24 @@ fun MessageContentCard(
             Box(
                 modifier = Modifier
                     .widthIn(max = 320.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(DesignTokens.radiusLg))
                     .background(
-                        if (isUser) DesignTokens.accentSubtle else DesignTokens.bgHover
+                        if (isUser) DesignTokens.accentSubtle else DesignTokens.card
                     )
                     .combinedClickable(
                         onClick = {},
                         onLongClick = { showMenu = true }
                     )
-                    .padding(8.dp)
+                    .padding(
+                        horizontal = DesignTokens.space3,
+                        vertical = DesignTokens.space2
+                    )
             ) {
                 MarkdownText(
                     content = textContent,
                     modifier = Modifier.fillMaxWidth(),
                     fontSize = textSize,
-                    textColor = DesignTokens.text
+                    textColor = if (isUser) DesignTokens.text else DesignTokens.text
                 )
                 
                 if (showMenu) {
@@ -238,7 +241,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         shape = RoundedCornerShape(DesignTokens.radiusMd)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(DesignTokens.space3)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -252,27 +255,29 @@ fun ToolDetailCard(toolCard: ToolCard) {
                     modifier = Modifier.size(16.dp),
                     tint = when {
                         toolCard.isError -> DesignTokens.danger
-                        toolCard.kind == ToolCardKind.CALL -> Color(0xFFE53935)
+                        toolCard.kind == ToolCardKind.CALL -> DesignTokens.accent
                         else -> DesignTokens.accent2
                     }
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(DesignTokens.space2))
                 Text(
                     text = toolCard.name.replaceFirstChar { it.uppercase() },
                     modifier = Modifier.weight(1f),
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = DesignTokens.text
                 )
                 if (hasContent) {
                     Icon(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
+                        tint = DesignTokens.muted
                     )
                 }
             }
             
             if (expanded && hasContent) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(DesignTokens.space2))
                 SelectionContainer {
                     Column {
                         toolCard.args?.takeIf { it.isNotBlank() }?.let { args ->
@@ -280,19 +285,22 @@ fun ToolDetailCard(toolCard: ToolCard) {
                                 text = args,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = 11.sp,
+                                fontSize = DesignTokens.textXs,
                                 color = DesignTokens.muted
                             )
                         }
                         toolCard.result?.takeIf { it.isNotBlank() }?.let { result ->
                             if (toolCard.args?.isNotBlank() == true) {
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = DesignTokens.space1),
+                                    color = DesignTokens.border
+                                )
                             }
                             Text(
                                 text = result,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = 11.sp,
+                                fontSize = DesignTokens.textXs,
                                 color = if (toolCard.isError) DesignTokens.danger else DesignTokens.text
                             )
                         }
@@ -381,6 +389,7 @@ fun ToolTagsRow(toolCards: List<ToolCard>) {
 
 /**
  * 单个工具标签
+ * 对应 WebChat chat-tool-tag
  */
 @Composable
 fun ToolTag(
@@ -391,47 +400,47 @@ fun ToolTag(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(4.dp),
+        shape = RoundedCornerShape(DesignTokens.radiusSm),
         color = if (isError) {
-            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+            DesignTokens.dangerSubtle
         } else {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+            DesignTokens.bgHover
         },
-        modifier = Modifier.height(24.dp)
+        modifier = Modifier.height(DesignTokens.space6)  // 24dp
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp),
+            modifier = Modifier.padding(
+                horizontal = DesignTokens.space2,  // 8dp
+                vertical = DesignTokens.space1     // 4dp
+            ),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.space1)
         ) {
             Icon(
                 imageVector = if (isError) Icons.Default.ErrorOutline else Icons.Default.Terminal,
                 contentDescription = null,
                 modifier = Modifier.size(12.dp),
                 tint = if (isError) {
-                    MaterialTheme.colorScheme.error
+                    DesignTokens.danger
                 } else {
-                    MaterialTheme.colorScheme.primary
+                    DesignTokens.accent
                 }
             )
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelSmall,
+                fontSize = DesignTokens.textSm,
                 color = if (isError) {
-                    MaterialTheme.colorScheme.onErrorContainer
+                    DesignTokens.danger
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    DesignTokens.text
                 }
             )
             Icon(
                 imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                 contentDescription = null,
                 modifier = Modifier.size(12.dp),
-                tint = if (isError) {
-                    MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                }
+                tint = DesignTokens.muted
             )
         }
     }
