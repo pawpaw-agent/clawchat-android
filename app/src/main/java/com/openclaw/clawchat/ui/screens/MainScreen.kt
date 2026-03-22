@@ -19,6 +19,7 @@ import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MainViewModel
 import com.openclaw.clawchat.ui.state.SessionUi
 import com.openclaw.clawchat.ui.state.UiEvent
+import com.openclaw.clawchat.ui.screens.settings.SettingsScreen
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -163,11 +164,11 @@ fun MainScreen(
         }
     }
 
-    // 设置对话框
+    // 设置页面
     if (showSettings) {
-        SettingsDialog(
-            onDismiss = { showSettings = false },
-            onDisconnect = {
+        SettingsScreen(
+            onNavigateBack = { showSettings = false },
+            onShowPairing = { 
                 showSettings = false
                 onDisconnect()
             }
@@ -433,49 +434,6 @@ private fun SessionItem(
             }
         }
     }
-}
-
-/**
- * 设置对话框
- */
-@Composable
-private fun SettingsDialog(
-    onDismiss: () -> Unit,
-    onDisconnect: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("设置") },
-        text = {
-            Column {
-                Text(
-                    text = "断开与当前网关的连接？",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "断开后需要重新配对才能连接。",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onDisconnect,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text("断开连接")
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
 }
 
 /**
