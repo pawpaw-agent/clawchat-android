@@ -165,6 +165,7 @@ fun SystemMessageItem(message: MessageUi) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ToolDetailCard(toolCard: ToolCard) {
     var expanded by remember { mutableStateOf(false) }
