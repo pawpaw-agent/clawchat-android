@@ -87,6 +87,7 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 markdown-renderer = { group = "com.mikepenz", name = "multiplatform-markdown-renderer", version.ref = "markdown-renderer" }
 markdown-renderer-m3 = { group = "com.mikepenz", name = "multiplatform-markdown-renderer-m3", version.ref = "markdown-renderer-m3" }
 markdown-renderer-code = { group = "com.mikepenz", name = "multiplatform-markdown-renderer-code", version.ref = "markdown-renderer" }
+markdown-renderer-extended = { group = "com.mikepenz", name = "multiplatform-markdown-renderer-extended", version.ref = "markdown-renderer" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
