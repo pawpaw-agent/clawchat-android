@@ -1291,10 +1291,17 @@ private fun getToolDisplayName(toolName: String): String {
  * 单条消息组件
  */
 @Composable
-private fun MessageItem(message: MessageUi) {
+private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize.MEDIUM) {
     val isUser = message.role == MessageRole.USER
     val isSystem = message.role == MessageRole.SYSTEM
     val isTool = message.role == MessageRole.TOOL
+    
+    // 统一字体大小
+    val textSize = when (messageFontSize) {
+        FontSize.SMALL -> 12.sp
+        FontSize.MEDIUM -> 14.sp
+        FontSize.LARGE -> 16.sp
+    }
 
     if (isSystem) {
         // 系统消息
