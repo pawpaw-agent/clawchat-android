@@ -416,7 +416,8 @@ private fun MessageGroupList(
         
         // 3. 工具消息
         if (toolMessages.isNotEmpty()) {
-            items(toolMessages, key = { "tool_${it.id}" }) { toolMessage ->
+            android.util.Log.d("SessionScreen", "=== Rendering toolMessages: size=${toolMessages.size}")
+            items(toolMessages, key = { "tool_${it.id}_${it.content.hashCode()}" }) { toolMessage ->
                 ToolMessageCard(message = toolMessage)
             }
         }
@@ -1050,7 +1051,8 @@ private fun SystemMessageItem(message: MessageUi) {
  */
 @Composable
 private fun ToolMessageCard(message: MessageUi) {
-    val toolCards = remember(message) { pairToolCards(message) }
+    // 移除 remember 以确保每次 message 更新时重新计算
+    val toolCards = pairToolCards(message)
     
     // 如果没有 ToolCard 但消息是 tool 类型，从文本创建 ToolCard
     val finalToolCards = if (toolCards.isEmpty() && message.role == MessageRole.TOOL) {

@@ -232,6 +232,8 @@ class SessionViewModel @Inject constructor(
                 toolStreamById[id]?.buildMessage()
             }
             
+            Log.d(TAG, "=== handleToolStreamEvent: chatToolMessages.size=${chatToolMessages.size}, toolStreamOrder=${toolStreamOrder.size}")
+            
             currentState.copy(
                 toolStreamById = toolStreamById.toMap(),
                 toolStreamOrder = toolStreamOrder,
