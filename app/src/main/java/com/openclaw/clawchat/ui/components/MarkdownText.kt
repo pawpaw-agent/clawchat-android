@@ -99,26 +99,19 @@ fun MarkdownText(
         codeBackground = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         dividerColor = MaterialTheme.colorScheme.outlineVariant
     )
-    
-    // 自定义字体大小
-    val typography = markdownTypography(
-        text = MaterialTheme.typography.bodyLarge.copy(fontSize = fontSize),
-        h1 = MaterialTheme.typography.headlineLarge.copy(fontSize = fontSize * 1.5f),
-        h2 = MaterialTheme.typography.headlineMedium.copy(fontSize = fontSize * 1.3f),
-        h3 = MaterialTheme.typography.headlineSmall.copy(fontSize = fontSize * 1.1f),
-        code = MaterialTheme.typography.code.copy(fontSize = fontSize * 0.9f)
-    )
 
     // 使用 ProvideTextStyle 覆盖字体大小
     androidx.compose.material3.ProvideTextStyle(
-        value = MaterialTheme.typography.bodySmall
+        value = androidx.compose.ui.text.TextStyle(
+            fontSize = fontSize,
+            fontFamily = androidx.compose.ui.text.font.FontFamily.Default
+        )
     ) {
-        CompositionLocalProvider(LocalMarkdownTypography provides typography) {
-            Markdown(
-                content = truncatedContent,
-                modifier = modifier.fillMaxWidth(),
-                colors = colors,
-                components = markdownComponents(
+        Markdown(
+            content = truncatedContent,
+            modifier = modifier.fillMaxWidth(),
+            colors = colors,
+            components = markdownComponents(
                     codeFence = { model ->
                         CustomCodeFence(
                             content = model.content,
