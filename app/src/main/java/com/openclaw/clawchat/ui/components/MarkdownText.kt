@@ -42,6 +42,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mikepenz.markdown.compose.LocalMarkdownColors
 import com.mikepenz.markdown.compose.LocalMarkdownDimens
 import com.mikepenz.markdown.compose.LocalMarkdownPadding
@@ -53,6 +54,9 @@ import com.mikepenz.markdown.compose.elements.material.MarkdownBasicText
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.compose.components.markdownComponents
+import com.mikepenz.markdown.model.MarkdownPadding
+import com.mikepenz.markdown.model.markdownDimens
+import com.mikepenz.markdown.model.markdownTypography
 import dev.snipme.highlights.Highlights
 import dev.snipme.highlights.model.BoldHighlight
 import dev.snipme.highlights.model.ColorHighlight
@@ -97,10 +101,17 @@ fun MarkdownText(
         dividerColor = MaterialTheme.colorScheme.outlineVariant
     )
 
+    // 自定义字体大小（使用 bodySmall 的字体大小）
+    val typography = markdownTypography(
+        text = MaterialTheme.typography.bodySmall,
+        code = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
+    )
+
     Markdown(
         content = truncatedContent,
         modifier = modifier.fillMaxWidth(),
         colors = colors,
+        typography = typography,
         components = markdownComponents(
             codeFence = { model ->
                 CustomCodeFence(

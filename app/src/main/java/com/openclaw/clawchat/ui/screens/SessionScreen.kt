@@ -675,7 +675,7 @@ private fun MessageContentCard(
                         MaterialTheme.colorScheme.secondaryContainer
                     }
                 )
-                .padding(12.dp)
+                .padding(10.dp)
         ) {
             // 助手消息使用原生 Markdown 渲染
             if (!isUser) {
@@ -686,7 +686,7 @@ private fun MessageContentCard(
             } else {
                 Text(
                     text = textContent,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             }
