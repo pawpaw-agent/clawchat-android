@@ -421,11 +421,11 @@ private fun MessageGroupList(
             }
         }
         
-        // 4. 当前流式文本
+        // 4. 当前流式文本（使用动态 key 确保每次更新都重新渲染）
         if (!chatStream.isNullOrBlank()) {
-            item(key = "stream") {
+            item(key = "stream_${chatStream.length}") {
                 // 添加调试日志
-                android.util.Log.d("SessionScreen", "=== Rendering chatStream: ${chatStream.take(50)}...")
+                android.util.Log.d("SessionScreen", "=== Rendering chatStream: len=${chatStream.length}, text=${chatStream.take(30)}...")
                 MessageContentCard(
                     message = MessageUi(
                         id = "stream",
