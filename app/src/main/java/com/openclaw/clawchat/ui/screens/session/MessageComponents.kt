@@ -30,6 +30,9 @@ import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import kotlinx.serialization.json.jsonPrimitive
 
+/**
+ * 消息内容卡片
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageContentCard(
@@ -43,6 +46,7 @@ fun MessageContentCard(
 ) {
     val textContent = message.getTextContent()
     val images = message.content.filterIsInstance<MessageContentItem.Image>()
+    
     if (textContent.isBlank() && images.isEmpty()) return
     
     val textSize = when (messageFontSize) {
@@ -50,18 +54,31 @@ fun MessageContentCard(
         FontSize.MEDIUM -> 13.sp
         FontSize.LARGE -> 16.sp
     }
+    
     var showMenu by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
     
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        images.forEach { MessageImageContent(it) }
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // 渲染图片
+        images.forEach { image ->
+            MessageImageContent(image = image)
+        }
+        
+        // 渲染文本
         if (textContent.isNotBlank()) {
             Box(
                 modifier = Modifier
                     .widthIn(max = 320.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(if (isUser) DesignTokens.accentSubtle else DesignTokens.bgHover)
-                    .combinedClickable(onClick = {}, onLongClick = { showMenu = true })
+                    .background(
+                        if (isUser) DesignTokens.accentSubtle else DesignTokens.bgHover
+                    )
+                    .combinedClickable(
+                        onClick = {},
+                        onLongClick = { showMenu = true }
+                    )
                     .padding(8.dp)
             ) {
                 MarkdownText(
@@ -70,20 +87,21 @@ fun MessageContentCard(
                     fontSize = textSize,
                     textColor = DesignTokens.text
                 )
+                
                 if (showMenu) {
                     MessageActionDropdownMenu(
                         isUser = isUser,
-                        onCopy = { 
+                        onCopy = {
                             clipboardManager.setText(AnnotatedString(formatMessageAsMarkdown(message)))
-                            showMenu = false 
+                            showMenu = false
                         },
-                        onDelete = { 
+                        onDelete = {
                             onDelete()
-                            showMenu = false 
+                            showMenu = false
                         },
-                        onRegenerate = { 
+                        onRegenerate = {
                             onRegenerate()
-                            showMenu = false 
+                            showMenu = false
                         },
                         onDismiss = { showMenu = false }
                     )
@@ -93,15 +111,21 @@ fun MessageContentCard(
     }
 }
 
+/**
+ * 消息操作下拉菜单
+ */
 @Composable
 fun MessageActionDropdownMenu(
-    isUser: Boolean, 
-    onCopy: () -> Unit, 
-    onDelete: () -> Unit, 
-    onRegenerate: () -> Unit, 
+    isUser: Boolean,
+    onCopy: () -> Unit,
+    onDelete: () -> Unit,
+    onRegenerate: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    DropdownMenu(expanded = true, onDismissRequest = onDismiss) {
+    DropdownMenu(
+        expanded = true,
+        onDismissRequest = onDismiss
+    ) {
         DropdownMenuItem(
             text = { Text("复制") },
             onClick = onCopy
@@ -124,16 +148,21 @@ fun MessageActionDropdownMenu(
     }
 }
 
+/**
+ * 消息图片内容
+ */
 @Composable
 fun MessageImageContent(image: MessageContentItem.Image) {
     val bitmap = remember(image.base64) {
         try {
-            Base64.decode(image.base64 ?: return@remember null, Base64.DEFAULT)
-                .let { BitmapFactory.decodeByteArray(it, 0, it.size) }
-        } catch (e: Exception) { 
-            null 
+            val base64Data = image.base64 ?: return@remember null
+            val bytes = Base64.decode(base64Data, Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        } catch (e: Exception) {
+            null
         }
     }
+    
     Box(
         modifier = Modifier
             .widthIn(max = 280.dp)
@@ -151,88 +180,119 @@ fun MessageImageContent(image: MessageContentItem.Image) {
     }
 }
 
+/**
+ * 系统消息项
+ */
 @Composable
 fun SystemMessageItem(message: MessageUi) {
-    Card(colors = CardDefaults.cardColors(DesignTokens.bgHover), shape = RoundedCornerShape(DesignTokens.radiusMd)) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = DesignTokens.bgHover
+        ),
+        shape = RoundedCornerShape(DesignTokens.radiusMd)
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp), tint = DesignTokens.accent)
-            Spacer(Modifier.width(8.dp))
-            Text(message.getTextContent(), style = MaterialTheme.typography.bodySmall, color = DesignTokens.muted)
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = DesignTokens.accent
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = message.getTextContent(),
+                style = MaterialTheme.typography.bodySmall,
+                color = DesignTokens.muted
+            )
         }
     }
 }
 
+/**
+ * 工具详情卡片
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ToolDetailCard(toolCard: ToolCard) {
     var expanded by remember { mutableStateOf(false) }
     val hasContent = toolCard.args?.isNotBlank() == true || toolCard.result?.isNotBlank() == true
+    
+    val backgroundColor = when {
+        toolCard.isError -> DesignTokens.dangerSubtle
+        toolCard.kind == ToolCardKind.CALL -> Color(0x1AE53935)
+        else -> DesignTokens.bgHover
+    }
+    
     Card(
-        modifier = Modifier.fillMaxWidth().combinedClickable(hasContent) { expanded = !expanded },
-        colors = CardDefaults.cardColors(
-            containerColor = when { 
-                toolCard.isError -> DesignTokens.dangerSubtle 
-                toolCard.kind == ToolCardKind.CALL -> Color(0x1AE53935) 
-                else -> DesignTokens.bgHover 
-            }
-        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                enabled = hasContent,
+                onClick = { expanded = !expanded }
+            ),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
         shape = RoundedCornerShape(DesignTokens.radiusMd)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
-                    imageVector = when { 
-                        toolCard.isError -> Icons.Default.ErrorOutline 
-                        toolCard.kind == ToolCardKind.CALL -> Icons.Default.Bolt 
-                        else -> Icons.Default.CheckCircle 
+                    imageVector = when {
+                        toolCard.isError -> Icons.Default.ErrorOutline
+                        toolCard.kind == ToolCardKind.CALL -> Icons.Default.Bolt
+                        else -> Icons.Default.CheckCircle
                     },
-                    contentDescription = null, 
-                    modifier = Modifier.size(16.dp), 
-                    tint = when { 
-                        toolCard.isError -> DesignTokens.danger 
-                        toolCard.kind == ToolCardKind.CALL -> Color(0xFFE53935) 
-                        else -> DesignTokens.accent2 
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = when {
+                        toolCard.isError -> DesignTokens.danger
+                        toolCard.kind == ToolCardKind.CALL -> Color(0xFFE53935)
+                        else -> DesignTokens.accent2
                     }
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = toolCard.name.replaceFirstChar { it.uppercase() }, 
-                    modifier = Modifier.weight(1f), 
+                    text = toolCard.name.replaceFirstChar { it.uppercase() },
+                    modifier = Modifier.weight(1f),
                     fontWeight = FontWeight.Bold
                 )
                 if (hasContent) {
                     Icon(
-                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, 
-                        contentDescription = null, 
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
                 }
             }
+            
             if (expanded && hasContent) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 SelectionContainer {
                     Column {
-                        toolCard.args?.takeIf { it.isNotBlank() }?.let { 
+                        toolCard.args?.takeIf { it.isNotBlank() }?.let { args ->
                             Text(
-                                text = it, 
-                                style = MaterialTheme.typography.bodySmall, 
-                                fontFamily = FontFamily.Monospace, 
-                                fontSize = 11.sp, 
+                                text = args,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 11.sp,
                                 color = DesignTokens.muted
                             )
                         }
-                        toolCard.result?.takeIf { it.isNotBlank() }?.let {
+                        toolCard.result?.takeIf { it.isNotBlank() }?.let { result ->
                             if (toolCard.args?.isNotBlank() == true) {
-                                HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                             }
                             Text(
-                                text = it, 
-                                style = MaterialTheme.typography.bodySmall, 
-                                fontFamily = FontFamily.Monospace, 
-                                fontSize = 11.sp, 
+                                text = result,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 11.sp,
                                 color = if (toolCard.isError) DesignTokens.danger else DesignTokens.text
                             )
                         }
@@ -243,12 +303,44 @@ fun ToolDetailCard(toolCard: ToolCard) {
     }
 }
 
+/**
+ * 配对工具卡片
+ */
 fun pairToolCards(message: MessageUi): List<ToolCard> {
-    val calls = message.getToolCalls(); val results = message.getToolResults()
-    if (calls.isEmpty() && results.isEmpty()) return message.getTextContent().takeIf { it.isNotBlank() }?.let { listOf(ToolCard(ToolCardKind.RESULT, "output", null, it, false, null)) } ?: emptyList()
+    val calls = message.getToolCalls()
+    val results = message.getToolResults()
+    
+    if (calls.isEmpty() && results.isEmpty()) {
+        val textContent = message.getTextContent()
+        return if (textContent.isNotBlank()) {
+            listOf(ToolCard(
+                kind = ToolCardKind.RESULT,
+                name = "output",
+                args = null,
+                result = textContent,
+                isError = false,
+                callId = null
+            ))
+        } else {
+            emptyList()
+        }
+    }
+    
     return calls.map { call ->
-        val result = results.find { it.toolCallId == call.id }
-        val args = if (call.name == "exec") call.args?.get("command")?.jsonPrimitive?.content ?: call.args?.toString() else call.args?.toString()
-        ToolCard(if (result != null) ToolCardKind.RESULT else ToolCardKind.CALL, call.name, args, result?.text, result?.isError ?: false, call.id)
+        val matchingResult = results.find { it.toolCallId == call.id }
+        val displayArgs = if (call.name == "exec" && call.args != null) {
+            call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
+        } else {
+            call.args?.toString()
+        }
+        
+        ToolCard(
+            kind = if (matchingResult != null) ToolCardKind.RESULT else ToolCardKind.CALL,
+            name = call.name,
+            args = displayArgs,
+            result = matchingResult?.text,
+            isError = matchingResult?.isError ?: false,
+            callId = call.id
+        )
     }
 }
