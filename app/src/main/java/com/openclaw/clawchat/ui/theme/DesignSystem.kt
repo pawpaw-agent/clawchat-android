@@ -45,6 +45,7 @@ object DesignTokens {
     val accentSubtle = Color(0x1AFF5C5C) // 10% opacity - 强调背景
     val accentGlow = Color(0x33FF5C5C)   // 20% opacity - 光晕效果
     val accentForeground = Color(0xFFFAFAFA)
+    val accentContainer = Color(0xFF2A2A35) // 按钮容器背景
     
     // 次要强调色 - 青色
     val accent2 = Color(0xFF14B8A6)
