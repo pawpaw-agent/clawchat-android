@@ -920,16 +920,31 @@ private fun SystemMessageItem(message: MessageUi) {
 private fun ToolMessageCard(message: MessageUi) {
     val toolCards = remember(message) { pairToolCards(message) }
     
+    // 如果没有 ToolCard 但消息是 tool 类型，从文本创建 ToolCard
+    val finalToolCards = if (toolCards.isEmpty() && message.role == MessageRole.TOOL) {
+        val textContent = message.getTextContent()
+        if (textContent.isNotBlank()) {
+            listOf(ToolCard(
+                kind = ToolCardKind.RESULT,
+                name = "output",
+                args = null,
+                result = textContent,
+                isError = false,
+                callId = null
+            ))
+        } else emptyList()
+    } else toolCards
+    
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        toolCards.forEach { toolCard ->
+        finalToolCards.forEach { toolCard ->
             ToolDetailCard(toolCard = toolCard)
         }
         
-        // 如果没有 ToolCard，显示原始文本
-        if (toolCards.isEmpty()) {
+        // 如果仍然没有 ToolCard，显示原始文本（fallback）
+        if (finalToolCards.isEmpty()) {
             val textContent = message.getTextContent()
             if (textContent.isNotBlank()) {
                 Card(

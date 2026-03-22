@@ -560,6 +560,8 @@ class SessionViewModel @Inject constructor(
                             val content = msgObj["content"]?.let { json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
                             val timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
                             
+                            Log.d(TAG, "=== loadMessageHistory: role=$role, content=${content.take(200)}")
+                            
                             messageRepository.saveMessage(
                                 sessionId = sessionId,
                                 role = MessageRole.fromString(role),
