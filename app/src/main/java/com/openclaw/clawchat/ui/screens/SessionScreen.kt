@@ -680,7 +680,8 @@ private fun ToolDetailCard(toolCard: ToolCard) {
     var expanded by remember { mutableStateOf(false) }
     val hasContent = when (toolCard.kind) {
         ToolCardKind.CALL -> toolCard.args != null && toolCard.args.isNotBlank()
-        ToolCardKind.RESULT -> toolCard.result != null && toolCard.result.isNotBlank()
+        ToolCardKind.RESULT -> (toolCard.args != null && toolCard.args.isNotBlank()) || 
+                               (toolCard.result != null && toolCard.result.isNotBlank())
     }
     
     android.util.Log.d("SessionScreen", "=== ToolDetailCard: kind=${toolCard.kind}, hasContent=$hasContent, resultLen=${toolCard.result?.length}, argsLen=${toolCard.args?.length}")
@@ -718,11 +719,9 @@ private fun ToolDetailCard(toolCard: ToolCard) {
                     },
                     modifier = Modifier.size(16.dp)
                 )
+                // 标题：显示工具名称（而不是 "Tool output"）
                 Text(
-                    text = when (toolCard.kind) {
-                        ToolCardKind.CALL -> toolCard.name.replaceFirstChar { it.uppercase() }
-                        ToolCardKind.RESULT -> "Tool output"
-                    },
+                    text = toolCard.name.replaceFirstChar { it.uppercase() },
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (toolCard.isError) {
@@ -750,19 +749,33 @@ private fun ToolDetailCard(toolCard: ToolCard) {
             if (expanded && hasContent) {
                 Spacer(modifier = Modifier.height(8.dp))
                 SelectionContainer {
-                    Text(
-                        text = when (toolCard.kind) {
-                            ToolCardKind.CALL -> toolCard.args ?: ""
-                            ToolCardKind.RESULT -> toolCard.result ?: ""
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = if (toolCard.isError) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // 如果有参数，显示参数
+                        if (toolCard.args != null && toolCard.args.isNotBlank()) {
+                            Text(
+                                text = toolCard.args,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
                         }
-                    )
+                        // 如果有结果，显示结果
+                        if (toolCard.result != null && toolCard.result.isNotBlank()) {
+                            if (toolCard.args != null && toolCard.args.isNotBlank()) {
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            }
+                            Text(
+                                text = toolCard.result,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace,
+                                color = if (toolCard.isError) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
