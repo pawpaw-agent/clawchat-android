@@ -1,5 +1,9 @@
 package com.openclaw.clawchat.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,6 +44,7 @@ import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.state.SessionEvent
 import com.openclaw.clawchat.ui.state.StreamSegment
 import com.openclaw.clawchat.ui.screens.session.*
+import com.openclaw.clawchat.ui.theme.DesignTokens
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.launch
@@ -261,6 +266,7 @@ private fun groupMessages(messages: List<MessageUi>): List<MessageGroup> {
 
 /**
  * 滚动到底部按钮
+ * 使用设计系统样式
  */
 @Composable
 private fun ScrollToBottomButton(
@@ -270,9 +276,12 @@ private fun ScrollToBottomButton(
     SmallFloatingActionButton(
         onClick = onClick,
         modifier = modifier.size(44.dp),
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        shape = CircleShape
+        containerColor = DesignTokens.accentSubtle,
+        contentColor = DesignTokens.accent,
+        shape = CircleShape,
+        elevation = SmallFloatingActionButtonDefaults.elevation(
+            defaultElevation = DesignTokens.elevationSm
+        )
     ) {
         Icon(
             imageVector = Icons.Default.KeyboardArrowDown,
@@ -444,7 +453,6 @@ private fun MessageGroupList(
         // 4. 当前流式文本（使用动态 key 确保每次更新都重新渲染）
         if (!chatStream.isNullOrBlank()) {
             item(key = "stream_${chatStream.length}") {
-                // 添加调试日志
                 android.util.Log.d("SessionScreen", "=== Rendering chatStream: len=${chatStream.length}, text=${chatStream.take(30)}...")
                 MessageContentCard(
                     message = MessageUi(
@@ -456,7 +464,8 @@ private fun MessageGroupList(
                     ),
                     isUser = false,
                     isLastInGroup = true,
-                    messageFontSize = messageFontSize
+                    messageFontSize = messageFontSize,
+                    isStreaming = true  // 流式输出脉冲动画
                 )
             }
         }
