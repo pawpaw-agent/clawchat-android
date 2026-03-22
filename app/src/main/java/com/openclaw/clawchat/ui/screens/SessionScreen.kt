@@ -22,6 +22,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +32,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.openclaw.clawchat.data.FontSize
+import com.openclaw.clawchat.data.UserPreferences
 import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MessageContentItem
@@ -65,6 +68,12 @@ fun SessionScreen(
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
+    
+    // 读取字体大小设置
+    val context = LocalContext.current
+    val userPreferences = remember { UserPreferences(context) }
+    val userMessageFontSize by userPreferences.userMessageFontSize.collectAsState(initial = FontSize.MEDIUM)
+    val aiMessageFontSize by userPreferences.aiMessageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
     // 初始化会话 ID
     LaunchedEffect(sessionId) {
@@ -647,12 +656,27 @@ private fun MessageGroupItem(group: MessageGroup) {
 private fun MessageContentCard(
     message: MessageUi,
     isUser: Boolean,
-    isLastInGroup: Boolean
+    isLastInGroup: Boolean,
+    userMessageFontSize: FontSize = FontSize.MEDIUM,
+    aiMessageFontSize: FontSize = FontSize.MEDIUM
 ) {
     val textContent = message.getTextContent()
     
     // 只渲染文本内容，工具卡片在分组级别渲染
     if (textContent.isBlank()) return
+    
+    // 根据设置获取字体样式
+    val userTextStyle = when (userMessageFontSize) {
+        FontSize.SMALL -> MaterialTheme.typography.bodySmall
+        FontSize.MEDIUM -> MaterialTheme.typography.bodyMedium
+        FontSize.LARGE -> MaterialTheme.typography.bodyLarge
+    }
+    
+    val aiTextSize = when (aiMessageFontSize) {
+        FontSize.SMALL -> 14.sp
+        FontSize.MEDIUM -> 16.sp
+        FontSize.LARGE -> 18.sp
+    }
     
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -681,12 +705,13 @@ private fun MessageContentCard(
             if (!isUser) {
                 MarkdownText(
                     content = textContent,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    fontSize = aiTextSize
                 )
             } else {
                 Text(
                     text = textContent,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = userTextStyle,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             }

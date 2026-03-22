@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.state.ConnectionStatusUi
 import com.openclaw.clawchat.ui.state.GatewayConfigInput
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
@@ -79,6 +80,23 @@ fun SettingsScreen(
                         onDisconnect = { viewModel.disconnect() }
                     )
                 }
+            }
+
+            // 显示设置区域
+            SettingsSection(title = "显示") {
+                FontSizeSettingItem(
+                    title = "用户消息字体",
+                    subtitle = "调整用户消息的字体大小",
+                    currentSize = state.userMessageFontSize,
+                    onSizeChange = { viewModel.setUserMessageFontSize(it) }
+                )
+                
+                FontSizeSettingItem(
+                    title = "AI 消息字体",
+                    subtitle = "调整 AI 回复的字体大小",
+                    currentSize = state.aiMessageFontSize,
+                    onSizeChange = { viewModel.setAiMessageFontSize(it) }
+                )
             }
 
             // 通知设置区域
@@ -381,6 +399,114 @@ private fun ClickableSettingItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+    )
+}
+
+/**
+ * 字体大小设置项
+ */
+@Composable
+private fun FontSizeSettingItem(
+    title: String,
+    subtitle: String,
+    currentSize: FontSize,
+    onSizeChange: (FontSize) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+    
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = { Text(subtitle) },
+        leadingContent = {
+            Icon(
+                imageVector = Icons.Outlined.TextFields,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        trailingContent = {
+            Text(
+                text = currentSize.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showDialog = true }
+    )
+    
+    if (showDialog) {
+        FontSizeDialog(
+            title = title,
+            currentSize = currentSize,
+            onDismiss = { showDialog = false },
+            onConfirm = { size ->
+                onSizeChange(size)
+                showDialog = false
+            }
+        )
+    }
+}
+
+/**
+ * 字体大小选择对话框
+ */
+@Composable
+private fun FontSizeDialog(
+    title: String,
+    currentSize: FontSize,
+    onDismiss: () -> Unit,
+    onConfirm: (FontSize) -> Unit
+) {
+    var selectedSize by remember { mutableStateOf(currentSize) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                FontSize.values().forEach { size ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedSize = size }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedSize == size,
+                            onClick = { selectedSize = size }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = size.displayName,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "示例文本 Sample Text",
+                            style = when (size) {
+                                FontSize.SMALL -> MaterialTheme.typography.bodySmall
+                                FontSize.MEDIUM -> MaterialTheme.typography.bodyMedium
+                                FontSize.LARGE -> MaterialTheme.typography.bodyLarge
+                            },
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selectedSize) }) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
     )
 }
 

@@ -3,6 +3,7 @@ package com.openclaw.clawchat.ui.state
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import com.openclaw.clawchat.data.FontSize
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -151,7 +152,10 @@ data class SettingsUiState(
     val connectionStatus: ConnectionStatusUi = ConnectionStatusUi.Disconnected,
     val notificationsEnabled: Boolean = true,
     val dndEnabled: Boolean = false,
-    val appVersion: String = "1.0.0"
+    val appVersion: String = "1.0.0",
+    // 字体大小设置
+    val userMessageFontSize: FontSize = FontSize.MEDIUM,
+    val aiMessageFontSize: FontSize = FontSize.MEDIUM
 )
 
 enum class ConnectMode {

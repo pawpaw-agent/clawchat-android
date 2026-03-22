@@ -26,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -73,7 +74,8 @@ import dev.snipme.highlights.model.SyntaxLanguage
 @Composable
 fun MarkdownText(
     content: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    fontSize: androidx.compose.ui.unit.TextUnit = 16.sp
 ) {
     // 长文本限制
     val truncatedContent = if (content.length > 50000) {
@@ -97,32 +99,43 @@ fun MarkdownText(
         codeBackground = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         dividerColor = MaterialTheme.colorScheme.outlineVariant
     )
+    
+    // 自定义字体大小
+    val typography = markdownTypography(
+        text = MaterialTheme.typography.bodyLarge.copy(fontSize = fontSize),
+        h1 = MaterialTheme.typography.headlineLarge.copy(fontSize = fontSize * 1.5f),
+        h2 = MaterialTheme.typography.headlineMedium.copy(fontSize = fontSize * 1.3f),
+        h3 = MaterialTheme.typography.headlineSmall.copy(fontSize = fontSize * 1.1f),
+        code = MaterialTheme.typography.code.copy(fontSize = fontSize * 0.9f)
+    )
 
     // 使用 ProvideTextStyle 覆盖字体大小
     androidx.compose.material3.ProvideTextStyle(
         value = MaterialTheme.typography.bodySmall
     ) {
-        Markdown(
-            content = truncatedContent,
-            modifier = modifier.fillMaxWidth(),
-            colors = colors,
-            components = markdownComponents(
-                codeFence = { model ->
-                    CustomCodeFence(
-                        content = model.content,
-                        node = model.node,
-                        highlightsBuilder = highlightsBuilder
-                    )
-                },
-                codeBlock = { model ->
-                    CustomCodeBlock(
-                        content = model.content,
-                        node = model.node,
-                        highlightsBuilder = highlightsBuilder
-                    )
-                }
+        CompositionLocalProvider(LocalMarkdownTypography provides typography) {
+            Markdown(
+                content = truncatedContent,
+                modifier = modifier.fillMaxWidth(),
+                colors = colors,
+                components = markdownComponents(
+                    codeFence = { model ->
+                        CustomCodeFence(
+                            content = model.content,
+                            node = model.node,
+                            highlightsBuilder = highlightsBuilder
+                        )
+                    },
+                    codeBlock = { model ->
+                        CustomCodeBlock(
+                            content = model.content,
+                            node = model.node,
+                            highlightsBuilder = highlightsBuilder
+                        )
+                    }
+                )
             )
-        )
+        }
     }
 }
 
