@@ -20,6 +20,7 @@ import com.openclaw.clawchat.ui.state.MainViewModel
 import com.openclaw.clawchat.ui.state.SessionUi
 import com.openclaw.clawchat.ui.state.UiEvent
 import com.openclaw.clawchat.ui.screens.settings.SettingsScreen
+import com.openclaw.clawchat.ui.theme.DesignTokens
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -145,8 +146,8 @@ fun MainScreen(
                                 },
                                 singleLine = true,
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                    focusedBorderColor = DesignTokens.accent,
+                                    unfocusedBorderColor = DesignTokens.border
                                 )
                             )
                         }
@@ -194,7 +195,7 @@ private fun ClawTopAppBar(
                     Text(
                         text = "${latency}ms",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = DesignTokens.muted
                     )
                 }
             }
@@ -211,9 +212,9 @@ private fun ClawTopAppBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            containerColor = DesignTokens.accentContainer,
+            titleContentColor = DesignTokens.textStrong,
+            actionIconContentColor = DesignTokens.textStrong
         )
     )
 }
@@ -224,11 +225,11 @@ private fun ClawTopAppBar(
 @Composable
 private fun ConnectionStatusIcon(status: ConnectionStatus) {
     val (icon, color) = when (status) {
-        is ConnectionStatus.Connected -> Icons.Default.CheckCircle to MaterialTheme.colorScheme.primary
-        is ConnectionStatus.Connecting, is ConnectionStatus.Disconnecting -> Icons.Default.Sync to MaterialTheme.colorScheme.tertiary
-        is ConnectionStatus.Disconnected -> Icons.Default.CloudOff to MaterialTheme.colorScheme.onSurfaceVariant
-        is ConnectionStatus.Error -> Icons.Default.Error to MaterialTheme.colorScheme.error
-        else -> Icons.Default.Help to MaterialTheme.colorScheme.onSurfaceVariant
+        is ConnectionStatus.Connected -> Icons.Default.CheckCircle to DesignTokens.accent
+        is ConnectionStatus.Connecting, is ConnectionStatus.Disconnecting -> Icons.Default.Sync to DesignTokens.warn
+        is ConnectionStatus.Disconnected -> Icons.Default.CloudOff to DesignTokens.muted
+        is ConnectionStatus.Error -> Icons.Default.Error to DesignTokens.danger
+        else -> Icons.Default.Help to DesignTokens.muted
     }
 
     Icon(
@@ -257,7 +258,7 @@ private fun NotConnectedContent(
             imageVector = Icons.Default.CloudOff,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = DesignTokens.muted
         )
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -272,7 +273,7 @@ private fun NotConnectedContent(
                 else -> "未知状态"
             },
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = DesignTokens.text
         )
         
         Spacer(modifier = Modifier.height(24.dp))
@@ -303,7 +304,7 @@ private fun EmptySessionList(
             imageVector = Icons.Default.ChatBubbleOutline,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = DesignTokens.muted
         )
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -311,7 +312,7 @@ private fun EmptySessionList(
         Text(
             text = "暂无会话",
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = DesignTokens.text
         )
         
         Spacer(modifier = Modifier.height(8.dp))
@@ -319,7 +320,7 @@ private fun EmptySessionList(
         Text(
             text = "点击 + 创建新会话",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = DesignTokens.muted
         )
         
         Spacer(modifier = Modifier.height(24.dp))
@@ -382,9 +383,9 @@ private fun SessionItem(
             },
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
+                DesignTokens.accentContainer
             } else {
-                MaterialTheme.colorScheme.surface
+                DesignTokens.bg
             }
         )
     ) {
@@ -408,7 +409,7 @@ private fun SessionItem(
                 Text(
                     text = formatTimeAgo(session.lastActivityAt),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = DesignTokens.muted
                 )
                 
                 if (session.messageCount > 0) {
@@ -416,7 +417,7 @@ private fun SessionItem(
                     Text(
                         text = "• ${session.messageCount} 条消息",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = DesignTokens.muted
                     )
                 }
             }
@@ -427,7 +428,7 @@ private fun SessionItem(
                 Text(
                     text = session.lastMessage,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = DesignTokens.muted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -495,12 +496,12 @@ private fun SessionOptionsDialog(
                 Text(
                     text = "状态：${session.status.name}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = DesignTokens.muted
                 )
                 Text(
                     text = "消息数：${session.messageCount}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = DesignTokens.muted
                 )
             }
         },
@@ -510,7 +511,7 @@ private fun SessionOptionsDialog(
                     onClick = onPauseResume,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary
+                        containerColor = DesignTokens.card
                     )
                 ) {
                     Text(
@@ -533,7 +534,7 @@ private fun SessionOptionsDialog(
                     onClick = onTerminate,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                        contentColor = DesignTokens.danger
                     )
                 ) {
                     Text("终止会话")
@@ -543,7 +544,7 @@ private fun SessionOptionsDialog(
                     onClick = onDelete,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                        contentColor = DesignTokens.danger
                     )
                 ) {
                     Text("删除会话")

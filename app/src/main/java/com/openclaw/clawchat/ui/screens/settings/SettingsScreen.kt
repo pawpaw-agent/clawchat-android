@@ -22,6 +22,7 @@ import com.openclaw.clawchat.ui.state.GatewayConfigInput
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
 import com.openclaw.clawchat.ui.state.SettingsUiState
 import com.openclaw.clawchat.ui.state.getStatusColor
+import com.openclaw.clawchat.ui.theme.DesignTokens
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -55,8 +56,8 @@ fun SettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = DesignTokens.bg,
+                    titleContentColor = DesignTokens.text
                 )
             )
         }
@@ -187,13 +188,13 @@ private fun SettingsSection(
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
+            color = DesignTokens.accent,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
         
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            color = DesignTokens.bgHover.copy(alpha = 0.5f)
         ) {
             Column(content = content)
         }
@@ -294,8 +295,8 @@ private fun GatewayConfigItem(
             Icon(
                 imageVector = if (connectionStatus.isConnected) Icons.Default.Cloud else Icons.Outlined.Cloud,
                 contentDescription = null,
-                tint = if (connectionStatus.isConnected) MaterialTheme.colorScheme.primary
-                       else MaterialTheme.colorScheme.onSurfaceVariant
+                tint = if (connectionStatus.isConnected) DesignTokens.accent
+                       else DesignTokens.muted
             )
         },
         modifier = Modifier
@@ -322,7 +323,7 @@ private fun DisconnectItem(
             Icon(
                 imageVector = Icons.Default.Power,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.error
+                tint = DesignTokens.danger
             )
         },
         modifier = Modifier
@@ -349,7 +350,7 @@ private fun ToggleSettingItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = DesignTokens.muted
             )
         },
         trailingContent = {
@@ -379,14 +380,14 @@ private fun ClickableSettingItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = DesignTokens.muted
             )
         },
         trailingContent = {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "进入",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = DesignTokens.muted
             )
         },
         modifier = Modifier
@@ -414,14 +415,14 @@ private fun FontSizeSettingItem(
             Icon(
                 imageVector = Icons.Outlined.TextFields,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = DesignTokens.muted
             )
         },
         trailingContent = {
             Text(
                 text = currentSize.displayName,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = DesignTokens.accent
             )
         },
         modifier = Modifier
@@ -484,7 +485,7 @@ private fun FontSizeDialog(
                                 FontSize.MEDIUM -> MaterialTheme.typography.bodyMedium
                                 FontSize.LARGE -> MaterialTheme.typography.bodyLarge
                             },
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = DesignTokens.muted
                         )
                     }
                 }
@@ -554,7 +555,7 @@ private fun GatewayConfigDialog(
                 Text(
                     text = "ws://${host.ifEmpty { "host" }}:${port.ifEmpty { "port" }}/ws",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = DesignTokens.muted
                 )
             }
         },
@@ -596,7 +597,7 @@ private fun AboutDialog(
                 Icons.Default.Info,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = DesignTokens.accent
             )
         },
         title = { Text("ClawChat") },
