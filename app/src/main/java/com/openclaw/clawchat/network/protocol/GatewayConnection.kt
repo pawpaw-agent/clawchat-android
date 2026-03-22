@@ -501,6 +501,15 @@ class GatewayConnection(
         return call("sessions.list", params.ifEmpty { null })
     }
 
+    /** sessions.patch — 设置会话属性如 verboseLevel */
+    suspend fun sessionsPatch(sessionKey: String, verboseLevel: String? = null): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "key" to JsonPrimitive(sessionKey)
+        )
+        if (verboseLevel != null) params["verboseLevel"] = JsonPrimitive(verboseLevel)
+        return call("sessions.patch", params)
+    }
+
     /** ping */
     suspend fun ping(): Result<Long> {
         return try {

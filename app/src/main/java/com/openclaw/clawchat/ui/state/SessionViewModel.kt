@@ -525,6 +525,16 @@ class SessionViewModel @Inject constructor(
         Log.d(TAG, "=== setSessionId: $sessionId")
         _state.update { it.copy(sessionId = sessionId) }
         loadMessageHistory(sessionId)
+        
+        // 设置 verboseLevel 为 "full" 以接收工具流事件
+        viewModelScope.launch {
+            try {
+                gateway.sessionsPatch(sessionId, verboseLevel = "full")
+                Log.d(TAG, "=== setSessionId: verboseLevel set to 'full'")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to set verboseLevel: ${e.message}")
+            }
+        }
     }
 
     private fun loadMessageHistory(sessionId: String) {
