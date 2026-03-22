@@ -3,6 +3,7 @@ package com.openclaw.clawchat.ui.screens.session
 import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
@@ -510,7 +511,7 @@ fun ToolTag(
 @Composable
 fun AnimatedMessageItem(
     visible: Boolean,
-    content: @Composable () -> Unit
+    content: @Composable AnimatedVisibilityScope.() -> Unit
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -583,16 +584,14 @@ fun StreamingIndicator(
     text: String = "思考中",
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "streaming")
-    val dots by infiniteTransition.animateInt(
-        initialValue = 0,
-        targetValue = 3,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "dots"
-    )
+    var dots by remember { mutableStateOf(0) }
+    
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(300)
+            dots = (dots + 1) % 4
+        }
+    }
     
     Row(
         modifier = modifier
