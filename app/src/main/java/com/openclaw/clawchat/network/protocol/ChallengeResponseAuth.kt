@@ -49,7 +49,7 @@ class ChallengeResponseAuth(
     private val securityModule: SecurityModule,
     private val gatewayToken: String? = null,
     private val role: String = "operator",
-    private val scopes: List<String> = listOf("operator.read", "operator.write")
+    private val scopes: List<String> = listOf("operator.admin", "operator.approvals", "operator.pairing", "operator.read", "operator.write")
 ) {
     companion object {
         private const val TAG = "ChallengeResponseAuth"
