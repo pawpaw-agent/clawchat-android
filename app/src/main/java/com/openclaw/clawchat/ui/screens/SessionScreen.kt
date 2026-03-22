@@ -279,7 +279,7 @@ private fun ScrollToBottomButton(
         containerColor = DesignTokens.accentSubtle,
         contentColor = DesignTokens.accent,
         shape = CircleShape,
-        elevation = SmallFloatingActionButtonDefaults.elevation(
+        elevation = FloatingActionButtonDefaults.elevation(
             defaultElevation = DesignTokens.elevationSm
         )
     ) {
