@@ -468,6 +468,32 @@ class GatewayConnection(
         ))
     }
 
+    /** chat.send — with attachments support (1:1 复刻 webchat) */
+    suspend fun chatSendWithAttachments(
+        sessionKey: String,
+        message: String,
+        attachments: List<com.openclaw.clawchat.ui.components.ApiAttachment>? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "sessionKey" to JsonPrimitive(sessionKey),
+            "message" to JsonPrimitive(message),
+            "idempotencyKey" to JsonPrimitive(UUID.randomUUID().toString())
+        )
+        
+        // 添加 attachments 参数（参考 webchat chat.ts sendChatMessage）
+        if (!attachments.isNullOrEmpty()) {
+            params["attachments"] = JsonArray(attachments.map { att ->
+                JsonObject(mapOf(
+                    "type" to JsonPrimitive(att.type),
+                    "mimeType" to JsonPrimitive(att.mimeType),
+                    "content" to JsonPrimitive(att.content)
+                ))
+            })
+        }
+        
+        return call("chat.send", params)
+    }
+
     /** chat.history */
     suspend fun chatHistory(sessionKey: String, limit: Int? = null): ResponseFrame {
         val params = mutableMapOf<String, JsonElement>(

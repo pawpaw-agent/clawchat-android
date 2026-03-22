@@ -89,6 +89,15 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
     }
 
     /**
+     * 清空会话消息（用于 /clear 命令）
+     */
+    override suspend fun clearMessages(sessionId: String) {
+        val map = messagesBySession.value.toMutableMap()
+        map[sessionId] = mutableListOf()
+        messagesBySession.value = map
+    }
+
+    /**
      * 搜索消息
      */
     override suspend fun searchMessages(query: String, limit: Int): List<MessageUi> {

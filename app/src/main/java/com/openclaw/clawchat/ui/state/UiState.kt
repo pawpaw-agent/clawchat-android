@@ -57,6 +57,28 @@ data class MainUiState(
 )
 
 /**
+ * 附件数据（用于 UI 显示）
+ */
+data class AttachmentUi(
+    val id: String,
+    val uri: android.net.Uri,
+    val mimeType: String,
+    val fileName: String? = null,
+    val dataUrl: String? = null,  // base64 data URL
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+/**
+ * 斜杠命令补全状态
+ */
+data class SlashCommandCompletion(
+    val commands: List<com.openclaw.clawchat.ui.components.SlashCommandDef> = emptyList(),
+    val selectedIndex: Int = 0,
+    val visible: Boolean = false
+)
+
+/**
  * 会话界面 UI 状态（1:1 对应 webchat ChatState + ToolStreamHost）
  */
 data class SessionUiState(
@@ -81,6 +103,13 @@ data class SessionUiState(
     val toolStreamById: Map<String, ToolStreamEntry> = emptyMap(),
     val toolStreamOrder: List<String> = emptyList(),
     val chatToolMessages: List<MessageUi> = emptyList(),
+    
+    // 附件状态
+    val attachments: List<AttachmentUi> = emptyList(),
+    val isUploadingAttachment: Boolean = false,
+    
+    // 斜杠命令补全
+    val slashCommandCompletion: SlashCommandCompletion = SlashCommandCompletion(),
     
     // 输入
     val inputText: String = ""

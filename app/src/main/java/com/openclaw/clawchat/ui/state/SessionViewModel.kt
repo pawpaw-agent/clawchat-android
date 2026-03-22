@@ -611,22 +611,50 @@ class SessionViewModel @Inject constructor(
     fun sendMessage(message: String) {
         val sessionId = _state.value.sessionId ?: return
         val trimmedMessage = message.trim()
-        if (trimmedMessage.isEmpty()) return
+        val attachments = _state.value.attachments
+        
+        // 检查是否有附件或消息
+        val hasAttachments = attachments.isNotEmpty()
+        val hasMessage = trimmedMessage.isNotEmpty()
+        if (!hasMessage && !hasAttachments) return
+
+        // 处理斜杠命令
+        val parsedCommand = com.openclaw.clawchat.ui.components.parseSlashCommand(trimmedMessage)
+        if (parsedCommand != null) {
+            handleSlashCommand(parsedCommand)
+            return
+        }
 
         val now = System.currentTimeMillis()
         val runId = UUID.randomUUID().toString()
+
+        // 构建用户消息内容块（1:1 复刻 webchat）
+        val contentBlocks = mutableListOf<MessageContentItem>()
+        if (hasMessage) {
+            contentBlocks.add(MessageContentItem.Text(trimmedMessage))
+        }
+        // 添加图片预览到消息
+        attachments.forEach { att ->
+            if (att.dataUrl != null) {
+                contentBlocks.add(MessageContentItem.Image(
+                    base64 = att.dataUrl,
+                    mimeType = att.mimeType
+                ))
+            }
+        }
 
         // 添加用户消息
         _state.update { currentState ->
             val userMessage = MessageUi(
                 id = UUID.randomUUID().toString(),
-                content = listOf(MessageContentItem.Text(trimmedMessage)),
+                content = contentBlocks,
                 role = MessageRole.USER,
                 timestamp = now
             )
             currentState.copy(
                 chatMessages = currentState.chatMessages + userMessage,
                 inputText = "",
+                attachments = emptyList(),  // 清空附件
                 isSending = true,
                 isLoading = true,
                 chatRunId = runId,
@@ -637,12 +665,259 @@ class SessionViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                gateway.chatSend(sessionId, trimmedMessage)
+                // 转换附件为 API 格式
+                val apiAttachments = if (hasAttachments) {
+                    attachments.mapNotNull { att ->
+                        att.dataUrl?.let { dataUrl ->
+                            com.openclaw.clawchat.ui.components.dataUrlToBase64(dataUrl)?.let { (mimeType, content) ->
+                                com.openclaw.clawchat.ui.components.ApiAttachment(
+                                    type = "image",
+                                    mimeType = mimeType,
+                                    content = content
+                                )
+                            }
+                        }
+                    }
+                } else null
+
+                if (!apiAttachments.isNullOrEmpty()) {
+                    gateway.chatSendWithAttachments(sessionId, trimmedMessage, apiAttachments)
+                } else {
+                    gateway.chatSend(sessionId, trimmedMessage)
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send message", e)
                 _state.update { it.copy(error = "发送失败：${e.message}", isLoading = false, isSending = false) }
             }
         }
+    }
+
+    /**
+     * 处理斜杠命令
+     */
+    private fun handleSlashCommand(parsed: com.openclaw.clawchat.ui.components.ParsedSlashCommand) {
+        val sessionId = _state.value.sessionId ?: return
+        val command = parsed.command
+        
+        Log.i(TAG, "Handling slash command: /${command.name} args=${parsed.args}")
+
+        if (command.executeLocal) {
+            // 本地执行的命令
+            when (command.name) {
+                "clear" -> {
+                    // 清空聊天历史
+                    _state.update { it.copy(
+                        chatMessages = emptyList(),
+                        chatStream = null,
+                        chatToolMessages = emptyList(),
+                        toolStreamById = emptyMap(),
+                        toolStreamOrder = emptyList(),
+                        inputText = ""
+                    )}
+                    viewModelScope.launch {
+                        messageRepository.clearMessages(sessionId)
+                    }
+                }
+                "stop" -> {
+                    // 停止当前运行
+                    viewModelScope.launch {
+                        try {
+                            gateway.chatAbort(sessionId, _state.value.chatRunId)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to abort chat", e)
+                        }
+                    }
+                }
+                "help" -> {
+                    // 显示帮助信息作为助手消息
+                    val helpText = buildHelpMessage()
+                    _state.update { currentState ->
+                        val helpMessage = MessageUi(
+                            id = UUID.randomUUID().toString(),
+                            content = listOf(MessageContentItem.Text(helpText)),
+                            role = MessageRole.ASSISTANT,
+                            timestamp = System.currentTimeMillis()
+                        )
+                        currentState.copy(
+                            chatMessages = currentState.chatMessages + helpMessage,
+                            inputText = ""
+                        )
+                    }
+                }
+                else -> {
+                    // 其他本地命令，发送给 gateway
+                    sendCommandToGateway(command.name, parsed.args)
+                }
+            }
+        } else {
+            // 非 local 命令，发送给 gateway
+            sendCommandToGateway(command.name, parsed.args)
+        }
+    }
+
+    /**
+     * 发送命令给 Gateway
+     */
+    private fun sendCommandToGateway(name: String, args: String) {
+        val sessionId = _state.value.sessionId ?: return
+        val fullMessage = "/$name${if (args.isNotBlank()) " $args" else ""}"
+        
+        _state.update { currentState ->
+            val userMessage = MessageUi(
+                id = UUID.randomUUID().toString(),
+                content = listOf(MessageContentItem.Text(fullMessage)),
+                role = MessageRole.USER,
+                timestamp = System.currentTimeMillis()
+            )
+            currentState.copy(
+                chatMessages = currentState.chatMessages + userMessage,
+                inputText = "",
+                isSending = true,
+                isLoading = true
+            )
+        }
+
+        viewModelScope.launch {
+            try {
+                gateway.chatSend(sessionId, fullMessage)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to send command", e)
+                _state.update { it.copy(error = "命令发送失败：${e.message}", isLoading = false, isSending = false) }
+            }
+        }
+    }
+
+    /**
+     * 构建帮助消息
+     */
+    private fun buildHelpMessage(): String {
+        return buildString {
+            appendLine("## 可用命令")
+            appendLine()
+            com.openclaw.clawchat.ui.components.CATEGORY_ORDER.forEach { category ->
+                val label = com.openclaw.clawchat.ui.components.CATEGORY_LABELS[category] ?: category.name
+                appendLine("### $label")
+                com.openclaw.clawchat.ui.components.SLASH_COMMANDS
+                    .filter { it.category == category }
+                    .forEach { cmd ->
+                        val args = cmd.args?.let { " $it" } ?: ""
+                        appendLine("- `/${cmd.name}$args` - ${cmd.description}")
+                    }
+                appendLine()
+            }
+        }
+    }
+
+    /**
+     * 添加附件
+     */
+    fun addAttachment(context: android.content.Context, uri: android.net.Uri) {
+        viewModelScope.launch {
+            _state.update { it.copy(isUploadingAttachment = true) }
+            
+            val attachment = com.openclaw.clawchat.ui.components.loadAttachmentFromUri(context, uri)
+            
+            _state.update { currentState ->
+                if (attachment != null) {
+                    val newAttachment = AttachmentUi(
+                        id = UUID.randomUUID().toString(),
+                        uri = uri,
+                        mimeType = attachment.mimeType,
+                        fileName = attachment.fileName,
+                        dataUrl = attachment.dataUrl
+                    )
+                    currentState.copy(
+                        attachments = currentState.attachments + newAttachment,
+                        isUploadingAttachment = false
+                    )
+                } else {
+                    currentState.copy(
+                        error = "无法加载附件",
+                        isUploadingAttachment = false
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * 移除附件
+     */
+    fun removeAttachment(attachmentId: String) {
+        _state.update { currentState ->
+            currentState.copy(
+                attachments = currentState.attachments.filter { it.id != attachmentId }
+            )
+        }
+    }
+
+    /**
+     * 清空所有附件
+     */
+    fun clearAttachments() {
+        _state.update { it.copy(attachments = emptyList()) }
+    }
+
+    /**
+     * 更新斜杠命令补全状态
+     */
+    fun updateSlashCommandCompletion(text: String) {
+        val trimmed = text.trim()
+        if (!trimmed.startsWith("/")) {
+            _state.update { it.copy(slashCommandCompletion = SlashCommandCompletion()) }
+            return
+        }
+
+        val prefix = com.openclaw.clawchat.ui.components.getCommandPrefix(trimmed)
+        val commands = com.openclaw.clawchat.ui.components.getSlashCommandCompletions(prefix.drop(1))
+        
+        _state.update { currentState ->
+            currentState.copy(
+                slashCommandCompletion = SlashCommandCompletion(
+                    commands = commands,
+                    selectedIndex = 0,
+                    visible = commands.isNotEmpty()
+                )
+            )
+        }
+    }
+
+    /**
+     * 选择斜杠命令补全
+     */
+    fun selectSlashCommand(index: Int) {
+        _state.update { currentState ->
+            val completion = currentState.slashCommandCompletion
+            if (index in 0 until completion.commands.size) {
+                currentState.copy(
+                    slashCommandCompletion = completion.copy(selectedIndex = index)
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    /**
+     * 应用选中的斜杠命令
+     */
+    fun applySelectedSlashCommand(): String? {
+        val completion = _state.value.slashCommandCompletion
+        val selectedCommand = completion.commands.getOrNull(completion.selectedIndex) ?: return null
+        
+        val newText = "/${selectedCommand.name}${selectedCommand.args?.let { " $it" } ?: ""}"
+        _state.update { it.copy(
+            inputText = newText,
+            slashCommandCompletion = SlashCommandCompletion()
+        )}
+        return newText
+    }
+
+    /**
+     * 隐藏斜杠命令补全
+     */
+    fun hideSlashCommandCompletion() {
+        _state.update { it.copy(slashCommandCompletion = SlashCommandCompletion()) }
     }
 
     fun updateInputText(text: String) {

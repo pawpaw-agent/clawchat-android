@@ -1,9 +1,13 @@
 package com.openclaw.clawchat.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -31,14 +35,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
+import com.openclaw.clawchat.ui.state.AttachmentUi
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MessageContentItem
 import com.openclaw.clawchat.ui.state.MessageGroup
 import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
 import com.openclaw.clawchat.ui.state.SessionEvent
+import com.openclaw.clawchat.ui.state.SlashCommandCompletion
 import com.openclaw.clawchat.ui.state.StreamSegment
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -69,6 +76,14 @@ fun SessionScreen(
     
     // 读取字体大小设置（统一）
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
+    
+    // 图片选择器（使用 ActivityResultContracts）
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val imagePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { viewModel.addAttachment(context, it) }
+    }
 
     // 初始化会话 ID
     LaunchedEffect(sessionId) {
@@ -185,10 +200,25 @@ fun SessionScreen(
                 // 消息输入框
                 MessageInputBar(
                     value = state.inputText,
-                    onValueChange = { viewModel.updateInputText(it) },
+                    onValueChange = { 
+                        viewModel.updateInputText(it)
+                        viewModel.updateSlashCommandCompletion(it)
+                    },
                     onSend = { viewModel.sendMessage(state.inputText) },
+                    onAttach = { 
+                        imagePickerLauncher.launch(
+                            androidx.activity.result.PickVisualMediaRequest(
+                                mediaType = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
+                            )
+                        )
+                    },
                     enabled = state.connectionStatus is ConnectionStatus.Connected && !state.isSending,
-                    focusRequester = focusRequester
+                    focusRequester = focusRequester,
+                    attachments = state.attachments,
+                    onRemoveAttachment = { viewModel.removeAttachment(it) },
+                    slashCommandCompletion = state.slashCommandCompletion,
+                    onSelectSlashCommand = { viewModel.selectSlashCommand(it) },
+                    onApplySlashCommand = { viewModel.applySelectedSlashCommand() }
                 )
             }
 
@@ -1443,63 +1473,261 @@ private fun LoadingOverlay() {
 }
 
 /**
- * 消息输入框
+ * 消息输入框（支持附件和斜杠命令补全）
  */
 @Composable
 private fun MessageInputBar(
     value: String,
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
+    onAttach: () -> Unit,
     enabled: Boolean,
-    focusRequester: FocusRequester
+    focusRequester: FocusRequester,
+    attachments: List<AttachmentUi> = emptyList(),
+    onRemoveAttachment: (String) -> Unit = {},
+    slashCommandCompletion: SlashCommandCompletion = SlashCommandCompletion(),
+    onSelectSlashCommand: (Int) -> Unit = {},
+    onApplySlashCommand: () -> Unit = {}
 ) {
-    Surface(
-        shadowElevation = 8.dp,
-        color = MaterialTheme.colorScheme.surface
+    Column(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = Modifier
-                    .weight(1f)
-                    .focusRequester(focusRequester),
-                placeholder = { Text("输入消息...") },
-                enabled = enabled,
-                maxLines = 4,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(
-                    onSend = { onSend() }
-                ),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    disabledBorderColor = Color.Transparent
-                )
+        // 斜杠命令补全菜单
+        if (slashCommandCompletion.visible && slashCommandCompletion.commands.isNotEmpty()) {
+            SlashCommandCompletionMenu(
+                commands = slashCommandCompletion.commands,
+                selectedIndex = slashCommandCompletion.selectedIndex,
+                onSelect = onSelectSlashCommand,
+                onApply = onApplySlashCommand
             )
+        }
+        
+        // 附件预览
+        if (attachments.isNotEmpty()) {
+            AttachmentPreviewRow(
+                attachments = attachments,
+                onRemove = onRemoveAttachment
+            )
+        }
+        
+        Surface(
+            shadowElevation = 8.dp,
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                // 附件按钮
+                IconButton(
+                    onClick = onAttach,
+                    enabled = enabled
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AttachFile,
+                        contentDescription = "添加附件",
+                        tint = if (enabled) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+                
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester),
+                    placeholder = { Text("输入消息...") },
+                    enabled = enabled,
+                    maxLines = 4,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    keyboardActions = KeyboardActions(
+                        onSend = { onSend() }
+                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        disabledBorderColor = Color.Transparent
+                    )
+                )
 
+                IconButton(
+                    onClick = onSend,
+                    enabled = enabled && (value.isNotBlank() || attachments.isNotEmpty())
+                ) {
+                    Icon(
+                        imageVector = if (value.isNotBlank() || attachments.isNotEmpty()) {
+                            Icons.Default.Send
+                        } else {
+                            Icons.Default.NearMe
+                        },
+                        contentDescription = "发送",
+                        tint = if (enabled && (value.isNotBlank() || attachments.isNotEmpty())) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 斜杠命令补全菜单
+ */
+@Composable
+private fun SlashCommandCompletionMenu(
+    commands: List<com.openclaw.clawchat.ui.components.SlashCommandDef>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    onApply: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        LazyColumn(
+            modifier = Modifier.heightIn(max = 200.dp),
+            contentPadding = PaddingValues(vertical = 4.dp)
+        ) {
+            items(commands.size) { index ->
+                val command = commands[index]
+                val isSelected = index == selectedIndex
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onApply() }
+                        .background(
+                            if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            else Color.Transparent
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "/${command.name}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    command.args?.let { args ->
+                        Text(
+                            text = " $args",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = command.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 附件预览行
+ */
+@Composable
+private fun AttachmentPreviewRow(
+    attachments: List<AttachmentUi>,
+    onRemove: (String) -> Unit
+) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(attachments, key = { it.id }) { attachment ->
+            AttachmentPreviewChip(
+                attachment = attachment,
+                onRemove = { onRemove(attachment.id) }
+            )
+        }
+    }
+}
+
+/**
+ * 附件预览卡片
+ */
+@Composable
+private fun AttachmentPreviewChip(
+    attachment: AttachmentUi,
+    onRemove: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Box(modifier = Modifier.size(80.dp)) {
+            // 图片预览 - 使用 Coil 异步加载
+            if (attachment.dataUrl != null) {
+                coil.compose.AsyncImage(
+                    model = attachment.dataUrl,
+                    contentDescription = attachment.fileName ?: "附件",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
+                // 加载中
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
+            
+            // 删除按钮
             IconButton(
-                onClick = onSend,
-                enabled = enabled && value.isNotBlank()
+                onClick = onRemove,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(24.dp)
             ) {
                 Icon(
-                    imageVector = if (value.isNotBlank()) {
-                        Icons.Default.Send
-                    } else {
-                        Icons.Default.NearMe
-                    },
-                    contentDescription = "发送",
-                    tint = if (enabled && value.isNotBlank()) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "移除",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+            
+            // 文件名
+            if (!attachment.fileName.isNullOrBlank()) {
+                Text(
+                    text = attachment.fileName.take(10) + if (attachment.fileName.length > 10) "..." else "",
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }
         }
