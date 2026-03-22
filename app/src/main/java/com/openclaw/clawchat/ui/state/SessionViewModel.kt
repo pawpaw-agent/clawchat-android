@@ -146,8 +146,8 @@ class SessionViewModel @Inject constructor(
             val now = System.currentTimeMillis()
             
             // 获取或创建 entry
-            var toolStreamById = currentState.toolStreamById.toMutableMap()
-            var toolStreamOrder = currentState.toolStreamOrder.toMutableList()
+            val toolStreamById = currentState.toolStreamById.toMutableMap()
+            val toolStreamOrder = currentState.toolStreamOrder.toMutableList()
             var chatStreamSegments = currentState.chatStreamSegments
             var chatStream = currentState.chatStream
             var chatStreamStartedAt = currentState.chatStreamStartedAt
@@ -203,7 +203,7 @@ class SessionViewModel @Inject constructor(
             if (toolStreamOrder.size > TOOL_STREAM_LIMIT) {
                 val overflow = toolStreamOrder.size - TOOL_STREAM_LIMIT
                 val removed = toolStreamOrder.take(overflow)
-                toolStreamOrder = toolStreamOrder.drop(overflow)
+                repeat(overflow) { if (toolStreamOrder.isNotEmpty()) toolStreamOrder.removeAt(0) }
                 removed.forEach { toolStreamById.remove(it) }
             }
             
@@ -213,7 +213,7 @@ class SessionViewModel @Inject constructor(
             }
             
             currentState.copy(
-                toolStreamById = toolStreamById,
+                toolStreamById = toolStreamById.toMap(),
                 toolStreamOrder = toolStreamOrder,
                 chatToolMessages = chatToolMessages,
                 chatStreamSegments = chatStreamSegments,
@@ -367,7 +367,7 @@ class SessionViewModel @Inject constructor(
                         "${text.take(120000)}\n\n… truncated (${text.length} chars, showing first 120000)."
                     } else text
                 } else {
-                    try { json.encodeToString(value) } catch (_: Exception) { null }
+                    try { json.encodeToString(JsonObject.serializer(), value) } catch (_: Exception) { null }
                 }
             }
             is JsonArray -> {

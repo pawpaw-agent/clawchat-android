@@ -124,6 +124,7 @@ data class ToolStreamEntry(
             content.add(MessageContentItem.ToolResult(
                 toolCallId = toolCallId,
                 name = name,
+                args = args,
                 text = output
             ))
         }
@@ -227,6 +228,7 @@ sealed class MessageContentItem {
     data class ToolResult(
         val toolCallId: String? = null,
         val name: String? = null,
+        val args: JsonObject? = null,
         val text: String,
         val isError: Boolean = false
     ) : MessageContentItem()
