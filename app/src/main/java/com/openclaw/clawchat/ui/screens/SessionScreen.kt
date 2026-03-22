@@ -424,6 +424,8 @@ private fun MessageGroupList(
         // 4. 当前流式文本
         if (!chatStream.isNullOrBlank()) {
             item(key = "stream") {
+                // 添加调试日志
+                android.util.Log.d("SessionScreen", "=== Rendering chatStream: ${chatStream.take(50)}...")
                 MessageContentCard(
                     message = MessageUi(
                         id = "stream",
