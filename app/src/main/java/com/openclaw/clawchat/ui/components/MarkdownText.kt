@@ -103,15 +103,13 @@ fun MarkdownText(
         dividerColor = MaterialTheme.colorScheme.outlineVariant
     )
 
-    // 使用 ProvideTextStyle 设置字体大小
-    val textStyle = androidx.compose.ui.text.TextStyle(
-        fontSize = fontSize,
-        fontFamily = FontFamily.Default
-    )
+    // 使用 LocalMarkdownTypography 设置字体大小
+    val defaultTypography = LocalMarkdownTypography.current
+    val customTypography = remember(fontSize) {
+        DefaultMarkdownTypography(fontSize)
+    }
 
-    CompositionLocalProvider(
-        LocalTextStyle provides textStyle
-    ) {
+    CompositionLocalProvider(LocalMarkdownTypography provides customTypography) {
         Markdown(
             content = truncatedContent,
             modifier = modifier.fillMaxWidth(),
@@ -414,4 +412,24 @@ private fun HighlightedCodeContent(
             style = style
         )
     }
+}
+
+/**
+ * 默认 MarkdownTypography 实现，支持自定义字体大小
+ */
+private data class DefaultMarkdownTypography(
+    private val fontSize: androidx.compose.ui.unit.TextUnit
+) : MarkdownTypography {
+    override val text = TextStyle(fontSize = fontSize, fontFamily = FontFamily.Default)
+    override val h1 = TextStyle(fontSize = fontSize * 1.5f, fontWeight = FontWeight.Bold)
+    override val h2 = TextStyle(fontSize = fontSize * 1.3f, fontWeight = FontWeight.Bold)
+    override val h3 = TextStyle(fontSize = fontSize * 1.1f, fontWeight = FontWeight.Bold)
+    override val h4 = TextStyle(fontSize = fontSize * 1.0f, fontWeight = FontWeight.Bold)
+    override val h5 = TextStyle(fontSize = fontSize * 0.9f, fontWeight = FontWeight.Bold)
+    override val h6 = TextStyle(fontSize = fontSize * 0.8f, fontWeight = FontWeight.Bold)
+    override val code = TextStyle(fontSize = fontSize * 0.9f, fontFamily = FontFamily.Monospace)
+    override val bullet = TextStyle(fontSize = fontSize)
+    override val list = TextStyle(fontSize = fontSize)
+    override val quote = TextStyle(fontSize = fontSize)
+    override val paragraph = TextStyle(fontSize = fontSize)
 }
