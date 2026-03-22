@@ -119,12 +119,12 @@ fun ChatInputBar(
     }
     
     // 图片选择器
+    val context = androidx.compose.ui.platform.LocalContext.current
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
             try {
-                val context = androidx.compose.ui.platform.LocalContext.current
                 val inputStream = context.contentResolver.openInputStream(uri)
                 val bytes = inputStream?.readBytes()
                 inputStream?.close()
