@@ -112,22 +112,25 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
      * 解析存储的 JSON 内容为 MessageContentItem 列表
      */
     private fun parseContent(content: String): List<MessageContentItem> {
+        android.util.Log.d("MessageRepository", "=== parseContent: content=${content.take(200)}")
         return try {
             val array = json.parseToJsonElement(content) as? JsonArray
+            android.util.Log.d("MessageRepository", "=== parseContent: array size=${array?.size}")
             array?.mapNotNull { element ->
                 val obj = element as? JsonObject ?: return@mapNotNull null
                 val type = obj["type"]?.jsonPrimitive?.content
+                android.util.Log.d("MessageRepository", "=== parseContent: type=$type, keys=${obj.keys}")
                 when (type) {
                     "text" -> MessageContentItem.Text(
                         text = obj["text"]?.jsonPrimitive?.content ?: ""
                     )
-                    "tool_call" -> MessageContentItem.ToolCall(
+                    "tool_call", "tool_use" -> MessageContentItem.ToolCall(
                         id = obj["id"]?.jsonPrimitive?.content,
                         name = obj["name"]?.jsonPrimitive?.content ?: "unknown",
-                        args = obj["arguments"]?.jsonObject
+                        args = obj["arguments"]?.jsonObject ?: obj["args"]?.jsonObject
                     )
                     "tool_result" -> MessageContentItem.ToolResult(
-                        toolCallId = obj["toolCallId"]?.jsonPrimitive?.content,
+                        toolCallId = obj["toolCallId"]?.jsonPrimitive?.content ?: obj["tool_call_id"]?.jsonPrimitive?.content,
                         name = obj["name"]?.jsonPrimitive?.content,
                         args = obj["args"]?.jsonObject,
                         text = obj["text"]?.jsonPrimitive?.content ?: "",
@@ -140,6 +143,7 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
                 }
             } ?: listOf(MessageContentItem.Text(content))
         } catch (e: Exception) {
+            android.util.Log.w("MessageRepository", "=== parseContent error: ${e.message}")
             listOf(MessageContentItem.Text(content))
         }
     }
