@@ -112,23 +112,22 @@ fun MarkdownText(
             modifier = modifier.fillMaxWidth(),
             colors = colors,
             components = markdownComponents(
-                    codeFence = { model ->
-                        CustomCodeFence(
-                            content = model.content,
-                            node = model.node,
-                            highlightsBuilder = highlightsBuilder
-                        )
-                    },
-                    codeBlock = { model ->
-                        CustomCodeBlock(
-                            content = model.content,
-                            node = model.node,
-                            highlightsBuilder = highlightsBuilder
-                        )
-                    }
-                )
+                codeFence = { model ->
+                    CustomCodeFence(
+                        content = model.content,
+                        node = model.node,
+                        highlightsBuilder = highlightsBuilder
+                    )
+                },
+                codeBlock = { model ->
+                    CustomCodeBlock(
+                        content = model.content,
+                        node = model.node,
+                        highlightsBuilder = highlightsBuilder
+                    )
+                }
             )
-        }
+        )
     }
 }
 
