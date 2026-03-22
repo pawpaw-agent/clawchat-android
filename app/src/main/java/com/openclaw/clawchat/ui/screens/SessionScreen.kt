@@ -22,7 +22,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -33,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openclaw.clawchat.data.FontSize
-import com.openclaw.clawchat.data.UserPreferences
 import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MessageContentItem
@@ -69,11 +67,9 @@ fun SessionScreen(
     val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
     
-    // 读取字体大小设置
-    val context = LocalContext.current
-    val userPreferences = remember { UserPreferences(context) }
-    val userMessageFontSize by userPreferences.userMessageFontSize.collectAsState(initial = FontSize.MEDIUM)
-    val aiMessageFontSize by userPreferences.aiMessageFontSize.collectAsState(initial = FontSize.MEDIUM)
+    // 读取字体大小设置（从 ViewModel）
+    val userMessageFontSize by viewModel.userMessageFontSize.collectAsState(initial = FontSize.MEDIUM)
+    val aiMessageFontSize by viewModel.aiMessageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
     // 初始化会话 ID
     LaunchedEffect(sessionId) {

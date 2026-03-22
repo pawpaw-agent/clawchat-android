@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.openclaw.clawchat.data.UserPreferences
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
@@ -34,11 +35,16 @@ import javax.inject.Inject
 class SessionViewModel @Inject constructor(
     private val gateway: GatewayConnection,
     private val messageRepository: MessageRepository,
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    private val userPreferences: UserPreferences
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SessionUiState())
     val state: StateFlow<SessionUiState> = _state.asStateFlow()
+    
+    // 暴露字体大小设置
+    val userMessageFontSize = userPreferences.userMessageFontSize
+    val aiMessageFontSize = userPreferences.aiMessageFontSize
 
     private val _events = Channel<SessionEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
