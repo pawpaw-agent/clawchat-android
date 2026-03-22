@@ -520,6 +520,12 @@ private fun MessageContentCard(
     val toolCards = pairToolCards(message)
     val textContent = message.getTextContent()
     
+    // 调试日志
+    android.util.Log.d("SessionScreen", "=== MessageContentCard: toolCards.size=${toolCards.size}, textContent.len=${textContent.length}")
+    if (toolCards.isNotEmpty()) {
+        android.util.Log.d("SessionScreen", "=== toolCards: ${toolCards.map { "${it.kind}:${it.name}" }}")
+    }
+    
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -771,6 +777,8 @@ private fun pairToolCards(message: MessageUi): List<ToolCard> {
     val calls = message.getToolCalls()
     val results = message.getToolResults()
     val cards = mutableListOf<ToolCard>()
+    
+    android.util.Log.d("SessionScreen", "=== pairToolCards: calls=${calls.size}, results=${results.size}")
     
     // 如果有 ToolCall，优先使用 ToolCall 的参数
     if (calls.isNotEmpty()) {
