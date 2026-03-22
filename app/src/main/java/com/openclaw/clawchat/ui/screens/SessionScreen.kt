@@ -666,8 +666,8 @@ private fun MessageContentCard(
     
     // 统一字体大小（sp）
     val textSize = when (messageFontSize) {
-        FontSize.SMALL -> 12.sp
-        FontSize.MEDIUM -> 14.sp
+        FontSize.SMALL -> 10.sp
+        FontSize.MEDIUM -> 13.sp
         FontSize.LARGE -> 16.sp
     }
     
@@ -1299,8 +1299,8 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
     
     // 统一字体大小
     val textSize = when (messageFontSize) {
-        FontSize.SMALL -> 12.sp
-        FontSize.MEDIUM -> 14.sp
+        FontSize.SMALL -> 10.sp
+        FontSize.MEDIUM -> 13.sp
         FontSize.LARGE -> 16.sp
     }
 
