@@ -57,7 +57,6 @@ import com.mikepenz.markdown.compose.elements.material.MarkdownBasicText
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.compose.components.markdownComponents
-import com.mikepenz.markdown.extended.components.markdownExtendedComponents
 import com.mikepenz.markdown.model.MarkdownTypography
 import dev.snipme.highlights.Highlights
 import dev.snipme.highlights.model.BoldHighlight
@@ -114,23 +113,7 @@ fun MarkdownText(
         Markdown(
             content = truncatedContent,
             modifier = modifier.fillMaxWidth(),
-            colors = colors,
-            components = markdownExtendedComponents(
-                codeFence = { model ->
-                    CustomCodeFence(
-                        content = model.content,
-                        node = model.node,
-                        highlightsBuilder = highlightsBuilder
-                    )
-                },
-                codeBlock = { model ->
-                    CustomCodeBlock(
-                        content = model.content,
-                        node = model.node,
-                        highlightsBuilder = highlightsBuilder
-                    )
-                }
-            )
+            colors = colors
         )
     }
 }

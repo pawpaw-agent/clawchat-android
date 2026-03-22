@@ -260,7 +260,6 @@ dependencies {
     implementation(libs.markdown.renderer)
     implementation(libs.markdown.renderer.m3)
     implementation(libs.markdown.renderer.code)
-    implementation(libs.markdown.renderer.extended)
 
     // Testing
     testImplementation(libs.junit)
