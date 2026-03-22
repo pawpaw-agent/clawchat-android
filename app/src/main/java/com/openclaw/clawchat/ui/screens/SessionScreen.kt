@@ -460,15 +460,49 @@ private fun MessageGroupItem(group: MessageGroup) {
             }
         }
     } else if (isTool) {
-        // 工具消息组：折叠显示
+        // 纯工具消息组（没有前面的 ASSISTANT 消息）
+        // 这种情况不应该发生，因为 TOOL 消息已经合并到 ASSISTANT 分组
+        // 但保留作为 fallback
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            group.messages.forEach { message ->
-                ToolMessageCard(message = message)
+            // 直接使用合并逻辑
+            val mergedToolCards = group.messages.flatMap { message ->
+                val calls = message.getToolCalls()
+                val results = message.getToolResults()
+                
+                if (calls.isEmpty() && results.isEmpty()) {
+                    val textContent = message.getTextContent()
+                    if (textContent.isNotBlank()) {
+                        listOf(ToolCard(
+                            kind = ToolCardKind.RESULT,
+                            name = "output",
+                            args = null,
+                            result = textContent,
+                            isError = false,
+                            callId = null
+                        ))
+                    } else emptyList()
+                } else {
+                    calls.map { call ->
+                        val matchingResult = results.find { it.toolCallId == call.id }
+                        ToolCard(
+                            kind = if (matchingResult != null) ToolCardKind.RESULT else ToolCardKind.CALL,
+                            name = call.name,
+                            args = call.args?.toString(),
+                            result = matchingResult?.text,
+                            isError = matchingResult?.isError ?: false,
+                            callId = call.id
+                        )
+                    }
+                }
+            }
+            
+            mergedToolCards.forEach { card ->
+                ToolDetailCard(toolCard = card)
             }
         }
     } else {
@@ -590,60 +624,46 @@ private fun MessageContentCard(
     isUser: Boolean,
     isLastInGroup: Boolean
 ) {
-    val toolCards = pairToolCards(message)
     val textContent = message.getTextContent()
     
-    // 调试日志
-    android.util.Log.d("SessionScreen", "=== MessageContentCard: toolCards.size=${toolCards.size}, textContent.len=${textContent.length}")
-    if (toolCards.isNotEmpty()) {
-        android.util.Log.d("SessionScreen", "=== toolCards: ${toolCards.map { "${it.kind}:${it.name}" }}")
-    }
+    // 只渲染文本内容，工具卡片在分组级别渲染
+    if (textContent.isBlank()) return
     
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // 文本内容 + 工具标签
-        if (textContent.isNotBlank() || toolCards.isNotEmpty()) {
-            Box(
-                modifier = Modifier
-                    .widthIn(max = 320.dp)
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = 16.dp,
-                            topEnd = 16.dp,
-                            bottomStart = if (isUser) 16.dp else if (isLastInGroup) 4.dp else 4.dp,
-                            bottomEnd = if (isUser) if (isLastInGroup) 4.dp else 4.dp else 16.dp
-                        )
+        Box(
+            modifier = Modifier
+                .widthIn(max = 320.dp)
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 16.dp,
+                        topEnd = 16.dp,
+                        bottomStart = if (isUser) 16.dp else if (isLastInGroup) 4.dp else 4.dp,
+                        bottomEnd = if (isUser) if (isLastInGroup) 4.dp else 4.dp else 16.dp
                     )
-                    .background(
-                        if (isUser) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.secondaryContainer
-                        }
-                    )
-                    .padding(12.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // 助手消息使用原生 Markdown 渲染
-                    if (!isUser && textContent.isNotBlank()) {
-                        MarkdownText(
-                            content = textContent,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else if (textContent.isNotBlank()) {
-                        Text(
-                            text = textContent,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
+                )
+                .background(
+                    if (isUser) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.secondaryContainer
                     }
-                    
-                    // 工具标签（exec 标签）
-                    if (toolCards.isNotEmpty()) {
-                        ToolTagsRow(toolCards = toolCards)
-                    }
-                }
+                )
+                .padding(12.dp)
+        ) {
+            // 助手消息使用原生 Markdown 渲染
+            if (!isUser) {
+                MarkdownText(
+                    content = textContent,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                Text(
+                    text = textContent,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
             }
         }
     }
