@@ -421,5 +421,4 @@ private data class DefaultMarkdownTypography(
     override val quote = TextStyle(fontSize = fontSize)
     override val paragraph = TextStyle(fontSize = fontSize)
     override val link = TextStyle(fontSize = fontSize)
-    override val table = TextStyle(fontSize = fontSize)
 }
