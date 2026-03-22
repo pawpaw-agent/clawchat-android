@@ -796,6 +796,90 @@ class SessionViewModel @Inject constructor(
                     }
                 }
             }
+            "think", "thinking" -> {
+                // 设置思考级别
+                viewModelScope.launch {
+                    val sessionId = _state.value.sessionId ?: return@launch
+                    val level = args.trim().lowercase().ifEmpty { "medium" }
+                    try {
+                        gateway.call("sessions.patch", mapOf(
+                            "key" to JsonPrimitive(sessionId),
+                            "thinkingLevel" to JsonPrimitive(level)
+                        ))
+                        _state.update { it.copy(inputText = "") }
+                        // 显示确认消息
+                        _state.update { state ->
+                            state.copy(
+                                chatMessages = state.chatMessages + MessageUi(
+                                    id = "think-${System.currentTimeMillis()}",
+                                    content = listOf(MessageContentItem.Text("✅ 思考级别已设置为: $level")),
+                                    role = MessageRole.ASSISTANT,
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to set thinking level", e)
+                    }
+                }
+            }
+            "reasoning" -> {
+                // 切换推理模式
+                viewModelScope.launch {
+                    val sessionId = _state.value.sessionId ?: return@launch
+                    val enabled = args.trim().lowercase().let { 
+                        it == "on" || it == "true" || it == "1" 
+                    }
+                    try {
+                        gateway.call("sessions.patch", mapOf(
+                            "key" to JsonPrimitive(sessionId),
+                            "reasoning" to JsonPrimitive(enabled)
+                        ))
+                        _state.update { it.copy(inputText = "") }
+                        // 显示确认消息
+                        val status = if (enabled) "开启" else "关闭"
+                        _state.update { state ->
+                            state.copy(
+                                chatMessages = state.chatMessages + MessageUi(
+                                    id = "reasoning-${System.currentTimeMillis()}",
+                                    content = listOf(MessageContentItem.Text("✅ 推理模式已$status")),
+                                    role = MessageRole.ASSISTANT,
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to toggle reasoning", e)
+                    }
+                }
+            }
+            "verbose" -> {
+                // 切换详细模式
+                viewModelScope.launch {
+                    val sessionId = _state.value.sessionId ?: return@launch
+                    val level = args.trim().lowercase().ifEmpty { "on" }
+                    try {
+                        gateway.call("sessions.patch", mapOf(
+                            "key" to JsonPrimitive(sessionId),
+                            "verboseLevel" to JsonPrimitive(level)
+                        ))
+                        _state.update { it.copy(inputText = "") }
+                        // 显示确认消息
+                        _state.update { state ->
+                            state.copy(
+                                chatMessages = state.chatMessages + MessageUi(
+                                    id = "verbose-${System.currentTimeMillis()}",
+                                    content = listOf(MessageContentItem.Text("✅ 详细模式已设置: $level")),
+                                    role = MessageRole.ASSISTANT,
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to set verbose level", e)
+                    }
+                }
+            }
             else -> {
                 // 其他命令发送到 Gateway
                 viewModelScope.launch {

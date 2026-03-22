@@ -84,6 +84,24 @@ val SLASH_COMMANDS = listOf(
         argOptions = listOf("off", "low", "medium", "high")
     ),
     SlashCommandDef(
+        name = "thinking",
+        description = "设置思考级别（/think 别名）",
+        args = "<level>",
+        icon = "brain",
+        category = SlashCommandCategory.MODEL,
+        executeLocal = true,
+        argOptions = listOf("off", "low", "medium", "high")
+    ),
+    SlashCommandDef(
+        name = "reasoning",
+        description = "切换推理模式",
+        args = "<on|off>",
+        icon = "brain",
+        category = SlashCommandCategory.MODEL,
+        executeLocal = true,
+        argOptions = listOf("on", "off")
+    ),
+    SlashCommandDef(
         name = "verbose",
         description = "切换详细模式",
         args = "<on|off|full>",
