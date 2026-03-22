@@ -474,7 +474,7 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val role = msgObj?.get("role")?.jsonPrimitive?.content ?: "assistant"
-                val contentJson = msgObj?.get("content")?.let { json.encodeToString(it) } ?: "{}"
+                val contentJson = msgObj?.get("content")?.let { json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
                 messageRepository.saveMessage(
                     sessionId = sessionId,
                     role = MessageRole.fromString(role),
