@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.data.UserPreferences
 import com.openclaw.clawchat.network.WebSocketConnectionState
+import com.openclaw.clawchat.network.protocol.ChatAttachmentData
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -611,22 +612,39 @@ class SessionViewModel @Inject constructor(
     fun sendMessage(message: String) {
         val sessionId = _state.value.sessionId ?: return
         val trimmedMessage = message.trim()
-        if (trimmedMessage.isEmpty()) return
+        val attachments = _state.value.attachments
+        
+        if (trimmedMessage.isEmpty() && attachments.isEmpty()) return
 
         val now = System.currentTimeMillis()
         val runId = UUID.randomUUID().toString()
+
+        // 构建用户消息内容
+        val contentBlocks = mutableListOf<MessageContentItem>()
+        if (trimmedMessage.isNotEmpty()) {
+            contentBlocks.add(MessageContentItem.Text(trimmedMessage))
+        }
+        // 添加图片预览
+        attachments.forEach { att ->
+            val base64Content = extractBase64FromDataUrl(att.dataUrl)
+            contentBlocks.add(MessageContentItem.Image(
+                base64 = base64Content,
+                mimeType = att.mimeType
+            ))
+        }
 
         // 添加用户消息
         _state.update { currentState ->
             val userMessage = MessageUi(
                 id = UUID.randomUUID().toString(),
-                content = listOf(MessageContentItem.Text(trimmedMessage)),
+                content = contentBlocks,
                 role = MessageRole.USER,
                 timestamp = now
             )
             currentState.copy(
                 chatMessages = currentState.chatMessages + userMessage,
                 inputText = "",
+                attachments = emptyList(),  // 清空附件
                 isSending = true,
                 isLoading = true,
                 chatRunId = runId,
@@ -635,18 +653,64 @@ class SessionViewModel @Inject constructor(
             )
         }
 
+        // 转换附件为 API 格式
+        val apiAttachments = attachments.map { att ->
+            val base64Content = extractBase64FromDataUrl(att.dataUrl)
+            ChatAttachmentData(
+                mimeType = att.mimeType,
+                content = base64Content
+            )
+        }.takeIf { it.isNotEmpty() }
+
         viewModelScope.launch {
             try {
-                gateway.chatSend(sessionId, trimmedMessage)
+                gateway.chatSend(sessionId, trimmedMessage, apiAttachments)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send message", e)
                 _state.update { it.copy(error = "发送失败：${e.message}", isLoading = false, isSending = false) }
             }
         }
     }
+    
+    /**
+     * 从 data URL 提取 base64 内容
+     */
+    private fun extractBase64FromDataUrl(dataUrl: String): String {
+        val match = Regex("^data:([^;]+);base64,(.+)$").find(dataUrl)
+        return match?.groupValues?.get(2) ?: dataUrl
+    }
 
     fun updateInputText(text: String) {
         _state.update { it.copy(inputText = text) }
+    }
+    
+    /**
+     * 添加附件
+     */
+    fun addAttachment(attachment: ChatAttachment) {
+        _state.update { currentState ->
+            currentState.copy(
+                attachments = currentState.attachments + attachment
+            )
+        }
+    }
+    
+    /**
+     * 移除附件
+     */
+    fun removeAttachment(attachmentId: String) {
+        _state.update { currentState ->
+            currentState.copy(
+                attachments = currentState.attachments.filter { it.id != attachmentId }
+            )
+        }
+    }
+    
+    /**
+     * 清空所有附件
+     */
+    fun clearAttachments() {
+        _state.update { it.copy(attachments = emptyList()) }
     }
 
     fun clearError() {

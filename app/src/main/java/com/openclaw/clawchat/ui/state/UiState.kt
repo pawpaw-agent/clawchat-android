@@ -83,7 +83,10 @@ data class SessionUiState(
     val chatToolMessages: List<MessageUi> = emptyList(),
     
     // 输入
-    val inputText: String = ""
+    val inputText: String = "",
+    
+    // 附件（1:1 对应 webchat chatAttachments）
+    val attachments: List<ChatAttachment> = emptyList()
 )
 
 /**
@@ -184,6 +187,19 @@ sealed class PairingStatus {
     data object Timeout : PairingStatus()
     data class Error(val message: String) : PairingStatus()
 }
+
+// ─────────────────────────────────────────────────────────────
+// 附件相关数据模型
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 聊天附件（1:1 对应 webchat ChatAttachment）
+ */
+data class ChatAttachment(
+    val id: String,
+    val dataUrl: String,      // base64 data URL
+    val mimeType: String      // e.g. "image/png"
+)
 
 // ─────────────────────────────────────────────────────────────
 // 消息相关数据模型

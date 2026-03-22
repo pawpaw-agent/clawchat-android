@@ -459,13 +459,33 @@ class GatewayConnection(
         return withTimeout(REQUEST_TIMEOUT_MS) { deferred.await() }
     }
 
-    /** chat.send — with required idempotencyKey */
-    suspend fun chatSend(sessionKey: String, message: String): ResponseFrame {
-        return call("chat.send", mapOf(
+    /** chat.send — with required idempotencyKey and optional attachments */
+    suspend fun chatSend(
+        sessionKey: String, 
+        message: String, 
+        attachments: List<ChatAttachmentData>? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
             "sessionKey" to JsonPrimitive(sessionKey),
             "message" to JsonPrimitive(message),
             "idempotencyKey" to JsonPrimitive(UUID.randomUUID().toString())
-        ))
+        )
+        
+        // 添加附件（如果有）
+        if (!attachments.isNullOrEmpty()) {
+            val attachmentsArray = JsonArray(
+                attachments.map { att ->
+                    buildJsonObject {
+                        put("type", "image")
+                        put("mimeType", att.mimeType)
+                        put("content", att.content)
+                    }
+                }
+            )
+            params["attachments"] = attachmentsArray
+        }
+        
+        return call("chat.send", params)
     }
 
     /** chat.history */
@@ -586,4 +606,13 @@ data class CertificateEvent(
     val fingerprint: String,
     val isMismatch: Boolean,
     val storedFingerprint: String? = null
+)
+
+/**
+ * 附件数据（用于 chat.send）
+ */
+data class ChatAttachmentData(
+    val type: String = "image",
+    val mimeType: String,
+    val content: String   // base64 content (without data URL prefix)
 )

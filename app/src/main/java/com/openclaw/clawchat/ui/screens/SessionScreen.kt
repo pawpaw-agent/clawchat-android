@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.ConnectionStatus
+import com.openclaw.clawchat.ui.state.ChatAttachment
 import com.openclaw.clawchat.ui.state.MessageContentItem
 import com.openclaw.clawchat.ui.state.MessageGroup
 import com.openclaw.clawchat.ui.state.MessageRole
@@ -188,7 +189,10 @@ fun SessionScreen(
                     onValueChange = { viewModel.updateInputText(it) },
                     onSend = { viewModel.sendMessage(state.inputText) },
                     enabled = state.connectionStatus is ConnectionStatus.Connected && !state.isSending,
-                    focusRequester = focusRequester
+                    focusRequester = focusRequester,
+                    attachments = state.attachments,
+                    onAddAttachment = { viewModel.addAttachment(it) },
+                    onRemoveAttachment = { viewModel.removeAttachment(it) }
                 )
             }
 
@@ -1443,65 +1447,211 @@ private fun LoadingOverlay() {
 }
 
 /**
- * 消息输入框
+ * 消息输入框（支持附件）
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MessageInputBar(
     value: String,
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
     enabled: Boolean,
-    focusRequester: FocusRequester
+    focusRequester: FocusRequester,
+    attachments: List<ChatAttachment> = emptyList(),
+    onAddAttachment: (ChatAttachment) -> Unit = {},
+    onRemoveAttachment: (String) -> Unit = {}
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
+    // 图片选择器
+    val imagePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        uri?.let { 
+            // 读取图片并转换为 base64
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val bytes = inputStream?.readBytes()
+                inputStream?.close()
+                
+                if (bytes != null) {
+                    val mimeType = context.contentResolver.getType(uri) ?: "image/png"
+                    val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                    val dataUrl = "data:$mimeType;base64,$base64"
+                    
+                    onAddAttachment(ChatAttachment(
+                        id = "att-${System.currentTimeMillis()}-${(0..9999).random()}",
+                        dataUrl = dataUrl,
+                        mimeType = mimeType
+                    ))
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SessionScreen", "Failed to read image: ${e.message}")
+            }
+        }
+    }
+    
     Surface(
         shadowElevation = 8.dp,
         color = MaterialTheme.colorScheme.surface
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Bottom
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
+            // 附件预览
+            if (attachments.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    attachments.forEach { att ->
+                        AttachmentPreview(
+                            attachment = att,
+                            onRemove = { onRemoveAttachment(att.id) }
+                        )
+                    }
+                }
+            }
+            
+            // 输入行
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .focusRequester(focusRequester),
-                placeholder = { Text("输入消息...") },
-                enabled = enabled,
-                maxLines = 4,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(
-                    onSend = { onSend() }
-                ),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    disabledBorderColor = Color.Transparent
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                // 附件按钮
+                IconButton(
+                    onClick = { imagePickerLauncher.launch("image/*") },
+                    enabled = enabled
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AttachFile,
+                        contentDescription = "添加附件",
+                        tint = if (enabled) {
+                            if (attachments.isNotEmpty()) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        }
+                    )
+                }
+                
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester),
+                    placeholder = { Text("输入消息...") },
+                    enabled = enabled,
+                    maxLines = 4,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    keyboardActions = KeyboardActions(
+                        onSend = { onSend() }
+                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        disabledBorderColor = Color.Transparent
+                    )
                 )
-            )
 
-            IconButton(
-                onClick = onSend,
-                enabled = enabled && value.isNotBlank()
+                IconButton(
+                    onClick = onSend,
+                    enabled = enabled && (value.isNotBlank() || attachments.isNotEmpty())
+                ) {
+                    Icon(
+                        imageVector = if (value.isNotBlank() || attachments.isNotEmpty()) {
+                            Icons.Default.Send
+                        } else {
+                            Icons.Default.NearMe
+                        },
+                        contentDescription = "发送",
+                        tint = if (enabled && (value.isNotBlank() || attachments.isNotEmpty())) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 附件预览组件
+ */
+@Composable
+private fun AttachmentPreview(
+    attachment: ChatAttachment,
+    onRemove: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(64.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        // 显示图片
+        android.util.Log.d("SessionScreen", "Loading image: mimeType=${attachment.mimeType}, dataUrl len=${attachment.dataUrl.length}")
+        
+        // 使用 Coil 或手动解码
+        val bitmap = remember(attachment.dataUrl) {
+            try {
+                val base64Match = Regex("base64,(.+)").find(attachment.dataUrl)
+                val base64 = base64Match?.groupValues?.get(1) ?: attachment.dataUrl
+                val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            } catch (e: Exception) {
+                android.util.Log.e("SessionScreen", "Failed to decode image: ${e.message}")
+                null
+            }
+        }
+        
+        if (bitmap != null) {
+            androidx.compose.foundation.Image(
+                bitmap = androidx.compose.ui.graphics.asImageBitmap(bitmap),
+                contentDescription = "附件预览",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+        } else {
+            // 显示占位符
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (value.isNotBlank()) {
-                        Icons.Default.Send
-                    } else {
-                        Icons.Default.NearMe
-                    },
-                    contentDescription = "发送",
-                    tint = if (enabled && value.isNotBlank()) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                    imageVector = Icons.Default.Image,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+        
+        // 删除按钮
+        IconButton(
+            onClick = onRemove,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(24.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = CircleShape
+                )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "移除附件",
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.onErrorContainer
+            )
         }
     }
 }
