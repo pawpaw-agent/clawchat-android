@@ -103,7 +103,7 @@ fun MarkdownText(
 
     // 创建自定义 typography 对象
     val customTypography = remember(fontSize) {
-        object : com.mikepenz.markdown.model.MarkdownTypography {
+        object : MarkdownTypography {
             override val text = androidx.compose.ui.text.TextStyle(
                 fontSize = fontSize,
                 fontFamily = FontFamily.Default
@@ -124,10 +124,9 @@ fun MarkdownText(
                 fontSize = fontSize * 0.9f,
                 fontFamily = FontFamily.Monospace
             )
+            override val bullet = text
             override val list = text
-            override val orderedList = text
-            override val bulletList = text
-            override val blockQuote = text
+            override val quote = text
             override val paragraph = text
         }
     }
