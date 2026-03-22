@@ -242,7 +242,7 @@ class SessionViewModel @Inject constructor(
         val state = payload["state"]?.jsonPrimitive?.content ?: return
         val msgObj = payload["message"]?.jsonObject
         
-        Log.d(TAG, "=== Chat event: runId=$runId, state=$state")
+        Log.d(TAG, "=== handleChatEvent: runId=$runId, state=$state, msgObj=$msgObj")
         
         when (state) {
             "delta" -> handleDelta(runId, msgObj, sessionId)
@@ -261,12 +261,14 @@ class SessionViewModel @Inject constructor(
     private fun handleDelta(runId: String, msgObj: JsonObject?, sessionId: String) {
         // 提取文本
         val text = extractText(msgObj?.get("content"))
+        Log.d(TAG, "=== handleDelta: runId=$runId, text=${text?.take(50)}, textLen=${text?.length}")
         
         if (!text.isNullOrBlank() && !isSilentReplyStream(text)) {
             _state.update { currentState ->
                 val current = currentState.chatStream ?: ""
                 // webchat: if (!current || next.length >= current.length)
                 val newStream = if (current.isBlank() || text.length >= current.length) text else current
+                Log.d(TAG, "=== handleDelta: updating chatStream, newLen=${newStream.length}")
                 
                 currentState.copy(
                     chatStream = newStream,
@@ -282,11 +284,14 @@ class SessionViewModel @Inject constructor(
      */
     private fun handleFinal(runId: String, msgObj: JsonObject?, sessionId: String) {
         val finalMessage = normalizeFinalAssistantMessage(msgObj)
+        Log.d(TAG, "=== handleFinal: runId=$runId, finalMessage=${finalMessage != null}, chatStream=${_state.value.chatStream?.take(30)}")
         
         _state.update { currentState ->
             val newMessages = if (finalMessage != null && !isAssistantSilentReply(finalMessage)) {
+                Log.d(TAG, "=== handleFinal: adding finalMessage to chatMessages")
                 currentState.chatMessages + finalMessage
             } else if (!currentState.chatStream.isNullOrBlank() && !isSilentReplyStream(currentState.chatStream)) {
+                Log.d(TAG, "=== handleFinal: adding chatStream to chatMessages")
                 currentState.chatMessages + MessageUi(
                     id = runId,
                     content = listOf(MessageContentItem.Text(currentState.chatStream.trim())),
@@ -294,8 +299,11 @@ class SessionViewModel @Inject constructor(
                     timestamp = System.currentTimeMillis()
                 )
             } else {
+                Log.d(TAG, "=== handleFinal: no message to add")
                 currentState.chatMessages
             }
+            
+            Log.d(TAG, "=== handleFinal: chatMessages.size=${newMessages.size}")
             
             // 重置流式状态
             currentState.copy(

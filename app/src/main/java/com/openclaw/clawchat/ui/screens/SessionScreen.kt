@@ -68,6 +68,7 @@ fun SessionScreen(
 
     // 初始化会话 ID
     LaunchedEffect(sessionId) {
+        android.util.Log.d("SessionScreen", "=== LaunchedEffect: sessionId=$sessionId")
         viewModel.setSessionId(sessionId)
         focusRequester.requestFocus()
     }
@@ -92,6 +93,11 @@ fun SessionScreen(
 
     // 分组消息（使用 chatMessages）
     val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
+    
+    // 调试日志
+    LaunchedEffect(state.chatMessages, state.chatStream, state.chatToolMessages) {
+        android.util.Log.d("SessionScreen", "=== State: chatMessages.size=${state.chatMessages.size}, chatStream=${state.chatStream?.take(30)}, chatToolMessages.size=${state.chatToolMessages.size}, streamSegments.size=${state.chatStreamSegments.size}")
+    }
 
     // 消息变化时滚动到底部
     var lastMessageCount by remember { mutableStateOf(0) }
