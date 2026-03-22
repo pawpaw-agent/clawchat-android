@@ -55,6 +55,7 @@ import com.mikepenz.markdown.compose.elements.material.MarkdownBasicText
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.compose.components.markdownComponents
+import com.mikepenz.markdown.model.MarkdownTypography
 import dev.snipme.highlights.Highlights
 import dev.snipme.highlights.model.BoldHighlight
 import dev.snipme.highlights.model.ColorHighlight
@@ -100,13 +101,31 @@ fun MarkdownText(
         dividerColor = MaterialTheme.colorScheme.outlineVariant
     )
 
-    // 使用 ProvideTextStyle 覆盖字体大小
-    androidx.compose.material3.ProvideTextStyle(
-        value = androidx.compose.ui.text.TextStyle(
+    // 自定义字体大小
+    val customTypography = MarkdownTypography(
+        text = androidx.compose.ui.text.TextStyle(
             fontSize = fontSize,
-            fontFamily = androidx.compose.ui.text.font.FontFamily.Default
+            fontFamily = FontFamily.Default
+        ),
+        h1 = androidx.compose.ui.text.TextStyle(
+            fontSize = fontSize * 1.5f,
+            fontWeight = FontWeight.Bold
+        ),
+        h2 = androidx.compose.ui.text.TextStyle(
+            fontSize = fontSize * 1.3f,
+            fontWeight = FontWeight.Bold
+        ),
+        h3 = androidx.compose.ui.text.TextStyle(
+            fontSize = fontSize * 1.1f,
+            fontWeight = FontWeight.Bold
+        ),
+        code = androidx.compose.ui.text.TextStyle(
+            fontSize = fontSize * 0.9f,
+            fontFamily = FontFamily.Monospace
         )
-    ) {
+    )
+
+    CompositionLocalProvider(LocalMarkdownTypography provides customTypography) {
         Markdown(
             content = truncatedContent,
             modifier = modifier.fillMaxWidth(),
