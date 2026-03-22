@@ -33,60 +33,134 @@ import kotlinx.serialization.json.jsonPrimitive
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageContentCard(
-    message: MessageUi, isUser: Boolean, isLastInGroup: Boolean,
-    messageFontSize: FontSize = FontSize.MEDIUM, onCopy: (String) -> Unit = {},
-    onDelete: () -> Unit = {}, onRegenerate: () -> Unit = {}
+    message: MessageUi,
+    isUser: Boolean,
+    isLastInGroup: Boolean,
+    messageFontSize: FontSize = FontSize.MEDIUM,
+    onCopy: (String) -> Unit = {},
+    onDelete: () -> Unit = {},
+    onRegenerate: () -> Unit = {}
 ) {
     val textContent = message.getTextContent()
     val images = message.content.filterIsInstance<MessageContentItem.Image>()
     if (textContent.isBlank() && images.isEmpty()) return
     
-    val textSize = when (messageFontSize) { FontSize.SMALL -> 10.sp; FontSize.MEDIUM -> 13.sp; FontSize.LARGE -> 16.sp }
+    val textSize = when (messageFontSize) {
+        FontSize.SMALL -> 10.sp
+        FontSize.MEDIUM -> 13.sp
+        FontSize.LARGE -> 16.sp
+    }
     var showMenu by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
     
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         images.forEach { MessageImageContent(it) }
         if (textContent.isNotBlank()) {
-            Box(Modifier.widthIn(max = 320.dp).clip(RoundedCornerShape(16.dp))
-                .background(if (isUser) DesignTokens.accentSubtle else DesignTokens.bgHover)
-                .combinedClickable(onClick = {}, onLongClick = { showMenu = true }).padding(8.dp)) {
-                MarkdownText(textContent, Modifier.fillMaxWidth(), textSize, if (isUser) DesignTokens.text else DesignTokens.text)
-                if (showMenu) MessageActionDropdownMenu(isUser, { clipboardManager.setText(AnnotatedString(formatMessageAsMarkdown(message))); showMenu = false },
-                    { onDelete(); showMenu = false }, { onRegenerate(); showMenu = false }, { showMenu = false })
+            Box(
+                modifier = Modifier
+                    .widthIn(max = 320.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(if (isUser) DesignTokens.accentSubtle else DesignTokens.bgHover)
+                    .combinedClickable(onClick = {}, onLongClick = { showMenu = true })
+                    .padding(8.dp)
+            ) {
+                MarkdownText(
+                    content = textContent,
+                    modifier = Modifier.fillMaxWidth(),
+                    fontSize = textSize,
+                    textColor = DesignTokens.text
+                )
+                if (showMenu) {
+                    MessageActionDropdownMenu(
+                        isUser = isUser,
+                        onCopy = { 
+                            clipboardManager.setText(AnnotatedString(formatMessageAsMarkdown(message)))
+                            showMenu = false 
+                        },
+                        onDelete = { 
+                            onDelete()
+                            showMenu = false 
+                        },
+                        onRegenerate = { 
+                            onRegenerate()
+                            showMenu = false 
+                        },
+                        onDismiss = { showMenu = false }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun MessageActionDropdownMenu(isUser: Boolean, onCopy: () -> Unit, onDelete: () -> Unit, onRegenerate: () -> Unit, onDismiss: () -> Unit) {
-    DropdownMenu(true, onDismiss) {
-        DropdownMenuItem({ Text("复制") }, onCopy)
-        DropdownMenuItem({ Text("复制为 Markdown") }, onCopy)
+fun MessageActionDropdownMenu(
+    isUser: Boolean, 
+    onCopy: () -> Unit, 
+    onDelete: () -> Unit, 
+    onRegenerate: () -> Unit, 
+    onDismiss: () -> Unit
+) {
+    DropdownMenu(expanded = true, onDismissRequest = onDismiss) {
+        DropdownMenuItem(
+            text = { Text("复制") },
+            onClick = onCopy
+        )
+        DropdownMenuItem(
+            text = { Text("复制为 Markdown") },
+            onClick = onCopy
+        )
         HorizontalDivider()
-        DropdownMenuItem({ Text("删除", color = DesignTokens.danger) }, onDelete)
-        if (!isUser) DropdownMenuItem({ Text("重新生成") }, onRegenerate)
+        DropdownMenuItem(
+            text = { Text("删除", color = DesignTokens.danger) },
+            onClick = onDelete
+        )
+        if (!isUser) {
+            DropdownMenuItem(
+                text = { Text("重新生成") },
+                onClick = onRegenerate
+            )
+        }
     }
 }
 
 @Composable
 fun MessageImageContent(image: MessageContentItem.Image) {
     val bitmap = remember(image.base64) {
-        try { Base64.decode(image.base64 ?: return@remember null, Base64.DEFAULT).let { BitmapFactory.decodeByteArray(it, 0, it.size) } } catch (e: Exception) { null }
+        try {
+            Base64.decode(image.base64 ?: return@remember null, Base64.DEFAULT)
+                .let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+        } catch (e: Exception) { 
+            null 
+        }
     }
-    Box(Modifier.widthIn(max = 280.dp).clip(RoundedCornerShape(12.dp)).background(DesignTokens.bgHover)) {
-        if (bitmap != null) androidx.compose.foundation.Image(bitmap.asImageBitmap(), "图片", Modifier.fillMaxWidth(), ContentScale.FillWidth)
+    Box(
+        modifier = Modifier
+            .widthIn(max = 280.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(DesignTokens.bgHover)
+    ) {
+        if (bitmap != null) {
+            androidx.compose.foundation.Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = "图片",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.FillWidth
+            )
+        }
     }
 }
 
 @Composable
 fun SystemMessageItem(message: MessageUi) {
     Card(colors = CardDefaults.cardColors(DesignTokens.bgHover), shape = RoundedCornerShape(DesignTokens.radiusMd)) {
-        Row(Modifier.fillMaxWidth().padding(12.dp), Alignment.CenterVertically) {
-            Icon(Icons.Default.Info, null, Modifier.size(16.dp), DesignTokens.accent)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp), tint = DesignTokens.accent)
             Spacer(Modifier.width(8.dp))
-            Text(message.getTextContent(), MaterialTheme.typography.bodySmall, color = DesignTokens.muted)
+            Text(message.getTextContent(), style = MaterialTheme.typography.bodySmall, color = DesignTokens.muted)
         }
     }
 }
@@ -95,24 +169,75 @@ fun SystemMessageItem(message: MessageUi) {
 fun ToolDetailCard(toolCard: ToolCard) {
     var expanded by remember { mutableStateOf(false) }
     val hasContent = toolCard.args?.isNotBlank() == true || toolCard.result?.isNotBlank() == true
-    Card(Modifier.fillMaxWidth().combinedClickable(hasContent) { expanded = !expanded },
-        colors = CardDefaults.cardColors(when { toolCard.isError -> DesignTokens.dangerSubtle; toolCard.kind == ToolCardKind.CALL -> Color(0x1AE53935); else -> DesignTokens.bgHover }),
-        shape = RoundedCornerShape(DesignTokens.radiusMd)) {
-        Column(Modifier.padding(12.dp)) {
-            Row(Alignment.CenterVertically) {
-                Icon(when { toolCard.isError -> Icons.Default.ErrorOutline; toolCard.kind == ToolCardKind.CALL -> Icons.Default.Bolt; else -> Icons.Default.CheckCircle },
-                    null, Modifier.size(16.dp), when { toolCard.isError -> DesignTokens.danger; toolCard.kind == ToolCardKind.CALL -> Color(0xFFE53935); else -> DesignTokens.accent2 })
-                Spacer(Modifier.width(8.dp))
-                Text(toolCard.name.replaceFirstChar { it.uppercase() }, Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                if (hasContent) Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, Modifier.size(16.dp))
+    Card(
+        modifier = Modifier.fillMaxWidth().combinedClickable(hasContent) { expanded = !expanded },
+        colors = CardDefaults.cardColors(
+            containerColor = when { 
+                toolCard.isError -> DesignTokens.dangerSubtle 
+                toolCard.kind == ToolCardKind.CALL -> Color(0x1AE53935) 
+                else -> DesignTokens.bgHover 
             }
-            if (expanded && hasContent) { Spacer(Modifier.height(8.dp)); SelectionContainer { Column {
-                toolCard.args?.takeIf { it.isNotBlank() }?.let { Text(it, MaterialTheme.typography.bodySmall, FontFamily.Monospace, fontSize = 11.sp, color = DesignTokens.muted) }
-                toolCard.result?.takeIf { it.isNotBlank() }?.let {
-                    if (toolCard.args?.isNotBlank() == true) HorizontalDivider(Modifier.padding(vertical = 4.dp))
-                    Text(it, MaterialTheme.typography.bodySmall, FontFamily.Monospace, 11.sp, if (toolCard.isError) DesignTokens.danger else DesignTokens.text)
+        ),
+        shape = RoundedCornerShape(DesignTokens.radiusMd)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = when { 
+                        toolCard.isError -> Icons.Default.ErrorOutline 
+                        toolCard.kind == ToolCardKind.CALL -> Icons.Default.Bolt 
+                        else -> Icons.Default.CheckCircle 
+                    },
+                    contentDescription = null, 
+                    modifier = Modifier.size(16.dp), 
+                    tint = when { 
+                        toolCard.isError -> DesignTokens.danger 
+                        toolCard.kind == ToolCardKind.CALL -> Color(0xFFE53935) 
+                        else -> DesignTokens.accent2 
+                    }
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = toolCard.name.replaceFirstChar { it.uppercase() }, 
+                    modifier = Modifier.weight(1f), 
+                    fontWeight = FontWeight.Bold
+                )
+                if (hasContent) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, 
+                        contentDescription = null, 
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
-            }}}
+            }
+            if (expanded && hasContent) {
+                Spacer(Modifier.height(8.dp))
+                SelectionContainer {
+                    Column {
+                        toolCard.args?.takeIf { it.isNotBlank() }?.let { 
+                            Text(
+                                text = it, 
+                                style = MaterialTheme.typography.bodySmall, 
+                                fontFamily = FontFamily.Monospace, 
+                                fontSize = 11.sp, 
+                                color = DesignTokens.muted
+                            )
+                        }
+                        toolCard.result?.takeIf { it.isNotBlank() }?.let {
+                            if (toolCard.args?.isNotBlank() == true) {
+                                HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                            }
+                            Text(
+                                text = it, 
+                                style = MaterialTheme.typography.bodySmall, 
+                                fontFamily = FontFamily.Monospace, 
+                                fontSize = 11.sp, 
+                                color = if (toolCard.isError) DesignTokens.danger else DesignTokens.text
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
