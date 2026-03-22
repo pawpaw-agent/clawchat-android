@@ -518,9 +518,11 @@ class SessionViewModel @Inject constructor(
 
     private fun loadMessageHistory(sessionId: String) {
         Log.d(TAG, "=== loadMessageHistory: sessionId=$sessionId")
+        
+        // 从本地数据库加载
         viewModelScope.launch {
             messageRepository.observeMessages(sessionId).collect { messages ->
-                Log.d(TAG, "=== loadMessageHistory: received ${messages.size} messages")
+                Log.d(TAG, "=== loadMessageHistory: local DB has ${messages.size} messages")
                 _state.update { it.copy(
                     chatMessages = messages,
                     // 重置工具流状态
@@ -529,6 +531,39 @@ class SessionViewModel @Inject constructor(
                     chatToolMessages = emptyList(),
                     chatStreamSegments = emptyList()
                 )}
+            }
+        }
+        
+        // 从 Gateway 加载历史消息
+        viewModelScope.launch {
+            try {
+                Log.d(TAG, "=== loadMessageHistory: fetching from Gateway...")
+                val response = gateway.chatHistory(sessionId, limit = 100)
+                if (response.isSuccess() && response.payload is JsonObject) {
+                    val payload = response.payload as JsonObject
+                    val messagesArray = payload["messages"]?.jsonArray
+                    Log.d(TAG, "=== loadMessageHistory: Gateway returned ${messagesArray?.size ?: 0} messages")
+                    
+                    messagesArray?.forEach { msgElement ->
+                        try {
+                            val msgObj = msgElement.jsonObject
+                            val role = msgObj["role"]?.jsonPrimitive?.content ?: "assistant"
+                            val content = msgObj["content"]?.let { json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
+                            val timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
+                            
+                            messageRepository.saveMessage(
+                                sessionId = sessionId,
+                                role = MessageRole.fromString(role),
+                                content = content,
+                                timestamp = timestamp
+                            )
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Failed to parse history message: ${e.message}")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to load chat history: ${e.message}")
             }
         }
     }
