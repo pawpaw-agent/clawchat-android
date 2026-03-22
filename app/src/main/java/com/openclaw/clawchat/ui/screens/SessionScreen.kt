@@ -401,7 +401,7 @@ private fun MessageGroupList(
     ) {
         // 1. 历史消息
         items(groups, key = { it.messages.first().id }) { group ->
-            MessageGroupItem(group = group)
+            MessageGroupItem(group = group, messageFontSize = messageFontSize)
         }
         
         // 2. 文本段（工具执行前提交的文本）
@@ -455,7 +455,7 @@ private fun MessageGroupList(
  * 消息分组项（Slack 风格）
  */
 @Composable
-private fun MessageGroupItem(group: MessageGroup) {
+private fun MessageGroupItem(group: MessageGroup, messageFontSize: FontSize = FontSize.MEDIUM) {
     val isUser = group.role == MessageRole.USER
     val isSystem = group.role == MessageRole.SYSTEM
     val isTool = group.role == MessageRole.TOOL
