@@ -922,7 +922,7 @@ private fun MessageImageContent(image: MessageContentItem.Image) {
     ) {
         if (bitmap != null) {
             androidx.compose.foundation.Image(
-                bitmap = androidx.compose.ui.graphics.asImageBitmap(bitmap),
+                bitmap = bitmap.asImageBitmap(),
                 contentDescription = "图片",
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = androidx.compose.ui.layout.ContentScale.FillWidth
@@ -1935,7 +1935,7 @@ private fun AttachmentPreview(
         
         if (bitmap != null) {
             androidx.compose.foundation.Image(
-                bitmap = androidx.compose.ui.graphics.asImageBitmap(bitmap),
+                bitmap = bitmap.asImageBitmap(),
                 contentDescription = "附件预览",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
