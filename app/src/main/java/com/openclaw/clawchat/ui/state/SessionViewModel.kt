@@ -367,7 +367,7 @@ class SessionViewModel @Inject constructor(
                         "${text.take(120000)}\n\n… truncated (${text.length} chars, showing first 120000)."
                     } else text
                 } else {
-                    try { json.encodeToString(value) } catch { null }
+                    try { json.encodeToString(value) } catch (_: Exception) { null }
                 }
             }
             is JsonArray -> {
