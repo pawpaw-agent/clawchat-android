@@ -516,6 +516,15 @@ private fun MessageGroupItem(group: MessageGroup) {
             // 收集所有 ToolResult（用于匹配）
             val allToolResults = group.messages.flatMap { it.getToolResults() }
             
+            // 调试：打印 ToolCall 和 ToolResult 的 ID
+            group.messages.forEach { message ->
+                val calls = message.getToolCalls()
+                val results = message.getToolResults()
+                if (calls.isNotEmpty() || results.isNotEmpty()) {
+                    android.util.Log.d("SessionScreen", "=== message role=${message.role}, calls=${calls.map { "${it.name}:${it.id}" }}, results=${results.map { "${it.name}:${it.toolCallId}" }}")
+                }
+            }
+            
             // 记录已经显示过的 ToolCall ID（避免重复显示）
             val shownToolCallIds = mutableSetOf<String?>()
             

@@ -54,8 +54,8 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
         role: MessageRole,
         content: String,
         timestamp: Long,
-        toolCallId: String? = null,
-        toolName: String? = null
+        toolCallId: String?,
+        toolName: String?
     ): String {
         val messageId = java.util.UUID.randomUUID().toString()
         
