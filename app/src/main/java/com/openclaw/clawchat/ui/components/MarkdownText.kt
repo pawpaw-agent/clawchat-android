@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -101,37 +103,15 @@ fun MarkdownText(
         dividerColor = MaterialTheme.colorScheme.outlineVariant
     )
 
-    // 创建自定义 typography 对象
-    val customTypography = remember(fontSize) {
-        object : MarkdownTypography {
-            override val text = androidx.compose.ui.text.TextStyle(
-                fontSize = fontSize,
-                fontFamily = FontFamily.Default
-            )
-            override val h1 = androidx.compose.ui.text.TextStyle(
-                fontSize = fontSize * 1.5f,
-                fontWeight = FontWeight.Bold
-            )
-            override val h2 = androidx.compose.ui.text.TextStyle(
-                fontSize = fontSize * 1.3f,
-                fontWeight = FontWeight.Bold
-            )
-            override val h3 = androidx.compose.ui.text.TextStyle(
-                fontSize = fontSize * 1.1f,
-                fontWeight = FontWeight.Bold
-            )
-            override val code = androidx.compose.ui.text.TextStyle(
-                fontSize = fontSize * 0.9f,
-                fontFamily = FontFamily.Monospace
-            )
-            override val bullet = text
-            override val list = text
-            override val quote = text
-            override val paragraph = text
-        }
-    }
+    // 使用 ProvideTextStyle 设置字体大小
+    val textStyle = androidx.compose.ui.text.TextStyle(
+        fontSize = fontSize,
+        fontFamily = FontFamily.Default
+    )
 
-    CompositionLocalProvider(LocalMarkdownTypography provides customTypography) {
+    CompositionLocalProvider(
+        LocalTextStyle provides textStyle
+    ) {
         Markdown(
             content = truncatedContent,
             modifier = modifier.fillMaxWidth(),
