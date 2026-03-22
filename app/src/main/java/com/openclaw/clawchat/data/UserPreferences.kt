@@ -37,43 +37,24 @@ class UserPreferences @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     companion object {
-        private val USER_MESSAGE_FONT_SIZE = intPreferencesKey("user_message_font_size")
-        private val AI_MESSAGE_FONT_SIZE = intPreferencesKey("ai_message_font_size")
+        private val MESSAGE_FONT_SIZE = intPreferencesKey("message_font_size")
     }
     
     /**
-     * 用户消息字体大小
+     * 消息字体大小（统一设置）
      */
-    val userMessageFontSize: Flow<FontSize> = context.dataStore.data
+    val messageFontSize: Flow<FontSize> = context.dataStore.data
         .map { preferences ->
-            val value = preferences[USER_MESSAGE_FONT_SIZE] ?: FontSize.MEDIUM.value
+            val value = preferences[MESSAGE_FONT_SIZE] ?: FontSize.MEDIUM.value
             FontSize.fromValue(value)
         }
     
     /**
-     * AI 消息字体大小
+     * 设置消息字体大小
      */
-    val aiMessageFontSize: Flow<FontSize> = context.dataStore.data
-        .map { preferences ->
-            val value = preferences[AI_MESSAGE_FONT_SIZE] ?: FontSize.MEDIUM.value
-            FontSize.fromValue(value)
-        }
-    
-    /**
-     * 设置用户消息字体大小
-     */
-    suspend fun setUserMessageFontSize(fontSize: FontSize) {
+    suspend fun setMessageFontSize(fontSize: FontSize) {
         context.dataStore.edit { preferences ->
-            preferences[USER_MESSAGE_FONT_SIZE] = fontSize.value
-        }
-    }
-    
-    /**
-     * 设置 AI 消息字体大小
-     */
-    suspend fun setAiMessageFontSize(fontSize: FontSize) {
-        context.dataStore.edit { preferences ->
-            preferences[AI_MESSAGE_FONT_SIZE] = fontSize.value
+            preferences[MESSAGE_FONT_SIZE] = fontSize.value
         }
     }
 }

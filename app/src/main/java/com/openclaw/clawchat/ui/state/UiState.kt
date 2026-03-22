@@ -153,9 +153,8 @@ data class SettingsUiState(
     val notificationsEnabled: Boolean = true,
     val dndEnabled: Boolean = false,
     val appVersion: String = "1.0.0",
-    // 字体大小设置
-    val userMessageFontSize: FontSize = FontSize.MEDIUM,
-    val aiMessageFontSize: FontSize = FontSize.MEDIUM
+    // 字体大小设置（统一）
+    val messageFontSize: FontSize = FontSize.MEDIUM
 )
 
 enum class ConnectMode {

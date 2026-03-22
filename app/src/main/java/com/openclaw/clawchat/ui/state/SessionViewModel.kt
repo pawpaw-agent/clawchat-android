@@ -42,9 +42,8 @@ class SessionViewModel @Inject constructor(
     private val _state = MutableStateFlow(SessionUiState())
     val state: StateFlow<SessionUiState> = _state.asStateFlow()
     
-    // 暴露字体大小设置
-    val userMessageFontSize = userPreferences.userMessageFontSize
-    val aiMessageFontSize = userPreferences.aiMessageFontSize
+    // 暴露字体大小设置（统一）
+    val messageFontSize = userPreferences.messageFontSize
 
     private val _events = Channel<SessionEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()

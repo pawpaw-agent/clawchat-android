@@ -85,17 +85,10 @@ fun SettingsScreen(
             // 显示设置区域
             SettingsSection(title = "显示") {
                 FontSizeSettingItem(
-                    title = "用户消息字体",
-                    subtitle = "调整用户消息的字体大小",
-                    currentSize = state.userMessageFontSize,
-                    onSizeChange = { viewModel.setUserMessageFontSize(it) }
-                )
-                
-                FontSizeSettingItem(
-                    title = "AI 消息字体",
-                    subtitle = "调整 AI 回复的字体大小",
-                    currentSize = state.aiMessageFontSize,
-                    onSizeChange = { viewModel.setAiMessageFontSize(it) }
+                    title = "消息字体大小",
+                    subtitle = "调整所有消息的字体大小",
+                    currentSize = state.messageFontSize,
+                    onSizeChange = { viewModel.setMessageFontSize(it) }
                 )
             }
 

@@ -76,13 +76,8 @@ class SettingsViewModel @Inject constructor(
     
     private fun observeFontSettings() {
         viewModelScope.launch {
-            userPreferences.userMessageFontSize.collect { fontSize ->
-                _uiState.update { it.copy(userMessageFontSize = fontSize) }
-            }
-        }
-        viewModelScope.launch {
-            userPreferences.aiMessageFontSize.collect { fontSize ->
-                _uiState.update { it.copy(aiMessageFontSize = fontSize) }
+            userPreferences.messageFontSize.collect { fontSize ->
+                _uiState.update { it.copy(messageFontSize = fontSize) }
             }
         }
     }
@@ -117,15 +112,9 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(dndEnabled = enabled) }
     }
     
-    fun setUserMessageFontSize(fontSize: FontSize) {
+    fun setMessageFontSize(fontSize: FontSize) {
         viewModelScope.launch {
-            userPreferences.setUserMessageFontSize(fontSize)
-        }
-    }
-    
-    fun setAiMessageFontSize(fontSize: FontSize) {
-        viewModelScope.launch {
-            userPreferences.setAiMessageFontSize(fontSize)
+            userPreferences.setMessageFontSize(fontSize)
         }
     }
 }

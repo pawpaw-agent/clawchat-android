@@ -67,9 +67,8 @@ fun SessionScreen(
     val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
     
-    // 读取字体大小设置（从 ViewModel）
-    val userMessageFontSize by viewModel.userMessageFontSize.collectAsState(initial = FontSize.MEDIUM)
-    val aiMessageFontSize by viewModel.aiMessageFontSize.collectAsState(initial = FontSize.MEDIUM)
+    // 读取字体大小设置（统一）
+    val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
     // 初始化会话 ID
     LaunchedEffect(sessionId) {
@@ -156,7 +155,8 @@ fun SessionScreen(
                             listState = listState,
                             streamSegments = state.chatStreamSegments,
                             toolMessages = state.chatToolMessages,
-                            chatStream = state.chatStream
+                            chatStream = state.chatStream,
+                            messageFontSize = messageFontSize
                         )
                     }
 
@@ -390,7 +390,8 @@ private fun MessageGroupList(
     listState: androidx.compose.foundation.lazy.LazyListState,
     streamSegments: List<com.openclaw.clawchat.ui.state.StreamSegment> = emptyList(),
     toolMessages: List<MessageUi> = emptyList(),
-    chatStream: String? = null
+    chatStream: String? = null,
+    messageFontSize: FontSize = FontSize.MEDIUM
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -414,7 +415,8 @@ private fun MessageGroupList(
                         timestamp = segment.ts
                     ),
                     isUser = false,
-                    isLastInGroup = true
+                    isLastInGroup = true,
+                    messageFontSize = messageFontSize
                 )
             }
         }
@@ -441,7 +443,8 @@ private fun MessageGroupList(
                         isLoading = true
                     ),
                     isUser = false,
-                    isLastInGroup = true
+                    isLastInGroup = true,
+                    messageFontSize = messageFontSize
                 )
             }
         }
@@ -588,7 +591,8 @@ private fun MessageGroupItem(group: MessageGroup) {
                         MessageContentCard(
                             message = message,
                             isUser = isUser,
-                            isLastInGroup = index == group.messages.lastIndex
+                            isLastInGroup = index == group.messages.lastIndex,
+                            messageFontSize = messageFontSize
                         )
                         
                         // 如果这条消息有 ToolCall，立即显示工具卡片
@@ -653,22 +657,21 @@ private fun MessageContentCard(
     message: MessageUi,
     isUser: Boolean,
     isLastInGroup: Boolean,
-    userMessageFontSize: FontSize = FontSize.MEDIUM,
-    aiMessageFontSize: FontSize = FontSize.MEDIUM
+    messageFontSize: FontSize = FontSize.MEDIUM
 ) {
     val textContent = message.getTextContent()
     
     // 只渲染文本内容，工具卡片在分组级别渲染
     if (textContent.isBlank()) return
     
-    // 根据设置获取字体样式
-    val userTextStyle = when (userMessageFontSize) {
+    // 统一字体大小
+    val textStyle = when (messageFontSize) {
         FontSize.SMALL -> MaterialTheme.typography.bodySmall
         FontSize.MEDIUM -> MaterialTheme.typography.bodyMedium
         FontSize.LARGE -> MaterialTheme.typography.bodyLarge
     }
     
-    val aiTextSize = when (aiMessageFontSize) {
+    val textSize = when (messageFontSize) {
         FontSize.SMALL -> 14.sp
         FontSize.MEDIUM -> 16.sp
         FontSize.LARGE -> 18.sp
@@ -702,12 +705,12 @@ private fun MessageContentCard(
                 MarkdownText(
                     content = textContent,
                     modifier = Modifier.fillMaxWidth(),
-                    fontSize = aiTextSize
+                    fontSize = textSize
                 )
             } else {
                 Text(
                     text = textContent,
-                    style = userTextStyle,
+                    style = textStyle,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             }
