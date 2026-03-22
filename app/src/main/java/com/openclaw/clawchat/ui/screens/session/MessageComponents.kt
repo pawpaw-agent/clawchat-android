@@ -585,6 +585,7 @@ fun StreamingIndicator(
     modifier: Modifier = Modifier
 ) {
     var dots by remember { mutableStateOf(0) }
+    val infiniteTransition = rememberInfiniteTransition(label = "streaming")
     
     LaunchedEffect(Unit) {
         while (true) {
