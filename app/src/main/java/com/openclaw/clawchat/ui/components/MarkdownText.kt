@@ -104,7 +104,6 @@ fun MarkdownText(
     )
 
     // 使用 LocalMarkdownTypography 设置字体大小
-    val defaultTypography = LocalMarkdownTypography.current
     val customTypography = remember(fontSize) {
         DefaultMarkdownTypography(fontSize)
     }
@@ -299,7 +298,8 @@ private fun HighlightedCodeContent(
     code: String,
     language: String?,
     highlightsBuilder: Highlights.Builder,
-    showHeader: Boolean
+    fontSize: androidx.compose.ui.unit.TextUnit = 14.sp,
+    showHeader: Boolean = true
 ) {
     val backgroundCodeColor = LocalMarkdownColors.current.codeBackground
     val codeBackgroundCornerSize = LocalMarkdownDimens.current.codeBackgroundCornerSize
@@ -307,7 +307,8 @@ private fun HighlightedCodeContent(
     val codeTextColor = LocalMarkdownColors.current.codeText
     val textColor = LocalMarkdownColors.current.text
     val dividerColor = LocalMarkdownColors.current.dividerColor
-    val style = LocalMarkdownTypography.current.code
+    // 使用传入的 fontSize，不访问 LocalMarkdownTypography
+    val style = TextStyle(fontSize = fontSize * 0.9f, fontFamily = FontFamily.Monospace)
 
     val clipboardManager = LocalClipboardManager.current
 
