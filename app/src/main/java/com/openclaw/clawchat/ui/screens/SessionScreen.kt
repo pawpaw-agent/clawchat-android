@@ -513,82 +513,95 @@ private fun MessageGroupItem(group: MessageGroup) {
                 .padding(horizontal = 8.dp),
             horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
         ) {
-            // 收集分组内所有 ToolCall 和 ToolResult
-            val allToolCalls = group.messages.flatMap { it.getToolCalls() }
+            // 收集所有 ToolResult（用于匹配）
             val allToolResults = group.messages.flatMap { it.getToolResults() }
             
-            // 合并 ToolCall 和 ToolResult
-            val mergedToolCards = mutableListOf<ToolCard>()
-            allToolCalls.forEach { call ->
-                val matchingResult = allToolResults.find { it.toolCallId == call.id }
-                val displayArgs = if (call.name == "exec" && call.args != null) {
-                    call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
-                } else {
-                    call.args?.toString()
-                }
-                if (matchingResult != null && matchingResult.text.isNotBlank()) {
-                    mergedToolCards.add(ToolCard(
-                        kind = ToolCardKind.RESULT,
-                        name = call.name,
-                        args = displayArgs,
-                        result = matchingResult.text,
-                        isError = matchingResult.isError,
-                        callId = call.id
-                    ))
-                } else {
-                    mergedToolCards.add(ToolCard(
-                        kind = ToolCardKind.CALL,
-                        name = call.name,
-                        args = displayArgs,
-                        result = null,
-                        isError = false,
-                        callId = call.id
-                    ))
-                }
-            }
+            // 记录已经显示过的 ToolCall ID（避免重复显示）
+            val shownToolCallIds = mutableSetOf<String?>()
             
-            // 处理没有 ToolCall 的 ToolResult（来自 role=TOOL 的消息）
-            group.messages.filter { it.role == MessageRole.TOOL }.forEach { toolMessage ->
-                if (toolMessage.getToolCalls().isEmpty() && toolMessage.getToolResults().isEmpty()) {
-                    val textContent = toolMessage.getTextContent()
-                    if (textContent.isNotBlank()) {
-                        mergedToolCards.add(ToolCard(
-                            kind = ToolCardKind.RESULT,
-                            name = "output",
-                            args = null,
-                            result = textContent,
-                            isError = false,
-                            callId = null
-                        ))
+            // 按消息顺序渲染
+            group.messages.forEachIndexed { index, message ->
+                when (message.role) {
+                    MessageRole.TOOL -> {
+                        // TOOL 消息：只显示未被 ASSISTANT 消息匹配的工具结果
+                        val calls = message.getToolCalls()
+                        val results = message.getToolResults()
+                        
+                        if (calls.isEmpty() && results.isEmpty()) {
+                            // 纯文本工具结果（没有被前面的 ASSISTANT 消息匹配）
+                            val textContent = message.getTextContent()
+                            if (textContent.isNotBlank()) {
+                                ToolDetailCard(toolCard = ToolCard(
+                                    kind = ToolCardKind.RESULT,
+                                    name = "output",
+                                    args = null,
+                                    result = textContent,
+                                    isError = false,
+                                    callId = null
+                                ))
+                            }
+                        } else {
+                            // 有 ToolCall 的 TOOL 消息 - 跳过已在 ASSISTANT 中显示的
+                            calls.forEach { call ->
+                                if (call.id !in shownToolCallIds) {
+                                    val matchingResult = results.find { it.toolCallId == call.id }
+                                        ?: allToolResults.find { it.toolCallId == call.id }
+                                    
+                                    val displayArgs = if (call.name == "exec" && call.args != null) {
+                                        call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
+                                    } else {
+                                        call.args?.toString()
+                                    }
+                                    
+                                    ToolDetailCard(toolCard = ToolCard(
+                                        kind = if (matchingResult != null && matchingResult.text.isNotBlank()) ToolCardKind.RESULT else ToolCardKind.CALL,
+                                        name = call.name,
+                                        args = displayArgs,
+                                        result = matchingResult?.text,
+                                        isError = matchingResult?.isError ?: false,
+                                        callId = call.id
+                                    ))
+                                    shownToolCallIds.add(call.id)
+                                }
+                            }
+                        }
+                    }
+                    else -> {
+                        // ASSISTANT/USER 消息
+                        MessageContentCard(
+                            message = message,
+                            isUser = isUser,
+                            isLastInGroup = index == group.messages.lastIndex
+                        )
+                        
+                        // 如果这条消息有 ToolCall，立即显示工具卡片
+                        val toolCalls = message.getToolCalls()
+                        if (toolCalls.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            toolCalls.forEach { call ->
+                                val matchingResult = allToolResults.find { it.toolCallId == call.id }
+                                val displayArgs = if (call.name == "exec" && call.args != null) {
+                                    call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
+                                } else {
+                                    call.args?.toString()
+                                }
+                                ToolDetailCard(toolCard = ToolCard(
+                                    kind = if (matchingResult != null && matchingResult.text.isNotBlank()) ToolCardKind.RESULT else ToolCardKind.CALL,
+                                    name = call.name,
+                                    args = displayArgs,
+                                    result = matchingResult?.text,
+                                    isError = matchingResult?.isError ?: false,
+                                    callId = call.id
+                                ))
+                                shownToolCallIds.add(call.id)
+                            }
+                        }
                     }
                 }
-            }
-            
-            // 分组内所有消息
-            group.messages.filter { it.role != MessageRole.TOOL }.forEachIndexed { index, message ->
-                // 显示消息内容
-                MessageContentCard(
-                    message = message,
-                    isUser = isUser,
-                    isLastInGroup = index == group.messages.filter { it.role != MessageRole.TOOL }.lastIndex
-                )
                 
                 // 消息间分隔
-                if (index < group.messages.filter { it.role != MessageRole.TOOL }.lastIndex) {
+                if (index < group.messages.lastIndex) {
                     Spacer(modifier = Modifier.height(4.dp))
-                }
-            }
-            
-            // 显示合并的工具卡片
-            if (mergedToolCards.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    mergedToolCards.forEach { card ->
-                        ToolDetailCard(toolCard = card)
-                    }
                 }
             }
             
