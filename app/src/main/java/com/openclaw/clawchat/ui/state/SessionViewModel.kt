@@ -105,24 +105,31 @@ class SessionViewModel @Inject constructor(
                 val event = obj["event"]?.jsonPrimitive?.content
                 Log.d(TAG, "=== handleIncomingFrame: type=$type, event=$event")
 
-                if (type != "event" || event != "chat") return@launch
+                if (type != "event") return@launch
 
                 val payload = obj["payload"]?.jsonObject ?: return@launch
-                val eventSessionKey = payload["sessionKey"]?.jsonPrimitive?.content ?: return@launch
-                Log.d(TAG, "=== handleIncomingFrame: eventSessionKey=$eventSessionKey, payload keys=${payload.keys}")
-                Log.d(TAG, "=== handleIncomingFrame: full payload=$payload")
-
-                if (eventSessionKey != sessionId) return@launch
-
-                // 检查是否是 agent 事件（stream: "tool"）
-                val stream = payload["stream"]?.jsonPrimitive?.content
-                Log.d(TAG, "=== handleIncomingFrame: stream=$stream, event=$event")
+                val eventSessionKey = payload["sessionKey"]?.jsonPrimitive?.content
                 
-                if (stream != null) {
-                    Log.d(TAG, "=== handleIncomingFrame: calling handleAgentEvent with stream=$stream")
-                    handleAgentEvent(payload, stream)
+                // agent 事件：检查 stream 字段
+                if (event == "agent") {
+                    val stream = payload["stream"]?.jsonPrimitive?.content
+                    Log.d(TAG, "=== handleIncomingFrame: agent event, stream=$stream")
+                    if (stream != null) {
+                        if (eventSessionKey != null && eventSessionKey != sessionId) {
+                            return@launch
+                        }
+                        handleAgentEvent(payload, stream)
+                    }
                     return@launch
                 }
+
+                // chat 事件
+                if (event != "chat") return@launch
+                
+                val sessionKey = eventSessionKey ?: return@launch
+                Log.d(TAG, "=== handleIncomingFrame: eventSessionKey=$sessionKey, payload keys=${payload.keys}")
+
+                if (eventSessionKey != sessionId) return@launch
 
                 // 处理 chat 事件
                 handleChatEvent(payload, sessionId)
