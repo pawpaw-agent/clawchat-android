@@ -109,13 +109,12 @@ fun MarkdownText(
         DefaultMarkdownTypography(fontSize)
     }
 
-    CompositionLocalProvider(LocalMarkdownTypography provides customTypography) {
-        Markdown(
-            content = truncatedContent,
-            modifier = modifier.fillMaxWidth(),
-            colors = colors
-        )
-    }
+    Markdown(
+        content = truncatedContent,
+        modifier = modifier.fillMaxWidth(),
+        colors = colors,
+        typography = customTypography
+    )
 }
 
 /**
