@@ -560,13 +560,21 @@ class SessionViewModel @Inject constructor(
                             val content = msgObj["content"]?.let { json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
                             val timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
                             
-                            Log.d(TAG, "=== loadMessageHistory: role=$role, content=${content.take(200)}")
+                            // 提取 toolCallId 和 toolName（TOOL 消息可能有）
+                            val toolCallId = msgObj["toolCallId"]?.jsonPrimitive?.content 
+                                ?: msgObj["tool_call_id"]?.jsonPrimitive?.content
+                            val toolName = msgObj["toolName"]?.jsonPrimitive?.content
+                                ?: msgObj["tool_name"]?.jsonPrimitive?.content
+                            
+                            Log.d(TAG, "=== loadMessageHistory: role=$role, toolCallId=$toolCallId, toolName=$toolName, content=${content.take(100)}")
                             
                             messageRepository.saveMessage(
                                 sessionId = sessionId,
                                 role = MessageRole.fromString(role),
                                 content = content,
-                                timestamp = timestamp
+                                timestamp = timestamp,
+                                toolCallId = toolCallId,
+                                toolName = toolName
                             )
                         } catch (e: Exception) {
                             Log.w(TAG, "Failed to parse history message: ${e.message}")

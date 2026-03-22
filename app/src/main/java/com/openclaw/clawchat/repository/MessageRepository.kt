@@ -29,7 +29,9 @@ interface MessageRepository {
         sessionId: String,
         role: MessageRole,
         content: String,
-        timestamp: Long
+        timestamp: Long,
+        toolCallId: String? = null,
+        toolName: String? = null
     ): String
 
     /**

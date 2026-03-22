@@ -194,7 +194,9 @@ data class MessageUi(
     val content: List<MessageContentItem>,
     val role: MessageRole,
     val timestamp: Long,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val toolCallId: String? = null,  // TOOL 消息可能有 toolCallId
+    val toolName: String? = null     // TOOL 消息可能有 toolName
 ) {
     fun getTextContent(): String {
         return content
@@ -207,7 +209,23 @@ data class MessageUi(
     }
     
     fun getToolResults(): List<MessageContentItem.ToolResult> {
-        return content.filterIsInstance<MessageContentItem.ToolResult>()
+        val fromContent = content.filterIsInstance<MessageContentItem.ToolResult>()
+        
+        // 如果消息本身有 toolCallId，把整条消息当作 ToolResult
+        if (fromContent.isEmpty() && role == MessageRole.TOOL && toolCallId != null) {
+            val textContent = getTextContent()
+            if (textContent.isNotBlank()) {
+                return listOf(MessageContentItem.ToolResult(
+                    toolCallId = toolCallId,
+                    name = toolName,
+                    args = null,
+                    text = textContent,
+                    isError = false
+                ))
+            }
+        }
+        
+        return fromContent
     }
     
     fun hasToolContent(): Boolean = content.any { 

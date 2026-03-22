@@ -53,7 +53,9 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
         sessionId: String,
         role: MessageRole,
         content: String,
-        timestamp: Long
+        timestamp: Long,
+        toolCallId: String? = null,
+        toolName: String? = null
     ): String {
         val messageId = java.util.UUID.randomUUID().toString()
         
@@ -64,7 +66,9 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
             id = messageId,
             content = contentItems,
             role = role,
-            timestamp = timestamp
+            timestamp = timestamp,
+            toolCallId = toolCallId,
+            toolName = toolName
         )
         
         val map = messagesBySession.value.toMutableMap()
