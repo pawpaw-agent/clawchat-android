@@ -55,6 +55,7 @@ import com.mikepenz.markdown.compose.elements.material.MarkdownBasicText
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.compose.components.markdownComponents
+import com.mikepenz.markdown.model.MarkdownTypography
 import dev.snipme.highlights.Highlights
 import dev.snipme.highlights.model.BoldHighlight
 import dev.snipme.highlights.model.ColorHighlight
@@ -100,16 +101,35 @@ fun MarkdownText(
         dividerColor = MaterialTheme.colorScheme.outlineVariant
     )
 
-    // 获取当前 typography 并修改字体大小
-    val currentTypography = LocalMarkdownTypography.current
-    val customTypography = remember(currentTypography, fontSize) {
-        currentTypography.copy(
-            text = currentTypography.text.copy(fontSize = fontSize),
-            h1 = currentTypography.h1?.copy(fontSize = fontSize * 1.5f) ?: currentTypography.text.copy(fontSize = fontSize * 1.5f),
-            h2 = currentTypography.h2?.copy(fontSize = fontSize * 1.3f) ?: currentTypography.text.copy(fontSize = fontSize * 1.3f),
-            h3 = currentTypography.h3?.copy(fontSize = fontSize * 1.1f) ?: currentTypography.text.copy(fontSize = fontSize * 1.1f),
-            code = currentTypography.code.copy(fontSize = fontSize * 0.9f)
-        )
+    // 创建自定义 typography 对象
+    val customTypography = remember(fontSize) {
+        object : com.mikepenz.markdown.model.MarkdownTypography {
+            override val text = androidx.compose.ui.text.TextStyle(
+                fontSize = fontSize,
+                fontFamily = FontFamily.Default
+            )
+            override val h1 = androidx.compose.ui.text.TextStyle(
+                fontSize = fontSize * 1.5f,
+                fontWeight = FontWeight.Bold
+            )
+            override val h2 = androidx.compose.ui.text.TextStyle(
+                fontSize = fontSize * 1.3f,
+                fontWeight = FontWeight.Bold
+            )
+            override val h3 = androidx.compose.ui.text.TextStyle(
+                fontSize = fontSize * 1.1f,
+                fontWeight = FontWeight.Bold
+            )
+            override val code = androidx.compose.ui.text.TextStyle(
+                fontSize = fontSize * 0.9f,
+                fontFamily = FontFamily.Monospace
+            )
+            override val list = text
+            override val orderedList = text
+            override val bulletList = text
+            override val blockQuote = text
+            override val paragraph = text
+        }
     }
 
     CompositionLocalProvider(LocalMarkdownTypography provides customTypography) {
