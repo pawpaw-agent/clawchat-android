@@ -78,7 +78,8 @@ import dev.snipme.highlights.model.SyntaxLanguage
 fun MarkdownText(
     content: String,
     modifier: Modifier = Modifier,
-    fontSize: androidx.compose.ui.unit.TextUnit = 16.sp
+    fontSize: androidx.compose.ui.unit.TextUnit = 16.sp,
+    textColor: Color = Color.Unspecified
 ) {
     // 长文本限制
     val truncatedContent = if (content.length > 50000) {
@@ -97,8 +98,8 @@ fun MarkdownText(
 
     // 自定义颜色配置
     val colors = markdownColor(
-        text = MaterialTheme.colorScheme.onSurface,
-        codeText = MaterialTheme.colorScheme.onSurface,
+        text = if (textColor != Color.Unspecified) textColor else MaterialTheme.colorScheme.onSurface,
+        codeText = if (textColor != Color.Unspecified) textColor else MaterialTheme.colorScheme.onSurface,
         codeBackground = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         dividerColor = MaterialTheme.colorScheme.outlineVariant
     )

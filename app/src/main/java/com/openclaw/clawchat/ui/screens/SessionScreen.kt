@@ -702,11 +702,12 @@ private fun MessageContentCard(
                     fontSize = textSize
                 )
             } else {
-                // 用户消息也使用统一的字体大小
-                Text(
-                    text = textContent,
+                // 用户消息也使用 Markdown 渲染以确保字体一致
+                MarkdownText(
+                    content = textContent,
+                    modifier = Modifier.fillMaxWidth(),
                     fontSize = textSize,
-                    color = MaterialTheme.colorScheme.onPrimary
+                    textColor = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
