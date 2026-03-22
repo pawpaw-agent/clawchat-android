@@ -118,8 +118,7 @@ fun MarkdownText(
                     )
                 }
             )
-        )
-    }
+    )
 }
 
 /**
