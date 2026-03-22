@@ -671,9 +671,10 @@ private fun MessageContentCard(
     messageFontSize: FontSize = FontSize.MEDIUM
 ) {
     val textContent = message.getTextContent()
+    val images = message.content.filterIsInstance<MessageContentItem.Image>()
     
-    // 只渲染文本内容，工具卡片在分组级别渲染
-    if (textContent.isBlank()) return
+    // 如果没有文本也没有图片，跳过
+    if (textContent.isBlank() && images.isEmpty()) return
     
     // 统一字体大小（sp）
     val textSize = when (messageFontSize) {
@@ -685,40 +686,97 @@ private fun MessageContentCard(
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .widthIn(max = 320.dp)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                        bottomStart = if (isUser) 16.dp else if (isLastInGroup) 4.dp else 4.dp,
-                        bottomEnd = if (isUser) if (isLastInGroup) 4.dp else 4.dp else 16.dp
+        // 渲染图片
+        images.forEach { image ->
+            MessageImageContent(image = image)
+        }
+        
+        // 渲染文本
+        if (textContent.isNotBlank()) {
+            Box(
+                modifier = Modifier
+                    .widthIn(max = 320.dp)
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 16.dp,
+                            topEnd = 16.dp,
+                            bottomStart = if (isUser) 16.dp else if (isLastInGroup) 4.dp else 4.dp,
+                            bottomEnd = if (isUser) if (isLastInGroup) 4.dp else 4.dp else 16.dp
+                        )
                     )
-                )
-                .background(
-                    if (isUser) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.secondaryContainer
-                    }
-                )
-                .padding(8.dp)
-        ) {
-            // 助手消息使用 Markdown 渲染
-            if (!isUser) {
-                MarkdownText(
-                    content = textContent,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = textSize
-                )
-            } else {
-                // 用户消息也使用 Markdown 渲染以确保字体一致
-                MarkdownText(
-                    content = textContent,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = textSize,
-                    textColor = MaterialTheme.colorScheme.onPrimary
+                    .background(
+                        if (isUser) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        }
+                    )
+                    .padding(8.dp)
+            ) {
+                // 助手消息使用 Markdown 渲染
+                if (!isUser) {
+                    MarkdownText(
+                        content = textContent,
+                        modifier = Modifier.fillMaxWidth(),
+                        fontSize = textSize
+                    )
+                } else {
+                    // 用户消息也使用 Markdown 渲染以确保字体一致
+                    MarkdownText(
+                        content = textContent,
+                        modifier = Modifier.fillMaxWidth(),
+                        fontSize = textSize,
+                        textColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 消息图片内容渲染
+ */
+@Composable
+private fun MessageImageContent(image: MessageContentItem.Image) {
+    // 解码 base64 图片
+    val bitmap = remember(image.base64, image.url) {
+        try {
+            val base64Data = image.base64 ?: return@remember null
+            val bytes = android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT)
+            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        } catch (e: Exception) {
+            android.util.Log.e("SessionScreen", "Failed to decode image: ${e.message}")
+            null
+        }
+    }
+    
+    Box(
+        modifier = Modifier
+            .widthIn(max = 280.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        if (bitmap != null) {
+            androidx.compose.foundation.Image(
+                bitmap = androidx.compose.ui.graphics.asImageBitmap(bitmap),
+                contentDescription = "图片",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = androidx.compose.ui.layout.ContentScale.FillWidth
+            )
+        } else if (image.url != null) {
+            // 如果有 URL 但没有 base64，显示占位符
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Image,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(48.dp)
                 )
             }
         }
