@@ -57,6 +57,11 @@ fun SessionScreen(
     onNavigateBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    
+    // 调试日志
+    LaunchedEffect(state.chatMessages.size) {
+        android.util.Log.d("SessionScreen", "=== chatMessages.size = ${state.chatMessages.size}")
+    }
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()

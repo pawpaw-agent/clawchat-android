@@ -55,6 +55,7 @@ class SessionViewModel @Inject constructor(
     }
 
     init {
+        Log.d(TAG, "=== SessionViewModel init")
         observeConnectionState()
         observeIncomingMessages()
     }
@@ -90,22 +91,32 @@ class SessionViewModel @Inject constructor(
      */
     private fun handleIncomingFrame(rawJson: String) {
         viewModelScope.launch(exceptionHandler) {
-            val sessionId = _state.value.sessionId ?: return@launch
+            val sessionId = _state.value.sessionId
+            Log.d(TAG, "=== handleIncomingFrame: sessionId=$sessionId, rawJson=${rawJson.take(100)}")
+            
+            if (sessionId == null) {
+                Log.w(TAG, "=== handleIncomingFrame: sessionId is null, returning")
+                return@launch
+            }
 
             try {
                 val obj = json.parseToJsonElement(rawJson).jsonObject
                 val type = obj["type"]?.jsonPrimitive?.content
                 val event = obj["event"]?.jsonPrimitive?.content
+                Log.d(TAG, "=== handleIncomingFrame: type=$type, event=$event")
 
                 if (type != "event" || event != "chat") return@launch
 
                 val payload = obj["payload"]?.jsonObject ?: return@launch
                 val eventSessionKey = payload["sessionKey"]?.jsonPrimitive?.content ?: return@launch
+                Log.d(TAG, "=== handleIncomingFrame: eventSessionKey=$eventSessionKey")
 
                 if (eventSessionKey != sessionId) return@launch
 
                 // 检查是否是 agent 事件（stream: "tool"）
                 val stream = payload["stream"]?.jsonPrimitive?.content
+                Log.d(TAG, "=== handleIncomingFrame: stream=$stream")
+                
                 if (stream != null) {
                     handleAgentEvent(payload, stream)
                     return@launch
@@ -492,13 +503,16 @@ class SessionViewModel @Inject constructor(
     // ─────────────────────────────────────────────────────────────
 
     fun setSessionId(sessionId: String) {
+        Log.d(TAG, "=== setSessionId: $sessionId")
         _state.update { it.copy(sessionId = sessionId) }
         loadMessageHistory(sessionId)
     }
 
     private fun loadMessageHistory(sessionId: String) {
+        Log.d(TAG, "=== loadMessageHistory: sessionId=$sessionId")
         viewModelScope.launch {
             messageRepository.observeMessages(sessionId).collect { messages ->
+                Log.d(TAG, "=== loadMessageHistory: received ${messages.size} messages")
                 _state.update { it.copy(
                     chatMessages = messages,
                     // 重置工具流状态
