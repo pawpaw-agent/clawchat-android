@@ -683,6 +683,8 @@ private fun ToolDetailCard(toolCard: ToolCard) {
         ToolCardKind.RESULT -> toolCard.result != null && toolCard.result.isNotBlank()
     }
     
+    android.util.Log.d("SessionScreen", "=== ToolDetailCard: kind=${toolCard.kind}, hasContent=$hasContent, resultLen=${toolCard.result?.length}, argsLen=${toolCard.args?.length}")
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -923,6 +925,7 @@ private fun ToolMessageCard(message: MessageUi) {
     // 如果没有 ToolCard 但消息是 tool 类型，从文本创建 ToolCard
     val finalToolCards = if (toolCards.isEmpty() && message.role == MessageRole.TOOL) {
         val textContent = message.getTextContent()
+        android.util.Log.d("SessionScreen", "=== ToolMessageCard: creating ToolCard from text, len=${textContent.length}")
         if (textContent.isNotBlank()) {
             listOf(ToolCard(
                 kind = ToolCardKind.RESULT,
@@ -934,6 +937,8 @@ private fun ToolMessageCard(message: MessageUi) {
             ))
         } else emptyList()
     } else toolCards
+    
+    android.util.Log.d("SessionScreen", "=== ToolMessageCard: finalToolCards.size=${finalToolCards.size}")
     
     Column(
         modifier = Modifier.fillMaxWidth(),
