@@ -675,7 +675,7 @@ private fun MessageContentCard(
                         MaterialTheme.colorScheme.secondaryContainer
                     }
                 )
-                .padding(10.dp)
+                .padding(8.dp)
         ) {
             // 助手消息使用原生 Markdown 渲染
             if (!isUser) {

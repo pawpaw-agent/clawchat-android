@@ -98,11 +98,15 @@ fun MarkdownText(
         dividerColor = MaterialTheme.colorScheme.outlineVariant
     )
 
-    Markdown(
-        content = truncatedContent,
-        modifier = modifier.fillMaxWidth(),
-        colors = colors,
-        components = markdownComponents(
+    // 使用 ProvideTextStyle 覆盖字体大小
+    androidx.compose.material3.ProvideTextStyle(
+        value = MaterialTheme.typography.bodySmall
+    ) {
+        Markdown(
+            content = truncatedContent,
+            modifier = modifier.fillMaxWidth(),
+            colors = colors,
+            components = markdownComponents(
                 codeFence = { model ->
                     CustomCodeFence(
                         content = model.content,
@@ -118,7 +122,8 @@ fun MarkdownText(
                     )
                 }
             )
-    )
+        )
+    }
 }
 
 /**
