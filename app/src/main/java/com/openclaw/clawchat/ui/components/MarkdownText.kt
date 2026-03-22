@@ -428,6 +428,7 @@ private data class DefaultMarkdownTypography(
     override val h5 = TextStyle(fontSize = fontSize * 0.9f, fontWeight = FontWeight.Bold)
     override val h6 = TextStyle(fontSize = fontSize * 0.8f, fontWeight = FontWeight.Bold)
     override val code = TextStyle(fontSize = fontSize * 0.9f, fontFamily = FontFamily.Monospace)
+    override val inlineCode = TextStyle(fontSize = fontSize * 0.9f, fontFamily = FontFamily.Monospace)
     override val bullet = TextStyle(fontSize = fontSize)
     override val list = TextStyle(fontSize = fontSize)
     override val quote = TextStyle(fontSize = fontSize)
