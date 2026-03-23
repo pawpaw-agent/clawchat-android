@@ -343,7 +343,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                                 text = args,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = TerminalColors.TextPrimaryXs,
+                                fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -358,7 +358,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                                 text = result,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = TerminalColors.TextPrimaryXs,
+                                fontSize = 11.sp,
                                 color = if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
                             )
                         }
@@ -445,7 +445,7 @@ fun ToolTagExpanding(
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelSmall,
-                fontSize = TerminalColors.TextPrimaryXs,
+                fontSize = 11.sp,
                 color = if (isError) {
                     MaterialTheme.colorScheme.error
                 } else {
