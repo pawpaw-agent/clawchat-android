@@ -20,7 +20,7 @@ import com.openclaw.clawchat.ui.state.MainViewModel
 import com.openclaw.clawchat.ui.state.SessionUi
 import com.openclaw.clawchat.ui.state.UiEvent
 import com.openclaw.clawchat.ui.screens.settings.SettingsScreen
-import com.openclaw.clawchat.ui.theme.DesignTokens
+import com.openclaw.clawchat.ui.theme.TerminalColors
 import java.text.SimpleDateFormat
 import java.util.*
 
