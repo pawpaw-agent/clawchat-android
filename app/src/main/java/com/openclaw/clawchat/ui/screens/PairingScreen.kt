@@ -80,7 +80,7 @@ fun PairingScreen(
                 title = { Text("连接 Gateway") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onBackgroundStrong
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -247,7 +247,7 @@ private fun TokenModeContent(
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onBackgroundStrong
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
@@ -303,7 +303,7 @@ private fun PairingModeContent(
             CircularProgressIndicator(
                 modifier = Modifier.size(20.dp),
                 strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onBackgroundStrong
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
@@ -335,7 +335,7 @@ private fun DeviceInfoCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.backgroundHover
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -439,7 +439,7 @@ private fun PairingStatusIndicator(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primary2Subtle
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
                 )
             ) {
                 Column(
@@ -447,16 +447,16 @@ private fun PairingStatusIndicator(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(Icons.Default.MoreTime, null, Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary2)
+                        tint = MaterialTheme.colorScheme.tertiary)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("等待管理员批准", style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary2)
+                        color = MaterialTheme.colorScheme.tertiary)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("请在终端运行：openclaw devices approve",
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
                         fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.primary2)
+                        color = MaterialTheme.colorScheme.tertiary)
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = onCancel) { Text("取消") }
@@ -530,7 +530,7 @@ private fun PairingHelpText() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.backgroundHover
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -558,7 +558,7 @@ private fun HelpStep(number: String, text: String) {
             contentAlignment = Alignment.Center
         ) {
             Text(number, style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onBackgroundStrong)
+                color = MaterialTheme.colorScheme.onSurface)
         }
         Spacer(modifier = Modifier.width(12.dp))
         Text(text, style = MaterialTheme.typography.bodyMedium,

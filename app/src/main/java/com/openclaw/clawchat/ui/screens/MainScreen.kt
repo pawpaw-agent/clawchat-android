@@ -213,8 +213,8 @@ private fun ClawTopAppBar(
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.onBackgroundStrong,
-            actionIconContentColor = MaterialTheme.colorScheme.onBackgroundStrong
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            actionIconContentColor = MaterialTheme.colorScheme.onSurface
         )
     )
 }
