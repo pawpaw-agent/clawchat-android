@@ -28,6 +28,7 @@ import com.openclaw.clawchat.ui.state.ConnectMode
 import com.openclaw.clawchat.ui.state.PairingEvent
 import com.openclaw.clawchat.ui.state.PairingStatus
 import com.openclaw.clawchat.ui.state.PairingViewModel
+import com.openclaw.clawchat.ui.theme.DesignTokens
 
 /**
  * 设备连接/配对屏幕
@@ -78,8 +79,8 @@ fun PairingScreen(
             TopAppBar(
                 title = { Text("连接 Gateway") },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = DesignTokens.accentContainer,
+                    titleContentColor = DesignTokens.textStrong
                 )
             )
         }
@@ -191,7 +192,7 @@ private fun TokenModeContent(
             Text(
                 text = "直接输入 Gateway 地址和 Token 连接",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = DesignTokens.muted
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -213,7 +214,7 @@ private fun TokenModeContent(
                 Text(
                     text = "→ $wsPreview",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = DesignTokens.accent,
                     fontFamily = FontFamily.Monospace,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -246,7 +247,7 @@ private fun TokenModeContent(
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = DesignTokens.textStrong
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
@@ -302,7 +303,7 @@ private fun PairingModeContent(
             CircularProgressIndicator(
                 modifier = Modifier.size(20.dp),
                 strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary
+                color = DesignTokens.textStrong
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
@@ -334,14 +335,14 @@ private fun DeviceInfoCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = DesignTokens.bgHover
         )
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text(
                 text = "设备信息",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = DesignTokens.muted
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -360,13 +361,13 @@ private fun DeviceInfoCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("设备 ID", style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            color = DesignTokens.muted)
                         Text(deviceId, style = MaterialTheme.typography.bodyMedium,
                             fontFamily = FontFamily.Monospace)
                     }
                     IconButton(onClick = onCopyDeviceId) {
                         Icon(Icons.Default.ContentCopy, "复制",
-                            tint = MaterialTheme.colorScheme.primary)
+                            tint = DesignTokens.accent)
                     }
                 }
 
@@ -380,7 +381,7 @@ private fun DeviceInfoCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("公钥 (Ed25519)", style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            color = DesignTokens.muted)
                         Text(
                             text = publicKey?.let { "${it.take(30)}..." } ?: "无",
                             style = MaterialTheme.typography.bodySmall,
@@ -389,7 +390,7 @@ private fun DeviceInfoCard(
                     }
                     IconButton(onClick = onCopyPublicKey) {
                         Icon(Icons.Default.ContentCopy, "复制",
-                            tint = MaterialTheme.colorScheme.primary)
+                            tint = DesignTokens.accent)
                     }
                 }
             }
@@ -438,7 +439,7 @@ private fun PairingStatusIndicator(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    containerColor = DesignTokens.accent2Subtle
                 )
             ) {
                 Column(
@@ -446,16 +447,16 @@ private fun PairingStatusIndicator(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(Icons.Default.MoreTime, null, Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer)
+                        tint = DesignTokens.accent2)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("等待管理员批准", style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer)
+                        color = DesignTokens.accent2)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("请在终端运行：openclaw devices approve",
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
                         fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer)
+                        color = DesignTokens.accent2)
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = onCancel) { Text("取消") }
@@ -469,7 +470,7 @@ private fun PairingStatusIndicator(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    containerColor = DesignTokens.card
                 )
             ) {
                 Row(
@@ -478,10 +479,10 @@ private fun PairingStatusIndicator(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(Icons.Default.CheckCircle, null, Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                        tint = DesignTokens.text)
                     Spacer(modifier = Modifier.width(12.dp))
                     Text("连接成功！", style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        color = DesignTokens.text)
                 }
             }
         }
@@ -490,7 +491,7 @@ private fun PairingStatusIndicator(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
+                    containerColor = DesignTokens.dangerSubtle
                 )
             ) {
                 Column(
@@ -498,7 +499,7 @@ private fun PairingStatusIndicator(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(Icons.Default.Error, null, Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onErrorContainer)
+                        tint = DesignTokens.danger)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = when (status) {
@@ -508,7 +509,7 @@ private fun PairingStatusIndicator(
                             else -> "连接失败"
                         },
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        color = DesignTokens.danger,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -529,15 +530,15 @@ private fun PairingHelpText() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = DesignTokens.bgHover
         )
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.Info, null, tint = DesignTokens.accent)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("如何配对？", style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    color = DesignTokens.muted)
             }
             Spacer(modifier = Modifier.height(12.dp))
             HelpStep("1", "确保手机和网关在同一网络")
@@ -553,15 +554,15 @@ private fun HelpStep(number: String, text: String) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Box(
             modifier = Modifier.size(24.dp).clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
+                .background(DesignTokens.accent),
             contentAlignment = Alignment.Center
         ) {
             Text(number, style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onPrimary)
+                color = DesignTokens.textStrong)
         }
         Spacer(modifier = Modifier.width(12.dp))
         Text(text, style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = DesignTokens.muted,
             modifier = Modifier.weight(1f))
     }
 }
@@ -595,15 +596,15 @@ private fun CertificateConfirmationDialog(
             Icon(
                 if (isMismatch) Icons.Default.Warning else Icons.Default.Security,
                 null,
-                tint = if (isMismatch) MaterialTheme.colorScheme.error
-                       else MaterialTheme.colorScheme.primary
+                tint = if (isMismatch) DesignTokens.danger
+                       else DesignTokens.accent
             )
         },
         title = {
             Text(
                 text = if (isMismatch) "⚠️ 证书已变更" else "🔐 首次连接",
-                color = if (isMismatch) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.onSurface
+                color = if (isMismatch) DesignTokens.danger
+                        else DesignTokens.text
             )
         },
         text = {
@@ -619,13 +620,13 @@ private fun CertificateConfirmationDialog(
                     Text(
                         text = "原证书指纹：",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.error
+                        color = DesignTokens.danger
                     )
                     Text(
                         text = storedFingerprint.formatFingerprint(),
                         style = MaterialTheme.typography.bodySmall,
                         fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.error
+                        color = DesignTokens.danger
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -650,7 +651,7 @@ private fun CertificateConfirmationDialog(
                         "ℹ️ 这是您首次连接此服务器。\n" +
                         "请通过安全渠道（如管理员提供的二维码或面对面）验证指纹。",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = DesignTokens.muted
                 )
             }
         },
@@ -663,7 +664,7 @@ private fun CertificateConfirmationDialog(
             OutlinedButton(
                 onClick = onReject,
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
+                    contentColor = DesignTokens.danger
                 )
             ) {
                 Text("取消连接")

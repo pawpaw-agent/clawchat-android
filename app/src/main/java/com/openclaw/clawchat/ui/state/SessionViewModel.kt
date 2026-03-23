@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.data.UserPreferences
 import com.openclaw.clawchat.network.WebSocketConnectionState
+import com.openclaw.clawchat.network.protocol.ChatAttachmentData
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,6 +28,9 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.UUID
 import javax.inject.Inject
+import com.openclaw.clawchat.ui.state.SLASH_COMMANDS
+import com.openclaw.clawchat.ui.state.SlashCommandCategory
+import com.openclaw.clawchat.ui.state.SlashCommandDef
 
 /**
  * 会话界面 ViewModel（1:1 复刻 webchat）
@@ -613,34 +617,23 @@ class SessionViewModel @Inject constructor(
         val trimmedMessage = message.trim()
         val attachments = _state.value.attachments
         
-        // 检查是否有附件或消息
-        val hasAttachments = attachments.isNotEmpty()
-        val hasMessage = trimmedMessage.isNotEmpty()
-        if (!hasMessage && !hasAttachments) return
-
-        // 处理斜杠命令
-        val parsedCommand = com.openclaw.clawchat.ui.components.parseSlashCommand(trimmedMessage)
-        if (parsedCommand != null) {
-            handleSlashCommand(parsedCommand)
-            return
-        }
+        if (trimmedMessage.isEmpty() && attachments.isEmpty()) return
 
         val now = System.currentTimeMillis()
         val runId = UUID.randomUUID().toString()
 
-        // 构建用户消息内容块（1:1 复刻 webchat）
+        // 构建用户消息内容
         val contentBlocks = mutableListOf<MessageContentItem>()
-        if (hasMessage) {
+        if (trimmedMessage.isNotEmpty()) {
             contentBlocks.add(MessageContentItem.Text(trimmedMessage))
         }
-        // 添加图片预览到消息
+        // 添加图片预览
         attachments.forEach { att ->
-            if (att.dataUrl != null) {
-                contentBlocks.add(MessageContentItem.Image(
-                    base64 = att.dataUrl,
-                    mimeType = att.mimeType
-                ))
-            }
+            val base64Content = extractBase64FromDataUrl(att.dataUrl)
+            contentBlocks.add(MessageContentItem.Image(
+                base64 = base64Content,
+                mimeType = att.mimeType
+            ))
         }
 
         // 添加用户消息
@@ -663,183 +656,48 @@ class SessionViewModel @Inject constructor(
             )
         }
 
+        // 转换附件为 API 格式
+        val apiAttachments = attachments.map { att ->
+            val base64Content = extractBase64FromDataUrl(att.dataUrl)
+            ChatAttachmentData(
+                mimeType = att.mimeType,
+                content = base64Content
+            )
+        }.takeIf { it.isNotEmpty() }
+
         viewModelScope.launch {
             try {
-                // 转换附件为 API 格式
-                val apiAttachments = if (hasAttachments) {
-                    attachments.mapNotNull { att ->
-                        att.dataUrl?.let { dataUrl ->
-                            com.openclaw.clawchat.ui.components.dataUrlToBase64(dataUrl)?.let { (mimeType, content) ->
-                                com.openclaw.clawchat.ui.components.ApiAttachment(
-                                    type = "image",
-                                    mimeType = mimeType,
-                                    content = content
-                                )
-                            }
-                        }
-                    }
-                } else null
-
-                if (!apiAttachments.isNullOrEmpty()) {
-                    gateway.chatSendWithAttachments(sessionId, trimmedMessage, apiAttachments)
-                } else {
-                    gateway.chatSend(sessionId, trimmedMessage)
-                }
+                gateway.chatSend(sessionId, trimmedMessage, apiAttachments)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send message", e)
                 _state.update { it.copy(error = "发送失败：${e.message}", isLoading = false, isSending = false) }
             }
         }
     }
-
+    
     /**
-     * 处理斜杠命令
+     * 从 data URL 提取 base64 内容
      */
-    private fun handleSlashCommand(parsed: com.openclaw.clawchat.ui.components.ParsedSlashCommand) {
-        val sessionId = _state.value.sessionId ?: return
-        val command = parsed.command
-        
-        Log.i(TAG, "Handling slash command: /${command.name} args=${parsed.args}")
-
-        if (command.executeLocal) {
-            // 本地执行的命令
-            when (command.name) {
-                "clear" -> {
-                    // 清空聊天历史
-                    _state.update { it.copy(
-                        chatMessages = emptyList(),
-                        chatStream = null,
-                        chatToolMessages = emptyList(),
-                        toolStreamById = emptyMap(),
-                        toolStreamOrder = emptyList(),
-                        inputText = ""
-                    )}
-                    viewModelScope.launch {
-                        messageRepository.clearMessages(sessionId)
-                    }
-                }
-                "stop" -> {
-                    // 停止当前运行
-                    viewModelScope.launch {
-                        try {
-                            gateway.chatAbort(sessionId, _state.value.chatRunId)
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Failed to abort chat", e)
-                        }
-                    }
-                }
-                "help" -> {
-                    // 显示帮助信息作为助手消息
-                    val helpText = buildHelpMessage()
-                    _state.update { currentState ->
-                        val helpMessage = MessageUi(
-                            id = UUID.randomUUID().toString(),
-                            content = listOf(MessageContentItem.Text(helpText)),
-                            role = MessageRole.ASSISTANT,
-                            timestamp = System.currentTimeMillis()
-                        )
-                        currentState.copy(
-                            chatMessages = currentState.chatMessages + helpMessage,
-                            inputText = ""
-                        )
-                    }
-                }
-                else -> {
-                    // 其他本地命令，发送给 gateway
-                    sendCommandToGateway(command.name, parsed.args)
-                }
-            }
-        } else {
-            // 非 local 命令，发送给 gateway
-            sendCommandToGateway(command.name, parsed.args)
-        }
+    private fun extractBase64FromDataUrl(dataUrl: String): String {
+        val match = Regex("^data:([^;]+);base64,(.+)$").find(dataUrl)
+        return match?.groupValues?.get(2) ?: dataUrl
     }
 
-    /**
-     * 发送命令给 Gateway
-     */
-    private fun sendCommandToGateway(name: String, args: String) {
-        val sessionId = _state.value.sessionId ?: return
-        val fullMessage = "/$name${if (args.isNotBlank()) " $args" else ""}"
-        
-        _state.update { currentState ->
-            val userMessage = MessageUi(
-                id = UUID.randomUUID().toString(),
-                content = listOf(MessageContentItem.Text(fullMessage)),
-                role = MessageRole.USER,
-                timestamp = System.currentTimeMillis()
-            )
-            currentState.copy(
-                chatMessages = currentState.chatMessages + userMessage,
-                inputText = "",
-                isSending = true,
-                isLoading = true
-            )
-        }
-
-        viewModelScope.launch {
-            try {
-                gateway.chatSend(sessionId, fullMessage)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to send command", e)
-                _state.update { it.copy(error = "命令发送失败：${e.message}", isLoading = false, isSending = false) }
-            }
-        }
+    fun updateInputText(text: String) {
+        _state.update { it.copy(inputText = text) }
     }
-
-    /**
-     * 构建帮助消息
-     */
-    private fun buildHelpMessage(): String {
-        return buildString {
-            appendLine("## 可用命令")
-            appendLine()
-            com.openclaw.clawchat.ui.components.CATEGORY_ORDER.forEach { category ->
-                val label = com.openclaw.clawchat.ui.components.CATEGORY_LABELS[category] ?: category.name
-                appendLine("### $label")
-                com.openclaw.clawchat.ui.components.SLASH_COMMANDS
-                    .filter { it.category == category }
-                    .forEach { cmd ->
-                        val args = cmd.args?.let { " $it" } ?: ""
-                        appendLine("- `/${cmd.name}$args` - ${cmd.description}")
-                    }
-                appendLine()
-            }
-        }
-    }
-
+    
     /**
      * 添加附件
      */
-    fun addAttachment(context: android.content.Context, uri: android.net.Uri) {
-        viewModelScope.launch {
-            _state.update { it.copy(isUploadingAttachment = true) }
-            
-            val attachment = com.openclaw.clawchat.ui.components.loadAttachmentFromUri(context, uri)
-            
-            _state.update { currentState ->
-                if (attachment != null) {
-                    val newAttachment = AttachmentUi(
-                        id = UUID.randomUUID().toString(),
-                        uri = uri,
-                        mimeType = attachment.mimeType,
-                        fileName = attachment.fileName,
-                        dataUrl = attachment.dataUrl
-                    )
-                    currentState.copy(
-                        attachments = currentState.attachments + newAttachment,
-                        isUploadingAttachment = false
-                    )
-                } else {
-                    currentState.copy(
-                        error = "无法加载附件",
-                        isUploadingAttachment = false
-                    )
-                }
-            }
+    fun addAttachment(attachment: ChatAttachment) {
+        _state.update { currentState ->
+            currentState.copy(
+                attachments = currentState.attachments + attachment
+            )
         }
     }
-
+    
     /**
      * 移除附件
      */
@@ -850,78 +708,248 @@ class SessionViewModel @Inject constructor(
             )
         }
     }
-
+    
     /**
      * 清空所有附件
      */
     fun clearAttachments() {
         _state.update { it.copy(attachments = emptyList()) }
     }
-
+    
     /**
-     * 更新斜杠命令补全状态
+     * 执行斜杠命令
      */
-    fun updateSlashCommandCompletion(text: String) {
-        val trimmed = text.trim()
-        if (!trimmed.startsWith("/")) {
-            _state.update { it.copy(slashCommandCompletion = SlashCommandCompletion()) }
-            return
-        }
-
-        val prefix = com.openclaw.clawchat.ui.components.getCommandPrefix(trimmed)
-        val commands = com.openclaw.clawchat.ui.components.getSlashCommandCompletions(prefix.drop(1))
+    fun executeSlashCommand(command: SlashCommandDef, args: String) {
+        Log.d(TAG, "=== executeSlashCommand: ${command.name}, args=$args")
         
-        _state.update { currentState ->
-            currentState.copy(
-                slashCommandCompletion = SlashCommandCompletion(
-                    commands = commands,
-                    selectedIndex = 0,
-                    visible = commands.isNotEmpty()
-                )
-            )
-        }
-    }
-
-    /**
-     * 选择斜杠命令补全
-     */
-    fun selectSlashCommand(index: Int) {
-        _state.update { currentState ->
-            val completion = currentState.slashCommandCompletion
-            if (index in 0 until completion.commands.size) {
-                currentState.copy(
-                    slashCommandCompletion = completion.copy(selectedIndex = index)
-                )
-            } else {
-                currentState
+        when (command.name) {
+            "clear" -> {
+                // 清空聊天历史
+                viewModelScope.launch {
+                    val sessionId = _state.value.sessionId ?: return@launch
+                    messageRepository.clearMessages(sessionId)
+                    _state.update { it.copy(
+                        chatMessages = emptyList(),
+                        chatStream = null,
+                        chatStreamSegments = emptyList(),
+                        chatToolMessages = emptyList(),
+                        toolStreamById = emptyMap(),
+                        toolStreamOrder = emptyList(),
+                        inputText = ""
+                    )}
+                }
+            }
+            "help" -> {
+                // 显示帮助信息
+                val helpText = buildString {
+                    appendLine("## 可用命令")
+                    appendLine()
+                    SLASH_COMMANDS.groupBy { it.category }.forEach { (category, commands) ->
+                        val categoryLabel = when (category) {
+                            SlashCommandCategory.SESSION -> "会话"
+                            SlashCommandCategory.MODEL -> "模型"
+                            SlashCommandCategory.AGENTS -> "Agents"
+                            SlashCommandCategory.TOOLS -> "工具"
+                        }
+                        appendLine("### $categoryLabel")
+                        commands.forEach { cmd ->
+                            val argsHint = if (cmd.args != null) " ${cmd.args}" else ""
+                            appendLine("- `/${cmd.name}$argsHint` - ${cmd.description}")
+                        }
+                        appendLine()
+                    }
+                }
+                _state.update { it.copy(
+                    inputText = "",
+                    chatMessages = it.chatMessages + MessageUi(
+                        id = "help-${System.currentTimeMillis()}",
+                        content = listOf(MessageContentItem.Text(helpText)),
+                        role = MessageRole.ASSISTANT,
+                        timestamp = System.currentTimeMillis()
+                    )
+                )}
+            }
+            "new" -> {
+                // 新会话 - 通过事件通知上层
+                _state.update { it.copy(inputText = "") }
+                // TODO: 导航到新会话
+            }
+            "reset" -> {
+                // 重置会话
+                viewModelScope.launch {
+                    val sessionId = _state.value.sessionId ?: return@launch
+                    // 发送 reset 请求
+                    try {
+                        gateway.call("sessions.reset", mapOf("key" to JsonPrimitive(sessionId)))
+                        // 清空本地状态
+                        _state.update { it.copy(
+                            chatMessages = emptyList(),
+                            chatStream = null,
+                            chatStreamSegments = emptyList(),
+                            chatToolMessages = emptyList(),
+                            toolStreamById = emptyMap(),
+                            toolStreamOrder = emptyList(),
+                            inputText = ""
+                        )}
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to reset session", e)
+                    }
+                }
+            }
+            "think", "thinking" -> {
+                // 设置思考级别
+                viewModelScope.launch {
+                    val sessionId = _state.value.sessionId ?: return@launch
+                    val level = args.trim().lowercase().ifEmpty { "medium" }
+                    try {
+                        gateway.call("sessions.patch", mapOf(
+                            "key" to JsonPrimitive(sessionId),
+                            "thinkingLevel" to JsonPrimitive(level)
+                        ))
+                        _state.update { it.copy(inputText = "") }
+                        // 显示确认消息
+                        _state.update { state ->
+                            state.copy(
+                                chatMessages = state.chatMessages + MessageUi(
+                                    id = "think-${System.currentTimeMillis()}",
+                                    content = listOf(MessageContentItem.Text("✅ 思考级别已设置为: $level")),
+                                    role = MessageRole.ASSISTANT,
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to set thinking level", e)
+                    }
+                }
+            }
+            "reasoning" -> {
+                // 切换推理模式
+                viewModelScope.launch {
+                    val sessionId = _state.value.sessionId ?: return@launch
+                    val enabled = args.trim().lowercase().let { 
+                        it == "on" || it == "true" || it == "1" 
+                    }
+                    try {
+                        gateway.call("sessions.patch", mapOf(
+                            "key" to JsonPrimitive(sessionId),
+                            "reasoning" to JsonPrimitive(enabled)
+                        ))
+                        _state.update { it.copy(inputText = "") }
+                        // 显示确认消息
+                        val status = if (enabled) "开启" else "关闭"
+                        _state.update { state ->
+                            state.copy(
+                                chatMessages = state.chatMessages + MessageUi(
+                                    id = "reasoning-${System.currentTimeMillis()}",
+                                    content = listOf(MessageContentItem.Text("✅ 推理模式已$status")),
+                                    role = MessageRole.ASSISTANT,
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to toggle reasoning", e)
+                    }
+                }
+            }
+            "verbose" -> {
+                // 切换详细模式
+                viewModelScope.launch {
+                    val sessionId = _state.value.sessionId ?: return@launch
+                    val level = args.trim().lowercase().ifEmpty { "on" }
+                    try {
+                        gateway.call("sessions.patch", mapOf(
+                            "key" to JsonPrimitive(sessionId),
+                            "verboseLevel" to JsonPrimitive(level)
+                        ))
+                        _state.update { it.copy(inputText = "") }
+                        // 显示确认消息
+                        _state.update { state ->
+                            state.copy(
+                                chatMessages = state.chatMessages + MessageUi(
+                                    id = "verbose-${System.currentTimeMillis()}",
+                                    content = listOf(MessageContentItem.Text("✅ 详细模式已设置: $level")),
+                                    role = MessageRole.ASSISTANT,
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to set verbose level", e)
+                    }
+                }
+            }
+            else -> {
+                // 其他命令发送到 Gateway
+                viewModelScope.launch {
+                    val sessionId = _state.value.sessionId ?: return@launch
+                    val message = "/${command.name}${if (args.isNotBlank()) " $args" else ""}"
+                    try {
+                        gateway.chatSend(sessionId, message)
+                        _state.update { it.copy(inputText = "", isSending = true, isLoading = true) }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to send command", e)
+                    }
+                }
             }
         }
     }
 
     /**
-     * 应用选中的斜杠命令
+     * 删除消息
      */
-    fun applySelectedSlashCommand(): String? {
-        val completion = _state.value.slashCommandCompletion
-        val selectedCommand = completion.commands.getOrNull(completion.selectedIndex) ?: return null
-        
-        val newText = "/${selectedCommand.name}${selectedCommand.args?.let { " $it" } ?: ""}"
-        _state.update { it.copy(
-            inputText = newText,
-            slashCommandCompletion = SlashCommandCompletion()
-        )}
-        return newText
+    fun deleteMessage(messageId: String) {
+        _state.update { state ->
+            state.copy(
+                chatMessages = state.chatMessages.filter { it.id != messageId }
+            )
+        }
+        // TODO: 同步到 Gateway/Room
     }
-
+    
     /**
-     * 隐藏斜杠命令补全
+     * 重新生成最后一条助手消息
      */
-    fun hideSlashCommandCompletion() {
-        _state.update { it.copy(slashCommandCompletion = SlashCommandCompletion()) }
-    }
-
-    fun updateInputText(text: String) {
-        _state.update { it.copy(inputText = text) }
+    fun regenerateLastMessage() {
+        viewModelScope.launch {
+            val sessionId = _state.value.sessionId ?: return@launch
+            val messages = _state.value.chatMessages
+            
+            // 找到最后一条用户消息
+            val lastUserMessage = messages.lastOrNull { it.role == MessageRole.USER }
+            if (lastUserMessage == null) {
+                Log.w(TAG, "No user message to regenerate from")
+                return@launch
+            }
+            
+            // 移除最后一条助手消息及其后的所有消息
+            val lastAssistantIndex = messages.indexOfLast { it.role == MessageRole.ASSISTANT }
+            val updatedMessages = if (lastAssistantIndex >= 0) {
+                messages.subList(0, lastAssistantIndex)
+            } else {
+                messages
+            }
+            
+            _state.update { it.copy(
+                chatMessages = updatedMessages,
+                isLoading = true,
+                isSending = true,
+                chatStream = null,
+                chatStreamSegments = emptyList(),
+                chatToolMessages = emptyList(),
+                toolStreamById = emptyMap(),
+                toolStreamOrder = emptyList()
+            )}
+            
+            // 重新发送最后一条用户消息
+            try {
+                gateway.chatSend(sessionId, lastUserMessage.getTextContent())
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to regenerate message", e)
+                _state.update { it.copy(error = "重新生成失败：${e.message}", isLoading = false, isSending = false) }
+            }
+        }
     }
 
     fun clearError() {

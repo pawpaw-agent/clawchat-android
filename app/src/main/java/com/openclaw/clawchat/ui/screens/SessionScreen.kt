@@ -1,13 +1,15 @@
 package com.openclaw.clawchat.ui.screens
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -29,30 +31,23 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
-import com.openclaw.clawchat.ui.state.AttachmentUi
-import com.openclaw.clawchat.ui.state.ConnectionStatus
-import com.openclaw.clawchat.ui.state.MessageContentItem
-import com.openclaw.clawchat.ui.state.MessageGroup
-import com.openclaw.clawchat.ui.state.MessageRole
-import com.openclaw.clawchat.ui.state.MessageUi
+import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.state.SessionEvent
-import com.openclaw.clawchat.ui.state.SlashCommandCompletion
 import com.openclaw.clawchat.ui.state.StreamSegment
+import com.openclaw.clawchat.ui.screens.session.*
+import com.openclaw.clawchat.ui.theme.DesignTokens
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import com.openclaw.clawchat.ui.state.SessionViewModel
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
 
 /**
  * 会话界面屏幕（1:1 复刻 webchat）
@@ -76,14 +71,6 @@ fun SessionScreen(
     
     // 读取字体大小设置（统一）
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
-    
-    // 图片选择器（使用 ActivityResultContracts）
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val imagePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        uri?.let { viewModel.addAttachment(context, it) }
-    }
 
     // 初始化会话 ID
     LaunchedEffect(sessionId) {
@@ -136,6 +123,7 @@ fun SessionScreen(
     }
 
     Scaffold(
+        modifier = Modifier.background(DesignTokens.bg),
         topBar = {
             SessionTopAppBar(
                 connectionStatus = state.connectionStatus,
@@ -148,9 +136,12 @@ fun SessionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(DesignTokens.bg)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(DesignTokens.bg)
             ) {
                 // 消息列表区域
                 Box(
@@ -171,7 +162,9 @@ fun SessionScreen(
                             streamSegments = state.chatStreamSegments,
                             toolMessages = state.chatToolMessages,
                             chatStream = state.chatStream,
-                            messageFontSize = messageFontSize
+                            messageFontSize = messageFontSize,
+                            onDeleteMessage = { viewModel.deleteMessage(it) },
+                            onRegenerate = { viewModel.regenerateLastMessage() }
                         )
                     }
 
@@ -200,25 +193,16 @@ fun SessionScreen(
                 // 消息输入框
                 MessageInputBar(
                     value = state.inputText,
-                    onValueChange = { 
-                        viewModel.updateInputText(it)
-                        viewModel.updateSlashCommandCompletion(it)
-                    },
+                    onValueChange = { viewModel.updateInputText(it) },
                     onSend = { viewModel.sendMessage(state.inputText) },
-                    onAttach = { 
-                        imagePickerLauncher.launch(
-                            androidx.activity.result.PickVisualMediaRequest(
-                                mediaType = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
-                            )
-                        )
-                    },
                     enabled = state.connectionStatus is ConnectionStatus.Connected && !state.isSending,
                     focusRequester = focusRequester,
                     attachments = state.attachments,
+                    onAddAttachment = { viewModel.addAttachment(it) },
                     onRemoveAttachment = { viewModel.removeAttachment(it) },
-                    slashCommandCompletion = state.slashCommandCompletion,
-                    onSelectSlashCommand = { viewModel.selectSlashCommand(it) },
-                    onApplySlashCommand = { viewModel.applySelectedSlashCommand() }
+                    onExecuteCommand = { cmd, args ->
+                        viewModel.executeSlashCommand(cmd, args)
+                    }
                 )
             }
 
@@ -286,6 +270,7 @@ private fun groupMessages(messages: List<MessageUi>): List<MessageGroup> {
 
 /**
  * 滚动到底部按钮
+ * 使用设计系统样式
  */
 @Composable
 private fun ScrollToBottomButton(
@@ -295,9 +280,12 @@ private fun ScrollToBottomButton(
     SmallFloatingActionButton(
         onClick = onClick,
         modifier = modifier.size(44.dp),
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        shape = CircleShape
+        containerColor = DesignTokens.accentSubtle,
+        contentColor = DesignTokens.accent,
+        shape = CircleShape,
+        elevation = FloatingActionButtonDefaults.elevation(
+            defaultElevation = DesignTokens.elevationSm
+        )
     ) {
         Icon(
             imageVector = Icons.Default.KeyboardArrowDown,
@@ -330,9 +318,9 @@ private fun SessionTopAppBar(
             ConnectionStatusIcon(connectionStatus)
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            containerColor = DesignTokens.bgElevated,
+            titleContentColor = DesignTokens.textStrong,
+            actionIconContentColor = DesignTokens.text
         )
     )
 }
@@ -343,11 +331,11 @@ private fun SessionTopAppBar(
 @Composable
 private fun ConnectionStatusIcon(status: ConnectionStatus) {
     val (icon, color) = when (status) {
-        is ConnectionStatus.Connected -> Icons.Default.CheckCircle to MaterialTheme.colorScheme.primary
-        is ConnectionStatus.Connecting, is ConnectionStatus.Disconnecting -> Icons.Default.Sync to MaterialTheme.colorScheme.tertiary
-        is ConnectionStatus.Disconnected -> Icons.Default.CloudOff to MaterialTheme.colorScheme.onSurfaceVariant
-        is ConnectionStatus.Error -> Icons.Default.Error to MaterialTheme.colorScheme.error
-        else -> Icons.Default.Help to MaterialTheme.colorScheme.onSurfaceVariant
+        is ConnectionStatus.Connected -> Icons.Default.CheckCircle to DesignTokens.ok
+        is ConnectionStatus.Connecting, is ConnectionStatus.Disconnecting -> Icons.Default.Sync to DesignTokens.warn
+        is ConnectionStatus.Disconnected -> Icons.Default.CloudOff to DesignTokens.muted
+        is ConnectionStatus.Error -> Icons.Default.Error to DesignTokens.danger
+        else -> Icons.Default.Help to DesignTokens.muted
     }
 
     Icon(
@@ -375,7 +363,7 @@ private fun EmptySessionContent(
             imageVector = Icons.Default.ChatBubbleOutline,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = DesignTokens.muted
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -388,7 +376,7 @@ private fun EmptySessionContent(
                 else -> "准备中..."
             },
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = DesignTokens.text
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -400,7 +388,7 @@ private fun EmptySessionContent(
                 "请等待连接完成"
             },
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = DesignTokens.muted
         )
     }
 }
@@ -421,7 +409,9 @@ private fun MessageGroupList(
     streamSegments: List<com.openclaw.clawchat.ui.state.StreamSegment> = emptyList(),
     toolMessages: List<MessageUi> = emptyList(),
     chatStream: String? = null,
-    messageFontSize: FontSize = FontSize.MEDIUM
+    messageFontSize: FontSize = FontSize.MEDIUM,
+    onDeleteMessage: (String) -> Unit = {},
+    onRegenerate: () -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -431,7 +421,12 @@ private fun MessageGroupList(
     ) {
         // 1. 历史消息
         items(groups, key = { it.messages.first().id }) { group ->
-            MessageGroupItem(group = group, messageFontSize = messageFontSize)
+            MessageGroupItem(
+                group = group, 
+                messageFontSize = messageFontSize,
+                onDeleteMessage = onDeleteMessage,
+                onRegenerate = onRegenerate
+            )
         }
         
         // 2. 文本段（工具执行前提交的文本）
@@ -462,7 +457,6 @@ private fun MessageGroupList(
         // 4. 当前流式文本（使用动态 key 确保每次更新都重新渲染）
         if (!chatStream.isNullOrBlank()) {
             item(key = "stream_${chatStream.length}") {
-                // 添加调试日志
                 android.util.Log.d("SessionScreen", "=== Rendering chatStream: len=${chatStream.length}, text=${chatStream.take(30)}...")
                 MessageContentCard(
                     message = MessageUi(
@@ -474,7 +468,8 @@ private fun MessageGroupList(
                     ),
                     isUser = false,
                     isLastInGroup = true,
-                    messageFontSize = messageFontSize
+                    messageFontSize = messageFontSize,
+                    isStreaming = true  // 流式输出脉冲动画
                 )
             }
         }
@@ -485,7 +480,12 @@ private fun MessageGroupList(
  * 消息分组项（Slack 风格）
  */
 @Composable
-private fun MessageGroupItem(group: MessageGroup, messageFontSize: FontSize = FontSize.MEDIUM) {
+private fun MessageGroupItem(
+    group: MessageGroup, 
+    messageFontSize: FontSize = FontSize.MEDIUM,
+    onDeleteMessage: (String) -> Unit = {},
+    onRegenerate: () -> Unit = {}
+) {
     val isUser = group.role == MessageRole.USER
     val isSystem = group.role == MessageRole.SYSTEM
     val isTool = group.role == MessageRole.TOOL
@@ -622,7 +622,9 @@ private fun MessageGroupItem(group: MessageGroup, messageFontSize: FontSize = Fo
                             message = message,
                             isUser = isUser,
                             isLastInGroup = index == group.messages.lastIndex,
-                            messageFontSize = messageFontSize
+                            messageFontSize = messageFontSize,
+                            onDelete = { onDeleteMessage(message.id) },
+                            onRegenerate = onRegenerate
                         )
                         
                         // 如果这条消息有 ToolCall，立即显示工具卡片
@@ -662,7 +664,7 @@ private fun MessageGroupItem(group: MessageGroup, messageFontSize: FontSize = Fo
                 Text(
                     text = formatTimestamp(msg.timestamp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = DesignTokens.muted
                 )
             }
             
@@ -672,426 +674,10 @@ private fun MessageGroupItem(group: MessageGroup, messageFontSize: FontSize = Fo
                 CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
+                    color = DesignTokens.accent
                 )
             }
         }
-    }
-}
-
-/**
- * 消息内容卡片（支持文本和工具）
- */
-@Composable
-private fun MessageContentCard(
-    message: MessageUi,
-    isUser: Boolean,
-    isLastInGroup: Boolean,
-    messageFontSize: FontSize = FontSize.MEDIUM
-) {
-    val textContent = message.getTextContent()
-    
-    // 只渲染文本内容，工具卡片在分组级别渲染
-    if (textContent.isBlank()) return
-    
-    // 统一字体大小（sp）
-    val textSize = when (messageFontSize) {
-        FontSize.SMALL -> 10.sp
-        FontSize.MEDIUM -> 13.sp
-        FontSize.LARGE -> 16.sp
-    }
-    
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .widthIn(max = 320.dp)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                        bottomStart = if (isUser) 16.dp else if (isLastInGroup) 4.dp else 4.dp,
-                        bottomEnd = if (isUser) if (isLastInGroup) 4.dp else 4.dp else 16.dp
-                    )
-                )
-                .background(
-                    if (isUser) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.secondaryContainer
-                    }
-                )
-                .padding(8.dp)
-        ) {
-            // 助手消息使用 Markdown 渲染
-            if (!isUser) {
-                MarkdownText(
-                    content = textContent,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = textSize
-                )
-            } else {
-                // 用户消息也使用 Markdown 渲染以确保字体一致
-                MarkdownText(
-                    content = textContent,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = textSize,
-                    textColor = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
-    }
-}
-
-/**
- * 工具标签行
- */
-@Composable
-private fun ToolTagsRow(toolCards: List<ToolCard>) {
-    var expandedIndex by remember { mutableStateOf(-1) }
-    
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        // 标签行
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            toolCards.forEachIndexed { index, card ->
-                ToolTag(
-                    name = when (card.kind) {
-                        ToolCardKind.CALL -> card.name
-                        ToolCardKind.RESULT -> "output"
-                    },
-                    isError = card.isError,
-                    isExpanded = expandedIndex == index,
-                    onClick = { 
-                        expandedIndex = if (expandedIndex == index) -1 else index 
-                    }
-                )
-            }
-        }
-        
-        // 展开的详情
-        if (expandedIndex >= 0 && expandedIndex < toolCards.size) {
-            val card = toolCards[expandedIndex]
-            ToolDetailCard(toolCard = card)
-        }
-    }
-}
-
-/**
- * 单个工具标签
- */
-@Composable
-private fun ToolTag(
-    name: String,
-    isError: Boolean,
-    isExpanded: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(4.dp),
-        color = if (isError) {
-            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-        },
-        modifier = Modifier.height(24.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(
-                imageVector = if (isError) Icons.Default.ErrorOutline else Icons.Default.Terminal,
-                contentDescription = null,
-                modifier = Modifier.size(12.dp),
-                tint = if (isError) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.primary
-                }
-            )
-            Text(
-                text = name,
-                style = MaterialTheme.typography.labelSmall,
-                color = if (isError) {
-                    MaterialTheme.colorScheme.onErrorContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-            Icon(
-                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = null,
-                modifier = Modifier.size(12.dp),
-                tint = if (isError) {
-                    MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                }
-            )
-        }
-    }
-}
-
-/**
- * 工具详情卡片
- * 显示工具名称、参数和结果
- */
-@Composable
-private fun ToolDetailCard(toolCard: ToolCard) {
-    // 默认折叠，点击展开
-    var expanded by remember { mutableStateOf(false) }
-    val hasContent = when (toolCard.kind) {
-        ToolCardKind.CALL -> toolCard.args != null && toolCard.args.isNotBlank()
-        ToolCardKind.RESULT -> (toolCard.args != null && toolCard.args.isNotBlank()) || 
-                               (toolCard.result != null && toolCard.result.isNotBlank())
-    }
-    
-    android.util.Log.d("SessionScreen", "=== ToolDetailCard: kind=${toolCard.kind}, hasContent=$hasContent, resultLen=${toolCard.result?.length}, argsLen=${toolCard.args?.length}")
-    
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = hasContent) { expanded = !expanded },
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = when {
-                toolCard.isError -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                toolCard.kind == ToolCardKind.CALL -> Color(0xFFFFEBEE) // 浅红色背景
-                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            }
-        )
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            // 头部行
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = when {
-                        toolCard.isError -> Icons.Default.ErrorOutline
-                        toolCard.kind == ToolCardKind.CALL -> Icons.Default.Bolt // 红色闪电
-                        else -> Icons.Default.CheckCircle
-                    },
-                    contentDescription = null,
-                    tint = when {
-                        toolCard.isError -> MaterialTheme.colorScheme.error
-                        toolCard.kind == ToolCardKind.CALL -> Color(0xFFE53935) // 红色
-                        else -> Color(0xFF2196F3) // 蓝色
-                    },
-                    modifier = Modifier.size(16.dp)
-                )
-                // 标题：显示工具名称（而不是 "Tool output"）
-                Text(
-                    text = toolCard.name.replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (toolCard.isError) {
-                        MaterialTheme.colorScheme.onErrorContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-                // 展开/折叠图标
-                if (hasContent) {
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = null,
-                        tint = when {
-                            toolCard.kind == ToolCardKind.CALL -> Color(0xFFE53935)
-                            else -> Color(0xFF2196F3)
-                        },
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-            
-            // 展开内容
-            if (expanded && hasContent) {
-                Spacer(modifier = Modifier.height(8.dp))
-                SelectionContainer {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // 如果有参数，显示参数
-                        if (toolCard.args != null && toolCard.args.isNotBlank()) {
-                            Text(
-                                text = toolCard.args,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                            )
-                        }
-                        // 如果有结果，显示结果
-                        if (toolCard.result != null && toolCard.result.isNotBlank()) {
-                            if (toolCard.args != null && toolCard.args.isNotBlank()) {
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                            }
-                            Text(
-                                text = toolCard.result,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace,
-                                color = if (toolCard.isError) {
-                                    MaterialTheme.colorScheme.error
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * 配对工具调用和结果
- * 参考 webchat Fp(e)：消息包含 toolcall 和 toolresult 两个 content 项
- * - toolcall: 显示工具名称和参数（红色标签）
- * - toolresult: 显示工具输出（蓝色标签）
- */
-private fun pairToolCards(message: MessageUi): List<ToolCard> {
-    val calls = message.getToolCalls()
-    val results = message.getToolResults()
-    val cards = mutableListOf<ToolCard>()
-    
-    android.util.Log.d("SessionScreen", "=== pairToolCards: calls=${calls.size}, results=${results.size}")
-    
-    // 如果有 ToolCall，优先使用 ToolCall 的参数
-    if (calls.isNotEmpty()) {
-        calls.forEach { call ->
-            // 查找匹配的 ToolResult
-            val matchingResult = results.find { it.toolCallId == call.id }
-            
-            if (matchingResult != null && matchingResult.text.isNotBlank()) {
-                // 有调用也有结果：合并显示
-                val displayArgs = if (call.name == "exec" && call.args != null) {
-                    call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
-                } else {
-                    call.args?.toString()
-                }
-                cards.add(ToolCard(
-                    kind = ToolCardKind.RESULT,
-                    name = call.name,
-                    args = displayArgs,
-                    result = matchingResult.text,
-                    isError = matchingResult.isError,
-                    callId = call.id
-                ))
-            } else {
-                // 只有调用，没有结果：显示为 CALL
-                val displayArgs = if (call.name == "exec" && call.args != null) {
-                    call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
-                } else {
-                    call.args?.toString()
-                }
-                cards.add(ToolCard(
-                    kind = ToolCardKind.CALL,
-                    name = call.name,
-                    args = displayArgs,
-                    result = null,
-                    isError = false,
-                    callId = call.id
-                ))
-            }
-        }
-    } else {
-        // 没有 ToolCall，只处理 ToolResult
-        results.forEach { result ->
-            val hasArgs = result.args != null && result.args.keys.isNotEmpty()
-            val hasResult = result.text.isNotBlank()
-            
-            if (hasArgs && hasResult) {
-                val displayArgs = if (result.name == "exec" && result.args != null) {
-                    result.args?.get("command")?.jsonPrimitive?.content ?: result.args.toString()
-                } else {
-                    result.args?.toString()
-                }
-                cards.add(ToolCard(
-                    kind = ToolCardKind.RESULT,
-                    name = result.name ?: "tool",
-                    args = displayArgs,
-                    result = result.text,
-                    isError = result.isError,
-                    callId = result.toolCallId
-                ))
-            } else if (hasArgs) {
-                val displayArgs = if (result.name == "exec" && result.args != null) {
-                    result.args?.get("command")?.jsonPrimitive?.content ?: result.args.toString()
-                } else {
-                    result.args?.toString()
-                }
-                cards.add(ToolCard(
-                    kind = ToolCardKind.CALL,
-                    name = result.name ?: "tool",
-                    args = displayArgs,
-                    result = null,
-                    isError = false,
-                    callId = result.toolCallId
-                ))
-            } else {
-                cards.add(ToolCard(
-                    kind = ToolCardKind.RESULT,
-                    name = result.name ?: "tool",
-                    args = null,
-                    result = result.text,
-                    isError = result.isError,
-                    callId = result.toolCallId
-                ))
-            }
-        }
-    }
-    
-    return cards
-}
-
-/**
- * 工具卡片类型
- */
-private enum class ToolCardKind {
-    CALL,    // tool_call: 显示工具名称 + 参数
-    RESULT   // tool_result: 显示结果文本
-}
-
-/**
- * 合并的工具卡片数据
- */
-private data class ToolCard(
-    val kind: ToolCardKind,
-    val name: String,
-    val args: String?,
-    val result: String?,
-    val isError: Boolean,
-    val callId: String?
-)
-
-/**
- * 系统消息项
- */
-@Composable
-private fun SystemMessageItem(message: MessageUi) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Text(
-            text = message.getTextContent(),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(8.dp)
-        )
     }
 }
 
@@ -1138,7 +724,7 @@ private fun ToolMessageCard(message: MessageUi) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        containerColor = DesignTokens.bgHover.copy(alpha = 0.3f)
                     )
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
@@ -1147,7 +733,7 @@ private fun ToolMessageCard(message: MessageUi) {
                                 text = textContent,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = DesignTokens.muted
                             )
                         }
                     }
@@ -1171,9 +757,9 @@ private fun InlineToolCard(toolCard: ToolCard) {
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (toolCard.isError) {
-                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+                DesignTokens.dangerSubtle.copy(alpha = 0.2f)
             } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                DesignTokens.bgHover.copy(alpha = 0.3f)
             }
         )
     ) {
@@ -1191,9 +777,9 @@ private fun InlineToolCard(toolCard: ToolCard) {
                     imageVector = getToolIcon(toolCard.name),
                     contentDescription = null,
                     tint = if (toolCard.isError) {
-                        MaterialTheme.colorScheme.error
+                        DesignTokens.danger
                     } else {
-                        MaterialTheme.colorScheme.primary
+                        DesignTokens.accent
                     },
                     modifier = Modifier.size(16.dp)
                 )
@@ -1202,7 +788,7 @@ private fun InlineToolCard(toolCard: ToolCard) {
                 Text(
                     text = getToolDisplayName(toolCard.name),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = DesignTokens.text,
                     modifier = Modifier.weight(1f)
                 )
                 
@@ -1214,12 +800,12 @@ private fun InlineToolCard(toolCard: ToolCard) {
                     Text(
                         text = "View",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = DesignTokens.muted
                     )
                     Icon(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = DesignTokens.muted,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -1229,7 +815,7 @@ private fun InlineToolCard(toolCard: ToolCard) {
             if (expanded) {
                 Divider(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    color = DesignTokens.border.copy(alpha = 0.2f)
                 )
                 
                 Column(
@@ -1244,7 +830,7 @@ private fun InlineToolCard(toolCard: ToolCard) {
                                 text = "with ${toolCard.args}",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = DesignTokens.muted
                             )
                         }
                     }
@@ -1261,9 +847,9 @@ private fun InlineToolCard(toolCard: ToolCard) {
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
                                 color = if (toolCard.isError) {
-                                    MaterialTheme.colorScheme.error
+                                    DesignTokens.danger
                                 } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                    DesignTokens.muted
                                 }
                             )
                         }
@@ -1344,12 +930,12 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
             Text(
                 text = message.getTextContent(),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = DesignTokens.muted,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .background(DesignTokens.bgHover)
                     .padding(8.dp)
             )
         }
@@ -1377,9 +963,9 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
                     )
                     .background(
                         if (isUser) {
-                            MaterialTheme.colorScheme.primary
+                            DesignTokens.accent
                         } else {
-                            MaterialTheme.colorScheme.secondaryContainer
+                            DesignTokens.card
                         }
                     )
                     .padding(12.dp)
@@ -1405,7 +991,7 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
                             Text(
                                 text = textContent,
                                 fontSize = textSize,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = DesignTokens.textStrong
                             )
                         }
                     }
@@ -1417,9 +1003,9 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
                                 .size(16.dp),
                             strokeWidth = 2.dp,
                             color = if (isUser) {
-                                MaterialTheme.colorScheme.onPrimary
+                                DesignTokens.textStrong
                             } else {
-                                MaterialTheme.colorScheme.onSecondaryContainer
+                                DesignTokens.text
                             }
                         )
                     }
@@ -1431,7 +1017,7 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
             Text(
                 text = formatTimestamp(message.timestamp),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = DesignTokens.muted
             )
         }
     }
@@ -1450,7 +1036,7 @@ private fun LoadingOverlay() {
     ) {
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+                containerColor = DesignTokens.bgHover.copy(alpha = 0.9f)
             )
         ) {
             Row(
@@ -1465,7 +1051,7 @@ private fun LoadingOverlay() {
                 Text(
                     text = "助手正在思考...",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = DesignTokens.muted
                 )
             }
         }
@@ -1473,47 +1059,167 @@ private fun LoadingOverlay() {
 }
 
 /**
- * 消息输入框（支持附件和斜杠命令补全）
+ * 消息输入框（支持附件和斜杠命令）
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MessageInputBar(
     value: String,
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
-    onAttach: () -> Unit,
     enabled: Boolean,
     focusRequester: FocusRequester,
-    attachments: List<AttachmentUi> = emptyList(),
+    attachments: List<ChatAttachment> = emptyList(),
+    onAddAttachment: (ChatAttachment) -> Unit = {},
     onRemoveAttachment: (String) -> Unit = {},
-    slashCommandCompletion: SlashCommandCompletion = SlashCommandCompletion(),
-    onSelectSlashCommand: (Int) -> Unit = {},
-    onApplySlashCommand: () -> Unit = {}
+    onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> }
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
+    // 斜杠命令菜单状态
+    var slashMenuOpen by remember { mutableStateOf(false) }
+    var slashMenuItems by remember { mutableStateOf<List<SlashCommandDef>>(emptyList()) }
+    var slashMenuIndex by remember { mutableStateOf(0) }
+    var slashMenuCommand by remember { mutableStateOf<SlashCommandDef?>(null) }
+    var slashMenuArgItems by remember { mutableStateOf<List<String>>(emptyList()) }
+    var slashMenuMode by remember { mutableStateOf("command") } // "command" or "args"
+    
+    // 更新斜杠菜单
+    LaunchedEffect(value) {
+        val trimmed = value.trim()
+        
+        // 参数模式: /command <partial-arg>
+        val argMatch = Regex("^/(\\S+)\\s+(.*)$").find(trimmed)
+        if (argMatch != null) {
+            val cmdName = argMatch.groupValues[1].lowercase()
+            val argFilter = argMatch.groupValues[2].lowercase()
+            val cmd = SLASH_COMMANDS.find { it.name == cmdName }
+            if (cmd != null && cmd.argOptions.isNotEmpty()) {
+                val filtered = if (argFilter.isNotEmpty()) {
+                    cmd.argOptions.filter { it.lowercase().startsWith(argFilter) }
+                } else {
+                    cmd.argOptions
+                }
+                if (filtered.isNotEmpty()) {
+                    slashMenuMode = "args"
+                    slashMenuCommand = cmd
+                    slashMenuArgItems = filtered
+                    slashMenuOpen = true
+                    slashMenuIndex = 0
+                    slashMenuItems = emptyList()
+                    return@LaunchedEffect
+                }
+            }
+            slashMenuOpen = false
+            slashMenuMode = "command"
+            slashMenuCommand = null
+            slashMenuArgItems = emptyList()
+            return@LaunchedEffect
+        }
+        
+        // 命令模式: /partial-command
+        val commandMatch = Regex("^/(\\S*)$").find(trimmed)
+        if (commandMatch != null) {
+            val filter = commandMatch.groupValues[1]
+            val items = getSlashCommandCompletions(filter)
+            slashMenuItems = items
+            slashMenuOpen = items.isNotEmpty()
+            slashMenuIndex = 0
+            slashMenuMode = "command"
+            slashMenuCommand = null
+            slashMenuArgItems = emptyList()
+        } else {
+            slashMenuOpen = false
+            slashMenuMode = "command"
+            slashMenuCommand = null
+            slashMenuArgItems = emptyList()
+            slashMenuItems = emptyList()
+        }
+    }
+    
+    // 图片选择器
+    val imagePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        uri?.let { 
+            // 读取图片并转换为 base64
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val bytes = inputStream?.readBytes()
+                inputStream?.close()
+                
+                if (bytes != null) {
+                    val mimeType = context.contentResolver.getType(uri) ?: "image/png"
+                    val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                    val dataUrl = "data:$mimeType;base64,$base64"
+                    
+                    onAddAttachment(ChatAttachment(
+                        id = "att-${System.currentTimeMillis()}-${(0..9999).random()}",
+                        dataUrl = dataUrl,
+                        mimeType = mimeType
+                    ))
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SessionScreen", "Failed to read image: ${e.message}")
+            }
+        }
+    }
+    
+    Surface(
+        shadowElevation = 8.dp,
+        color = DesignTokens.bg
     ) {
-        // 斜杠命令补全菜单
-        if (slashCommandCompletion.visible && slashCommandCompletion.commands.isNotEmpty()) {
-            SlashCommandCompletionMenu(
-                commands = slashCommandCompletion.commands,
-                selectedIndex = slashCommandCompletion.selectedIndex,
-                onSelect = onSelectSlashCommand,
-                onApply = onApplySlashCommand
-            )
-        }
-        
-        // 附件预览
-        if (attachments.isNotEmpty()) {
-            AttachmentPreviewRow(
-                attachments = attachments,
-                onRemove = onRemoveAttachment
-            )
-        }
-        
-        Surface(
-            shadowElevation = 8.dp,
-            color = MaterialTheme.colorScheme.surface
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
+            // 斜杠命令菜单
+            if (slashMenuOpen) {
+                SlashCommandMenu(
+                    items = if (slashMenuMode == "command") slashMenuItems else emptyList(),
+                    argItems = if (slashMenuMode == "args") slashMenuArgItems else emptyList(),
+                    command = slashMenuCommand,
+                    selectedIndex = slashMenuIndex,
+                    onSelect = { cmd ->
+                        if (cmd.argOptions.isNotEmpty()) {
+                            onValueChange("/${cmd.name} ")
+                        } else {
+                            onValueChange("/${cmd.name}")
+                            if (cmd.executeLocal) {
+                                onExecuteCommand(cmd, "")
+                            } else {
+                                onSend()
+                            }
+                        }
+                        slashMenuOpen = false
+                    },
+                    onSelectArg = { arg ->
+                        val cmd = slashMenuCommand ?: return@SlashCommandMenu
+                        onValueChange("/${cmd.name} $arg ")
+                        slashMenuOpen = false
+                    },
+                    onDismiss = { slashMenuOpen = false }
+                )
+            }
+            
+            // 附件预览
+            if (attachments.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    attachments.forEach { att ->
+                        AttachmentPreview(
+                            attachment = att,
+                            onRemove = { onRemoveAttachment(att.id) }
+                        )
+                    }
+                }
+            }
+            
+            // 输入行
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1523,16 +1229,17 @@ private fun MessageInputBar(
             ) {
                 // 附件按钮
                 IconButton(
-                    onClick = onAttach,
+                    onClick = { imagePickerLauncher.launch("image/*") },
                     enabled = enabled
                 ) {
                     Icon(
                         imageVector = Icons.Default.AttachFile,
                         contentDescription = "添加附件",
                         tint = if (enabled) {
-                            MaterialTheme.colorScheme.primary
+                            if (attachments.isNotEmpty()) DesignTokens.accent
+                            else DesignTokens.muted
                         } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                            DesignTokens.muted.copy(alpha = 0.5f)
                         }
                     )
                 }
@@ -1569,9 +1276,9 @@ private fun MessageInputBar(
                         },
                         contentDescription = "发送",
                         tint = if (enabled && (value.isNotBlank() || attachments.isNotEmpty())) {
-                            MaterialTheme.colorScheme.primary
+                            DesignTokens.accent
                         } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                            DesignTokens.muted
                         }
                     )
                 }
@@ -1581,155 +1288,73 @@ private fun MessageInputBar(
 }
 
 /**
- * 斜杠命令补全菜单
+ * 附件预览组件
  */
 @Composable
-private fun SlashCommandCompletionMenu(
-    commands: List<com.openclaw.clawchat.ui.components.SlashCommandDef>,
-    selectedIndex: Int,
-    onSelect: (Int) -> Unit,
-    onApply: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        LazyColumn(
-            modifier = Modifier.heightIn(max = 200.dp),
-            contentPadding = PaddingValues(vertical = 4.dp)
-        ) {
-            items(commands.size) { index ->
-                val command = commands[index]
-                val isSelected = index == selectedIndex
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onApply() }
-                        .background(
-                            if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                            else Color.Transparent
-                        )
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "/${command.name}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    command.args?.let { args ->
-                        Text(
-                            text = " $args",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(
-                        text = command.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * 附件预览行
- */
-@Composable
-private fun AttachmentPreviewRow(
-    attachments: List<AttachmentUi>,
-    onRemove: (String) -> Unit
-) {
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(attachments, key = { it.id }) { attachment ->
-            AttachmentPreviewChip(
-                attachment = attachment,
-                onRemove = { onRemove(attachment.id) }
-            )
-        }
-    }
-}
-
-/**
- * 附件预览卡片
- */
-@Composable
-private fun AttachmentPreviewChip(
-    attachment: AttachmentUi,
+private fun AttachmentPreview(
+    attachment: ChatAttachment,
     onRemove: () -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+    Box(
+        modifier = Modifier
+            .size(64.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(DesignTokens.bgHover)
     ) {
-        Box(modifier = Modifier.size(80.dp)) {
-            // 图片预览 - 使用 Coil 异步加载
-            if (attachment.dataUrl != null) {
-                coil.compose.AsyncImage(
-                    model = attachment.dataUrl,
-                    contentDescription = attachment.fileName ?: "附件",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                )
-            } else {
-                // 加载中
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
-                    )
-                }
+        // 显示图片
+        android.util.Log.d("SessionScreen", "Loading image: mimeType=${attachment.mimeType}, dataUrl len=${attachment.dataUrl.length}")
+        
+        // 使用 Coil 或手动解码
+        val bitmap = remember(attachment.dataUrl) {
+            try {
+                val base64Match = Regex("base64,(.+)").find(attachment.dataUrl)
+                val base64 = base64Match?.groupValues?.get(1) ?: attachment.dataUrl
+                val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            } catch (e: Exception) {
+                android.util.Log.e("SessionScreen", "Failed to decode image: ${e.message}")
+                null
             }
-            
-            // 删除按钮
-            IconButton(
-                onClick = onRemove,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .size(24.dp)
+        }
+        
+        if (bitmap != null) {
+            androidx.compose.foundation.Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = "附件预览",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+        } else {
+            // 显示占位符
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "移除",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(16.dp)
+                    imageVector = Icons.Default.Image,
+                    contentDescription = null,
+                    tint = DesignTokens.muted
                 )
             }
-            
-            // 文件名
-            if (!attachment.fileName.isNullOrBlank()) {
-                Text(
-                    text = attachment.fileName.take(10) + if (attachment.fileName.length > 10) "..." else "",
-                    style = MaterialTheme.typography.labelSmall,
-                    maxLines = 1,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
+        }
+        
+        // 删除按钮
+        IconButton(
+            onClick = onRemove,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(24.dp)
+                .background(
+                    color = DesignTokens.dangerSubtle,
+                    shape = CircleShape
                 )
-            }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "移除附件",
+                modifier = Modifier.size(14.dp),
+                tint = DesignTokens.danger
+            )
         }
     }
 }
@@ -1747,7 +1372,7 @@ private fun ErrorSnackbar(
             .fillMaxWidth()
             .padding(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
+            containerColor = DesignTokens.dangerSubtle
         ),
         onClick = onDismiss
     ) {
@@ -1761,20 +1386,20 @@ private fun ErrorSnackbar(
             Icon(
                 imageVector = Icons.Default.Error,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onErrorContainer
+                tint = DesignTokens.danger
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer,
+                color = DesignTokens.danger,
                 modifier = Modifier.weight(1f)
             )
             IconButton(onClick = onDismiss) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "关闭",
-                    tint = MaterialTheme.colorScheme.onErrorContainer
+                    tint = DesignTokens.danger
                 )
             }
         }
@@ -1782,16 +1407,159 @@ private fun ErrorSnackbar(
 }
 
 /**
- * 格式化时间戳
+ * 斜杠命令菜单
  */
-private fun formatTimestamp(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
+@Composable
+private fun SlashCommandMenu(
+    items: List<SlashCommandDef>,
+    argItems: List<String>,
+    command: SlashCommandDef?,
+    selectedIndex: Int,
+    onSelect: (SlashCommandDef) -> Unit,
+    onSelectArg: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = DesignTokens.bgHover.copy(alpha = 0.95f)
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        LazyColumn(
+            modifier = Modifier.heightIn(max = 240.dp),
+            contentPadding = PaddingValues(vertical = 4.dp)
+        ) {
+            // 命令列表
+            if (items.isNotEmpty()) {
+                items(items, key = { it.name }) { cmd ->
+                    SlashCommandMenuItem(
+                        command = cmd,
+                        isSelected = items.indexOf(cmd) == selectedIndex,
+                        onClick = { onSelect(cmd) }
+                    )
+                }
+            }
+            
+            // 参数列表
+            if (argItems.isNotEmpty() && command != null) {
+                item {
+                    Text(
+                        text = command.description,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = DesignTokens.muted,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
+                items(argItems, key = { it }) { arg ->
+                    SlashCommandArgItem(
+                        arg = arg,
+                        isSelected = argItems.indexOf(arg) == selectedIndex,
+                        onClick = { onSelectArg(arg) }
+                    )
+                }
+            }
+        }
+    }
+}
 
-    return when {
-        diff < 60_000 -> "刚刚"
-        diff < 3600_000 -> "${diff / 60_000}分钟前"
-        diff < 86400_000 -> "${diff / 3600_000}小时前"
-        else -> SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(timestamp))
+/**
+ * 斜杠命令菜单项
+ */
+@Composable
+private fun SlashCommandMenuItem(
+    command: SlashCommandDef,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val categoryLabel = when (command.category) {
+        SlashCommandCategory.SESSION -> "会话"
+        SlashCommandCategory.MODEL -> "模型"
+        SlashCommandCategory.AGENTS -> "Agents"
+        SlashCommandCategory.TOOLS -> "工具"
+    }
+    
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        color = if (isSelected) {
+            DesignTokens.accent.copy(alpha = 0.1f)
+        } else {
+            Color.Transparent
+        }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 命令名称
+            Text(
+                text = "/${command.name}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = DesignTokens.accent,
+                modifier = Modifier.width(80.dp)
+            )
+            
+            // 描述
+            Text(
+                text = command.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = DesignTokens.text,
+                modifier = Modifier.weight(1f)
+            )
+            
+            // 分类标签
+            Text(
+                text = categoryLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = DesignTokens.muted
+            )
+        }
+    }
+}
+
+/**
+ * 斜杠命令参数项
+ */
+@Composable
+private fun SlashCommandArgItem(
+    arg: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        color = if (isSelected) {
+            DesignTokens.accent.copy(alpha = 0.1f)
+        } else {
+            Color.Transparent
+        }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = DesignTokens.accent
+            )
+            Text(
+                text = arg,
+                style = MaterialTheme.typography.bodyMedium,
+                color = DesignTokens.text
+            )
+        }
     }
 }
