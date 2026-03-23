@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.openclaw.clawchat.ui.theme.DesignTokens
-import com.openclaw.clawchat.ui.state.ChatAttachment
+import com.openclaw.clawchat.ui.state.AttachmentUi
 import com.openclaw.clawchat.ui.state.SLASH_COMMANDS
 import com.openclaw.clawchat.ui.state.SlashCommandCategory
 import com.openclaw.clawchat.ui.state.SlashCommandDef
@@ -52,8 +52,8 @@ fun ChatInputBar(
     onSend: () -> Unit,
     enabled: Boolean,
     focusRequester: FocusRequester,
-    attachments: List<ChatAttachment> = emptyList(),
-    onAddAttachment: (ChatAttachment) -> Unit = {},
+    attachments: List<AttachmentUi> = emptyList(),
+    onAddAttachment: (AttachmentUi) -> Unit = {},
     onRemoveAttachment: (String) -> Unit = {},
     onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> }
 ) {
@@ -125,21 +125,12 @@ fun ChatInputBar(
     ) { uri: Uri? ->
         uri?.let {
             try {
-                val inputStream = context.contentResolver.openInputStream(uri)
-                val bytes = inputStream?.readBytes()
-                inputStream?.close()
-                
-                if (bytes != null) {
-                    val mimeType = context.contentResolver.getType(uri) ?: "image/png"
-                    val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
-                    val dataUrl = "data:$mimeType;base64,$base64"
-                    
-                    onAddAttachment(ChatAttachment(
-                        id = "att-${System.currentTimeMillis()}-${(0..9999).random()}",
-                        dataUrl = dataUrl,
-                        mimeType = mimeType
-                    ))
-                }
+                val mimeType = context.contentResolver.getType(uri) ?: "image/png"
+                onAddAttachment(AttachmentUi(
+                    id = "att-${System.currentTimeMillis()}-${(0..9999).random()}",
+                    uri = uri,
+                    mimeType = mimeType
+                ))
             } catch (e: Exception) {
                 android.util.Log.e("ChatInputBar", "Failed to read image: ${e.message}")
             }
@@ -279,22 +270,37 @@ fun ChatInputBar(
  */
 @Composable
 private fun AttachmentPreview(
-    attachment: ChatAttachment,
+    attachment: AttachmentUi,
     onRemove: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
     Box(
         modifier = Modifier
             .size(64.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(DesignTokens.bgHover)
     ) {
-        // 解码图片
-        val bitmap = remember(attachment.dataUrl) {
+        // 解码图片 - 优先从 dataUrl，否则从 uri
+        val bitmap = remember(attachment.dataUrl, attachment.uri) {
             try {
-                val base64Match = Regex("base64,(.+)").find(attachment.dataUrl)
-                val base64 = base64Match?.groupValues?.get(1) ?: attachment.dataUrl
-                val bytes = Base64.decode(base64, Base64.DEFAULT)
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                // 先尝试从 dataUrl 加载
+                if (!attachment.dataUrl.isNullOrBlank()) {
+                    val base64Match = Regex("base64,(.+)").find(attachment.dataUrl)
+                    val base64 = base64Match?.groupValues?.get(1) ?: attachment.dataUrl
+                    val bytes = Base64.decode(base64, Base64.DEFAULT)
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                } else {
+                    // 从 uri 加载
+                    val inputStream = context.contentResolver.openInputStream(attachment.uri)
+                    val bytes = inputStream?.readBytes()
+                    inputStream?.close()
+                    if (bytes != null) {
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    } else {
+                        null
+                    }
+                }
             } catch (e: Exception) {
                 null
             }

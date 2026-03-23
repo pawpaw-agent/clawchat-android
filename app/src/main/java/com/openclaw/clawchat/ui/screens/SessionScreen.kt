@@ -43,6 +43,7 @@ import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.state.SessionEvent
 import com.openclaw.clawchat.ui.state.StreamSegment
+import com.openclaw.clawchat.ui.state.AttachmentUi
 import com.openclaw.clawchat.ui.screens.session.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import kotlinx.serialization.json.JsonObject
@@ -1069,8 +1070,8 @@ private fun MessageInputBar(
     onSend: () -> Unit,
     enabled: Boolean,
     focusRequester: FocusRequester,
-    attachments: List<ChatAttachment> = emptyList(),
-    onAddAttachment: (ChatAttachment) -> Unit = {},
+    attachments: List<AttachmentUi> = emptyList(),
+    onAddAttachment: (AttachmentUi) -> Unit = {},
     onRemoveAttachment: (String) -> Unit = {},
     onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> }
 ) {
@@ -1141,24 +1142,14 @@ private fun MessageInputBar(
     val imagePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
     ) { uri: android.net.Uri? ->
-        uri?.let { 
-            // 读取图片并转换为 base64
+        uri?.let {
             try {
-                val inputStream = context.contentResolver.openInputStream(uri)
-                val bytes = inputStream?.readBytes()
-                inputStream?.close()
-                
-                if (bytes != null) {
-                    val mimeType = context.contentResolver.getType(uri) ?: "image/png"
-                    val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-                    val dataUrl = "data:$mimeType;base64,$base64"
-                    
-                    onAddAttachment(ChatAttachment(
-                        id = "att-${System.currentTimeMillis()}-${(0..9999).random()}",
-                        dataUrl = dataUrl,
-                        mimeType = mimeType
-                    ))
-                }
+                val mimeType = context.contentResolver.getType(uri) ?: "image/png"
+                onAddAttachment(AttachmentUi(
+                    id = "att-${System.currentTimeMillis()}-${(0..9999).random()}",
+                    uri = uri,
+                    mimeType = mimeType
+                ))
             } catch (e: Exception) {
                 android.util.Log.e("SessionScreen", "Failed to read image: ${e.message}")
             }
@@ -1292,25 +1283,37 @@ private fun MessageInputBar(
  */
 @Composable
 private fun AttachmentPreview(
-    attachment: ChatAttachment,
+    attachment: AttachmentUi,
     onRemove: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
     Box(
         modifier = Modifier
             .size(64.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(DesignTokens.bgHover)
     ) {
-        // 显示图片
-        android.util.Log.d("SessionScreen", "Loading image: mimeType=${attachment.mimeType}, dataUrl len=${attachment.dataUrl.length}")
-        
-        // 使用 Coil 或手动解码
-        val bitmap = remember(attachment.dataUrl) {
+        // 显示图片 - 优先从 dataUrl，否则从 uri
+        val bitmap = remember(attachment.dataUrl, attachment.uri) {
             try {
-                val base64Match = Regex("base64,(.+)").find(attachment.dataUrl)
-                val base64 = base64Match?.groupValues?.get(1) ?: attachment.dataUrl
-                val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
-                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                // 先尝试从 dataUrl 加载
+                if (!attachment.dataUrl.isNullOrBlank()) {
+                    val base64Match = Regex("base64,(.+)").find(attachment.dataUrl)
+                    val base64 = base64Match?.groupValues?.get(1) ?: attachment.dataUrl
+                    val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                    android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                } else {
+                    // 从 uri 加载
+                    val inputStream = context.contentResolver.openInputStream(attachment.uri)
+                    val bytes = inputStream?.readBytes()
+                    inputStream?.close()
+                    if (bytes != null) {
+                        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    } else {
+                        null
+                    }
+                }
             } catch (e: Exception) {
                 android.util.Log.e("SessionScreen", "Failed to decode image: ${e.message}")
                 null
