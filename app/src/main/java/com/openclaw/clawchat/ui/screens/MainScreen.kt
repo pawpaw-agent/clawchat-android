@@ -24,7 +24,6 @@ import com.openclaw.clawchat.ui.theme.TerminalColors
 import com.openclaw.clawchat.ui.components.PulseIndicator
 import com.openclaw.clawchat.ui.components.PulseState
 import com.openclaw.clawchat.ui.components.PulseIndicator
-import com.openclaw.clawchat.ui.components.PulseState
 import java.text.SimpleDateFormat
 import java.util.*
 

@@ -37,36 +37,25 @@ fun PulseIndicator(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     
-    val animDuration = remember(state) {
-        when (state) {
-            PulseState.Idle -> 0
-            PulseState.Active -> 1500
-            PulseState.Thinking -> 800
-            PulseState.Streaming -> 500
-        }
+    val animDuration = when (state) {
+        PulseState.Idle -> 0
+        PulseState.Active -> 1500
+        PulseState.Thinking -> 800
+        PulseState.Streaming -> 500
     }
     
-    val targetScale = remember(state) {
-        when (state) {
-            PulseState.Idle -> 1f
-            PulseState.Active -> 1f
-            PulseState.Thinking -> 1.2f
-            PulseState.Streaming -> 1.3f
-        }
+    val targetScale = when (state) {
+        PulseState.Idle -> 1f
+        PulseState.Active -> 1f
+        PulseState.Thinking -> 1.2f
+        PulseState.Streaming -> 1.3f
     }
     
-    val targetAlpha = remember(state) {
-        when (state) {
-            PulseState.Idle -> 0.3f
-            PulseState.Active -> 1f
-            PulseState.Thinking -> 1f
-            PulseState.Streaming -> 1f
-        }
-    }
-    
-    val animatedHeight by infiniteTransition.animateDp(
+    // 使用 animateValue 配合 Dp.VectorConverter
+    val animatedHeight by infiniteTransition.animateValue(
         initialValue = 24.dp,
         targetValue = 48.dp * targetScale,
+        typeConverter = Dp.VectorConverter,
         animationSpec = infiniteRepeatable(
             animation = tween(animDuration, easing = EaseInOutSine),
             repeatMode = RepeatMode.Reverse
@@ -76,7 +65,7 @@ fun PulseIndicator(
     
     val animatedAlpha by infiniteTransition.animateFloat(
         initialValue = 0.6f,
-        targetValue = targetAlpha,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(animDuration / 2, easing = EaseInOutSine),
             repeatMode = RepeatMode.Reverse
