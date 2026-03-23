@@ -23,7 +23,6 @@ import com.openclaw.clawchat.ui.screens.settings.SettingsScreen
 import com.openclaw.clawchat.ui.theme.TerminalColors
 import com.openclaw.clawchat.ui.components.PulseIndicator
 import com.openclaw.clawchat.ui.components.PulseState
-import com.openclaw.clawchat.ui.components.PulseIndicator
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -371,39 +370,62 @@ private fun SessionItem(
     onSelect: () -> Unit,
     onSessionLongPress: (() -> Unit)? = null
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .let {
-                if (onSessionLongPress != null) {
-                    it.combinedClickable(
-                        onClick = onSelect,
-                        onLongClick = onSessionLongPress
-                    )
-                } else {
-                    it.clickable(onClick = onSelect)
-                }
-            },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.background
-            }
-        )
+    // 根据会话状态确定脉冲状态
+    val pulseState = remember(session.id, session.lastActivityAt) {
+        // 简单逻辑：最近5分钟活跃
+        val fiveMinutesAgo = System.currentTimeMillis() - 5 * 60 * 1000
+        if (session.lastActivityAt > fiveMinutesAgo) {
+            PulseState.Active
+        } else {
+            PulseState.Idle
+        }
+    }
+    
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
+        // 左侧脉冲指示器
+        PulseIndicator(
+            state = pulseState,
+            modifier = Modifier.padding(end = 8.dp),
+            color = if (isSelected) TerminalColors.PulseAmber else TerminalColors.StatusIdle
+        )
+        
+        Card(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // 会话名称（显示 agent 名称）
-            Text(
-                text = session.getDisplayName(),
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                .weight(1f)
+                .let {
+                    if (onSessionLongPress != null) {
+                        it.combinedClickable(
+                            onClick = onSelect,
+                            onLongClick = onSessionLongPress
+                        )
+                    } else {
+                        it.clickable(onClick = onSelect)
+                    }
+                },
+            colors = CardDefaults.cardColors(
+                containerColor = if (isSelected) {
+                    TerminalColors.TerminalSurface
+                } else {
+                    TerminalColors.TerminalBg
+                }
             )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                // 会话名称（显示 agent 名称）
+                Text(
+                    text = session.getDisplayName(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TerminalColors.TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             
             Spacer(modifier = Modifier.height(4.dp))
             
@@ -431,11 +453,12 @@ private fun SessionItem(
                 Text(
                     text = session.lastMessage,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = TerminalColors.TextSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
+        }
         }
     }
 }
