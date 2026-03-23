@@ -100,7 +100,7 @@ fun MessageContentCard(
                     .widthIn(max = 320.dp)
                     .clip(RoundedCornerShape(DesignTokens.radiusLg))
                     .background(
-                        if (isUser) MaterialTheme.colorScheme.primarySubtle else MaterialTheme.colorScheme.surface
+                        if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
                     )
                     .then(
                         // 流式输出时添加脉冲边框
@@ -228,7 +228,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
         modifier = Modifier
             .widthIn(max = 280.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.backgroundHover)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         if (bitmap != null) {
             androidx.compose.foundation.Image(
@@ -248,7 +248,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
 fun SystemMessageItem(message: MessageUi) {
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.backgroundHover
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         shape = RoundedCornerShape(DesignTokens.radiusMd)
     ) {
@@ -284,9 +284,9 @@ fun ToolDetailCard(toolCard: ToolCard) {
     val hasContent = toolCard.args?.isNotBlank() == true || toolCard.result?.isNotBlank() == true
     
     val backgroundColor = when {
-        toolCard.isError -> MaterialTheme.colorScheme.errorSubtle
+        toolCard.isError -> MaterialTheme.colorScheme.errorContainer
         toolCard.kind == ToolCardKind.CALL -> Color(0x1AE53935)
-        else -> MaterialTheme.colorScheme.backgroundHover
+        else -> MaterialTheme.colorScheme.surfaceVariant
     }
     
     Card(
@@ -314,7 +314,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                     tint = when {
                         toolCard.isError -> MaterialTheme.colorScheme.error
                         toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.primary
-                        else -> MaterialTheme.colorScheme.primary2
+                        else -> MaterialTheme.colorScheme.tertiary
                     }
                 )
                 Spacer(modifier = Modifier.width(DesignTokens.space2))
@@ -343,7 +343,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                                 text = args,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = MaterialTheme.colorScheme.onBackgroundXs,
+                                fontSize = MaterialTheme.colorScheme.onSurfaceVariant,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -358,7 +358,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                                 text = result,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = MaterialTheme.colorScheme.onBackgroundXs,
+                                fontSize = MaterialTheme.colorScheme.onSurfaceVariant,
                                 color = if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
                             )
                         }
@@ -460,9 +460,9 @@ fun ToolTag(
         onClick = onClick,
         shape = RoundedCornerShape(DesignTokens.radiusSm),
         color = if (isError) {
-            MaterialTheme.colorScheme.errorSubtle
+            MaterialTheme.colorScheme.errorContainer
         } else {
-            MaterialTheme.colorScheme.backgroundHover
+            MaterialTheme.colorScheme.surfaceVariant
         },
         modifier = Modifier.height(DesignTokens.space6)  // 24dp
     ) {
@@ -487,7 +487,7 @@ fun ToolTag(
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelSmall,
-                fontSize = MaterialTheme.colorScheme.onBackgroundSm,
+                fontSize = MaterialTheme.colorScheme.onSurfaceVariant,
                 color = if (isError) {
                     MaterialTheme.colorScheme.error
                 } else {

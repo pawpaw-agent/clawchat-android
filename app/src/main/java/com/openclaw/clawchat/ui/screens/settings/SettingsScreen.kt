@@ -202,7 +202,7 @@ private fun SettingsSection(
         
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.backgroundHover.copy(alpha = 0.5f)
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ) {
             Column(content = content)
         }
