@@ -195,8 +195,8 @@ class SessionViewModel @Inject constructor(
             // 解析 args 和 output
             val args = if (phase == "start") data["args"]?.jsonObject else null
             val output = when (phase) {
-                "update" -> formatToolOutput(data["partialResult"])
-                "result" -> formatToolOutput(data["result"])
+                "update" -> MessageHandler.formatToolOutput(data["partialResult"])
+                "result" -> MessageHandler.formatToolOutput(data["result"])
                 else -> null
             }
             
@@ -280,10 +280,10 @@ class SessionViewModel @Inject constructor(
      */
     private fun handleDelta(runId: String, msgObj: JsonObject?, sessionId: String) {
         // 提取文本
-        val text = extractText(msgObj?.get("content"))
+        val text = MessageHandler.extractText(msgObj?.get("content"))
         Log.d(TAG, "=== handleDelta: runId=$runId, text=${text?.take(50)}, textLen=${text?.length}")
         
-        if (!text.isNullOrBlank() && !isSilentReplyStream(text)) {
+        if (!text.isNullOrBlank() && !MessageHandler.isSilentReplyStream(text)) {
             _state.update { currentState ->
                 val current = currentState.chatStream ?: ""
                 // webchat: if (!current || next.length >= current.length)
@@ -303,14 +303,14 @@ class SessionViewModel @Inject constructor(
      * 处理 final（1:1 复刻 webchat）
      */
     private fun handleFinal(runId: String, msgObj: JsonObject?, sessionId: String) {
-        val finalMessage = normalizeFinalAssistantMessage(msgObj)
+        val finalMessage = MessageHandler.normalizeFinalAssistantMessage(msgObj)
         Log.d(TAG, "=== handleFinal: runId=$runId, finalMessage=${finalMessage != null}, chatStream=${_state.value.chatStream?.take(30)}")
         
         _state.update { currentState ->
-            val newMessages = if (finalMessage != null && !isAssistantSilentReply(finalMessage)) {
+            val newMessages = if (finalMessage != null && !MessageHandler.isAssistantSilentReply(finalMessage)) {
                 Log.d(TAG, "=== handleFinal: adding finalMessage to chatMessages")
                 currentState.chatMessages + finalMessage
-            } else if (!currentState.chatStream.isNullOrBlank() && !isSilentReplyStream(currentState.chatStream)) {
+            } else if (!currentState.chatStream.isNullOrBlank() && !MessageHandler.isSilentReplyStream(currentState.chatStream)) {
                 Log.d(TAG, "=== handleFinal: adding chatStream to chatMessages")
                 currentState.chatMessages + MessageUi(
                     id = runId,
@@ -384,130 +384,8 @@ class SessionViewModel @Inject constructor(
     }
 
     // ─────────────────────────────────────────────────────────────
-    // 工具函数（1:1 复刻 webchat）
+    // 数据库存储
     // ─────────────────────────────────────────────────────────────
-
-    private fun formatToolOutput(value: JsonElement?): String? {
-        if (value == null) return null
-        
-        return when (value) {
-            is JsonPrimitive -> {
-                val content = value.content.trim()
-                if (content.isNotBlank() && content.length > 120000) {
-                    "${content.take(120000)}\n\n… truncated (${content.length} chars, showing first 120000)."
-                } else if (content.isNotBlank()) {
-                    content
-                } else null
-            }
-            is JsonObject -> {
-                val text = extractText(value["content"] ?: value)
-                if (!text.isNullOrBlank()) {
-                    if (text.length > 120000) {
-                        "${text.take(120000)}\n\n… truncated (${text.length} chars, showing first 120000)."
-                    } else text
-                } else {
-                    try { json.encodeToString(JsonObject.serializer(), value) } catch (_: Exception) { null }
-                }
-            }
-            is JsonArray -> {
-                val text = extractText(value)
-                if (!text.isNullOrBlank()) text else null
-            }
-            else -> null
-        }
-    }
-
-    private fun extractText(content: JsonElement?): String? {
-        if (content == null) return null
-        
-        return when (content) {
-            is JsonPrimitive -> content.content.trim().takeIf { it.isNotBlank() }
-            is JsonArray -> {
-                content.mapNotNull { item ->
-                    if (item is JsonObject) {
-                        val type = item["type"]?.jsonPrimitive?.content
-                        if (type == "text") item["text"]?.jsonPrimitive?.content
-                        else null
-                    } else null
-                }.joinToString("\n").trim().takeIf { it.isNotBlank() }
-            }
-            is JsonObject -> {
-                if (content.containsKey("text")) {
-                    content["text"]?.jsonPrimitive?.content?.trim()?.takeIf { it.isNotBlank() }
-                } else null
-            }
-            else -> null
-        }
-    }
-
-    private fun normalizeFinalAssistantMessage(msgObj: JsonObject?): MessageUi? {
-        if (msgObj == null) return null
-        
-        val role = msgObj["role"]?.jsonPrimitive?.content?.lowercase() ?: "assistant"
-        if (role != "assistant") return null
-        
-        val content = parseContent(msgObj["content"])
-        if (content.isEmpty()) {
-            // 允许只有 text 字段
-            val text = msgObj["text"]?.jsonPrimitive?.content ?: return null
-            return MessageUi(
-                id = msgObj["id"]?.jsonPrimitive?.content ?: UUID.randomUUID().toString(),
-                content = listOf(MessageContentItem.Text(text)),
-                role = MessageRole.ASSISTANT,
-                timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
-            )
-        }
-        
-        return MessageUi(
-            id = msgObj["id"]?.jsonPrimitive?.content ?: UUID.randomUUID().toString(),
-            content = content,
-            role = MessageRole.ASSISTANT,
-            timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
-        )
-    }
-
-    private fun parseContent(content: JsonElement?): List<MessageContentItem> {
-        if (content == null) return emptyList()
-        
-        return when (content) {
-            is JsonPrimitive -> listOf(MessageContentItem.Text(content.content))
-            is JsonArray -> content.mapNotNull { part ->
-                if (part is JsonObject) {
-                    val type = part["type"]?.jsonPrimitive?.content?.lowercase()?.replace("_", "")
-                    when (type) {
-                        "text" -> MessageContentItem.Text(part["text"]?.jsonPrimitive?.content ?: "")
-                        "toolcall", "tooluse" -> MessageContentItem.ToolCall(
-                            id = part["id"]?.jsonPrimitive?.content,
-                            name = part["name"]?.jsonPrimitive?.content ?: "tool",
-                            args = part["arguments"]?.jsonObject ?: part["args"]?.jsonObject
-                        )
-                        "toolresult" -> MessageContentItem.ToolResult(
-                            toolCallId = part["toolCallId"]?.jsonPrimitive?.content ?: part["tool_call_id"]?.jsonPrimitive?.content,
-                            name = part["name"]?.jsonPrimitive?.content,
-                            text = part["text"]?.jsonPrimitive?.content ?: ""
-                        )
-                        "image", "imageurl" -> MessageContentItem.Image(
-                            url = part["url"]?.jsonPrimitive?.content ?: part["imageUrl"]?.jsonPrimitive?.content
-                        )
-                        else -> null
-                    }
-                } else if (part is JsonPrimitive) {
-                    MessageContentItem.Text(part.content)
-                } else null
-            }
-            else -> emptyList()
-        }
-    }
-
-    private fun isSilentReplyStream(text: String): Boolean {
-        return text.trim().matches(Regex("^\\s*NO_REPLY\\s*$", RegexOption.IGNORE_CASE))
-    }
-
-    private fun isAssistantSilentReply(message: MessageUi): Boolean {
-        if (message.role != MessageRole.ASSISTANT) return false
-        val text = message.getTextContent()
-        return isSilentReplyStream(text)
-    }
 
     private fun saveMessageToDb(runId: String, msgObj: JsonObject?, sessionId: String) {
         viewModelScope.launch {
