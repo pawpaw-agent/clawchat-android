@@ -343,7 +343,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                                 text = args,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = DesignTokens.textXs,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -358,7 +358,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                                 text = result,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = DesignTokens.textXs,
                                 color = if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
                             )
                         }
@@ -487,7 +487,7 @@ fun ToolTag(
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelSmall,
-                fontSize = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = DesignTokens.textXs,
                 color = if (isError) {
                     MaterialTheme.colorScheme.error
                 } else {
