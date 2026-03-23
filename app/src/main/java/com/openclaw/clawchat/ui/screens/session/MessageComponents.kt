@@ -76,8 +76,8 @@ fun MessageContentCard(
     // 流式输出脉冲动画
     val infiniteTransition = rememberInfiniteTransition(label = "streaming")
     val borderColor by infiniteTransition.animateColor(
-        initialValue = DesignTokens.border,
-        targetValue = DesignTokens.accent,
+        initialValue = MaterialTheme.colorScheme.outline,
+        targetValue = MaterialTheme.colorScheme.primary,
         animationSpec = infiniteRepeatable(
             animation = tween(1500, easing = EaseInOut),
             repeatMode = RepeatMode.Reverse
@@ -100,7 +100,7 @@ fun MessageContentCard(
                     .widthIn(max = 320.dp)
                     .clip(RoundedCornerShape(DesignTokens.radiusLg))
                     .background(
-                        if (isUser) DesignTokens.accentSubtle else DesignTokens.card
+                        if (isUser) MaterialTheme.colorScheme.primarySubtle else MaterialTheme.colorScheme.surface
                     )
                     .then(
                         // 流式输出时添加脉冲边框
@@ -127,7 +127,7 @@ fun MessageContentCard(
                     content = textContent,
                     modifier = Modifier.fillMaxWidth(),
                     fontSize = textSize,
-                    textColor = DesignTokens.text
+                    textColor = MaterialTheme.colorScheme.onBackground
                 )
                 
                 // 流式输出光标
@@ -143,7 +143,7 @@ fun MessageContentCard(
                     )
                     Text(
                         text = "▌",
-                        color = DesignTokens.accent.copy(alpha = cursorAlpha),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = cursorAlpha),
                         fontSize = textSize,
                         modifier = Modifier.offset(x = 2.dp)
                     )
@@ -197,7 +197,7 @@ fun MessageActionDropdownMenu(
         )
         HorizontalDivider()
         DropdownMenuItem(
-            text = { Text("删除", color = DesignTokens.danger) },
+            text = { Text("删除", color = MaterialTheme.colorScheme.error) },
             onClick = onDelete
         )
         if (!isUser) {
@@ -228,7 +228,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
         modifier = Modifier
             .widthIn(max = 280.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(DesignTokens.bgHover)
+            .background(MaterialTheme.colorScheme.backgroundHover)
     ) {
         if (bitmap != null) {
             androidx.compose.foundation.Image(
@@ -248,7 +248,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
 fun SystemMessageItem(message: MessageUi) {
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = DesignTokens.bgHover
+            containerColor = MaterialTheme.colorScheme.backgroundHover
         ),
         shape = RoundedCornerShape(DesignTokens.radiusMd)
     ) {
@@ -262,13 +262,13 @@ fun SystemMessageItem(message: MessageUi) {
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
-                tint = DesignTokens.accent
+                tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = message.getTextContent(),
                 style = MaterialTheme.typography.bodySmall,
-                color = DesignTokens.muted
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -284,9 +284,9 @@ fun ToolDetailCard(toolCard: ToolCard) {
     val hasContent = toolCard.args?.isNotBlank() == true || toolCard.result?.isNotBlank() == true
     
     val backgroundColor = when {
-        toolCard.isError -> DesignTokens.dangerSubtle
+        toolCard.isError -> MaterialTheme.colorScheme.errorSubtle
         toolCard.kind == ToolCardKind.CALL -> Color(0x1AE53935)
-        else -> DesignTokens.bgHover
+        else -> MaterialTheme.colorScheme.backgroundHover
     }
     
     Card(
@@ -312,9 +312,9 @@ fun ToolDetailCard(toolCard: ToolCard) {
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
                     tint = when {
-                        toolCard.isError -> DesignTokens.danger
-                        toolCard.kind == ToolCardKind.CALL -> DesignTokens.accent
-                        else -> DesignTokens.accent2
+                        toolCard.isError -> MaterialTheme.colorScheme.error
+                        toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.primary2
                     }
                 )
                 Spacer(modifier = Modifier.width(DesignTokens.space2))
@@ -322,14 +322,14 @@ fun ToolDetailCard(toolCard: ToolCard) {
                     text = toolCard.name.replaceFirstChar { it.uppercase() },
                     modifier = Modifier.weight(1f),
                     fontWeight = FontWeight.Bold,
-                    color = DesignTokens.text
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 if (hasContent) {
                     Icon(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = DesignTokens.muted
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -343,23 +343,23 @@ fun ToolDetailCard(toolCard: ToolCard) {
                                 text = args,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = DesignTokens.textXs,
-                                color = DesignTokens.muted
+                                fontSize = MaterialTheme.colorScheme.onBackgroundXs,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         toolCard.result?.takeIf { it.isNotBlank() }?.let { result ->
                             if (toolCard.args?.isNotBlank() == true) {
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = DesignTokens.space1),
-                                    color = DesignTokens.border
+                                    color = MaterialTheme.colorScheme.outline
                                 )
                             }
                             Text(
                                 text = result,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = DesignTokens.textXs,
-                                color = if (toolCard.isError) DesignTokens.danger else DesignTokens.text
+                                fontSize = MaterialTheme.colorScheme.onBackgroundXs,
+                                color = if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
                             )
                         }
                     }
@@ -460,9 +460,9 @@ fun ToolTag(
         onClick = onClick,
         shape = RoundedCornerShape(DesignTokens.radiusSm),
         color = if (isError) {
-            DesignTokens.dangerSubtle
+            MaterialTheme.colorScheme.errorSubtle
         } else {
-            DesignTokens.bgHover
+            MaterialTheme.colorScheme.backgroundHover
         },
         modifier = Modifier.height(DesignTokens.space6)  // 24dp
     ) {
@@ -479,26 +479,26 @@ fun ToolTag(
                 contentDescription = null,
                 modifier = Modifier.size(12.dp),
                 tint = if (isError) {
-                    DesignTokens.danger
+                    MaterialTheme.colorScheme.error
                 } else {
-                    DesignTokens.accent
+                    MaterialTheme.colorScheme.primary
                 }
             )
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelSmall,
-                fontSize = DesignTokens.textSm,
+                fontSize = MaterialTheme.colorScheme.onBackgroundSm,
                 color = if (isError) {
-                    DesignTokens.danger
+                    MaterialTheme.colorScheme.error
                 } else {
-                    DesignTokens.text
+                    MaterialTheme.colorScheme.onBackground
                 }
             )
             Icon(
                 imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                 contentDescription = null,
                 modifier = Modifier.size(12.dp),
-                tint = DesignTokens.muted
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -544,7 +544,7 @@ fun TypingIndicator(
     Row(
         modifier = modifier
             .background(
-                DesignTokens.card,
+                MaterialTheme.colorScheme.surface,
                 RoundedCornerShape(DesignTokens.radiusLg)
             )
             .padding(horizontal = DesignTokens.space3, vertical = DesignTokens.space2),
@@ -568,7 +568,7 @@ fun TypingIndicator(
                     .size(8.dp)
                     .scale(scale)
                     .background(
-                        DesignTokens.accent,
+                        MaterialTheme.colorScheme.primary,
                         CircleShape
                     )
             )
@@ -597,7 +597,7 @@ fun StreamingIndicator(
     Row(
         modifier = modifier
             .background(
-                DesignTokens.card,
+                MaterialTheme.colorScheme.surface,
                 RoundedCornerShape(DesignTokens.radiusLg)
             )
             .padding(horizontal = DesignTokens.space3, vertical = DesignTokens.space2),
@@ -619,7 +619,7 @@ fun StreamingIndicator(
             modifier = Modifier
                 .size(6.dp)
                 .background(
-                    DesignTokens.accent.copy(alpha = pulseAlpha),
+                    MaterialTheme.colorScheme.primary.copy(alpha = pulseAlpha),
                     CircleShape
                 )
         )
@@ -627,7 +627,7 @@ fun StreamingIndicator(
         Text(
             text = "$text${".".repeat(dots)}",
             style = MaterialTheme.typography.bodySmall,
-            color = DesignTokens.muted
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

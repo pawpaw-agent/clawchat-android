@@ -124,7 +124,7 @@ fun SessionScreen(
     }
 
     Scaffold(
-        modifier = Modifier.background(DesignTokens.bg),
+        modifier = Modifier.background(MaterialTheme.colorScheme.background),
         topBar = {
             SessionTopAppBar(
                 connectionStatus = state.connectionStatus,
@@ -137,12 +137,12 @@ fun SessionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(DesignTokens.bg)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(DesignTokens.bg)
+                    .background(MaterialTheme.colorScheme.background)
             ) {
                 // 消息列表区域
                 Box(
@@ -281,8 +281,8 @@ private fun ScrollToBottomButton(
     SmallFloatingActionButton(
         onClick = onClick,
         modifier = modifier.size(44.dp),
-        containerColor = DesignTokens.accentSubtle,
-        contentColor = DesignTokens.accent,
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.primary,
         shape = CircleShape,
         elevation = FloatingActionButtonDefaults.elevation(
             defaultElevation = DesignTokens.elevationSm
@@ -319,9 +319,9 @@ private fun SessionTopAppBar(
             ConnectionStatusIcon(connectionStatus)
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = DesignTokens.bgElevated,
-            titleContentColor = DesignTokens.textStrong,
-            actionIconContentColor = DesignTokens.text
+            containerColor = MaterialTheme.colorScheme.backgroundElevated,
+            titleContentColor = MaterialTheme.colorScheme.onBackgroundStrong,
+            actionIconContentColor = MaterialTheme.colorScheme.onBackground
         )
     )
 }
@@ -332,11 +332,11 @@ private fun SessionTopAppBar(
 @Composable
 private fun ConnectionStatusIcon(status: ConnectionStatus) {
     val (icon, color) = when (status) {
-        is ConnectionStatus.Connected -> Icons.Default.CheckCircle to DesignTokens.ok
-        is ConnectionStatus.Connecting, is ConnectionStatus.Disconnecting -> Icons.Default.Sync to DesignTokens.warn
-        is ConnectionStatus.Disconnected -> Icons.Default.CloudOff to DesignTokens.muted
-        is ConnectionStatus.Error -> Icons.Default.Error to DesignTokens.danger
-        else -> Icons.Default.Help to DesignTokens.muted
+        is ConnectionStatus.Connected -> Icons.Default.CheckCircle to MaterialTheme.colorScheme.tertiary
+        is ConnectionStatus.Connecting, is ConnectionStatus.Disconnecting -> Icons.Default.Sync to MaterialTheme.colorScheme.error
+        is ConnectionStatus.Disconnected -> Icons.Default.CloudOff to MaterialTheme.colorScheme.onSurfaceVariant
+        is ConnectionStatus.Error -> Icons.Default.Error to MaterialTheme.colorScheme.error
+        else -> Icons.Default.Help to MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Icon(
@@ -364,7 +364,7 @@ private fun EmptySessionContent(
             imageVector = Icons.Default.ChatBubbleOutline,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = DesignTokens.muted
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -377,7 +377,7 @@ private fun EmptySessionContent(
                 else -> "准备中..."
             },
             style = MaterialTheme.typography.titleMedium,
-            color = DesignTokens.text
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -389,7 +389,7 @@ private fun EmptySessionContent(
                 "请等待连接完成"
             },
             style = MaterialTheme.typography.bodyMedium,
-            color = DesignTokens.muted
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -665,7 +665,7 @@ private fun MessageGroupItem(
                 Text(
                     text = formatTimestamp(msg.timestamp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = DesignTokens.muted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
@@ -675,7 +675,7 @@ private fun MessageGroupItem(
                 CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp,
-                    color = DesignTokens.accent
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -725,7 +725,7 @@ private fun ToolMessageCard(message: MessageUi) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = DesignTokens.bgHover.copy(alpha = 0.3f)
+                        containerColor = MaterialTheme.colorScheme.backgroundHover.copy(alpha = 0.3f)
                     )
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
@@ -734,7 +734,7 @@ private fun ToolMessageCard(message: MessageUi) {
                                 text = textContent,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                color = DesignTokens.muted
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -758,9 +758,9 @@ private fun InlineToolCard(toolCard: ToolCard) {
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (toolCard.isError) {
-                DesignTokens.dangerSubtle.copy(alpha = 0.2f)
+                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
             } else {
-                DesignTokens.bgHover.copy(alpha = 0.3f)
+                MaterialTheme.colorScheme.backgroundHover.copy(alpha = 0.3f)
             }
         )
     ) {
@@ -778,9 +778,9 @@ private fun InlineToolCard(toolCard: ToolCard) {
                     imageVector = getToolIcon(toolCard.name),
                     contentDescription = null,
                     tint = if (toolCard.isError) {
-                        DesignTokens.danger
+                        MaterialTheme.colorScheme.error
                     } else {
-                        DesignTokens.accent
+                        MaterialTheme.colorScheme.primary
                     },
                     modifier = Modifier.size(16.dp)
                 )
@@ -789,7 +789,7 @@ private fun InlineToolCard(toolCard: ToolCard) {
                 Text(
                     text = getToolDisplayName(toolCard.name),
                     style = MaterialTheme.typography.labelMedium,
-                    color = DesignTokens.text,
+                    color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.weight(1f)
                 )
                 
@@ -801,12 +801,12 @@ private fun InlineToolCard(toolCard: ToolCard) {
                     Text(
                         text = "View",
                         style = MaterialTheme.typography.labelSmall,
-                        color = DesignTokens.muted
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Icon(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = null,
-                        tint = DesignTokens.muted,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -816,7 +816,7 @@ private fun InlineToolCard(toolCard: ToolCard) {
             if (expanded) {
                 Divider(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    color = DesignTokens.border.copy(alpha = 0.2f)
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                 )
                 
                 Column(
@@ -831,7 +831,7 @@ private fun InlineToolCard(toolCard: ToolCard) {
                                 text = "with ${toolCard.args}",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                color = DesignTokens.muted
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -848,9 +848,9 @@ private fun InlineToolCard(toolCard: ToolCard) {
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
                                 color = if (toolCard.isError) {
-                                    DesignTokens.danger
+                                    MaterialTheme.colorScheme.error
                                 } else {
-                                    DesignTokens.muted
+                                    MaterialTheme.colorScheme.onSurfaceVariant
                                 }
                             )
                         }
@@ -931,12 +931,12 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
             Text(
                 text = message.getTextContent(),
                 style = MaterialTheme.typography.bodySmall,
-                color = DesignTokens.muted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
-                    .background(DesignTokens.bgHover)
+                    .background(MaterialTheme.colorScheme.backgroundHover)
                     .padding(8.dp)
             )
         }
@@ -964,9 +964,9 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
                     )
                     .background(
                         if (isUser) {
-                            DesignTokens.accent
+                            MaterialTheme.colorScheme.primary
                         } else {
-                            DesignTokens.card
+                            MaterialTheme.colorScheme.surface
                         }
                     )
                     .padding(12.dp)
@@ -992,7 +992,7 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
                             Text(
                                 text = textContent,
                                 fontSize = textSize,
-                                color = DesignTokens.textStrong
+                                color = MaterialTheme.colorScheme.onBackgroundStrong
                             )
                         }
                     }
@@ -1004,9 +1004,9 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
                                 .size(16.dp),
                             strokeWidth = 2.dp,
                             color = if (isUser) {
-                                DesignTokens.textStrong
+                                MaterialTheme.colorScheme.onBackgroundStrong
                             } else {
-                                DesignTokens.text
+                                MaterialTheme.colorScheme.onBackground
                             }
                         )
                     }
@@ -1018,7 +1018,7 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
             Text(
                 text = formatTimestamp(message.timestamp),
                 style = MaterialTheme.typography.labelSmall,
-                color = DesignTokens.muted
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -1037,7 +1037,7 @@ private fun LoadingOverlay() {
     ) {
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = DesignTokens.bgHover.copy(alpha = 0.9f)
+                containerColor = MaterialTheme.colorScheme.backgroundHover.copy(alpha = 0.9f)
             )
         ) {
             Row(
@@ -1052,7 +1052,7 @@ private fun LoadingOverlay() {
                 Text(
                     text = "助手正在思考...",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = DesignTokens.muted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -1158,7 +1158,7 @@ private fun MessageInputBar(
     
     Surface(
         shadowElevation = 8.dp,
-        color = DesignTokens.bg
+        color = MaterialTheme.colorScheme.background
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
@@ -1227,10 +1227,10 @@ private fun MessageInputBar(
                         imageVector = Icons.Default.AttachFile,
                         contentDescription = "添加附件",
                         tint = if (enabled) {
-                            if (attachments.isNotEmpty()) DesignTokens.accent
-                            else DesignTokens.muted
+                            if (attachments.isNotEmpty()) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
                         } else {
-                            DesignTokens.muted.copy(alpha = 0.5f)
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         }
                     )
                 }
@@ -1267,9 +1267,9 @@ private fun MessageInputBar(
                         },
                         contentDescription = "发送",
                         tint = if (enabled && (value.isNotBlank() || attachments.isNotEmpty())) {
-                            DesignTokens.accent
+                            MaterialTheme.colorScheme.primary
                         } else {
-                            DesignTokens.muted
+                            MaterialTheme.colorScheme.onSurfaceVariant
                         }
                     )
                 }
@@ -1292,7 +1292,7 @@ private fun AttachmentPreview(
         modifier = Modifier
             .size(64.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(DesignTokens.bgHover)
+            .background(MaterialTheme.colorScheme.backgroundHover)
     ) {
         // 显示图片 - 优先从 dataUrl，否则从 uri
         val bitmap = remember(attachment.dataUrl, attachment.uri) {
@@ -1336,7 +1336,7 @@ private fun AttachmentPreview(
                 Icon(
                     imageVector = Icons.Default.Image,
                     contentDescription = null,
-                    tint = DesignTokens.muted
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -1348,7 +1348,7 @@ private fun AttachmentPreview(
                 .align(Alignment.TopEnd)
                 .size(24.dp)
                 .background(
-                    color = DesignTokens.dangerSubtle,
+                    color = MaterialTheme.colorScheme.errorContainer,
                     shape = CircleShape
                 )
         ) {
@@ -1356,7 +1356,7 @@ private fun AttachmentPreview(
                 imageVector = Icons.Default.Close,
                 contentDescription = "移除附件",
                 modifier = Modifier.size(14.dp),
-                tint = DesignTokens.danger
+                tint = MaterialTheme.colorScheme.error
             )
         }
     }
@@ -1375,7 +1375,7 @@ private fun ErrorSnackbar(
             .fillMaxWidth()
             .padding(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = DesignTokens.dangerSubtle
+            containerColor = MaterialTheme.colorScheme.errorContainer
         ),
         onClick = onDismiss
     ) {
@@ -1389,20 +1389,20 @@ private fun ErrorSnackbar(
             Icon(
                 imageVector = Icons.Default.Error,
                 contentDescription = null,
-                tint = DesignTokens.danger
+                tint = MaterialTheme.colorScheme.error
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = DesignTokens.danger,
+                color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.weight(1f)
             )
             IconButton(onClick = onDismiss) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "关闭",
-                    tint = DesignTokens.danger
+                    tint = MaterialTheme.colorScheme.error
                 )
             }
         }
@@ -1427,7 +1427,7 @@ private fun SlashCommandMenu(
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = DesignTokens.bgHover.copy(alpha = 0.95f)
+            containerColor = MaterialTheme.colorScheme.backgroundHover.copy(alpha = 0.95f)
         ),
         shape = RoundedCornerShape(8.dp)
     ) {
@@ -1452,7 +1452,7 @@ private fun SlashCommandMenu(
                     Text(
                         text = command.description,
                         style = MaterialTheme.typography.labelSmall,
-                        color = DesignTokens.muted,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     )
                 }
@@ -1488,7 +1488,7 @@ private fun SlashCommandMenuItem(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         color = if (isSelected) {
-            DesignTokens.accent.copy(alpha = 0.1f)
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
         } else {
             Color.Transparent
         }
@@ -1505,7 +1505,7 @@ private fun SlashCommandMenuItem(
                 text = "/${command.name}",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = DesignTokens.accent,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.width(80.dp)
             )
             
@@ -1513,7 +1513,7 @@ private fun SlashCommandMenuItem(
             Text(
                 text = command.description,
                 style = MaterialTheme.typography.bodySmall,
-                color = DesignTokens.text,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f)
             )
             
@@ -1521,7 +1521,7 @@ private fun SlashCommandMenuItem(
             Text(
                 text = categoryLabel,
                 style = MaterialTheme.typography.labelSmall,
-                color = DesignTokens.muted
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -1540,7 +1540,7 @@ private fun SlashCommandArgItem(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         color = if (isSelected) {
-            DesignTokens.accent.copy(alpha = 0.1f)
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
         } else {
             Color.Transparent
         }
@@ -1556,12 +1556,12 @@ private fun SlashCommandArgItem(
                 imageVector = Icons.Default.KeyboardArrowRight,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
-                tint = DesignTokens.accent
+                tint = MaterialTheme.colorScheme.primary
             )
             Text(
                 text = arg,
                 style = MaterialTheme.typography.bodyMedium,
-                color = DesignTokens.text
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     }

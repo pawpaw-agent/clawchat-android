@@ -57,8 +57,8 @@ fun SettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DesignTokens.bg,
-                    titleContentColor = DesignTokens.text
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
@@ -196,13 +196,13 @@ private fun SettingsSection(
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
-            color = DesignTokens.accent,
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
         
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = DesignTokens.bgHover.copy(alpha = 0.5f)
+            color = MaterialTheme.colorScheme.backgroundHover.copy(alpha = 0.5f)
         ) {
             Column(content = content)
         }
@@ -303,8 +303,8 @@ private fun GatewayConfigItem(
             Icon(
                 imageVector = if (connectionStatus.isConnected) Icons.Default.Cloud else Icons.Outlined.Cloud,
                 contentDescription = null,
-                tint = if (connectionStatus.isConnected) DesignTokens.accent
-                       else DesignTokens.muted
+                tint = if (connectionStatus.isConnected) MaterialTheme.colorScheme.primary
+                       else MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         modifier = Modifier
@@ -331,7 +331,7 @@ private fun DisconnectItem(
             Icon(
                 imageVector = Icons.Default.Power,
                 contentDescription = null,
-                tint = DesignTokens.danger
+                tint = MaterialTheme.colorScheme.error
             )
         },
         modifier = Modifier
@@ -358,7 +358,7 @@ private fun ToggleSettingItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = DesignTokens.muted
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         trailingContent = {
@@ -388,14 +388,14 @@ private fun ClickableSettingItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = DesignTokens.muted
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         trailingContent = {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "进入",
-                tint = DesignTokens.muted
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         modifier = Modifier
@@ -423,14 +423,14 @@ private fun FontSizeSettingItem(
             Icon(
                 imageVector = Icons.Outlined.TextFields,
                 contentDescription = null,
-                tint = DesignTokens.muted
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         trailingContent = {
             Text(
                 text = currentSize.displayName,
                 style = MaterialTheme.typography.bodyMedium,
-                color = DesignTokens.accent
+                color = MaterialTheme.colorScheme.primary
             )
         },
         modifier = Modifier
@@ -493,7 +493,7 @@ private fun FontSizeDialog(
                                 FontSize.MEDIUM -> MaterialTheme.typography.bodyMedium
                                 FontSize.LARGE -> MaterialTheme.typography.bodyLarge
                             },
-                            color = DesignTokens.muted
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -675,7 +675,7 @@ private fun GatewayConfigDialog(
                 Text(
                     text = "ws://${host.ifEmpty { "host" }}:${port.ifEmpty { "port" }}/ws",
                     style = MaterialTheme.typography.bodySmall,
-                    color = DesignTokens.muted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         },
@@ -717,7 +717,7 @@ private fun AboutDialog(
                 Icons.Default.Info,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = DesignTokens.accent
+                tint = MaterialTheme.colorScheme.primary
             )
         },
         title = { Text("ClawChat") },
