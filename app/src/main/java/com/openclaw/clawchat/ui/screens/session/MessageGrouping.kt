@@ -3,6 +3,9 @@ package com.openclaw.clawchat.ui.screens.session
 import com.openclaw.clawchat.ui.state.MessageContentItem
 import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
+import com.openclaw.clawchat.ui.state.ToolCard
+import com.openclaw.clawchat.ui.state.ToolCardKind
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * 格式化时间戳
@@ -19,6 +22,49 @@ fun formatTimestamp(timestamp: Long): String {
             val sdf = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
             sdf.format(java.util.Date(timestamp))
         }
+    }
+}
+
+/**
+ * 配对工具卡片
+ * 将消息中的工具调用和结果配对
+ */
+fun pairToolCards(message: MessageUi): List<ToolCard> {
+    val calls = message.getToolCalls()
+    val results = message.getToolResults()
+    
+    if (calls.isEmpty() && results.isEmpty()) {
+        val textContent = message.getTextContent()
+        return if (textContent.isNotBlank()) {
+            listOf(ToolCard(
+                kind = ToolCardKind.RESULT,
+                name = "output",
+                args = null,
+                result = textContent,
+                isError = false,
+                callId = null
+            ))
+        } else {
+            emptyList()
+        }
+    }
+    
+    return calls.map { call ->
+        val matchingResult = results.find { it.toolCallId == call.id }
+        val displayArgs = if (call.name == "exec" && call.args != null) {
+            call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
+        } else {
+            call.args?.toString()
+        }
+        
+        ToolCard(
+            kind = if (matchingResult != null) ToolCardKind.RESULT else ToolCardKind.CALL,
+            name = call.name,
+            args = displayArgs,
+            result = matchingResult?.text,
+            isError = matchingResult?.isError ?: false,
+            callId = call.id
+        )
     }
 }
 

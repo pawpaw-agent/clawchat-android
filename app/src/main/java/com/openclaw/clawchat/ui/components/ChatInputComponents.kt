@@ -35,10 +35,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import com.openclaw.clawchat.ui.state.AttachmentUi
-import com.openclaw.clawchat.ui.state.SLASH_COMMANDS
-import com.openclaw.clawchat.ui.state.SlashCommandCategory
-import com.openclaw.clawchat.ui.state.SlashCommandDef
-import com.openclaw.clawchat.ui.state.getSlashCommandCompletions
+import com.openclaw.clawchat.ui.components.SLASH_COMMANDS
+import com.openclaw.clawchat.ui.components.SlashCommandCategory
+import com.openclaw.clawchat.ui.components.SlashCommandDef
+import com.openclaw.clawchat.ui.components.getSlashCommandCompletions
 
 /**
  * 聊天输入栏

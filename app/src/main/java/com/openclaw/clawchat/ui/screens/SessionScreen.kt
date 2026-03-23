@@ -40,6 +40,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
+import com.openclaw.clawchat.ui.components.SLASH_COMMANDS
+import com.openclaw.clawchat.ui.components.SlashCommandCategory
+import com.openclaw.clawchat.ui.components.SlashCommandDef
+import com.openclaw.clawchat.ui.components.getSlashCommandCompletions
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.state.SessionEvent
 import com.openclaw.clawchat.ui.state.StreamSegment

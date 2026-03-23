@@ -424,7 +424,7 @@ fun ToolTagsRow(toolCards: List<ToolCard>) {
             modifier = Modifier.fillMaxWidth()
         ) {
             toolCards.forEachIndexed { index, card ->
-                ToolTag(
+                ToolTagExpanding(
                     name = when (card.kind) {
                         ToolCardKind.CALL -> card.name
                         ToolCardKind.RESULT -> "output"
@@ -446,11 +446,11 @@ fun ToolTagsRow(toolCards: List<ToolCard>) {
 }
 
 /**
- * 单个工具标签
+ * 单个工具标签（可展开版本）
  * 对应 WebChat chat-tool-tag
  */
 @Composable
-fun ToolTag(
+fun ToolTagExpanding(
     name: String,
     isError: Boolean,
     isExpanded: Boolean,

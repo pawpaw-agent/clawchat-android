@@ -28,9 +28,9 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.UUID
 import javax.inject.Inject
-import com.openclaw.clawchat.ui.state.SLASH_COMMANDS
-import com.openclaw.clawchat.ui.state.SlashCommandCategory
-import com.openclaw.clawchat.ui.state.SlashCommandDef
+import com.openclaw.clawchat.ui.components.SLASH_COMMANDS
+import com.openclaw.clawchat.ui.components.SlashCommandCategory
+import com.openclaw.clawchat.ui.components.SlashCommandDef
 
 /**
  * 会话界面 ViewModel（1:1 复刻 webchat）
