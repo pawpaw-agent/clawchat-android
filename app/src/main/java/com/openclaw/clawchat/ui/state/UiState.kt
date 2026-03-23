@@ -183,7 +183,9 @@ data class SettingsUiState(
     val dndEnabled: Boolean = false,
     val appVersion: String = "1.0.0",
     // 字体大小设置（统一）
-    val messageFontSize: FontSize = FontSize.MEDIUM
+    val messageFontSize: FontSize = FontSize.MEDIUM,
+    // 主题模式设置
+    val themeMode: com.openclaw.clawchat.data.ThemeMode = com.openclaw.clawchat.data.ThemeMode.SYSTEM
 )
 
 enum class ConnectMode {

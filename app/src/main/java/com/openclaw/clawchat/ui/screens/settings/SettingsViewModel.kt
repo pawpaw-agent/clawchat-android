@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.data.FontSize
+import com.openclaw.clawchat.data.ThemeMode
 import com.openclaw.clawchat.data.UserPreferences
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
@@ -37,6 +38,7 @@ class SettingsViewModel @Inject constructor(
         loadCurrentConfig()
         observeConnectionState()
         observeFontSettings()
+        observeThemeSettings()
     }
 
     private fun loadCurrentConfig() {
@@ -82,6 +84,14 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    private fun observeThemeSettings() {
+        viewModelScope.launch {
+            userPreferences.themeMode.collect { themeMode ->
+                _uiState.update { it.copy(themeMode = themeMode) }
+            }
+        }
+    }
+
     fun updateGatewayConfig(config: GatewayConfigInput) {
         _uiState.update {
             it.copy(
@@ -115,6 +125,12 @@ class SettingsViewModel @Inject constructor(
     fun setMessageFontSize(fontSize: FontSize) {
         viewModelScope.launch {
             userPreferences.setMessageFontSize(fontSize)
+        }
+    }
+
+    fun setThemeMode(themeMode: ThemeMode) {
+        viewModelScope.launch {
+            userPreferences.setThemeMode(themeMode)
         }
     }
 }

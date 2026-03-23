@@ -21,10 +21,25 @@ enum class FontSize(val value: Int, val displayName: String) {
     SMALL(0, "小"),
     MEDIUM(1, "中"),
     LARGE(2, "大");
-    
+
     companion object {
         fun fromValue(value: Int): FontSize {
             return values().find { it.value == value } ?: MEDIUM
+        }
+    }
+}
+
+/**
+ * 主题模式枚举
+ */
+enum class ThemeMode(val value: Int, val displayName: String) {
+    LIGHT(0, "浅色"),
+    DARK(1, "深色"),
+    SYSTEM(2, "跟随系统");
+
+    companion object {
+        fun fromValue(value: Int): ThemeMode {
+            return values().find { it.value == value } ?: SYSTEM
         }
     }
 }
@@ -38,6 +53,7 @@ class UserPreferences @Inject constructor(
 ) {
     companion object {
         private val MESSAGE_FONT_SIZE = intPreferencesKey("message_font_size")
+        private val THEME_MODE = intPreferencesKey("theme_mode")
     }
     
     /**
@@ -55,6 +71,24 @@ class UserPreferences @Inject constructor(
     suspend fun setMessageFontSize(fontSize: FontSize) {
         context.dataStore.edit { preferences ->
             preferences[MESSAGE_FONT_SIZE] = fontSize.value
+        }
+    }
+
+    /**
+     * 主题模式
+     */
+    val themeMode: Flow<ThemeMode> = context.dataStore.data
+        .map { preferences ->
+            val value = preferences[THEME_MODE] ?: ThemeMode.SYSTEM.value
+            ThemeMode.fromValue(value)
+        }
+
+    /**
+     * 设置主题模式
+     */
+    suspend fun setThemeMode(themeMode: ThemeMode) {
+        context.dataStore.edit { preferences ->
+            preferences[THEME_MODE] = themeMode.value
         }
     }
 }

@@ -4,9 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -16,12 +18,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.openclaw.clawchat.data.ThemeMode
 import com.openclaw.clawchat.ui.screens.PairingScreen
 import com.openclaw.clawchat.ui.screens.MainScreen
 import com.openclaw.clawchat.ui.screens.SessionScreen
 import com.openclaw.clawchat.ui.theme.ClawChatTheme
 import com.openclaw.clawchat.ui.state.MainViewModel
 import com.openclaw.clawchat.ui.state.PairingViewModel
+import com.openclaw.clawchat.ui.state.ThemeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -43,7 +47,19 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            ClawChatTheme {
+            // 主题 ViewModel
+            val themeViewModel: ThemeViewModel = hiltViewModel()
+            val themeMode by themeViewModel.themeMode.collectAsStateWithLifecycle()
+            val systemDarkTheme = isSystemInDarkTheme()
+            
+            // 计算实际使用的暗色主题值
+            val darkTheme = when (themeMode) {
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+                ThemeMode.SYSTEM -> systemDarkTheme
+            }
+            
+            ClawChatTheme(darkTheme = darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

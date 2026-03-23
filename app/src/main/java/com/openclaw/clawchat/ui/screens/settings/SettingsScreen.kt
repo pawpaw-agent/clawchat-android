@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.openclaw.clawchat.data.FontSize
+import com.openclaw.clawchat.data.ThemeMode
 import com.openclaw.clawchat.ui.state.ConnectionStatusUi
 import com.openclaw.clawchat.ui.state.GatewayConfigInput
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
@@ -84,6 +85,13 @@ fun SettingsScreen(
 
             // 显示设置区域
             SettingsSection(title = "显示") {
+                ThemeModeSettingItem(
+                    title = "主题模式",
+                    subtitle = "选择应用主题外观",
+                    currentMode = state.themeMode,
+                    onModeChange = { viewModel.setThemeMode(it) }
+                )
+
                 FontSizeSettingItem(
                     title = "消息字体大小",
                     subtitle = "调整所有消息的字体大小",
@@ -453,7 +461,7 @@ private fun FontSizeDialog(
     onConfirm: (FontSize) -> Unit
 ) {
     var selectedSize by remember { mutableStateOf(currentSize) }
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
@@ -492,6 +500,118 @@ private fun FontSizeDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedSize) }) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+/**
+ * 主题模式设置项
+ */
+@Composable
+private fun ThemeModeSettingItem(
+    title: String,
+    subtitle: String,
+    currentMode: ThemeMode,
+    onModeChange: (ThemeMode) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = { Text(subtitle) },
+        leadingContent = {
+            Icon(
+                imageVector = when (currentMode) {
+                    ThemeMode.LIGHT -> Icons.Outlined.LightMode
+                    ThemeMode.DARK -> Icons.Outlined.DarkMode
+                    ThemeMode.SYSTEM -> Icons.Outlined.SettingsBrightness
+                },
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        trailingContent = {
+            Text(
+                text = currentMode.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showDialog = true }
+    )
+
+    if (showDialog) {
+        ThemeModeDialog(
+            title = title,
+            currentMode = currentMode,
+            onDismiss = { showDialog = false },
+            onConfirm = { mode ->
+                onModeChange(mode)
+                showDialog = false
+            }
+        )
+    }
+}
+
+/**
+ * 主题模式选择对话框
+ */
+@Composable
+private fun ThemeModeDialog(
+    title: String,
+    currentMode: ThemeMode,
+    onDismiss: () -> Unit,
+    onConfirm: (ThemeMode) -> Unit
+) {
+    var selectedMode by remember { mutableStateOf(currentMode) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                ThemeMode.values().forEach { mode ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedMode = mode }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedMode == mode,
+                            onClick = { selectedMode = mode }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = when (mode) {
+                                ThemeMode.LIGHT -> Icons.Outlined.LightMode
+                                ThemeMode.DARK -> Icons.Outlined.DarkMode
+                                ThemeMode.SYSTEM -> Icons.Outlined.SettingsBrightness
+                            },
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = mode.displayName,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selectedMode) }) {
                 Text("确定")
             }
         },
