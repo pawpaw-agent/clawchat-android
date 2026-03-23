@@ -75,11 +75,12 @@ fun ChatInputBar(
             val cmdName = argMatch.groupValues[1].lowercase()
             val argFilter = argMatch.groupValues[2].lowercase()
             val cmd = SLASH_COMMANDS.find { it.name == cmdName }
-            if (cmd != null && cmd.argOptions.isNotEmpty()) {
+            val argOpts = cmd?.argOptions ?: emptyList()
+            if (cmd != null && argOpts.isNotEmpty()) {
                 val filtered = if (argFilter.isNotEmpty()) {
-                    cmd.argOptions.filter { it.lowercase().startsWith(argFilter) }
+                    argOpts.filter { it.lowercase().startsWith(argFilter) }
                 } else {
-                    cmd.argOptions
+                    argOpts
                 }
                 if (filtered.isNotEmpty()) {
                     slashMenuMode = "args"
@@ -150,7 +151,8 @@ fun ChatInputBar(
                     command = slashMenuCommand,
                     selectedIndex = slashMenuIndex,
                     onSelect = { cmd ->
-                        if (cmd.argOptions.isNotEmpty()) {
+                        val argOpts = cmd.argOptions ?: emptyList()
+                        if (argOpts.isNotEmpty()) {
                             onValueChange("/${cmd.name} ")
                         } else {
                             onValueChange("/${cmd.name}")
