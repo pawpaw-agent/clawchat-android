@@ -370,48 +370,6 @@ fun ToolDetailCard(toolCard: ToolCard) {
 }
 
 /**
- * 配对工具卡片
- */
-fun pairToolCards(message: MessageUi): List<ToolCard> {
-    val calls = message.getToolCalls()
-    val results = message.getToolResults()
-    
-    if (calls.isEmpty() && results.isEmpty()) {
-        val textContent = message.getTextContent()
-        return if (textContent.isNotBlank()) {
-            listOf(ToolCard(
-                kind = ToolCardKind.RESULT,
-                name = "output",
-                args = null,
-                result = textContent,
-                isError = false,
-                callId = null
-            ))
-        } else {
-            emptyList()
-        }
-    }
-    
-    return calls.map { call ->
-        val matchingResult = results.find { it.toolCallId == call.id }
-        val displayArgs = if (call.name == "exec" && call.args != null) {
-            call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
-        } else {
-            call.args?.toString()
-        }
-        
-        ToolCard(
-            kind = if (matchingResult != null) ToolCardKind.RESULT else ToolCardKind.CALL,
-            name = call.name,
-            args = displayArgs,
-            result = matchingResult?.text,
-            isError = matchingResult?.isError ?: false,
-            callId = call.id
-        )
-    }
-}
-
-/**
  * 工具标签行
  */
 @Composable
