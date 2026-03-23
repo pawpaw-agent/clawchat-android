@@ -187,3 +187,64 @@ val Typography = androidx.compose.material3.Typography(
     labelMedium = LabelMedium,
     labelSmall = LabelSmall
 )
+
+/**
+ * TerminalFlow 深色主题配色
+ */
+private val TerminalDarkColorScheme = darkColorScheme(
+    primary = TerminalColors.PulseAmber,
+    onPrimary = TerminalColors.TerminalBlack,
+    primaryContainer = TerminalColors.PulseAmberMuted,
+    onPrimaryContainer = TerminalColors.PulseAmberBright,
+    
+    secondary = TerminalColors.TextCode,
+    onSecondary = TerminalColors.TerminalBlack,
+    secondaryContainer = TerminalColors.BubbleUser,
+    onSecondaryContainer = TerminalColors.TextPrimary,
+    
+    tertiary = TerminalColors.StatusActive,
+    onTertiary = TerminalColors.TerminalBlack,
+    
+    background = TerminalColors.TerminalBg,
+    onBackground = TerminalColors.TextPrimary,
+    surface = TerminalColors.TerminalSurface,
+    onSurface = TerminalColors.TextPrimary,
+    surfaceVariant = TerminalColors.TerminalElevated,
+    onSurfaceVariant = TerminalColors.TextSecondary,
+    
+    error = TerminalColors.StatusError,
+    onError = Color.White,
+    errorContainer = TerminalColors.StatusError.copy(alpha = 0.2f),
+    onErrorContainer = TerminalColors.StatusError,
+    
+    outline = TerminalColors.Border,
+    outlineVariant = TerminalColors.BorderStrong
+)
+
+/**
+ * TerminalFlow 主题
+ * 终端美学 + 琥珀色强调
+ */
+@Composable
+fun TerminalFlowTheme(
+    darkTheme: Boolean = true,
+    dynamicColor: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    val colorScheme = TerminalDarkColorScheme
+    
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = TerminalColors.TerminalBg.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+        }
+    }
+    
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = androidx.compose.material3.Typography(),
+        content = content
+    )
+}

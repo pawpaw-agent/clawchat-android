@@ -58,3 +58,57 @@ val DarkMessageBubbleSystem = Color(0xFF1E293B)
 val LightMessageBubbleUser = Color(0xFF3B82F6)
 val LightMessageBubbleAssistant = Color(0xFFF1F5F9)
 val LightMessageBubbleSystem = Color(0xFFE2E8F0)
+
+// ==================== TerminalFlow 主题颜色 ====================
+/**
+ * TerminalFlow 颜色系统
+ * 琥珀色终端美学配色
+ */
+object TerminalColors {
+    // 背景层级
+    val TerminalBlack = Color(0xFF0A0A0B)      // 最深背景
+    val TerminalBg = Color(0xFF0E1015)         // 主背景
+    val TerminalSurface = Color(0xFF161920)    // 表面
+    val TerminalElevated = Color(0xFF1E2028)   // 浮层
+    
+    // 强调色 (琥珀色系)
+    val PulseAmber = Color(0xFFF59E0B)         // 主强调色
+    val PulseAmberGlow = Color(0x33F59E0B)     // 发光效果
+    val PulseAmberMuted = Color(0xFF92400E)    // 暗淡
+    val PulseAmberBright = Color(0xFFFBBF24)   // 亮色
+    
+    // 文字颜色
+    val TextPrimary = Color(0xFFF4F4F5)        // 主文字
+    val TextSecondary = Color(0xFFA1A1AA)      // 次要文字
+    val TextMuted = Color(0xFF71717A)          // 暗淡文字
+    val TextCode = Color(0xFF22D3EE)           // 代码文字
+    
+    // 状态颜色
+    val StatusActive = Color(0xFF22C55E)
+    val StatusWarning = Color(0xFFEAB308)
+    val StatusError = Color(0xFFEF4444)
+    val StatusIdle = Color(0xFF6B7280)
+    
+    // 消息气泡颜色
+    val BubbleUser = Color(0xFF1E3A5F)
+    val BubbleUserBorder = Color(0xFF2563EB)
+    val BubbleAssistant = Color(0xFF1A1D24)
+    val BubbleAssistantBorder = Color(0xFF2D3748)
+    val BubbleSystem = Color(0xFF1F2937)
+    
+    // 工具调用颜色
+    val ToolCardBg = Color(0xFF1A1F2E)
+    val ToolCardBorder = Color(0xFF2D3748)
+    val ToolRunning = Color(0xFFF59E0B)
+    val ToolSuccess = Color(0xFF22C55E)
+    val ToolError = Color(0xFFEF4444)
+    
+    // 边框
+    val Border = Color(0xFF1E2028)
+    val BorderStrong = Color(0xFF2E3040)
+    val Divider = Color(0xFF1A1D24)
+    
+    // 其他
+    val Overlay = Color(0x80000000)
+    val Ripple = Color(0x1AF59E0B)
+}
