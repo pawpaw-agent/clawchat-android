@@ -11,6 +11,7 @@ import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +63,9 @@ class SessionViewModel @Inject constructor(
         messageRepository = messageRepository,
         onStateUpdate = { _state.update(it) }
     )
+    
+    // loadMessageHistory 的 Job（用于取消之前的加载）
+    private var loadMessagesJob: Job? = null
 
     companion object {
         private const val TAG = "SessionViewModel"
@@ -73,6 +77,11 @@ class SessionViewModel @Inject constructor(
         Log.d(TAG, "=== SessionViewModel init")
         observeConnectionState()
         observeIncomingMessages()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        _events.close()
     }
 
     private fun observeConnectionState() {
@@ -105,52 +114,50 @@ class SessionViewModel @Inject constructor(
      * 处理入站消息（1:1 复刻 webchat）
      */
     private fun handleIncomingFrame(rawJson: String) {
-        viewModelScope.launch(exceptionHandler) {
-            val sessionId = _state.value.sessionId
-            Log.d(TAG, "=== handleIncomingFrame: sessionId=$sessionId, rawJson=${rawJson.take(100)}")
+        val sessionId = _state.value.sessionId
+        Log.d(TAG, "=== handleIncomingFrame: sessionId=$sessionId, rawJson=${rawJson.take(100)}")
+        
+        if (sessionId == null) {
+            Log.w(TAG, "=== handleIncomingFrame: sessionId is null, returning")
+            return
+        }
+
+        try {
+            val obj = json.parseToJsonElement(rawJson).jsonObject
+            val type = obj["type"]?.jsonPrimitive?.content
+            val event = obj["event"]?.jsonPrimitive?.content
+            Log.d(TAG, "=== handleIncomingFrame: type=$type, event=$event")
+
+            if (type != "event") return
+
+            val payload = obj["payload"]?.jsonObject ?: return
+            val eventSessionKey = payload["sessionKey"]?.jsonPrimitive?.content
             
-            if (sessionId == null) {
-                Log.w(TAG, "=== handleIncomingFrame: sessionId is null, returning")
-                return@launch
-            }
-
-            try {
-                val obj = json.parseToJsonElement(rawJson).jsonObject
-                val type = obj["type"]?.jsonPrimitive?.content
-                val event = obj["event"]?.jsonPrimitive?.content
-                Log.d(TAG, "=== handleIncomingFrame: type=$type, event=$event")
-
-                if (type != "event") return@launch
-
-                val payload = obj["payload"]?.jsonObject ?: return@launch
-                val eventSessionKey = payload["sessionKey"]?.jsonPrimitive?.content
-                
-                // agent 事件：检查 stream 字段
-                if (event == "agent") {
-                    val stream = payload["stream"]?.jsonPrimitive?.content
-                    Log.d(TAG, "=== handleIncomingFrame: agent event, stream=$stream")
-                    if (stream != null) {
-                        if (eventSessionKey != null && eventSessionKey != sessionId) {
-                            return@launch
-                        }
-                        handleAgentEvent(payload, stream)
+            // agent 事件：检查 stream 字段
+            if (event == "agent") {
+                val stream = payload["stream"]?.jsonPrimitive?.content
+                Log.d(TAG, "=== handleIncomingFrame: agent event, stream=$stream")
+                if (stream != null) {
+                    if (eventSessionKey != null && eventSessionKey != sessionId) {
+                        return
                     }
-                    return@launch
+                    handleAgentEvent(payload, stream)
                 }
-
-                // chat 事件
-                if (event != "chat") return@launch
-                
-                val sessionKey = eventSessionKey ?: return@launch
-                Log.d(TAG, "=== handleIncomingFrame: eventSessionKey=$sessionKey, payload keys=${payload.keys}")
-
-                if (eventSessionKey != sessionId) return@launch
-
-                // 处理 chat 事件
-                handleChatEvent(payload, sessionId)
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to parse chat event: ${e.message}")
+                return
             }
+
+            // chat 事件
+            if (event != "chat") return
+            
+            val sessionKey = eventSessionKey ?: return
+            Log.d(TAG, "=== handleIncomingFrame: eventSessionKey=$sessionKey, payload keys=${payload.keys}")
+
+            if (eventSessionKey != sessionId) return
+
+            // 处理 chat 事件
+            handleChatEvent(payload, sessionId)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse chat event: ${e.message}")
         }
     }
 
@@ -416,6 +423,10 @@ class SessionViewModel @Inject constructor(
 
     fun setSessionId(sessionId: String) {
         Log.d(TAG, "=== setSessionId: $sessionId")
+        
+        // 取消之前的加载任务
+        loadMessagesJob?.cancel()
+        
         _state.update { it.copy(sessionId = sessionId) }
         loadMessageHistory(sessionId)
         
@@ -437,23 +448,28 @@ class SessionViewModel @Inject constructor(
     private fun loadMessageHistory(sessionId: String) {
         Log.d(TAG, "=== loadMessageHistory: sessionId=$sessionId")
         
-        // 从本地数据库加载
-        viewModelScope.launch {
-            messageRepository.observeMessages(sessionId).collect { messages ->
-                Log.d(TAG, "=== loadMessageHistory: local DB has ${messages.size} messages")
-                _state.update { it.copy(
-                    chatMessages = messages,
-                    // 重置工具流状态
-                    toolStreamById = emptyMap(),
-                    toolStreamOrder = emptyList(),
-                    chatToolMessages = emptyList(),
-                    chatStreamSegments = emptyList()
-                )}
-            }
-        }
+        // 取消之前的加载任务
+        loadMessagesJob?.cancel()
         
-        // 从 Gateway 加载历史消息
-        viewModelScope.launch {
+        // 合并两个协程到一个 Job 中
+        loadMessagesJob = viewModelScope.launch {
+            // 从本地数据库加载
+            launch {
+                messageRepository.observeMessages(sessionId).collect { messages ->
+                    Log.d(TAG, "=== loadMessageHistory: local DB has ${messages.size} messages")
+                    _state.update { it.copy(
+                        chatMessages = messages,
+                        // 重置工具流状态
+                        toolStreamById = emptyMap(),
+                        toolStreamOrder = emptyList(),
+                        chatToolMessages = emptyList(),
+                        chatStreamSegments = emptyList()
+                    )}
+                }
+            }
+            
+            // 从 Gateway 加载历史消息
+            launch {
             try {
                 Log.d(TAG, "=== loadMessageHistory: fetching from Gateway...")
                 val response = gateway.chatHistory(sessionId, limit = 100)
@@ -494,6 +510,7 @@ class SessionViewModel @Inject constructor(
                 Log.w(TAG, "Failed to load chat history: ${e.message}")
             }
         }
+        }  // loadMessagesJob
     }
 
     fun sendMessage(message: String) {
