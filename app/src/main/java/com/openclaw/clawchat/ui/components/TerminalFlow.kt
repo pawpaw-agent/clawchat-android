@@ -10,6 +10,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openclaw.clawchat.ui.theme.TerminalColors
@@ -32,18 +33,18 @@ fun PulseIndicator(
     state: PulseState,
     modifier: Modifier = Modifier,
     color: Color = TerminalColors.PulseAmber,
-    width: androidx.compose.ui.unit.Dp = 3.dp
+    width: Dp = 3.dp
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     
-    val (animDuration, targetScale, targetAlpha) = when (state) {
-        PulseState.Idle -> Triple(0, 1f, 0.3f)
-        PulseState.Active -> Triple(1500, 1f, 1f)
-        PulseState.Thinking -> Triple(800, 1.2f, 1f)
-        PulseState.Streaming -> Triple(500, 1.3f, 1f)
+    val (animDuration, targetScale) = when (state) {
+        PulseState.Idle -> 0 to 1f
+        PulseState.Active -> 1500 to 1f
+        PulseState.Thinking -> 800 to 1.2f
+        PulseState.Streaming -> 500 to 1.3f
     }
     
-    val height by if (state == PulseState.Idle) {
+    val height: Dp by if (state == PulseState.Idle) {
         remember { mutableStateOf(32.dp) }
     } else {
         infiniteTransition.animateDp(
@@ -57,7 +58,7 @@ fun PulseIndicator(
         )
     }
     
-    val alpha by if (state == PulseState.Idle) {
+    val alpha: Float by if (state == PulseState.Idle) {
         remember { mutableStateOf(0.3f) }
     } else {
         infiniteTransition.animateFloat(
@@ -101,11 +102,11 @@ fun PulseIndicator(
 fun StreamingCursor(
     modifier: Modifier = Modifier,
     color: Color = TerminalColors.PulseAmber,
-    fontSize: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.sp(14)
+    fontSize: androidx.compose.ui.unit.TextUnit = 14.sp
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "cursor")
     
-    val alpha by infiniteTransition.animateFloat(
+    val alpha: Float by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 0.2f,
         animationSpec = infiniteRepeatable(
@@ -140,7 +141,7 @@ fun ThinkingIndicator(
     ) {
         repeat(3) { index ->
             val delay = index * 150
-            val scale by infiniteTransition.animateFloat(
+            val scale: Float by infiniteTransition.animateFloat(
                 initialValue = 0.5f,
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(
