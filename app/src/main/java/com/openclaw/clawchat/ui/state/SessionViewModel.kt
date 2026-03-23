@@ -28,8 +28,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.UUID
 import javax.inject.Inject
-import com.openclaw.clawchat.ui.components.SLASH_COMMANDS
-import com.openclaw.clawchat.ui.components.SlashCommandCategory
 import com.openclaw.clawchat.ui.components.SlashCommandDef
 
 /**
@@ -56,6 +54,14 @@ class SessionViewModel @Inject constructor(
         Log.e(TAG, "Uncaught coroutine exception", throwable)
         _state.update { it.copy(error = throwable.message ?: "未知错误", isLoading = false, isSending = false) }
     }
+    
+    // 斜杠命令执行器
+    private val slashCommandExecutor = SlashCommandExecutor(
+        scope = viewModelScope,
+        gateway = gateway,
+        messageRepository = messageRepository,
+        onStateUpdate = { _state.update(it) }
+    )
 
     companion object {
         private const val TAG = "SessionViewModel"
@@ -600,180 +606,7 @@ class SessionViewModel @Inject constructor(
      * 执行斜杠命令
      */
     fun executeSlashCommand(command: SlashCommandDef, args: String) {
-        Log.d(TAG, "=== executeSlashCommand: ${command.name}, args=$args")
-        
-        when (command.name) {
-            "clear" -> {
-                // 清空聊天历史
-                viewModelScope.launch {
-                    val sessionId = _state.value.sessionId ?: return@launch
-                    messageRepository.clearMessages(sessionId)
-                    _state.update { it.copy(
-                        chatMessages = emptyList(),
-                        chatStream = null,
-                        chatStreamSegments = emptyList(),
-                        chatToolMessages = emptyList(),
-                        toolStreamById = emptyMap(),
-                        toolStreamOrder = emptyList(),
-                        inputText = ""
-                    )}
-                }
-            }
-            "help" -> {
-                // 显示帮助信息
-                val helpText = buildString {
-                    appendLine("## 可用命令")
-                    appendLine()
-                    SLASH_COMMANDS.groupBy { it.category }.forEach { (category, commands) ->
-                        val categoryLabel = when (category) {
-                            SlashCommandCategory.SESSION -> "会话"
-                            SlashCommandCategory.MODEL -> "模型"
-                            SlashCommandCategory.AGENTS -> "Agents"
-                            SlashCommandCategory.TOOLS -> "工具"
-                        }
-                        appendLine("### $categoryLabel")
-                        commands.forEach { cmd ->
-                            val argsHint = if (cmd.args != null) " ${cmd.args}" else ""
-                            appendLine("- `/${cmd.name}$argsHint` - ${cmd.description}")
-                        }
-                        appendLine()
-                    }
-                }
-                _state.update { it.copy(
-                    inputText = "",
-                    chatMessages = it.chatMessages + MessageUi(
-                        id = "help-${System.currentTimeMillis()}",
-                        content = listOf(MessageContentItem.Text(helpText)),
-                        role = MessageRole.ASSISTANT,
-                        timestamp = System.currentTimeMillis()
-                    )
-                )}
-            }
-            "new" -> {
-                // 新会话 - 通过事件通知上层
-                _state.update { it.copy(inputText = "") }
-                // TODO: 导航到新会话
-            }
-            "reset" -> {
-                // 重置会话
-                viewModelScope.launch {
-                    val sessionId = _state.value.sessionId ?: return@launch
-                    // 发送 reset 请求
-                    try {
-                        gateway.call("sessions.reset", mapOf("key" to JsonPrimitive(sessionId)))
-                        // 清空本地状态
-                        _state.update { it.copy(
-                            chatMessages = emptyList(),
-                            chatStream = null,
-                            chatStreamSegments = emptyList(),
-                            chatToolMessages = emptyList(),
-                            toolStreamById = emptyMap(),
-                            toolStreamOrder = emptyList(),
-                            inputText = ""
-                        )}
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to reset session", e)
-                    }
-                }
-            }
-            "think", "thinking" -> {
-                // 设置思考级别
-                viewModelScope.launch {
-                    val sessionId = _state.value.sessionId ?: return@launch
-                    val level = args.trim().lowercase().ifEmpty { "medium" }
-                    try {
-                        gateway.call("sessions.patch", mapOf(
-                            "key" to JsonPrimitive(sessionId),
-                            "thinkingLevel" to JsonPrimitive(level)
-                        ))
-                        _state.update { it.copy(inputText = "") }
-                        // 显示确认消息
-                        _state.update { state ->
-                            state.copy(
-                                chatMessages = state.chatMessages + MessageUi(
-                                    id = "think-${System.currentTimeMillis()}",
-                                    content = listOf(MessageContentItem.Text("✅ 思考级别已设置为: $level")),
-                                    role = MessageRole.ASSISTANT,
-                                    timestamp = System.currentTimeMillis()
-                                )
-                            )
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to set thinking level", e)
-                    }
-                }
-            }
-            "reasoning" -> {
-                // 切换推理模式
-                viewModelScope.launch {
-                    val sessionId = _state.value.sessionId ?: return@launch
-                    val enabled = args.trim().lowercase().let { 
-                        it == "on" || it == "true" || it == "1" 
-                    }
-                    try {
-                        gateway.call("sessions.patch", mapOf(
-                            "key" to JsonPrimitive(sessionId),
-                            "reasoning" to JsonPrimitive(enabled)
-                        ))
-                        _state.update { it.copy(inputText = "") }
-                        // 显示确认消息
-                        val status = if (enabled) "开启" else "关闭"
-                        _state.update { state ->
-                            state.copy(
-                                chatMessages = state.chatMessages + MessageUi(
-                                    id = "reasoning-${System.currentTimeMillis()}",
-                                    content = listOf(MessageContentItem.Text("✅ 推理模式已$status")),
-                                    role = MessageRole.ASSISTANT,
-                                    timestamp = System.currentTimeMillis()
-                                )
-                            )
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to toggle reasoning", e)
-                    }
-                }
-            }
-            "verbose" -> {
-                // 切换详细模式
-                viewModelScope.launch {
-                    val sessionId = _state.value.sessionId ?: return@launch
-                    val level = args.trim().lowercase().ifEmpty { "on" }
-                    try {
-                        gateway.call("sessions.patch", mapOf(
-                            "key" to JsonPrimitive(sessionId),
-                            "verboseLevel" to JsonPrimitive(level)
-                        ))
-                        _state.update { it.copy(inputText = "") }
-                        // 显示确认消息
-                        _state.update { state ->
-                            state.copy(
-                                chatMessages = state.chatMessages + MessageUi(
-                                    id = "verbose-${System.currentTimeMillis()}",
-                                    content = listOf(MessageContentItem.Text("✅ 详细模式已设置: $level")),
-                                    role = MessageRole.ASSISTANT,
-                                    timestamp = System.currentTimeMillis()
-                                )
-                            )
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to set verbose level", e)
-                    }
-                }
-            }
-            else -> {
-                // 其他命令发送到 Gateway
-                viewModelScope.launch {
-                    val sessionId = _state.value.sessionId ?: return@launch
-                    val message = "/${command.name}${if (args.isNotBlank()) " $args" else ""}"
-                    try {
-                        gateway.chatSend(sessionId, message)
-                        _state.update { it.copy(inputText = "", isSending = true, isLoading = true) }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to send command", e)
-                    }
-                }
-            }
-        }
+        slashCommandExecutor.execute(command, args, _state.value.sessionId)
     }
 
     /**
