@@ -47,6 +47,10 @@ object DesignTokens {
     val accentForeground = Color(0xFFFAFAFA)
     val accentContainer = Color(0xFF2A2A35) // 按钮容器背景
     
+    // 次要
+    val secondary = Color(0xFF161920)
+    val secondaryForeground = Color(0xFFF0F0F2)
+    
     // 次要强调色 - 青色
     val accent2 = Color(0xFF14B8A6)
     val accent2Subtle = Color(0x1A14B8A6)
@@ -79,15 +83,31 @@ object DesignTokens {
         val text = Color(0xFF3C3C43)
         val textStrong = Color(0xFF1A1A1E)
         val muted = Color(0xFF6E6E73)
+        val mutedStrong = Color(0xFF545458)
         
         val border = Color(0xFFE5E5EA)
         val borderStrong = Color(0xFFD1D1D6)
         val borderHover = Color(0xFFC7C7CC)
         
+        val secondary = Color(0xFFF1F3F5)
+        val secondaryForeground = Color(0xFF3C3C43)
+        
         val accent = Color(0xFFDC2626)       // 亮色模式用深红
         val accentHover = Color(0xFFEF4444)
         val accentSubtle = Color(0x14DC2626)
         val accentGlow = Color(0x22DC2626)
+        val accentForeground = Color(0xFFFFFFFF)
+        
+        val accent2 = Color(0xFF0D9488)
+        val accent2Subtle = Color(0x140D9488)
+        
+        val ok = Color(0xFF15803D)
+        val okSubtle = Color(0x1415803D)
+        val warn = Color(0xFFB45309)
+        val warnSubtle = Color(0x14B45309)
+        val danger = Color(0xFFDC2626)
+        val dangerSubtle = Color(0x14DC2626)
+        val info = Color(0xFF2563EB)
         
         // 用户气泡特殊色（亮色模式）
         val userBubbleBg = Color(0x1EFB923C) // rgba(251, 146, 60, 0.12)

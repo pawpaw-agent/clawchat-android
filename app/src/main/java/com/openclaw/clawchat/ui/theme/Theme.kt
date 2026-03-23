@@ -19,106 +19,106 @@ import androidx.core.view.WindowCompat
 /**
  * 深色主题配色方案
  * 
- * 基于 OpenClaw 品牌色，采用深蓝色系
+ * 1:1 复刻 webchat base.css 深色主题
  */
 private val DarkColorScheme = darkColorScheme(
-    // 主色
-    primary = ClawBlue,
-    onPrimary = Color.White,
-    primaryContainer = ClawBlueDark,
-    onPrimaryContainer = ClawBlueLight,
+    // 主色 - 红色强调
+    primary = DesignTokens.accent,           // #ff5c5c
+    onPrimary = DesignTokens.accentForeground,
+    primaryContainer = DesignTokens.accentContainer,
+    onPrimaryContainer = DesignTokens.accentForeground,
     
     // 次级色
-    secondary = ClawBlueLight,
-    onSecondary = Color.White,
-    secondaryContainer = DarkBackgroundTertiary,
-    onSecondaryContainer = DarkTextPrimary,
+    secondary = DesignTokens.secondary,
+    onSecondary = DesignTokens.secondaryForeground,
+    secondaryContainer = DesignTokens.bgHover,
+    onSecondaryContainer = DesignTokens.textStrong,
     
     // 第三色
-    tertiary = Success,
+    tertiary = DesignTokens.accent2,
     onTertiary = Color.White,
-    tertiaryContainer = Success.copy(alpha = 0.2f),
-    onTertiaryContainer = Success,
+    tertiaryContainer = DesignTokens.accent2Subtle,
+    onTertiaryContainer = DesignTokens.accent2,
     
     // 背景
-    background = DarkBackgroundPrimary,
-    onBackground = DarkTextPrimary,
+    background = DesignTokens.bg,            // #0e1015
+    onBackground = DesignTokens.text,        // #d4d4d8
     
     // 表面
-    surface = DarkSurfacePrimary,
-    onSurface = DarkTextPrimary,
-    surfaceVariant = DarkBackgroundSecondary,
-    onSurfaceVariant = DarkTextSecondary,
-    surfaceTint = ClawBlue,
+    surface = DesignTokens.card,             // #161920
+    onSurface = DesignTokens.text,
+    surfaceVariant = DesignTokens.bgAccent,  // #13151b
+    onSurfaceVariant = DesignTokens.muted,
+    surfaceTint = DesignTokens.accent,
     
     // 错误
-    error = Error,
+    error = DesignTokens.danger,             // #ef4444
     onError = Color.White,
-    errorContainer = Error.copy(alpha = 0.2f),
-    onErrorContainer = Error,
+    errorContainer = DesignTokens.dangerSubtle,
+    onErrorContainer = DesignTokens.danger,
     
     // 边框/分割线
-    outline = DarkBackgroundTertiary,
-    outlineVariant = DarkTextTertiary,
+    outline = DesignTokens.border,           // #1e2028
+    outlineVariant = DesignTokens.borderStrong,
     
     // 反色
-    inverseSurface = LightSurfacePrimary,
-    inverseOnSurface = LightTextPrimary,
-    inversePrimary = ClawBlueDark,
+    inverseSurface = DesignTokens.Light.bg,
+    inverseOnSurface = DesignTokens.Light.text,
+    inversePrimary = DesignTokens.Light.accent,
     
     // 遮罩
-    scrim = Color.Black.copy(alpha = 0.32f)
+    scrim = Color.Black.copy(alpha = 0.52f)
 )
 
 /**
  * 浅色主题配色方案
  * 
- * 采用清爽的浅蓝灰色系
+ * 1:1 复刻 webchat base.css 浅色主题
  */
 private val LightColorScheme = lightColorScheme(
-    // 主色
-    primary = ClawBlueDark,
-    onPrimary = Color.White,
-    primaryContainer = ClawBlueLight,
-    onPrimaryContainer = Color.White,
+    // 主色 - 深红强调
+    primary = DesignTokens.Light.accent,     // #dc2626
+    onPrimary = DesignTokens.Light.accentForeground,
+    primaryContainer = DesignTokens.Light.accentSubtle,
+    onPrimaryContainer = DesignTokens.Light.accent,
     
     // 次级色
-    secondary = ClawBlue,
-    onSecondary = Color.White,
-    secondaryContainer = LightBackgroundTertiary,
-    onSecondaryContainer = LightTextPrimary,
+    secondary = DesignTokens.Light.secondary,
+    onSecondary = DesignTokens.Light.secondaryForeground,
+    secondaryContainer = DesignTokens.Light.bgHover,
+    onSecondaryContainer = DesignTokens.Light.text,
     
     // 第三色
-    tertiary = Success,
+    tertiary = DesignTokens.Light.accent2,
     onTertiary = Color.White,
-    tertiaryContainer = Success.copy(alpha = 0.1f),
-    onTertiaryContainer = Success,
+    tertiaryContainer = DesignTokens.Light.accent2Subtle,
+    onTertiaryContainer = DesignTokens.Light.accent2,
     
     // 背景
-    background = LightBackgroundPrimary,
-    onBackground = LightTextPrimary,
+    background = DesignTokens.Light.bg,      // #f8f9fa
+    onBackground = DesignTokens.Light.text,  // #3c3c43
     
     // 表面
-    surface = LightSurfacePrimary,
-    onSurface = LightTextPrimary,
-    surfaceVariant = LightBackgroundSecondary,
-    onSurfaceVariant = LightTextSecondary,
-    surfaceTint = ClawBlueDark,
+    surface = DesignTokens.Light.card,       // #ffffff
+    onSurface = DesignTokens.Light.text,
+    surfaceVariant = DesignTokens.Light.bgAccent,
+    onSurfaceVariant = DesignTokens.Light.muted,
+    surfaceTint = DesignTokens.Light.accent,
     
     // 错误
-    error = Error,
+    error = DesignTokens.Light.danger,
     onError = Color.White,
-    errorContainer = Error.copy(alpha = 0.1f),
-    onErrorContainer = Error,
+    errorContainer = DesignTokens.Light.dangerSubtle,
+    onErrorContainer = DesignTokens.Light.danger,
     
     // 边框/分割线
-    outline = LightBackgroundTertiary,
-    outlineVariant = LightTextTertiary,
+    outline = DesignTokens.Light.border,     // #e5e5ea
+    outlineVariant = DesignTokens.Light.borderStrong,
     
     // 反色
-    inverseSurface = DarkSurfacePrimary,
-    inverseOnSurface = DarkTextPrimary,
-    inversePrimary = ClawBlueLight,
+    inverseSurface = DesignTokens.bg,
+    inverseOnSurface = DesignTokens.text,
+    inversePrimary = DesignTokens.accent,
     
     // 遮罩
     scrim = Color.Black.copy(alpha = 0.32f)
