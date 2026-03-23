@@ -319,8 +319,8 @@ private fun SessionTopAppBar(
             ConnectionStatusIcon(connectionStatus)
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.backgroundElevated,
-            titleContentColor = MaterialTheme.colorScheme.onBackgroundStrong,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
             actionIconContentColor = MaterialTheme.colorScheme.onBackground
         )
     )
@@ -725,7 +725,7 @@ private fun ToolMessageCard(message: MessageUi) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.backgroundHover.copy(alpha = 0.3f)
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                     )
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
@@ -760,7 +760,7 @@ private fun InlineToolCard(toolCard: ToolCard) {
             containerColor = if (toolCard.isError) {
                 MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
             } else {
-                MaterialTheme.colorScheme.backgroundHover.copy(alpha = 0.3f)
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             }
         )
     ) {
@@ -936,7 +936,7 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.backgroundHover)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(8.dp)
             )
         }
@@ -992,7 +992,7 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
                             Text(
                                 text = textContent,
                                 fontSize = textSize,
-                                color = MaterialTheme.colorScheme.onBackgroundStrong
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -1004,7 +1004,7 @@ private fun MessageItem(message: MessageUi, messageFontSize: FontSize = FontSize
                                 .size(16.dp),
                             strokeWidth = 2.dp,
                             color = if (isUser) {
-                                MaterialTheme.colorScheme.onBackgroundStrong
+                                MaterialTheme.colorScheme.onSurface
                             } else {
                                 MaterialTheme.colorScheme.onBackground
                             }
@@ -1037,7 +1037,7 @@ private fun LoadingOverlay() {
     ) {
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.backgroundHover.copy(alpha = 0.9f)
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
             )
         ) {
             Row(
@@ -1292,7 +1292,7 @@ private fun AttachmentPreview(
         modifier = Modifier
             .size(64.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.backgroundHover)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         // 显示图片 - 优先从 dataUrl，否则从 uri
         val bitmap = remember(attachment.dataUrl, attachment.uri) {
@@ -1427,7 +1427,7 @@ private fun SlashCommandMenu(
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.backgroundHover.copy(alpha = 0.95f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
         ),
         shape = RoundedCornerShape(8.dp)
     ) {

@@ -491,7 +491,7 @@ private fun PairingStatusIndicator(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorSubtle
+                    containerColor = MaterialTheme.colorScheme.errorContainer
                 )
             ) {
                 Column(
