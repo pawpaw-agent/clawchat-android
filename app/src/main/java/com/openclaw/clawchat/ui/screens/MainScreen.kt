@@ -21,6 +21,8 @@ import com.openclaw.clawchat.ui.state.SessionUi
 import com.openclaw.clawchat.ui.state.UiEvent
 import com.openclaw.clawchat.ui.screens.settings.SettingsScreen
 import com.openclaw.clawchat.ui.theme.TerminalColors
+import com.openclaw.clawchat.ui.components.PulseIndicator
+import com.openclaw.clawchat.ui.components.PulseState
 import java.text.SimpleDateFormat
 import java.util.*
 

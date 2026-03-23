@@ -22,7 +22,7 @@ import com.openclaw.clawchat.data.ThemeMode
 import com.openclaw.clawchat.ui.screens.PairingScreen
 import com.openclaw.clawchat.ui.screens.MainScreen
 import com.openclaw.clawchat.ui.screens.SessionScreen
-import com.openclaw.clawchat.ui.theme.ClawChatTheme
+import com.openclaw.clawchat.ui.theme.TerminalFlowTheme
 import com.openclaw.clawchat.ui.state.MainViewModel
 import com.openclaw.clawchat.ui.state.PairingViewModel
 import com.openclaw.clawchat.ui.state.ThemeViewModel
@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.SYSTEM -> systemDarkTheme
             }
             
-            ClawChatTheme(darkTheme = darkTheme) {
+            TerminalFlowTheme(darkTheme = darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
