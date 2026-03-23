@@ -37,47 +37,55 @@ fun PulseIndicator(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     
-    val animDuration = when (state) {
-        PulseState.Idle -> 0
-        PulseState.Active -> 1500
-        PulseState.Thinking -> 800
-        PulseState.Streaming -> 500
+    val animDuration = remember(state) {
+        when (state) {
+            PulseState.Idle -> 0
+            PulseState.Active -> 1500
+            PulseState.Thinking -> 800
+            PulseState.Streaming -> 500
+        }
     }
     
-    val targetScale = when (state) {
-        PulseState.Idle -> 1f
-        PulseState.Active -> 1f
-        PulseState.Thinking -> 1.2f
-        PulseState.Streaming -> 1.3f
+    val targetScale = remember(state) {
+        when (state) {
+            PulseState.Idle -> 1f
+            PulseState.Active -> 1f
+            PulseState.Thinking -> 1.2f
+            PulseState.Streaming -> 1.3f
+        }
     }
     
-    // 使用可空的 State 来避免类型推断问题
-    val animatedHeight = if (state != PulseState.Idle) {
-        infiniteTransition.animateDp(
-            initialValue = 24.dp,
-            targetValue = 48.dp * targetScale,
-            animationSpec = infiniteRepeatable(
-                animation = tween(animDuration, easing = EaseInOutSine),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "height"
-        )
-    } else null
+    val targetAlpha = remember(state) {
+        when (state) {
+            PulseState.Idle -> 0.3f
+            PulseState.Active -> 1f
+            PulseState.Thinking -> 1f
+            PulseState.Streaming -> 1f
+        }
+    }
     
-    val animatedAlpha = if (state != PulseState.Idle) {
-        infiniteTransition.animateFloat(
-            initialValue = 0.6f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(animDuration / 2, easing = EaseInOutSine),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "alpha"
-        )
-    } else null
+    val animatedHeight by infiniteTransition.animateDp(
+        initialValue = 24.dp,
+        targetValue = 48.dp * targetScale,
+        animationSpec = infiniteRepeatable(
+            animation = tween(animDuration, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "height"
+    )
     
-    val height = animatedHeight?.value ?: 32.dp
-    val alpha = animatedAlpha?.value ?: 0.3f
+    val animatedAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = targetAlpha,
+        animationSpec = infiniteRepeatable(
+            animation = tween(animDuration / 2, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+    
+    val height = if (state == PulseState.Idle) 32.dp else animatedHeight
+    val alpha = if (state == PulseState.Idle) 0.3f else animatedAlpha
     
     val glowColor = color.copy(alpha = alpha * 0.5f)
     
@@ -113,7 +121,7 @@ fun StreamingCursor(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "cursor")
     
-    val alpha = infiniteTransition.animateFloat(
+    val alpha by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 0.2f,
         animationSpec = infiniteRepeatable(
@@ -121,7 +129,7 @@ fun StreamingCursor(
             repeatMode = RepeatMode.Reverse
         ),
         label = "cursor_alpha"
-    ).value
+    )
     
     androidx.compose.material3.Text(
         text = "▌",
@@ -148,7 +156,7 @@ fun ThinkingIndicator(
     ) {
         repeat(3) { index ->
             val delay = index * 150
-            val scale = infiniteTransition.animateFloat(
+            val scale by infiniteTransition.animateFloat(
                 initialValue = 0.5f,
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(
@@ -156,7 +164,7 @@ fun ThinkingIndicator(
                     repeatMode = RepeatMode.Reverse
                 ),
                 label = "dot_$index"
-            ).value
+            )
             
             Box(
                 modifier = Modifier
