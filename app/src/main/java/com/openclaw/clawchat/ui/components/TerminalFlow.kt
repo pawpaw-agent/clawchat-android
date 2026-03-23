@@ -37,16 +37,22 @@ fun PulseIndicator(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     
-    val (animDuration, targetScale) = when (state) {
-        PulseState.Idle -> 0 to 1f
-        PulseState.Active -> 1500 to 1f
-        PulseState.Thinking -> 800 to 1.2f
-        PulseState.Streaming -> 500 to 1.3f
+    val animDuration = when (state) {
+        PulseState.Idle -> 0
+        PulseState.Active -> 1500
+        PulseState.Thinking -> 800
+        PulseState.Streaming -> 500
     }
     
-    val height: Dp by if (state == PulseState.Idle) {
-        remember { mutableStateOf(32.dp) }
-    } else {
+    val targetScale = when (state) {
+        PulseState.Idle -> 1f
+        PulseState.Active -> 1f
+        PulseState.Thinking -> 1.2f
+        PulseState.Streaming -> 1.3f
+    }
+    
+    // 使用可空的 State 来避免类型推断问题
+    val animatedHeight = if (state != PulseState.Idle) {
         infiniteTransition.animateDp(
             initialValue = 24.dp,
             targetValue = 48.dp * targetScale,
@@ -56,11 +62,9 @@ fun PulseIndicator(
             ),
             label = "height"
         )
-    }
+    } else null
     
-    val alpha: Float by if (state == PulseState.Idle) {
-        remember { mutableStateOf(0.3f) }
-    } else {
+    val animatedAlpha = if (state != PulseState.Idle) {
         infiniteTransition.animateFloat(
             initialValue = 0.6f,
             targetValue = 1f,
@@ -70,7 +74,10 @@ fun PulseIndicator(
             ),
             label = "alpha"
         )
-    }
+    } else null
+    
+    val height = animatedHeight?.value ?: 32.dp
+    val alpha = animatedAlpha?.value ?: 0.3f
     
     val glowColor = color.copy(alpha = alpha * 0.5f)
     
@@ -106,7 +113,7 @@ fun StreamingCursor(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "cursor")
     
-    val alpha: Float by infiniteTransition.animateFloat(
+    val alpha = infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 0.2f,
         animationSpec = infiniteRepeatable(
@@ -114,7 +121,7 @@ fun StreamingCursor(
             repeatMode = RepeatMode.Reverse
         ),
         label = "cursor_alpha"
-    )
+    ).value
     
     androidx.compose.material3.Text(
         text = "▌",
@@ -141,7 +148,7 @@ fun ThinkingIndicator(
     ) {
         repeat(3) { index ->
             val delay = index * 150
-            val scale: Float by infiniteTransition.animateFloat(
+            val scale = infiniteTransition.animateFloat(
                 initialValue = 0.5f,
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(
@@ -149,7 +156,7 @@ fun ThinkingIndicator(
                     repeatMode = RepeatMode.Reverse
                 ),
                 label = "dot_$index"
-            )
+            ).value
             
             Box(
                 modifier = Modifier
