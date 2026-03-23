@@ -692,7 +692,7 @@ class SessionViewModel @Inject constructor(
     /**
      * 添加附件
      */
-    fun addAttachment(attachment: ChatAttachment) {
+    fun addAttachment(attachment: AttachmentUi) {
         _state.update { currentState ->
             currentState.copy(
                 attachments = currentState.attachments + attachment
