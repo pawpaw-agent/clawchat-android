@@ -11,8 +11,8 @@ import kotlinx.serialization.Serializable
 
 /**
  * 附件支持 - 1:1 复刻 webchat attachment-support.ts
- * 
- * 支持的 MIME 类型：image/*
+ *
+ * 支持的 MIME 类型：image/星号
  */
 
 private const val TAG = "AttachmentSupport"
