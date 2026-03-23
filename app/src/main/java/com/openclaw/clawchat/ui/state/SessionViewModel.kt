@@ -629,7 +629,8 @@ class SessionViewModel @Inject constructor(
         }
         // 添加图片预览
         attachments.forEach { att ->
-            val base64Content = extractBase64FromDataUrl(att.dataUrl)
+            val dataUrl = att.dataUrl ?: return@forEach
+            val base64Content = extractBase64FromDataUrl(dataUrl)
             contentBlocks.add(MessageContentItem.Image(
                 base64 = base64Content,
                 mimeType = att.mimeType
@@ -657,8 +658,9 @@ class SessionViewModel @Inject constructor(
         }
 
         // 转换附件为 API 格式
-        val apiAttachments = attachments.map { att ->
-            val base64Content = extractBase64FromDataUrl(att.dataUrl)
+        val apiAttachments = attachments.mapNotNull { att ->
+            val dataUrl = att.dataUrl ?: return@mapNotNull null
+            val base64Content = extractBase64FromDataUrl(dataUrl)
             ChatAttachmentData(
                 mimeType = att.mimeType,
                 content = base64Content

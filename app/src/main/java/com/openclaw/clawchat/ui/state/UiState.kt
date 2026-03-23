@@ -112,10 +112,7 @@ data class SessionUiState(
     val slashCommandCompletion: SlashCommandCompletion = SlashCommandCompletion(),
     
     // 输入
-    val inputText: String = "",
-    
-    // 附件（1:1 对应 webchat chatAttachments）
-    val attachments: List<ChatAttachment> = emptyList()
+    val inputText: String = ""
 )
 
 /**
