@@ -1,9 +1,7 @@
 package com.openclaw.clawchat.util
 
 import android.util.Log
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.BuildConfig
-import com.openclaw.clawchat.util.AppLog
 
 /**
  * 统一日志工具
@@ -22,10 +20,10 @@ object AppLog {
         if (BuildConfig.DEBUG) {
             // 分割超长日志
             if (message.length > MAX_LOG_LENGTH) {
-                AppLog.d(tag, message.substring(0, MAX_LOG_LENGTH))
+                Log.d(tag, message.substring(0, MAX_LOG_LENGTH))
                 d(tag, message.substring(MAX_LOG_LENGTH))
             } else {
-                AppLog.d(tag, message)
+                Log.d(tag, message)
             }
         }
     }
@@ -35,7 +33,7 @@ object AppLog {
      */
     fun v(tag: String, message: String) {
         if (BuildConfig.DEBUG) {
-            AppLog.v(tag, message)
+            Log.v(tag, message)
         }
     }
     
