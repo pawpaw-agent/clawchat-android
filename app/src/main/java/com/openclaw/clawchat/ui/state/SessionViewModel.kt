@@ -78,6 +78,23 @@ class SessionViewModel @Inject constructor(
         observeConnectionState()
         observeIncomingMessages()
     }
+    
+    /**
+     * 观察当前会话的消息
+     * 当 sessionId 变化时，自动切换订阅
+     */
+    private var observeMessagesJob: Job? = null
+    
+    private fun observeSessionMessages(sessionId: String) {
+        observeMessagesJob?.cancel()
+        observeMessagesJob = viewModelScope.launch(exceptionHandler) {
+            Log.d(TAG, "=== observeSessionMessages: start observing $sessionId")
+            messageRepository.observeMessages(sessionId).collect { messages ->
+                Log.d(TAG, "=== observeSessionMessages: session=$sessionId has ${messages.size} messages")
+                _state.update { it.copy(chatMessages = messages) }
+            }
+        }
+    }
 
     override fun onCleared() {
         super.onCleared()
@@ -437,6 +454,11 @@ class SessionViewModel @Inject constructor(
         loadMessagesJob?.cancel()
         
         _state.update { it.copy(sessionId = sessionId) }
+        
+        // 开始观察这个会话的消息
+        observeSessionMessages(sessionId)
+        
+        // 加载历史消息
         loadMessageHistory(sessionId)
         
         // 设置 verboseLevel 为 "full" 以接收工具流事件
@@ -463,26 +485,8 @@ class SessionViewModel @Inject constructor(
         // 设置加载状态
         _state.update { it.copy(isLoading = true) }
         
-        // 合并两个协程到一个 Job 中
         loadMessagesJob = viewModelScope.launch {
-            // 从本地数据库加载
-            launch {
-                messageRepository.observeMessages(sessionId).collect { messages ->
-                    Log.d(TAG, "=== loadMessageHistory: local DB has ${messages.size} messages")
-                    _state.update { it.copy(
-                        chatMessages = messages,
-                        // 不在这里取消 isLoading，等 Gateway 加载完成后再取消
-                        // 重置工具流状态
-                        toolStreamById = emptyMap(),
-                        toolStreamOrder = emptyList(),
-                        chatToolMessages = emptyList(),
-                        chatStreamSegments = emptyList()
-                    )}
-                }
-            }
-            
             // 从 Gateway 加载历史消息
-            launch {
             try {
                 // 检查连接状态
                 if (gateway.connectionState.value !is WebSocketConnectionState.Connected) {
@@ -542,7 +546,6 @@ class SessionViewModel @Inject constructor(
             }
             // Gateway 加载完成，取消加载状态
             _state.update { it.copy(isLoading = false) }
-        }
         }  // loadMessagesJob
     }
 
