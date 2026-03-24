@@ -1,9 +1,13 @@
 package com.openclaw.clawchat.network.protocol
 
 import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.security.SecurityModule
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.security.SignedPayload
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.Serializable
+import com.openclaw.clawchat.util.AppLog
 
 /**
  * 连接请求参数
@@ -72,7 +76,7 @@ class ChallengeResponseAuth(
      * { "type": "event", "event": "connect.challenge", "payload": { "nonce": "...", "ts": ... } }
      */
     fun handleChallenge(challenge: ConnectChallengePayload): Result<String> {
-        Log.d(TAG, "收到挑战：nonce=${challenge.nonce.take(8)}..., ts=${challenge.timestamp}")
+        AppLog.d(TAG, "收到挑战：nonce=${challenge.nonce.take(8)}..., ts=${challenge.timestamp}")
 
         if (challenge.nonce.isBlank()) {
             Log.e(TAG, "无效的 nonce")
@@ -87,7 +91,7 @@ class ChallengeResponseAuth(
             requestId = requestId
         )
 
-        Log.d(TAG, "挑战已存储，requestId=$requestId")
+        AppLog.d(TAG, "挑战已存储，requestId=$requestId")
         return Result.success(requestId)
     }
 
@@ -119,7 +123,7 @@ class ChallengeResponseAuth(
             deviceFamily = "phone"
         )
 
-        Log.d(TAG, "v3 签名完成, deviceId=${signed.deviceId.take(16)}...")
+        AppLog.d(TAG, "v3 签名完成, deviceId=${signed.deviceId.take(16)}...")
 
         val clientInfo = buildClientInfo()
 

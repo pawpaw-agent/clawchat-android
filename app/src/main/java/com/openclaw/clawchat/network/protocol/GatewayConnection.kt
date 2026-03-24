@@ -1,44 +1,83 @@
 package com.openclaw.clawchat.network.protocol
 
 import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.BuildConfig
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.CertificateExceptionFirstTime
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.CertificateExceptionMismatch
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.DynamicTrustManager
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.WebSocketConnectionState
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.security.SecurityModule
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.CoroutineScope
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.Dispatchers
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.Job
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.delay
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.MutableSharedFlow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.MutableStateFlow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.SharedFlow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.StateFlow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.asSharedFlow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.asStateFlow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.first
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.launch
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.withContext
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.withTimeout
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.withTimeoutOrNull
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.Json
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.JsonArray
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.JsonElement
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.JsonObject
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.JsonPrimitive
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.buildJsonObject
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.jsonArray
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.jsonObject
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.jsonPrimitive
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.put
+import com.openclaw.clawchat.util.AppLog
 import okhttp3.OkHttpClient
+import com.openclaw.clawchat.util.AppLog
 import okhttp3.Request
+import com.openclaw.clawchat.util.AppLog
 import okhttp3.Response
+import com.openclaw.clawchat.util.AppLog
 import okhttp3.WebSocket
+import com.openclaw.clawchat.util.AppLog
 import okhttp3.WebSocketListener
+import com.openclaw.clawchat.util.AppLog
 import java.security.cert.CertificateException
+import com.openclaw.clawchat.util.AppLog
 import java.util.UUID
+import com.openclaw.clawchat.util.AppLog
 
 /**
  * Gateway 连接管理器（协议 v3）
@@ -450,9 +489,9 @@ class GatewayConnection(
 
         val deferred = requestTracker.trackRequest(requestId, method)
         val frameJson = json.encodeToString(RequestFrame.serializer(), frame)
-        android.util.Log.d("GatewayConnection", "=== call: sending $method, requestId=$requestId, params=$params")
+        android.util.AppLog.d("GatewayConnection", "=== call: sending $method, requestId=$requestId, params=$params")
         val sent = webSocket?.send(frameJson) ?: false
-        android.util.Log.d("GatewayConnection", "=== call: sent=$sent, webSocket connected=${webSocket != null}")
+        android.util.AppLog.d("GatewayConnection", "=== call: sent=$sent, webSocket connected=${webSocket != null}")
 
         if (!sent) {
             requestTracker.failRequest(requestId, IllegalStateException("WebSocket not connected"))
@@ -519,17 +558,17 @@ class GatewayConnection(
 
     /** chat.history */
     suspend fun chatHistory(sessionKey: String, limit: Int? = null): ResponseFrame {
-        android.util.Log.d("GatewayConnection", "=== chatHistory called: sessionKey='$sessionKey', length=${sessionKey.length}, limit=$limit")
+        android.util.AppLog.d("GatewayConnection", "=== chatHistory called: sessionKey='$sessionKey', length=${sessionKey.length}, limit=$limit")
         val params = mutableMapOf<String, JsonElement>(
             "sessionKey" to JsonPrimitive(sessionKey)
         )
         if (limit != null) params["limit"] = JsonPrimitive(limit)
-        android.util.Log.d("GatewayConnection", "=== chatHistory: calling 'chat.history' with params=$params")
+        android.util.AppLog.d("GatewayConnection", "=== chatHistory: calling 'chat.history' with params=$params")
         val response = call("chat.history", params)
-        android.util.Log.d("GatewayConnection", "=== chatHistory response: ok=${response.isSuccess()}, error=${response.error}, payload type=${response.payload?.javaClass?.simpleName}")
+        android.util.AppLog.d("GatewayConnection", "=== chatHistory response: ok=${response.isSuccess()}, error=${response.error}, payload type=${response.payload?.javaClass?.simpleName}")
         if (response.payload is JsonObject) {
             val messagesArray = (response.payload as JsonObject)["messages"]?.jsonArray
-            android.util.Log.d("GatewayConnection", "=== chatHistory: messages count=${messagesArray?.size ?: 0}")
+            android.util.AppLog.d("GatewayConnection", "=== chatHistory: messages count=${messagesArray?.size ?: 0}")
         }
         return response
     }

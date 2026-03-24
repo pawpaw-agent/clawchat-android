@@ -1,21 +1,37 @@
 package com.openclaw.clawchat.security
 
 import android.content.Context
+import com.openclaw.clawchat.util.AppLog
 import android.content.SharedPreferences
+import com.openclaw.clawchat.util.AppLog
 import android.os.Build
+import com.openclaw.clawchat.util.AppLog
 import android.security.keystore.KeyGenParameterSpec
+import com.openclaw.clawchat.util.AppLog
 import android.security.keystore.KeyProperties
+import com.openclaw.clawchat.util.AppLog
 import android.util.Base64
+import com.openclaw.clawchat.util.AppLog
 import androidx.security.crypto.EncryptedSharedPreferences
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.BuildConfig
+import com.openclaw.clawchat.util.AppLog
 import androidx.security.crypto.MasterKey
+import com.openclaw.clawchat.util.AppLog
 import java.nio.charset.StandardCharsets
+import com.openclaw.clawchat.util.AppLog
 import java.security.GeneralSecurityException
+import com.openclaw.clawchat.util.AppLog
 import java.security.KeyStore
+import com.openclaw.clawchat.util.AppLog
 import javax.crypto.Cipher
+import com.openclaw.clawchat.util.AppLog
 import javax.crypto.KeyGenerator
+import com.openclaw.clawchat.util.AppLog
 import javax.crypto.SecretKey
+import com.openclaw.clawchat.util.AppLog
 import javax.crypto.spec.GCMParameterSpec
+import com.openclaw.clawchat.util.AppLog
 
 /**
  * EncryptedStorage - 加密 SharedPreferences 封装
@@ -76,7 +92,7 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
         sharedPreferences = createEncryptedPrefs(context)
 
         if (BuildConfig.DEBUG && usingSoftwareKeyStore) {
-            android.util.Log.d(TAG,
+            android.util.AppLog.d(TAG,
                 "⚠️ API ${Build.VERSION.SDK_INT} < 33: using software key store " +
                 "(Ed25519 private keys in EncryptedSharedPreferences, not hardware Keystore)")
         }
@@ -269,7 +285,7 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
         val status = getPairingStatus()
         val hasToken = hasDeviceToken()
         val result = status == PAIRING_STATUS_APPROVED && hasToken
-        android.util.Log.d("EncryptedStorage", "isPaired: status=$status, hasToken=$hasToken, result=$result")
+        android.util.AppLog.d("EncryptedStorage", "isPaired: status=$status, hasToken=$hasToken, result=$result")
         return result
     }
     

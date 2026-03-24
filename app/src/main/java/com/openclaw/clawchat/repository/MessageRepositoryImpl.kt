@@ -1,19 +1,33 @@
 package com.openclaw.clawchat.repository
 
 import com.openclaw.clawchat.ui.state.MessageUi
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.state.MessageRole
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.state.MessageContentItem
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.Flow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.MutableStateFlow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.map
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.Json
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.JsonArray
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.JsonObject
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.jsonArray
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.jsonObject
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.jsonPrimitive
+import com.openclaw.clawchat.util.AppLog
 import javax.inject.Inject
+import com.openclaw.clawchat.util.AppLog
 import javax.inject.Singleton
+import com.openclaw.clawchat.util.AppLog
 
 /**
  * 消息仓库实现（内存存储）
@@ -33,10 +47,10 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
      * 观察会话消息
      */
     override fun observeMessages(sessionId: String): Flow<List<MessageUi>> {
-        android.util.Log.d("MessageRepository", "=== observeMessages called for $sessionId")
+        android.util.AppLog.d("MessageRepository", "=== observeMessages called for $sessionId")
         return messagesBySession.map { map ->
             val messages = map[sessionId]?.toList() ?: emptyList()
-            android.util.Log.d("MessageRepository", "=== observeMessages map: sessionId=$sessionId, messages=${messages.size}")
+            android.util.AppLog.d("MessageRepository", "=== observeMessages map: sessionId=$sessionId, messages=${messages.size}")
             messages
         }
     }
@@ -62,7 +76,7 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
     ): String {
         val messageId = java.util.UUID.randomUUID().toString()
         
-        android.util.Log.d("MessageRepository", "=== saveMessage: sessionId=$sessionId, role=$role, id=$messageId")
+        android.util.AppLog.d("MessageRepository", "=== saveMessage: sessionId=$sessionId, role=$role, id=$messageId")
         
         // 解析内容
         val contentItems = parseContent(content)
@@ -81,7 +95,7 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
         sessionMessages.add(message)
         messagesBySession.value = map
         
-        android.util.Log.d("MessageRepository", "=== saveMessage: saved, total messages for session: ${sessionMessages.size}")
+        android.util.AppLog.d("MessageRepository", "=== saveMessage: saved, total messages for session: ${sessionMessages.size}")
         
         return messageId
     }
@@ -132,14 +146,14 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
      * 解析存储的 JSON 内容为 MessageContentItem 列表
      */
     private fun parseContent(content: String): List<MessageContentItem> {
-        android.util.Log.d("MessageRepository", "=== parseContent: content=${content.take(200)}")
+        android.util.AppLog.d("MessageRepository", "=== parseContent: content=${content.take(200)}")
         return try {
             val array = json.parseToJsonElement(content) as? JsonArray
-            android.util.Log.d("MessageRepository", "=== parseContent: array size=${array?.size}")
+            android.util.AppLog.d("MessageRepository", "=== parseContent: array size=${array?.size}")
             array?.mapNotNull { element ->
                 val obj = element as? JsonObject ?: return@mapNotNull null
                 val type = obj["type"]?.jsonPrimitive?.content
-                android.util.Log.d("MessageRepository", "=== parseContent: type=$type, keys=${obj.keys}")
+                android.util.AppLog.d("MessageRepository", "=== parseContent: type=$type, keys=${obj.keys}")
                 when (type) {
                     "text" -> MessageContentItem.Text(
                         text = obj["text"]?.jsonPrimitive?.content ?: ""

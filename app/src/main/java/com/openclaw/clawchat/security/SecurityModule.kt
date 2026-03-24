@@ -1,12 +1,19 @@
 package com.openclaw.clawchat.security
 
 import android.content.Context
+import com.openclaw.clawchat.util.AppLog
 import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.Dispatchers
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.withContext
+import com.openclaw.clawchat.util.AppLog
 import org.json.JSONArray
+import com.openclaw.clawchat.util.AppLog
 import org.json.JSONObject
+import com.openclaw.clawchat.util.AppLog
 import java.text.Normalizer
+import com.openclaw.clawchat.util.AppLog
 
 /**
  * SecurityModule - 安全模块统一入口
@@ -341,7 +348,7 @@ data class SecurityStatus(
 object SecureLogger {
     private const val TAG = "ClawChat-Security"
     
-    fun d(message: String) = android.util.Log.d(TAG, message.redactSensitive())
+    fun d(message: String) = android.util.AppLog.d(TAG, message.redactSensitive())
     fun i(message: String) = android.util.Log.i(TAG, message.redactSensitive())
     fun w(message: String) = android.util.Log.w(TAG, message.redactSensitive())
     fun e(message: String, throwable: Throwable? = null) {

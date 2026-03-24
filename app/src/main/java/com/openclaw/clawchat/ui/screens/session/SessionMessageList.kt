@@ -1,26 +1,47 @@
 package com.openclaw.clawchat.ui.screens.session
 
 import androidx.compose.foundation.background
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.layout.*
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.lazy.LazyColumn
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.lazy.LazyListState
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.lazy.items
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.shape.CircleShape
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.material.icons.Icons
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.material.icons.filled.*
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.material3.*
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.runtime.*
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.ui.Alignment
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.ui.Modifier
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.ui.draw.clip
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.ui.text.font.FontFamily
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.data.FontSize
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.components.MarkdownText
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.state.*
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.theme.DesignTokens
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.jsonPrimitive
+import com.openclaw.clawchat.util.AppLog
 
 /**
  * 空会话内容
@@ -180,7 +201,7 @@ fun MessageGroupList(
         
         // 3. 工具消息
         if (toolMessages.isNotEmpty()) {
-            android.util.Log.d("SessionMessageList", "Rendering toolMessages: size=${toolMessages.size}")
+            android.util.AppLog.d("SessionMessageList", "Rendering toolMessages: size=${toolMessages.size}")
             items(toolMessages, key = { "tool_${it.id}_${it.content.hashCode()}" }) { toolMessage ->
                 ToolMessageCard(message = toolMessage)
             }

@@ -1,21 +1,37 @@
 package com.openclaw.clawchat.ui.screens
 
 import androidx.compose.foundation.background
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.layout.*
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.material.icons.Icons
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.material.icons.filled.*
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.material3.*
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.runtime.*
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.ui.Alignment
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.ui.Modifier
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.ui.focus.FocusRequester
+import com.openclaw.clawchat.util.AppLog
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.util.AppLog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.data.FontSize
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.state.*
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.screens.session.*
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.launch
+import com.openclaw.clawchat.util.AppLog
 
 /**
  * 会话界面屏幕（1:1 复刻 webchat）
@@ -35,7 +51,7 @@ fun SessionScreen(
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
     LaunchedEffect(sessionId) {
-        android.util.Log.d("SessionScreen", "LaunchedEffect: sessionId=$sessionId")
+        android.util.AppLog.d("SessionScreen", "LaunchedEffect: sessionId=$sessionId")
         viewModel.setSessionId(sessionId)
         focusRequester.requestFocus()
     }

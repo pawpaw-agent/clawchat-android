@@ -1,26 +1,47 @@
 package com.openclaw.clawchat.ui.screens.settings
 
 import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import androidx.lifecycle.ViewModel
+import com.openclaw.clawchat.util.AppLog
 import androidx.lifecycle.viewModelScope
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.data.FontSize
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.data.ThemeMode
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.data.UserPreferences
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.WebSocketConnectionState
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.protocol.GatewayConnection
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.security.EncryptedStorage
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.state.ConnectionStatus
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.state.GatewayConfigInput
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.state.SettingsUiState
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.state.toUiStatus
+import com.openclaw.clawchat.util.AppLog
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.MutableStateFlow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.StateFlow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.asStateFlow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.update
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.launch
+import com.openclaw.clawchat.util.AppLog
 import javax.inject.Inject
+import com.openclaw.clawchat.util.AppLog
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -120,13 +141,13 @@ class SettingsViewModel @Inject constructor(
                 )
             )
         }
-        Log.d(TAG, "Gateway 配置已更新：${config.host}:${config.port}")
+        AppLog.d(TAG, "Gateway 配置已更新：${config.host}:${config.port}")
     }
 
     fun disconnect() {
         viewModelScope.launch {
             gateway.disconnect()
-            Log.d(TAG, "已断开连接")
+            AppLog.d(TAG, "已断开连接")
         }
     }
 

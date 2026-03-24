@@ -1,22 +1,39 @@
 package com.openclaw.clawchat.network
 
 import android.content.Context
+import com.openclaw.clawchat.util.AppLog
 import android.net.ConnectivityManager
+import com.openclaw.clawchat.util.AppLog
 import android.net.Network
+import com.openclaw.clawchat.util.AppLog
 import android.net.NetworkCapabilities
+import com.openclaw.clawchat.util.AppLog
 import android.net.NetworkRequest
+import com.openclaw.clawchat.util.AppLog
 import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.channels.awaitClose
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.Flow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.callbackFlow
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.distinctUntilChanged
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.withContext
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.Dispatchers
+import com.openclaw.clawchat.util.AppLog
 import java.net.Inet4Address
+import com.openclaw.clawchat.util.AppLog
 import java.net.InetAddress
+import com.openclaw.clawchat.util.AppLog
 import java.net.NetworkInterface
+import com.openclaw.clawchat.util.AppLog
 import javax.inject.Inject
+import com.openclaw.clawchat.util.AppLog
 
 /**
  * Tailscale 网络管理器
@@ -48,11 +65,11 @@ class TailscaleManager @Inject constructor(
             while (interfaces.hasMoreElements()) {
                 val iface = interfaces.nextElement()
                 if (iface.name in TAILSCALE_INTERFACES && iface.isUp) {
-                    Log.d(TAG, "Tailscale interface found: ${iface.name}")
+                    AppLog.d(TAG, "Tailscale interface found: ${iface.name}")
                     return true
                 }
             }
-            Log.d(TAG, "No Tailscale interface found")
+            AppLog.d(TAG, "No Tailscale interface found")
             false
         } catch (e: Exception) {
             Log.e(TAG, "Failed to check Tailscale status: ${e.message}", e)
@@ -76,13 +93,13 @@ class TailscaleManager @Inject constructor(
                         val address = addresses.nextElement()
                         if (address is Inet4Address && !address.isLoopbackAddress) {
                             val ip = address.hostAddress
-                            Log.d(TAG, "Found Tailscale IP: $ip on ${iface.name}")
+                            AppLog.d(TAG, "Found Tailscale IP: $ip on ${iface.name}")
                             return ip
                         }
                     }
                 }
             }
-            Log.d(TAG, "No Tailscale IP found")
+            AppLog.d(TAG, "No Tailscale IP found")
             null
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get Tailscale IP: ${e.message}", e)
@@ -139,7 +156,7 @@ class TailscaleManager @Inject constructor(
             try {
                 val addresses = InetAddress.getAllByName(name)
                 val ip = addresses.firstOrNull { it is Inet4Address }?.hostAddress
-                Log.d(TAG, "Resolved $name -> $ip")
+                AppLog.d(TAG, "Resolved $name -> $ip")
                 ip
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to resolve $name: ${e.message}")

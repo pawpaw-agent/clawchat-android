@@ -1,14 +1,23 @@
 package com.openclaw.clawchat.network.protocol
 
 import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.CompletableDeferred
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.CoroutineScope
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.Dispatchers
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.delay
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.launch
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.sync.Mutex
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.sync.withLock
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.JsonElement
+import com.openclaw.clawchat.util.AppLog
 
 /**
  * 请求追踪器
@@ -111,7 +120,7 @@ class RequestTracker(
         }
         
         if (expired.isNotEmpty()) {
-            Log.d(TAG, "清理了 ${expired.size} 个超时请求")
+            AppLog.d(TAG, "清理了 ${expired.size} 个超时请求")
         }
     }
     
@@ -133,7 +142,7 @@ class RequestTracker(
         )
         
         pendingRequests[requestId] = pendingRequest
-        Log.d(TAG, "追踪请求：$requestId ($method)")
+        AppLog.d(TAG, "追踪请求：$requestId ($method)")
         
         pendingRequest.deferred
     }
@@ -150,7 +159,7 @@ class RequestTracker(
         if (pendingRequest != null) {
             if (!pendingRequest.deferred.isCompleted) {
                 pendingRequest.deferred.complete(response)
-                Log.d(TAG, "请求完成：${response.id} (ok=${response.ok})")
+                AppLog.d(TAG, "请求完成：${response.id} (ok=${response.ok})")
             }
             true
         } else {
@@ -196,7 +205,7 @@ class RequestTracker(
         if (pendingRequest != null) {
             if (!pendingRequest.deferred.isCompleted) {
                 pendingRequest.deferred.cancel(CancellationException("Request cancelled"))
-                Log.d(TAG, "请求取消：$requestId")
+                AppLog.d(TAG, "请求取消：$requestId")
             }
             true
         } else {
@@ -216,7 +225,7 @@ class RequestTracker(
         
         val count = pendingRequests.size
         pendingRequests.clear()
-        Log.d(TAG, "取消了 $count 个请求：$reason")
+        AppLog.d(TAG, "取消了 $count 个请求：$reason")
     }
     
     /**

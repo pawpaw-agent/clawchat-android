@@ -9,6 +9,7 @@ import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.ChatAttachmentData
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
+import com.openclaw.clawchat.util.AppLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
@@ -76,7 +77,7 @@ class SessionViewModel @Inject constructor(
     }
 
     init {
-        Log.d(TAG, "=== SessionViewModel init")
+        AppAppLog.d(TAG, "=== SessionViewModel init")
         observeConnectionState()
         observeIncomingMessages()
     }
@@ -88,15 +89,15 @@ class SessionViewModel @Inject constructor(
     private var observeMessagesJob: Job? = null
     
     private fun observeSessionMessages(sessionId: String) {
-        Log.d(TAG, "=== observeSessionMessages: CALLED for $sessionId")
+        AppAppLog.d(TAG, "=== observeSessionMessages: CALLED for $sessionId")
         observeMessagesJob?.cancel()
         observeMessagesJob = viewModelScope.launch(exceptionHandler) {
-            Log.d(TAG, "=== observeSessionMessages: STARTED collecting for $sessionId")
+            AppAppLog.d(TAG, "=== observeSessionMessages: STARTED collecting for $sessionId")
             messageRepository.observeMessages(sessionId).collect { messages ->
-                Log.d(TAG, "=== observeSessionMessages: COLLECTED ${messages.size} messages for $sessionId")
-                Log.d(TAG, "=== observeSessionMessages: message IDs: ${messages.map { it.id }}")
+                AppAppLog.d(TAG, "=== observeSessionMessages: COLLECTED ${messages.size} messages for $sessionId")
+                AppAppLog.d(TAG, "=== observeSessionMessages: message IDs: ${messages.map { it.id }}")
                 _state.update { it.copy(chatMessages = messages) }
-                Log.d(TAG, "=== observeSessionMessages: state updated, _state.value.chatMessages.size = ${_state.value.chatMessages.size}")
+                AppAppLog.d(TAG, "=== observeSessionMessages: state updated, _state.value.chatMessages.size = ${_state.value.chatMessages.size}")
             }
         }
     }
@@ -130,7 +131,7 @@ class SessionViewModel @Inject constructor(
                 if (connectionState is WebSocketConnectionState.Connected) {
                     val currentSessionId = _state.value.sessionId
                     if (currentSessionId != null && _state.value.chatMessages.isEmpty()) {
-                        Log.d(TAG, "=== observeConnectionState: Connection restored, reloading messages for $currentSessionId")
+                        AppAppLog.d(TAG, "=== observeConnectionState: Connection restored, reloading messages for $currentSessionId")
                         loadMessageHistory(currentSessionId)
                     }
                 }
@@ -151,10 +152,10 @@ class SessionViewModel @Inject constructor(
      */
     private fun handleIncomingFrame(rawJson: String) {
         val sessionId = _state.value.sessionId
-        Log.d(TAG, "=== handleIncomingFrame: sessionId=$sessionId, rawJson=${rawJson.take(100)}")
+        AppAppLog.d(TAG, "=== handleIncomingFrame: sessionId=$sessionId, rawJson=${rawJson.take(100)}")
         
         if (sessionId == null) {
-            Log.w(TAG, "=== handleIncomingFrame: sessionId is null, returning")
+            AppLog.w(TAG, "=== handleIncomingFrame: sessionId is null, returning")
             return
         }
 
@@ -162,7 +163,7 @@ class SessionViewModel @Inject constructor(
             val obj = json.parseToJsonElement(rawJson).jsonObject
             val type = obj["type"]?.jsonPrimitive?.content
             val event = obj["event"]?.jsonPrimitive?.content
-            Log.d(TAG, "=== handleIncomingFrame: type=$type, event=$event")
+            AppAppLog.d(TAG, "=== handleIncomingFrame: type=$type, event=$event")
 
             if (type != "event") return
 
@@ -172,7 +173,7 @@ class SessionViewModel @Inject constructor(
             // agent 事件：检查 stream 字段
             if (event == "agent") {
                 val stream = payload["stream"]?.jsonPrimitive?.content
-                Log.d(TAG, "=== handleIncomingFrame: agent event, stream=$stream")
+                AppAppLog.d(TAG, "=== handleIncomingFrame: agent event, stream=$stream")
                 if (stream != null) {
                     if (eventSessionKey != null && eventSessionKey != sessionId) {
                         return
@@ -186,14 +187,14 @@ class SessionViewModel @Inject constructor(
             if (event != "chat") return
             
             val sessionKey = eventSessionKey ?: return
-            Log.d(TAG, "=== handleIncomingFrame: eventSessionKey=$sessionKey, payload keys=${payload.keys}")
+            AppAppLog.d(TAG, "=== handleIncomingFrame: eventSessionKey=$sessionKey, payload keys=${payload.keys}")
 
             if (eventSessionKey != sessionId) return
 
             // 处理 chat 事件
             handleChatEvent(payload, sessionId)
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to parse chat event: ${e.message}")
+            AppLog.w(TAG, "Failed to parse chat event: ${e.message}")
         }
     }
 
@@ -218,7 +219,7 @@ class SessionViewModel @Inject constructor(
         val runId = payload["runId"]?.jsonPrimitive?.content ?: ""
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
         
-        Log.d(TAG, "=== Tool stream event: toolCallId=$toolCallId, name=$name, phase=$phase")
+        AppAppLog.d(TAG, "=== Tool stream event: toolCallId=$toolCallId, name=$name, phase=$phase")
         
         _state.update { currentState ->
             val now = System.currentTimeMillis()
@@ -237,7 +238,7 @@ class SessionViewModel @Inject constructor(
                     chatStreamSegments = chatStreamSegments + StreamSegment(chatStream.trim(), now)
                     chatStream = null
                     chatStreamStartedAt = null
-                    Log.d(TAG, "=== Committed stream text to segment")
+                    AppAppLog.d(TAG, "=== Committed stream text to segment")
                 }
             }
             
@@ -290,7 +291,7 @@ class SessionViewModel @Inject constructor(
                 toolStreamById[id]?.buildMessage()
             }
             
-            Log.d(TAG, "=== handleToolStreamEvent: chatToolMessages.size=${chatToolMessages.size}, toolStreamOrder=${toolStreamOrder.size}")
+            AppAppLog.d(TAG, "=== handleToolStreamEvent: chatToolMessages.size=${chatToolMessages.size}, toolStreamOrder=${toolStreamOrder.size}")
             
             currentState.copy(
                 toolStreamById = toolStreamById.toMap(),
@@ -311,7 +312,7 @@ class SessionViewModel @Inject constructor(
         val state = payload["state"]?.jsonPrimitive?.content ?: return
         val msgObj = payload["message"]?.jsonObject
         
-        Log.d(TAG, "=== handleChatEvent: runId=$runId, state=$state, msgObj=$msgObj")
+        AppAppLog.d(TAG, "=== handleChatEvent: runId=$runId, state=$state, msgObj=$msgObj")
         
         when (state) {
             "delta" -> handleDelta(runId, msgObj, sessionId)
@@ -330,14 +331,14 @@ class SessionViewModel @Inject constructor(
     private fun handleDelta(runId: String, msgObj: JsonObject?, sessionId: String) {
         // 提取文本
         val text = MessageHandler.extractText(msgObj?.get("content"))
-        Log.d(TAG, "=== handleDelta: runId=$runId, text=${text?.take(50)}, textLen=${text?.length}")
+        AppAppLog.d(TAG, "=== handleDelta: runId=$runId, text=${text?.take(50)}, textLen=${text?.length}")
         
         if (!text.isNullOrBlank() && !MessageHandler.isSilentReplyStream(text)) {
             _state.update { currentState ->
                 val current = currentState.chatStream ?: ""
                 // webchat: if (!current || next.length >= current.length)
                 val newStream = if (current.isBlank() || text.length >= current.length) text else current
-                Log.d(TAG, "=== handleDelta: updating chatStream, newLen=${newStream.length}")
+                AppAppLog.d(TAG, "=== handleDelta: updating chatStream, newLen=${newStream.length}")
                 
                 currentState.copy(
                     chatStream = newStream,
@@ -353,14 +354,14 @@ class SessionViewModel @Inject constructor(
      */
     private fun handleFinal(runId: String, msgObj: JsonObject?, sessionId: String) {
         val finalMessage = MessageHandler.normalizeFinalAssistantMessage(msgObj)
-        Log.d(TAG, "=== handleFinal: runId=$runId, finalMessage=${finalMessage != null}, chatStream=${_state.value.chatStream?.take(30)}")
+        AppAppLog.d(TAG, "=== handleFinal: runId=$runId, finalMessage=${finalMessage != null}, chatStream=${_state.value.chatStream?.take(30)}")
         
         _state.update { currentState ->
             val newMessages = if (finalMessage != null && !MessageHandler.isAssistantSilentReply(finalMessage)) {
-                Log.d(TAG, "=== handleFinal: adding finalMessage to chatMessages")
+                AppAppLog.d(TAG, "=== handleFinal: adding finalMessage to chatMessages")
                 currentState.chatMessages + finalMessage
             } else if (!currentState.chatStream.isNullOrBlank() && !MessageHandler.isSilentReplyStream(currentState.chatStream)) {
-                Log.d(TAG, "=== handleFinal: adding chatStream to chatMessages")
+                AppAppLog.d(TAG, "=== handleFinal: adding chatStream to chatMessages")
                 currentState.chatMessages + MessageUi(
                     id = runId,
                     content = listOf(MessageContentItem.Text(currentState.chatStream.trim())),
@@ -368,11 +369,11 @@ class SessionViewModel @Inject constructor(
                     timestamp = System.currentTimeMillis()
                 )
             } else {
-                Log.d(TAG, "=== handleFinal: no message to add")
+                AppAppLog.d(TAG, "=== handleFinal: no message to add")
                 currentState.chatMessages
             }
             
-            Log.d(TAG, "=== handleFinal: chatMessages.size=${newMessages.size}")
+            AppAppLog.d(TAG, "=== handleFinal: chatMessages.size=${newMessages.size}")
             
             // 重置流式状态
             currentState.copy(
@@ -448,7 +449,7 @@ class SessionViewModel @Inject constructor(
                     timestamp = System.currentTimeMillis()
                 )
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to save message: ${e.message}")
+                AppLog.w(TAG, "Failed to save message: ${e.message}")
             }
         }
     }
@@ -458,8 +459,8 @@ class SessionViewModel @Inject constructor(
     // ─────────────────────────────────────────────────────────────
 
     fun setSessionId(sessionId: String) {
-        Log.d(TAG, "=== setSessionId: $sessionId")
-        Log.d(TAG, "=== setSessionId: sessionId='$sessionId', length=${sessionId.length}")
+        AppAppLog.d(TAG, "=== setSessionId: $sessionId")
+        AppAppLog.d(TAG, "=== setSessionId: sessionId='$sessionId', length=${sessionId.length}")
         
         // 取消之前的加载任务
         loadMessagesJob?.cancel()
@@ -480,18 +481,18 @@ class SessionViewModel @Inject constructor(
             try {
                 val response = gateway.sessionsPatch(sessionId, verboseLevel = "full")
                 if (response.isSuccess()) {
-                    Log.d(TAG, "=== setSessionId: verboseLevel set to 'full' - SUCCESS")
+                    AppAppLog.d(TAG, "=== setSessionId: verboseLevel set to 'full' - SUCCESS")
                 } else {
-                    Log.w(TAG, "=== setSessionId: sessionsPatch FAILED: code=${response.error?.code}, message=${response.error?.message}")
+                    AppLog.w(TAG, "=== setSessionId: sessionsPatch FAILED: code=${response.error?.code}, message=${response.error?.message}")
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "=== setSessionId: Exception setting verboseLevel: ${e.message}")
+                AppLog.w(TAG, "=== setSessionId: Exception setting verboseLevel: ${e.message}")
             }
         }
     }
 
     private fun loadMessageHistory(sessionId: String) {
-        Log.d(TAG, "=== loadMessageHistory: sessionId=$sessionId")
+        AppAppLog.d(TAG, "=== loadMessageHistory: sessionId=$sessionId")
         
         // 取消之前的加载任务
         loadMessagesJob?.cancel()
@@ -504,32 +505,32 @@ class SessionViewModel @Inject constructor(
             try {
                 // 检查连接状态
                 if (gateway.connectionState.value !is WebSocketConnectionState.Connected) {
-                    Log.w(TAG, "=== loadMessageHistory: Gateway not connected, skipping")
+                    AppLog.w(TAG, "=== loadMessageHistory: Gateway not connected, skipping")
                     _state.update { it.copy(isLoading = false) }
                     return@launch
                 }
                 
-                Log.d(TAG, "=== loadMessageHistory: fetching from Gateway...")
-                Log.d(TAG, "=== loadMessageHistory: sessionId='$sessionId', length=${sessionId.length}")
-                Log.d(TAG, "=== loadMessageHistory: connectionState=${gateway.connectionState.value}")
+                AppAppLog.d(TAG, "=== loadMessageHistory: fetching from Gateway...")
+                AppAppLog.d(TAG, "=== loadMessageHistory: sessionId='$sessionId', length=${sessionId.length}")
+                AppAppLog.d(TAG, "=== loadMessageHistory: connectionState=${gateway.connectionState.value}")
                 val response = gateway.chatHistory(sessionId, limit = 100)
-                Log.d(TAG, "=== loadMessageHistory: response ok=${response.isSuccess()}, error=${response.error}")
+                AppAppLog.d(TAG, "=== loadMessageHistory: response ok=${response.isSuccess()}, error=${response.error}")
                 
                 if (!response.isSuccess()) {
-                    Log.w(TAG, "=== loadMessageHistory: Gateway request failed: ${response.error?.message}")
+                    AppLog.w(TAG, "=== loadMessageHistory: Gateway request failed: ${response.error?.message}")
                     _state.update { it.copy(isLoading = false) }
                     return@launch
                 }
                 
                 if (response.payload !is JsonObject) {
-                    Log.w(TAG, "=== loadMessageHistory: Invalid response payload type: ${response.payload?.javaClass?.simpleName}")
+                    AppLog.w(TAG, "=== loadMessageHistory: Invalid response payload type: ${response.payload?.javaClass?.simpleName}")
                     _state.update { it.copy(isLoading = false) }
                     return@launch
                 }
                 
                 val payload = response.payload as JsonObject
                 val messagesArray = payload["messages"]?.jsonArray
-                Log.d(TAG, "=== loadMessageHistory: Gateway returned ${messagesArray?.size ?: 0} messages")
+                AppAppLog.d(TAG, "=== loadMessageHistory: Gateway returned ${messagesArray?.size ?: 0} messages")
                 
                 messagesArray?.forEach { msgElement ->
                     try {
@@ -544,7 +545,7 @@ class SessionViewModel @Inject constructor(
                         val toolName = msgObj["toolName"]?.jsonPrimitive?.content
                             ?: msgObj["tool_name"]?.jsonPrimitive?.content
                         
-                        Log.d(TAG, "=== loadMessageHistory: role=$role, toolCallId=$toolCallId, toolName=$toolName, content=${content.take(100)}")
+                        AppAppLog.d(TAG, "=== loadMessageHistory: role=$role, toolCallId=$toolCallId, toolName=$toolName, content=${content.take(100)}")
                         
                         messageRepository.saveMessage(
                             sessionId = sessionId,
@@ -555,16 +556,16 @@ class SessionViewModel @Inject constructor(
                             toolName = toolName
                         )
                     } catch (e: Exception) {
-                        Log.w(TAG, "Failed to parse history message: ${e.message}")
+                        AppLog.w(TAG, "Failed to parse history message: ${e.message}")
                     }
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to load chat history: ${e.message}")
+                AppLog.w(TAG, "Failed to load chat history: ${e.message}")
             }
             // Gateway 加载完成，取消加载状态
             // 直接从 repository 获取消息并更新状态
             val loadedMessages = messageRepository.observeMessages(sessionId).first()
-            Log.d(TAG, "=== loadMessageHistory: loaded ${loadedMessages.size} messages from repository")
+            AppAppLog.d(TAG, "=== loadMessageHistory: loaded ${loadedMessages.size} messages from repository")
             _state.update { it.copy(
                 isLoading = false,
                 chatMessages = loadedMessages
@@ -708,7 +709,7 @@ class SessionViewModel @Inject constructor(
             // 找到最后一条用户消息
             val lastUserMessage = messages.lastOrNull { it.role == MessageRole.USER }
             if (lastUserMessage == null) {
-                Log.w(TAG, "No user message to regenerate from")
+                AppLog.w(TAG, "No user message to regenerate from")
                 return@launch
             }
             

@@ -1,10 +1,15 @@
 package com.openclaw.clawchat.network
 
 import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.delay
+import com.openclaw.clawchat.util.AppLog
 import java.io.IOException
+import com.openclaw.clawchat.util.AppLog
 import java.net.SocketTimeoutException
+import com.openclaw.clawchat.util.AppLog
 import java.net.UnknownHostException
+import com.openclaw.clawchat.util.AppLog
 
 /**
  * 网络错误类型
@@ -103,13 +108,13 @@ suspend fun <T> retryWithBackoff(
         // 检查是否应该重试
         val exception = lastException
         if (exception != null && !shouldRetry(exception)) {
-            Log.d("RetryWithBackoff", "Not retrying: $exception")
+            AppLog.d("RetryWithBackoff", "Not retrying: $exception")
             return Result.failure(exception)
         }
         
         // 如果不是最后一次尝试，则等待后重试
         if (attempt < maxRetries - 1) {
-            Log.d("RetryWithBackoff", "Retry attempt ${attempt + 1}/${maxRetries} after ${currentDelay}ms")
+            AppLog.d("RetryWithBackoff", "Retry attempt ${attempt + 1}/${maxRetries} after ${currentDelay}ms")
             delay(currentDelay)
             currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)
         }
