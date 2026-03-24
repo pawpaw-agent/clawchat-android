@@ -342,7 +342,7 @@ data class SecurityStatus(
 object SecureLogger {
     private const val TAG = "ClawChat-Security"
     
-    fun d(message: String) = android.util.AppLog.d(TAG, message.redactSensitive())
+    fun d(message: String) = AppLog.d(TAG, message.redactSensitive())
     fun i(message: String) = android.util.Log.i(TAG, message.redactSensitive())
     fun w(message: String) = android.util.Log.w(TAG, message.redactSensitive())
     fun e(message: String, throwable: Throwable? = null) {

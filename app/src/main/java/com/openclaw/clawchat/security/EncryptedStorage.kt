@@ -77,7 +77,7 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
         sharedPreferences = createEncryptedPrefs(context)
 
         if (BuildConfig.DEBUG && usingSoftwareKeyStore) {
-            android.util.AppLog.d(TAG,
+            AppLog.d(TAG,
                 "⚠️ API ${Build.VERSION.SDK_INT} < 33: using software key store " +
                 "(Ed25519 private keys in EncryptedSharedPreferences, not hardware Keystore)")
         }
@@ -270,7 +270,7 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
         val status = getPairingStatus()
         val hasToken = hasDeviceToken()
         val result = status == PAIRING_STATUS_APPROVED && hasToken
-        android.util.AppLog.d("EncryptedStorage", "isPaired: status=$status, hasToken=$hasToken, result=$result")
+        AppLog.d("EncryptedStorage", "isPaired: status=$status, hasToken=$hasToken, result=$result")
         return result
     }
     

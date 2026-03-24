@@ -1,5 +1,6 @@
 package com.openclaw.clawchat.network.protocol
 
+import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement

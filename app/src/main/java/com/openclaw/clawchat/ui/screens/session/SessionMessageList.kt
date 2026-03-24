@@ -181,7 +181,7 @@ fun MessageGroupList(
         
         // 3. 工具消息
         if (toolMessages.isNotEmpty()) {
-            android.util.AppLog.d("SessionMessageList", "Rendering toolMessages: size=${toolMessages.size}")
+            AppLog.d("SessionMessageList", "Rendering toolMessages: size=${toolMessages.size}")
             items(toolMessages, key = { "tool_${it.id}_${it.content.hashCode()}" }) { toolMessage ->
                 ToolMessageCard(message = toolMessage)
             }

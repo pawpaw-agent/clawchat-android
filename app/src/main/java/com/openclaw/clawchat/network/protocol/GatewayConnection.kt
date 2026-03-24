@@ -453,9 +453,9 @@ class GatewayConnection(
 
         val deferred = requestTracker.trackRequest(requestId, method)
         val frameJson = json.encodeToString(RequestFrame.serializer(), frame)
-        android.util.AppLog.d("GatewayConnection", "=== call: sending $method, requestId=$requestId, params=$params")
+        AppLog.d("GatewayConnection", "=== call: sending $method, requestId=$requestId, params=$params")
         val sent = webSocket?.send(frameJson) ?: false
-        android.util.AppLog.d("GatewayConnection", "=== call: sent=$sent, webSocket connected=${webSocket != null}")
+        AppLog.d("GatewayConnection", "=== call: sent=$sent, webSocket connected=${webSocket != null}")
 
         if (!sent) {
             requestTracker.failRequest(requestId, IllegalStateException("WebSocket not connected"))
@@ -522,17 +522,17 @@ class GatewayConnection(
 
     /** chat.history */
     suspend fun chatHistory(sessionKey: String, limit: Int? = null): ResponseFrame {
-        android.util.AppLog.d("GatewayConnection", "=== chatHistory called: sessionKey='$sessionKey', length=${sessionKey.length}, limit=$limit")
+        AppLog.d("GatewayConnection", "=== chatHistory called: sessionKey='$sessionKey', length=${sessionKey.length}, limit=$limit")
         val params = mutableMapOf<String, JsonElement>(
             "sessionKey" to JsonPrimitive(sessionKey)
         )
         if (limit != null) params["limit"] = JsonPrimitive(limit)
-        android.util.AppLog.d("GatewayConnection", "=== chatHistory: calling 'chat.history' with params=$params")
+        AppLog.d("GatewayConnection", "=== chatHistory: calling 'chat.history' with params=$params")
         val response = call("chat.history", params)
-        android.util.AppLog.d("GatewayConnection", "=== chatHistory response: ok=${response.isSuccess()}, error=${response.error}, payload type=${response.payload?.javaClass?.simpleName}")
+        AppLog.d("GatewayConnection", "=== chatHistory response: ok=${response.isSuccess()}, error=${response.error}, payload type=${response.payload?.javaClass?.simpleName}")
         if (response.payload is JsonObject) {
             val messagesArray = (response.payload as JsonObject)["messages"]?.jsonArray
-            android.util.AppLog.d("GatewayConnection", "=== chatHistory: messages count=${messagesArray?.size ?: 0}")
+            AppLog.d("GatewayConnection", "=== chatHistory: messages count=${messagesArray?.size ?: 0}")
         }
         return response
     }

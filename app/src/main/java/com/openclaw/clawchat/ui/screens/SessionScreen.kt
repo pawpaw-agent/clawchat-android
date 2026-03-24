@@ -36,7 +36,7 @@ fun SessionScreen(
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
     LaunchedEffect(sessionId) {
-        android.util.AppLog.d("SessionScreen", "LaunchedEffect: sessionId=$sessionId")
+        AppLog.d("SessionScreen", "LaunchedEffect: sessionId=$sessionId")
         viewModel.setSessionId(sessionId)
         focusRequester.requestFocus()
     }
