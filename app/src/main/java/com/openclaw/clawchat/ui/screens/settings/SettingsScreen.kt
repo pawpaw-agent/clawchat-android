@@ -21,7 +21,6 @@ import com.openclaw.clawchat.data.ThemeMode
 import com.openclaw.clawchat.ui.state.ConnectionStatusUi
 import com.openclaw.clawchat.ui.state.GatewayConfigInput
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
-import com.openclaw.clawchat.ui.state.PairingViewModel
 import com.openclaw.clawchat.ui.state.SettingsUiState
 import com.openclaw.clawchat.ui.state.getStatusColor
 import com.openclaw.clawchat.ui.theme.DesignTokens
@@ -392,8 +391,9 @@ private fun PairingBottomSheet(
     onDismiss: () -> Unit,
     onPairingSuccess: () -> Unit
 ) {
-    val pairingViewModel: com.openclaw.clawchat.ui.state.PairingViewModel = hiltViewModel()
-    val pairingState by pairingViewModel.uiState.collectAsStateWithLifecycle()
+    var gatewayUrl by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
     
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -413,8 +413,8 @@ private fun PairingBottomSheet(
             
             // Gateway URL 输入
             OutlinedTextField(
-                value = pairingState.gatewayUrl,
-                onValueChange = { pairingViewModel.updateGatewayUrl(it) },
+                value = gatewayUrl,
+                onValueChange = { gatewayUrl = it },
                 label = { Text("Gateway URL") },
                 placeholder = { Text("例如：http://192.168.1.100:18789") },
                 singleLine = true,
@@ -423,20 +423,8 @@ private fun PairingBottomSheet(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // 配对码输入（可选）
-            OutlinedTextField(
-                value = pairingState.pairingCode,
-                onValueChange = { pairingViewModel.updatePairingCode(it) },
-                label = { Text("配对码（可选）") },
-                placeholder = { Text("如果有配对码，请输入") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
             // 状态显示
-            if (pairingState.isLoading) {
+            if (isLoading) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -446,9 +434,9 @@ private fun PairingBottomSheet(
                 }
             }
             
-            pairingState.error?.let { error ->
+            error?.let { errorMsg ->
                 Text(
-                    text = error,
+                    text = errorMsg,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -470,9 +458,13 @@ private fun PairingBottomSheet(
                 
                 Button(
                     onClick = {
-                        pairingViewModel.startPairing()
+                        isLoading = true
+                        error = null
+                        // TODO: 实现实际连接逻辑
+                        // 暂时模拟成功
+                        onPairingSuccess()
                     },
-                    enabled = pairingState.gatewayUrl.isNotBlank() && !pairingState.isLoading,
+                    enabled = gatewayUrl.isNotBlank() && !isLoading,
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("连接")
