@@ -35,7 +35,6 @@ fun SessionListContent(
     onSearchQueryChange: (String) -> Unit,
     onSelectSession: (String) -> Unit,
     onSessionLongPress: (SessionUi?) -> Unit,
-    onCreateSession: () -> Unit,
     onRefresh: () -> Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
@@ -81,7 +80,7 @@ fun SessionListContent(
 
                 // 会话列表或空状态
                 if (state.sessions.isEmpty()) {
-                    EmptySessionList(onCreateSession = onCreateSession)
+                    EmptySessionList()
                 } else {
                     SessionList(
                         sessions = filterSessions(state.sessions, searchQuery),
@@ -99,9 +98,7 @@ fun SessionListContent(
  * 空会话列表
  */
 @Composable
-private fun EmptySessionList(
-    onCreateSession: () -> Unit
-) {
+private fun EmptySessionList() {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -127,16 +124,10 @@ private fun EmptySessionList(
         Spacer(modifier = Modifier.height(8.dp))
         
         Text(
-            text = "点击 + 创建新会话",
+            text = "从其他客户端创建会话",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Button(onClick = onCreateSession) {
-            Text("创建会话")
-        }
     }
 }
 

@@ -85,15 +85,7 @@ fun MainScreen(
                 onSettingsClick = { showSettings = true }
             )
         },
-        floatingActionButton = {
-            if (state.connectionStatus.isConnected) {
-                ExtendedFloatingActionButton(
-                    onClick = { viewModel.createSession() },
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text("新会话") }
-                )
-            }
-        }
+        floatingActionButton = {}
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -125,7 +117,6 @@ fun MainScreen(
                         onSearchQueryChange = { searchQuery = it },
                         onSelectSession = { viewModel.selectSession(it) },
                         onSessionLongPress = { showSessionOptions = it },
-                        onCreateSession = { viewModel.createSession() },
                         onRefresh = { viewModel.refreshSessions() }
                     )
                 }
