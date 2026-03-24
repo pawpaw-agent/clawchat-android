@@ -14,6 +14,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.screens.session.*
@@ -33,8 +36,23 @@ fun SessionScreen(
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
     
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
+
+    // 监听生命周期，onResume 时刷新消息
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                AppLog.d("SessionScreen", "onResume: refreshing messages")
+                viewModel.refreshMessages()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     LaunchedEffect(sessionId) {
         AppLog.d("SessionScreen", "LaunchedEffect: sessionId=$sessionId")

@@ -491,6 +491,15 @@ class SessionViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 刷新消息（从后台返回前台时调用）
+     */
+    fun refreshMessages() {
+        val sessionId = _state.value.sessionId ?: return
+        AppLog.d(TAG, "=== onResume: refreshing messages for $sessionId")
+        loadMessageHistory(sessionId)
+    }
+
     private fun loadMessageHistory(sessionId: String) {
         AppLog.d(TAG, "=== loadMessageHistory: sessionId=$sessionId")
         
