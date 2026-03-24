@@ -99,14 +99,18 @@ fun SessionScreen(
     LaunchedEffect(imeVisible) {
         if (imeVisible && !wasImeVisible && state.chatMessages.isNotEmpty()) {
             // 键盘从隐藏变为显示，滚动到底部
-            AppLog.d("SessionScreen", "IME shown, scrolling to bottom")
+            AppLog.d("SessionScreen", "IME shown, scrolling to bottom, imeBottom=$imeBottom")
             scope.launch {
-                listState.animateScrollToItem(state.chatMessages.lastIndex)
-                // 额外滚动 IME 高度，确保消息不被遮挡
-                if (imeBottom > 0) {
-                    val imeHeightPx: Float = imeBottom * density.density
-                    listState.scroll { scrollBy(imeHeightPx) }
+                // 计算额外偏移（IME 高度），确保消息不被遮挡
+                val extraOffset = if (imeBottom > 0) {
+                    -imeBottom // 负值：向上额外滚动 IME 高度
+                } else {
+                    0
                 }
+                listState.animateScrollToItem(
+                    index = state.chatMessages.lastIndex,
+                    scrollOffset = extraOffset
+                )
             }
         }
         wasImeVisible = imeVisible
