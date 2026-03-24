@@ -53,7 +53,8 @@ data class MainUiState(
     val currentGateway: GatewayConfigUi? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val latency: Long? = null
+    val latency: Long? = null,
+    val connectionError: String? = null  // 自动连接失败时的错误信息
 )
 
 /**

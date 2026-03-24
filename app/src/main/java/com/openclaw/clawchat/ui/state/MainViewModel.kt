@@ -117,8 +117,13 @@ class MainViewModel @Inject constructor(
 
                 result.onFailure { error ->
                     Log.w(TAG, "Auto-connect failed: ${error.message}")
-                    _uiState.update { it.copy(isLoading = false) }
-                    // 不显示错误，让用户手动连接
+                    _uiState.update { 
+                        it.copy(
+                            isLoading = false,
+                            connectionError = error.message ?: "连接失败"
+                        )
+                    }
+                    _events.trySend(UiEvent.ShowConnectionError(error.message ?: "连接失败"))
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Auto-connect exception: ${e.message}")
@@ -281,6 +286,19 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 刷新会话列表（从 Gateway 拉取最新）
+     */
+    fun refreshSessions() {
+        viewModelScope.launch(exceptionHandler) {
+            if (!gateway.isConnected()) {
+                _events.trySend(UiEvent.ShowError("未连接到 Gateway"))
+                return@launch
+            }
+            loadSessionsFromGateway()
+        }
+    }
+
     fun disconnect() {
         viewModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(connectionStatus = ConnectionStatus.Disconnecting, currentGateway = null) }
@@ -385,7 +403,16 @@ class MainViewModel @Inject constructor(
 
     fun terminateSession(sessionId: String) { deleteSession(sessionId) }
     fun clearError() { _uiState.update { it.copy(error = null) } }
+    fun clearConnectionError() { _uiState.update { it.copy(connectionError = null) } }
     fun consumeEvent() { /* no-op: Channel events are consumed on receive */ }
+    
+    /**
+     * 重试连接
+     */
+    fun retryConnection() {
+        clearConnectionError()
+        autoConnectIfNeeded()
+    }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -398,4 +425,5 @@ sealed class UiEvent {
     data class ShowSuccess(val message: String) : UiEvent()
     data object ShowPairingDialog : UiEvent()
     data object ConnectionLost : UiEvent()
+    data class ShowConnectionError(val message: String) : UiEvent()
 }

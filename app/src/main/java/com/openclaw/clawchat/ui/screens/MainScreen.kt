@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -114,6 +116,15 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // 连接错误 Banner
+            if (state.connectionError != null) {
+                ConnectionErrorBanner(
+                    error = state.connectionError!!,
+                    onRetry = { viewModel.retryConnection() },
+                    onDismiss = { viewModel.clearConnectionError() }
+                )
+            }
+            
             when {
                 state.connectionStatus !is ConnectionStatus.Connected -> {
                     // 未连接状态
@@ -130,37 +141,50 @@ fun MainScreen(
                 }
                 else -> {
                     // 会话列表
-                    Column {
-                        // 搜索栏
-                        if (state.sessions.isNotEmpty()) {
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                placeholder = { Text("搜索会话...") },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Search,
-                                        contentDescription = null
+                    var isRefreshing by remember { mutableStateOf(false) }
+                    
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = {
+                            isRefreshing = true
+                            viewModel.refreshSessions()
+                            // 简单延迟后重置刷新状态
+                            isRefreshing = false
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Column {
+                            // 搜索栏
+                            if (state.sessions.isNotEmpty()) {
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = { searchQuery = it },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    placeholder = { Text("搜索会话...") },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Search,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
                                     )
-                                },
-                                singleLine = true,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
                                 )
+                            }
+
+                            // 会话列表
+                            SessionList(
+                                sessions = filterSessions(state.sessions, searchQuery),
+                                currentSession = state.currentSession,
+                                onSelectSession = { viewModel.selectSession(it) },
+                                onSessionLongPress = { showSessionOptions = it }
                             )
                         }
-
-                        // 会话列表
-                        SessionList(
-                            sessions = filterSessions(state.sessions, searchQuery),
-                            currentSession = state.currentSession,
-                            onSelectSession = { viewModel.selectSession(it) },
-                            onSessionLongPress = { showSessionOptions = it }
-                        )
                     }
                 }
             }
@@ -612,5 +636,69 @@ private fun SessionOptionsDialog(
                 }
             }
         )
+    }
+}
+
+/**
+ * 连接错误 Banner
+ */
+@Composable
+private fun ConnectionErrorBanner(
+    error: String,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Error,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(24.dp)
+            )
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "连接失败",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f),
+                    maxLines = 2
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            TextButton(onClick = onRetry) {
+                Text("重试")
+            }
+            
+            IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "关闭",
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
     }
 }
