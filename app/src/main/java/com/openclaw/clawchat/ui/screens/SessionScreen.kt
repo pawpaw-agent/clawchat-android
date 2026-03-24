@@ -15,7 +15,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.screens.session.*
-import com.openclaw.clawchat.ui.theme.TerminalColors
 import kotlinx.coroutines.launch
 
 /**
@@ -72,7 +71,7 @@ fun SessionScreen(
     }
 
     Scaffold(
-        modifier = Modifier.background(TerminalColors.TerminalBg),
+        modifier = Modifier.background(MaterialTheme.colorScheme.background),
         topBar = {
             SessionTopAppBar(
                 connectionStatus = state.connectionStatus,
@@ -85,12 +84,12 @@ fun SessionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(TerminalColors.TerminalBg)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(TerminalColors.TerminalBg)
+                    .background(MaterialTheme.colorScheme.background)
             ) {
                 Box(
                     modifier = Modifier
@@ -170,7 +169,7 @@ private fun ErrorSnackbar(
             .fillMaxWidth()
             .padding(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = TerminalColors.StatusError.copy(alpha = 0.2f)
+            containerColor = MaterialTheme.colorScheme.errorContainer
         ),
         onClick = onDismiss
     ) {
@@ -184,20 +183,20 @@ private fun ErrorSnackbar(
             Icon(
                 imageVector = Icons.Default.Error,
                 contentDescription = null,
-                tint = TerminalColors.StatusError
+                tint = MaterialTheme.colorScheme.error
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TerminalColors.StatusError,
+                color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.weight(1f)
             )
             IconButton(onClick = onDismiss) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "关闭",
-                    tint = TerminalColors.StatusError
+                    tint = MaterialTheme.colorScheme.error
                 )
             }
         }

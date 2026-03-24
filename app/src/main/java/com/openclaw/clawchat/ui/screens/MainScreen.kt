@@ -414,9 +414,9 @@ private fun SessionItem(
     
     // 根据状态确定颜色
     val pulseColor = when (session.status) {
-        SessionStatus.RUNNING -> if (isSelected) TerminalColors.PulseAmber else TerminalColors.StatusActive
-        SessionStatus.PAUSED -> TerminalColors.StatusIdle
-        SessionStatus.TERMINATED -> TerminalColors.TextMuted
+        SessionStatus.RUNNING -> if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+        SessionStatus.PAUSED -> MaterialTheme.colorScheme.outline
+        SessionStatus.TERMINATED -> MaterialTheme.colorScheme.outlineVariant
     }
     
     Row(
@@ -445,9 +445,9 @@ private fun SessionItem(
                 },
             colors = CardDefaults.cardColors(
                 containerColor = if (isSelected) {
-                    TerminalColors.TerminalSurface
+                    MaterialTheme.colorScheme.surfaceVariant
                 } else {
-                    TerminalColors.TerminalBg
+                    MaterialTheme.colorScheme.surface
                 }
             )
         ) {
@@ -460,7 +460,7 @@ private fun SessionItem(
                 Text(
                     text = session.getDisplayName(),
                     style = MaterialTheme.typography.titleMedium,
-                    color = TerminalColors.TextPrimary,
+                    color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -491,7 +491,7 @@ private fun SessionItem(
                 Text(
                     text = session.lastMessage,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TerminalColors.TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
