@@ -475,39 +475,57 @@ class SessionViewModel @Inject constructor(
             // 从 Gateway 加载历史消息
             launch {
             try {
+                // 检查连接状态
+                if (gateway.connectionState.value !is WebSocketConnectionState.Connected) {
+                    Log.w(TAG, "=== loadMessageHistory: Gateway not connected, skipping")
+                    _state.update { it.copy(isLoading = false) }
+                    return@launch
+                }
+                
                 Log.d(TAG, "=== loadMessageHistory: fetching from Gateway...")
                 val response = gateway.chatHistory(sessionId, limit = 100)
-                if (response.isSuccess() && response.payload is JsonObject) {
-                    val payload = response.payload as JsonObject
-                    val messagesArray = payload["messages"]?.jsonArray
-                    Log.d(TAG, "=== loadMessageHistory: Gateway returned ${messagesArray?.size ?: 0} messages")
-                    
-                    messagesArray?.forEach { msgElement ->
-                        try {
-                            val msgObj = msgElement.jsonObject
-                            val role = msgObj["role"]?.jsonPrimitive?.content ?: "assistant"
-                            val content = msgObj["content"]?.let { json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
-                            val timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
-                            
-                            // 提取 toolCallId 和 toolName（TOOL 消息可能有）
-                            val toolCallId = msgObj["toolCallId"]?.jsonPrimitive?.content 
-                                ?: msgObj["tool_call_id"]?.jsonPrimitive?.content
-                            val toolName = msgObj["toolName"]?.jsonPrimitive?.content
-                                ?: msgObj["tool_name"]?.jsonPrimitive?.content
-                            
-                            Log.d(TAG, "=== loadMessageHistory: role=$role, toolCallId=$toolCallId, toolName=$toolName, content=${content.take(100)}")
-                            
-                            messageRepository.saveMessage(
-                                sessionId = sessionId,
-                                role = MessageRole.fromString(role),
-                                content = content,
-                                timestamp = timestamp,
-                                toolCallId = toolCallId,
-                                toolName = toolName
-                            )
-                        } catch (e: Exception) {
-                            Log.w(TAG, "Failed to parse history message: ${e.message}")
-                        }
+                
+                if (!response.isSuccess()) {
+                    Log.w(TAG, "=== loadMessageHistory: Gateway request failed: ${response.error?.message}")
+                    _state.update { it.copy(isLoading = false) }
+                    return@launch
+                }
+                
+                if (response.payload !is JsonObject) {
+                    Log.w(TAG, "=== loadMessageHistory: Invalid response payload type: ${response.payload?.javaClass?.simpleName}")
+                    _state.update { it.copy(isLoading = false) }
+                    return@launch
+                }
+                
+                val payload = response.payload as JsonObject
+                val messagesArray = payload["messages"]?.jsonArray
+                Log.d(TAG, "=== loadMessageHistory: Gateway returned ${messagesArray?.size ?: 0} messages")
+                
+                messagesArray?.forEach { msgElement ->
+                    try {
+                        val msgObj = msgElement.jsonObject
+                        val role = msgObj["role"]?.jsonPrimitive?.content ?: "assistant"
+                        val content = msgObj["content"]?.let { json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
+                        val timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
+                        
+                        // 提取 toolCallId 和 toolName（TOOL 消息可能有）
+                        val toolCallId = msgObj["toolCallId"]?.jsonPrimitive?.content 
+                            ?: msgObj["tool_call_id"]?.jsonPrimitive?.content
+                        val toolName = msgObj["toolName"]?.jsonPrimitive?.content
+                            ?: msgObj["tool_name"]?.jsonPrimitive?.content
+                        
+                        Log.d(TAG, "=== loadMessageHistory: role=$role, toolCallId=$toolCallId, toolName=$toolName, content=${content.take(100)}")
+                        
+                        messageRepository.saveMessage(
+                            sessionId = sessionId,
+                            role = MessageRole.fromString(role),
+                            content = content,
+                            timestamp = timestamp,
+                            toolCallId = toolCallId,
+                            toolName = toolName
+                        )
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to parse history message: ${e.message}")
                     }
                 }
             } catch (e: Exception) {
