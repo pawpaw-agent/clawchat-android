@@ -127,66 +127,24 @@ fun MainScreen(
             }
             
             when {
-                state.connectionStatus !is ConnectionStatus.Connected -> {
-                    // 未连接状态
+                state.connectionStatus !is ConnectionStatus.Connected && state.sessions.isEmpty() -> {
+                    // 未连接且无会话列表（首次使用）
                     NotConnectedContent(
                         connectionStatus = state.connectionStatus,
                         onDisconnect = onDisconnect
                     )
                 }
-                state.sessions.isEmpty() -> {
-                    // 空会话列表
-                    EmptySessionList(
-                        onCreateSession = { viewModel.createSession() }
-                    )
-                }
                 else -> {
-                    // 会话列表
-                    var isRefreshing by remember { mutableStateOf(false) }
-                    
-                    PullToRefreshBox(
-                        isRefreshing = isRefreshing,
-                        onRefresh = {
-                            isRefreshing = true
-                            viewModel.refreshSessions()
-                            // 简单延迟后重置刷新状态
-                            isRefreshing = false
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Column {
-                            // 搜索栏
-                            if (state.sessions.isNotEmpty()) {
-                                OutlinedTextField(
-                                    value = searchQuery,
-                                    onValueChange = { searchQuery = it },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    placeholder = { Text("搜索会话...") },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.Search,
-                                            contentDescription = null
-                                        )
-                                    },
-                                    singleLine = true,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                    )
-                                )
-                            }
-
-                            // 会话列表
-                            SessionList(
-                                sessions = filterSessions(state.sessions, searchQuery),
-                                currentSession = state.currentSession,
-                                onSelectSession = { viewModel.selectSession(it) },
-                                onSessionLongPress = { showSessionOptions = it }
-                            )
-                        }
-                    }
+                    // 显示会话列表（即使未连接也显示缓存的会话）
+                    SessionListContent(
+                        state = state,
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = { searchQuery = it },
+                        onSelectSession = { viewModel.selectSession(it) },
+                        onSessionLongPress = { showSessionOptions = it },
+                        onCreateSession = { viewModel.createSession() },
+                        onRefresh = { viewModel.refreshSessions() }
+                    )
                 }
             }
         }
@@ -520,6 +478,115 @@ private fun formatTimeAgo(timestamp: Long): String {
 /**
  * 过滤会话列表
  */
+/**
+ * 会话列表内容
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SessionListContent(
+    state: com.openclaw.clawchat.ui.state.MainUiState,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onSelectSession: (String) -> Unit,
+    onSessionLongPress: (SessionUi?) -> Unit,
+    onCreateSession: () -> Unit,
+    onRefresh: () -> Unit
+) {
+    var isRefreshing by remember { mutableStateOf(false) }
+    
+    Column(modifier = Modifier.fillMaxSize()) {
+        // 连接状态提示条（未连接时显示）
+        if (state.connectionStatus !is ConnectionStatus.Connected) {
+            ConnectionStatusBar(connectionStatus = state.connectionStatus)
+        }
+        
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                isRefreshing = true
+                onRefresh()
+                isRefreshing = false
+            },
+            modifier = Modifier.weight(1f)
+        ) {
+            Column {
+                // 搜索栏
+                if (state.sessions.isNotEmpty()) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = onSearchQueryChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        placeholder = { Text("搜索会话...") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null
+                            )
+                        },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        )
+                    )
+                }
+
+                // 会话列表或空状态
+                if (state.sessions.isEmpty()) {
+                    EmptySessionList(onCreateSession = onCreateSession)
+                } else {
+                    SessionList(
+                        sessions = filterSessions(state.sessions, searchQuery),
+                        currentSession = state.currentSession,
+                        onSelectSession = onSelectSession,
+                        onSessionLongPress = onSessionLongPress
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 连接状态提示条
+ */
+@Composable
+private fun ConnectionStatusBar(connectionStatus: ConnectionStatus) {
+    val (icon, color, text) = when (connectionStatus) {
+        is ConnectionStatus.Connecting -> Triple(Icons.Default.Sync, MaterialTheme.colorScheme.primary, "正在连接...")
+        is ConnectionStatus.Disconnected -> Triple(Icons.Default.CloudOff, MaterialTheme.colorScheme.outline, "未连接")
+        is ConnectionStatus.Error -> Triple(Icons.Default.Error, MaterialTheme.colorScheme.error, "连接错误")
+        else -> Triple(Icons.Default.CheckCircle, MaterialTheme.colorScheme.primary, "已连接")
+    }
+    
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = color.copy(alpha = 0.1f)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall,
+                color = color
+            )
+        }
+    }
+}
+
 private fun filterSessions(sessions: List<SessionUi>, query: String): List<SessionUi> {
     if (query.isBlank()) {
         return sessions

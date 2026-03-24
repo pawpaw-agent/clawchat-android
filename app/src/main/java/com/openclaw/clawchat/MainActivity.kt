@@ -87,8 +87,15 @@ fun ClawChatNavHost(
     val navController = rememberNavController()
     
     // 检查是否已配对，决定初始目的地
-    val isPairedState = mainViewModel.isPaired.collectAsStateWithLifecycle(initialValue = false)
-    val startDestination = if (isPairedState.value) "main" else "pairing"
+    // 使用 null 作为初始值，等待真实值加载
+    val isPairedState = mainViewModel.isPaired.collectAsStateWithLifecycle(initialValue = null)
+    
+    // 在加载完成前显示空白（splash screen 会处理）
+    val startDestination = when (isPairedState.value) {
+        true -> "main"
+        false -> "pairing"
+        null -> "main" // 默认进入 main，让 ViewModel 处理连接状态
+    }
 
     NavHost(
         navController = navController,
