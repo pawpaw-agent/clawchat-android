@@ -102,14 +102,19 @@ class KeystoreManager(
      * @return 签名 bytes（64 bytes）
      */
     fun sign(data: ByteArray): ByteArray {
-        val privateKey = loadPrivateKey()
+        // 获取私钥原始字节（需要在签名后清零）
+        val privateRaw = softwareKeyStore?.getPrivateKeyEncoded(alias)
+            ?: throw IllegalStateException("Key pair not found. Call generateKeyPair() first.")
+        
         return try {
+            val privateKey = Ed25519PrivateKeyParameters(privateRaw, 0)
             val signer = Ed25519Signer()
             signer.init(true, privateKey)
             signer.update(data, 0, data.size)
             signer.generateSignature()
         } finally {
-            // 签名完成后立即清除私钥内存引用
+            // 签名完成后清零私钥内存
+            privateRaw.fill(0)
         }
     }
 
