@@ -291,7 +291,7 @@ class MainViewModel @Inject constructor(
      */
     fun refreshSessions() {
         viewModelScope.launch(exceptionHandler) {
-            if (!gateway.isConnected()) {
+            if (_uiState.value.connectionStatus !is ConnectionStatus.Connected) {
                 _events.trySend(UiEvent.ShowError("未连接到 Gateway"))
                 return@launch
             }
