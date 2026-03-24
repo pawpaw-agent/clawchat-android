@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -40,19 +39,9 @@ fun MessageInputBar(
     attachments: List<AttachmentUi> = emptyList(),
     onAddAttachment: (AttachmentUi) -> Unit = {},
     onRemoveAttachment: (String) -> Unit = {},
-    onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> },
-    onFocus: () -> Unit = {}
+    onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> }
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    
-    var isInputFocused by remember { mutableStateOf(false) }
-    
-    // 焦点变化时触发回调
-    LaunchedEffect(isInputFocused) {
-        if (isInputFocused) {
-            onFocus()
-        }
-    }
     
     var slashMenuOpen by remember { mutableStateOf(false) }
     var slashMenuItems by remember { mutableStateOf<List<SlashCommandDef>>(emptyList()) }
@@ -199,8 +188,7 @@ fun MessageInputBar(
                     onValueChange = onValueChange,
                     modifier = Modifier
                         .weight(1f)
-                        .focusRequester(focusRequester)
-                        .onFocusChanged { isInputFocused = it.isFocused },
+                        .focusRequester(focusRequester),
                     placeholder = { Text("输入消息...") },
                     enabled = enabled,
                     maxLines = 4,

@@ -145,15 +145,6 @@ fun SessionScreen(
                     onRemoveAttachment = { viewModel.removeAttachment(it) },
                     onExecuteCommand = { cmd, args ->
                         viewModel.executeSlashCommand(cmd, args)
-                    },
-                    onFocus = {
-                        scope.launch {
-                            // 滚动到最后一项
-                            val lastIdx = state.chatMessages.lastIndex
-                            if (lastIdx >= 0) {
-                                listState.animateScrollToItem(lastIdx)
-                            }
-                        }
                     }
                 )
             }
