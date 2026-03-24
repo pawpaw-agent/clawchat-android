@@ -65,12 +65,6 @@ fun SessionScreen(
         lastMessageCount = state.chatMessages.size
     }
 
-    val showScrollToBottom by remember {
-        derivedStateOf {
-            listState.canScrollForward && state.chatMessages.isNotEmpty()
-        }
-    }
-
     Scaffold(
         modifier = Modifier.background(MaterialTheme.colorScheme.background),
         topBar = {
@@ -112,21 +106,6 @@ fun SessionScreen(
                         )
                     }
 
-                    if (showScrollToBottom) {
-                        ScrollToBottomButton(
-                            onClick = {
-                                if (state.chatMessages.isNotEmpty()) {
-                                    scope.launch {
-                                        listState.animateScrollToItem(state.chatMessages.lastIndex)
-                                    }
-                                }
-                            },
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(16.dp)
-                        )
-                    }
-
                     if (state.isLoading) {
                         LoadingOverlay()
                     }
@@ -143,6 +122,13 @@ fun SessionScreen(
                     onRemoveAttachment = { viewModel.removeAttachment(it) },
                     onExecuteCommand = { cmd, args ->
                         viewModel.executeSlashCommand(cmd, args)
+                    },
+                    onFocus = {
+                        if (state.chatMessages.isNotEmpty()) {
+                            scope.launch {
+                                listState.animateScrollToItem(state.chatMessages.lastIndex)
+                            }
+                        }
                     }
                 )
             }

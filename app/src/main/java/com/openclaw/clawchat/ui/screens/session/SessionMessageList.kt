@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -20,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.*
-import com.openclaw.clawchat.ui.theme.DesignTokens
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
@@ -67,32 +65,6 @@ fun EmptySessionContent(
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-/**
- * 滚动到底部按钮
- */
-@Composable
-fun ScrollToBottomButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    SmallFloatingActionButton(
-        onClick = onClick,
-        modifier = modifier.size(44.dp),
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.primary,
-        shape = CircleShape,
-        elevation = FloatingActionButtonDefaults.elevation(
-            defaultElevation = DesignTokens.elevationSm
-        )
-    ) {
-        Icon(
-            imageVector = Icons.Default.KeyboardArrowDown,
-            contentDescription = "滚动到底部",
-            modifier = Modifier.size(24.dp)
         )
     }
 }

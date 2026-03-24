@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -39,7 +40,8 @@ fun MessageInputBar(
     attachments: List<AttachmentUi> = emptyList(),
     onAddAttachment: (AttachmentUi) -> Unit = {},
     onRemoveAttachment: (String) -> Unit = {},
-    onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> }
+    onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> },
+    onFocus: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     
@@ -188,7 +190,8 @@ fun MessageInputBar(
                     onValueChange = onValueChange,
                     modifier = Modifier
                         .weight(1f)
-                        .focusRequester(focusRequester),
+                        .focusRequester(focusRequester)
+                        .onFocusEvent { if (it.isFocused) onFocus() },
                     placeholder = { Text("输入消息...") },
                     enabled = enabled,
                     maxLines = 4,
