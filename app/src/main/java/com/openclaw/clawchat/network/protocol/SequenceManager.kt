@@ -3,9 +3,7 @@ package com.openclaw.clawchat.network.protocol
 import android.util.Log
 import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.sync.Mutex
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.sync.withLock
-import com.openclaw.clawchat.util.AppLog
 
 /**
  * 序列号管理器

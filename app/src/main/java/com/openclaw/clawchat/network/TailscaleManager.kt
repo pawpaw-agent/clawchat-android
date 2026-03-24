@@ -3,37 +3,21 @@ package com.openclaw.clawchat.network
 import android.content.Context
 import com.openclaw.clawchat.util.AppLog
 import android.net.ConnectivityManager
-import com.openclaw.clawchat.util.AppLog
 import android.net.Network
-import com.openclaw.clawchat.util.AppLog
 import android.net.NetworkCapabilities
-import com.openclaw.clawchat.util.AppLog
 import android.net.NetworkRequest
-import com.openclaw.clawchat.util.AppLog
 import android.util.Log
-import com.openclaw.clawchat.util.AppLog
 import dagger.hilt.android.qualifiers.ApplicationContext
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.channels.awaitClose
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.Flow
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.callbackFlow
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.distinctUntilChanged
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.withContext
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.Dispatchers
-import com.openclaw.clawchat.util.AppLog
 import java.net.Inet4Address
-import com.openclaw.clawchat.util.AppLog
 import java.net.InetAddress
-import com.openclaw.clawchat.util.AppLog
 import java.net.NetworkInterface
-import com.openclaw.clawchat.util.AppLog
 import javax.inject.Inject
-import com.openclaw.clawchat.util.AppLog
 
 /**
  * Tailscale 网络管理器

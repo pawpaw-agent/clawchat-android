@@ -3,13 +3,9 @@ package com.openclaw.clawchat.network
 import android.util.Log
 import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.delay
-import com.openclaw.clawchat.util.AppLog
 import java.io.IOException
-import com.openclaw.clawchat.util.AppLog
 import java.net.SocketTimeoutException
-import com.openclaw.clawchat.util.AppLog
 import java.net.UnknownHostException
-import com.openclaw.clawchat.util.AppLog
 
 /**
  * 网络错误类型

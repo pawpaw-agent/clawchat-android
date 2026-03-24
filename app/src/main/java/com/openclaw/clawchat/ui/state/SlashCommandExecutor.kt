@@ -3,21 +3,13 @@ package com.openclaw.clawchat.ui.state
 import android.util.Log
 import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.protocol.GatewayConnection
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.repository.MessageRepository
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.components.SLASH_COMMANDS
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.components.SlashCommandCategory
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.components.SlashCommandDef
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.CoroutineScope
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.launch
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.JsonPrimitive
-import com.openclaw.clawchat.util.AppLog
 
 /**
  * 斜杠命令执行器（从 SessionViewModel 提取）

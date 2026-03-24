@@ -3,21 +3,13 @@ package com.openclaw.clawchat.network.protocol
 import android.util.Log
 import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.CompletableDeferred
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.CoroutineScope
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.Dispatchers
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.delay
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.launch
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.sync.Mutex
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.sync.withLock
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.JsonElement
-import com.openclaw.clawchat.util.AppLog
 
 /**
  * 请求追踪器

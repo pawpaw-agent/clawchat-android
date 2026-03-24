@@ -3,35 +3,20 @@ package com.openclaw.clawchat.security
 import android.content.Context
 import com.openclaw.clawchat.util.AppLog
 import android.content.SharedPreferences
-import com.openclaw.clawchat.util.AppLog
 import android.os.Build
-import com.openclaw.clawchat.util.AppLog
 import android.security.keystore.KeyGenParameterSpec
-import com.openclaw.clawchat.util.AppLog
 import android.security.keystore.KeyProperties
-import com.openclaw.clawchat.util.AppLog
 import android.util.Base64
-import com.openclaw.clawchat.util.AppLog
 import androidx.security.crypto.EncryptedSharedPreferences
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.BuildConfig
-import com.openclaw.clawchat.util.AppLog
 import androidx.security.crypto.MasterKey
-import com.openclaw.clawchat.util.AppLog
 import java.nio.charset.StandardCharsets
-import com.openclaw.clawchat.util.AppLog
 import java.security.GeneralSecurityException
-import com.openclaw.clawchat.util.AppLog
 import java.security.KeyStore
-import com.openclaw.clawchat.util.AppLog
 import javax.crypto.Cipher
-import com.openclaw.clawchat.util.AppLog
 import javax.crypto.KeyGenerator
-import com.openclaw.clawchat.util.AppLog
 import javax.crypto.SecretKey
-import com.openclaw.clawchat.util.AppLog
 import javax.crypto.spec.GCMParameterSpec
-import com.openclaw.clawchat.util.AppLog
 
 /**
  * EncryptedStorage - 加密 SharedPreferences 封装
