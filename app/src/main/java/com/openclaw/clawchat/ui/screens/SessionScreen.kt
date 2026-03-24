@@ -87,7 +87,7 @@ fun SessionScreen(
                 // 额外滚动 IME 高度，确保消息不被遮挡
                 if (imeBottom > 0) {
                     val imeHeightPx = with(density) { imeBottom.toPx() }
-                    listState.scrollBy(imeHeightPx)
+                    listState.scroll { scrollBy(imeHeightPx) }
                 }
             }
         }
