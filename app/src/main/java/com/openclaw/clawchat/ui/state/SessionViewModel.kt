@@ -17,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -556,7 +557,13 @@ class SessionViewModel @Inject constructor(
                 Log.w(TAG, "Failed to load chat history: ${e.message}")
             }
             // Gateway 加载完成，取消加载状态
-            _state.update { it.copy(isLoading = false) }
+            // 直接从 repository 获取消息并更新状态
+            val loadedMessages = messageRepository.observeMessages(sessionId).first()
+            Log.d(TAG, "=== loadMessageHistory: loaded ${loadedMessages.size} messages from repository")
+            _state.update { it.copy(
+                isLoading = false,
+                chatMessages = loadedMessages
+            )}
         }  // loadMessagesJob
     }
 
