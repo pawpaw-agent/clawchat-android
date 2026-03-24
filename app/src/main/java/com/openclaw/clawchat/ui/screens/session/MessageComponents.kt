@@ -12,6 +12,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,6 +43,7 @@ import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import com.openclaw.clawchat.ui.theme.TerminalColors
+import com.openclaw.clawchat.ui.theme.LightTerminalColors
 import com.openclaw.clawchat.ui.theme.ChatTokens
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -261,7 +263,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
         modifier = Modifier
             .widthIn(max = 280.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(TerminalColors.BubbleUser)
+            .background(MaterialTheme.colorScheme.primaryContainer)
     ) {
         if (bitmap != null) {
             androidx.compose.foundation.Image(
@@ -281,7 +283,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
 fun SystemMessageItem(message: MessageUi) {
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = TerminalColors.BubbleUser
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         shape = RoundedCornerShape(DesignTokens.radiusMd)
     ) {
@@ -319,7 +321,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
     val backgroundColor = when {
         toolCard.isError -> MaterialTheme.colorScheme.errorContainer
         toolCard.kind == ToolCardKind.CALL -> Color(0x1AE53935)
-        else -> TerminalColors.BubbleUser
+        else -> MaterialTheme.colorScheme.surfaceVariant
     }
     
     Card(
@@ -453,7 +455,7 @@ fun ToolTagExpanding(
         color = if (isError) {
             MaterialTheme.colorScheme.errorContainer
         } else {
-            TerminalColors.BubbleUser
+            MaterialTheme.colorScheme.surfaceVariant
         },
         modifier = Modifier.height(DesignTokens.space6)  // 24dp
     ) {

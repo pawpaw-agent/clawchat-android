@@ -222,23 +222,65 @@ private val TerminalDarkColorScheme = darkColorScheme(
 )
 
 /**
+ * TerminalFlow 浅色主题配色
+ */
+private val TerminalLightColorScheme = lightColorScheme(
+    primary = LightTerminalColors.PulseAmber,
+    onPrimary = Color.White,
+    primaryContainer = LightTerminalColors.PulseAmberMuted,
+    onPrimaryContainer = LightTerminalColors.PulseAmberBright,
+    
+    secondary = LightTerminalColors.TextCode,
+    onSecondary = Color.White,
+    secondaryContainer = LightTerminalColors.BubbleUser,
+    onSecondaryContainer = LightTerminalColors.BubbleUserText,
+    
+    tertiary = LightTerminalColors.StatusActive,
+    onTertiary = Color.White,
+    
+    background = LightTerminalColors.TerminalLight,
+    onBackground = LightTerminalColors.TextPrimary,
+    surface = LightTerminalColors.TerminalSurface,
+    onSurface = LightTerminalColors.TextPrimary,
+    surfaceVariant = LightTerminalColors.TerminalBg,
+    onSurfaceVariant = LightTerminalColors.TextSecondary,
+    
+    error = LightTerminalColors.StatusError,
+    onError = Color.White,
+    errorContainer = LightTerminalColors.StatusError.copy(alpha = 0.1f),
+    onErrorContainer = LightTerminalColors.StatusError,
+    
+    outline = LightTerminalColors.Border,
+    outlineVariant = LightTerminalColors.BorderStrong
+)
+
+/**
  * TerminalFlow 主题
  * 终端美学 + 琥珀色强调
+ * 支持深色和浅色两种模式
  */
 @Composable
 fun TerminalFlowTheme(
-    darkTheme: Boolean = true,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = TerminalDarkColorScheme
+    val colorScheme = if (darkTheme) {
+        TerminalDarkColorScheme
+    } else {
+        TerminalLightColorScheme
+    }
     
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = TerminalColors.TerminalBg.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            window.statusBarColor = if (darkTheme) {
+                TerminalColors.TerminalBg.toArgb()
+            } else {
+                LightTerminalColors.TerminalLight.toArgb()
+            }
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
     
