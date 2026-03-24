@@ -97,9 +97,9 @@ fun SessionScreen(
                         .weight(1f)
                         .fillMaxWidth()
                 ) {
-                    if (state.chatMessages.isEmpty()) {
+                    if (state.chatMessages.isEmpty() && !state.isLoading) {
                         EmptySessionContent(connectionStatus = state.connectionStatus)
-                    } else {
+                    } else if (state.chatMessages.isNotEmpty()) {
                         MessageGroupList(
                             groups = messageGroups,
                             listState = listState,

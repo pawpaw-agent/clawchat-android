@@ -451,6 +451,9 @@ class SessionViewModel @Inject constructor(
         // 取消之前的加载任务
         loadMessagesJob?.cancel()
         
+        // 设置加载状态
+        _state.update { it.copy(isLoading = true) }
+        
         // 合并两个协程到一个 Job 中
         loadMessagesJob = viewModelScope.launch {
             // 从本地数据库加载
@@ -459,6 +462,7 @@ class SessionViewModel @Inject constructor(
                     Log.d(TAG, "=== loadMessageHistory: local DB has ${messages.size} messages")
                     _state.update { it.copy(
                         chatMessages = messages,
+                        isLoading = false,  // 有消息后取消加载状态
                         // 重置工具流状态
                         toolStreamById = emptyMap(),
                         toolStreamOrder = emptyList(),
@@ -509,6 +513,8 @@ class SessionViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to load chat history: ${e.message}")
             }
+            // Gateway 加载完成，取消加载状态
+            _state.update { it.copy(isLoading = false) }
         }
         }  // loadMessagesJob
     }
