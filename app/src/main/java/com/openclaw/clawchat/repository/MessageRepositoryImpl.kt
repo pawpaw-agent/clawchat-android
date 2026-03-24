@@ -29,6 +29,11 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
     
     // 按会话 ID 分组存储消息
     private val messagesBySession = MutableStateFlow<Map<String, MutableList<MessageUi>>>(emptyMap())
+    
+    companion object {
+        private const val MAX_MESSAGES_PER_SESSION = 500  // 每个会话最多缓存 500 条消息
+        private const val TRIM_THRESHOLD = 400            // 超过 400 条时开始清理
+    }
 
     /**
      * 观察会话消息
@@ -80,6 +85,16 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
         val map = messagesBySession.value.toMutableMap()
         val sessionMessages = map.getOrPut(sessionId) { mutableListOf() }
         sessionMessages.add(message)
+        
+        // 自动清理超出阈值的消息（保留最新的）
+        if (sessionMessages.size > TRIM_THRESHOLD) {
+            val toRemove = sessionMessages.size - MAX_MESSAGES_PER_SESSION
+            if (toRemove > 0) {
+                repeat(toRemove) { sessionMessages.removeAt(0) }
+                AppLog.d("MessageRepository", "=== saveMessage: trimmed $toRemove old messages, current size: ${sessionMessages.size}")
+            }
+        }
+        
         messagesBySession.value = map
         
         AppLog.d("MessageRepository", "=== saveMessage: saved, total messages for session: ${sessionMessages.size}")
