@@ -84,11 +84,7 @@ enum class GatewayMethod(val value: String) {
 class RequestParamsBuilder {
     private val params = mutableMapOf<String, kotlinx.serialization.json.JsonElement>()
     
-    private val json = kotlinx.serialization.json.Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        encodeDefaults = true
-    }
+    private val json = JsonUtils.jsonWithDefaults
     
     fun putString(key: String, value: String): RequestParamsBuilder {
         params[key] = kotlinx.serialization.json.JsonPrimitive(value)

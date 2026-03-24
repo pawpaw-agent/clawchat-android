@@ -1,13 +1,13 @@
 package com.openclaw.clawchat.ui.state
 
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.JsonUtils.json.Json
+import kotlinx.serialization.JsonUtils.json.JsonArray
+import kotlinx.serialization.JsonUtils.json.JsonElement
+import kotlinx.serialization.JsonUtils.json.JsonObject
+import kotlinx.serialization.JsonUtils.json.JsonPrimitive
+import kotlinx.serialization.JsonUtils.json.jsonObject
+import kotlinx.serialization.JsonUtils.json.jsonPrimitive
 import java.util.UUID
 
 /**
@@ -17,7 +17,7 @@ import java.util.UUID
  */
 object MessageHandler {
     
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    
     
     /**
      * 格式化工具输出（截断长文本）
@@ -41,7 +41,7 @@ object MessageHandler {
                         "${text.take(120000)}\n\n… truncated (${text.length} chars, showing first 120000)."
                     } else text
                 } else {
-                    try { json.encodeToString(JsonObject.serializer(), value) } catch (_: Exception) { null }
+                    try { JsonUtils.json.encodeToString(JsonObject.serializer(), value) } catch (_: Exception) { null }
                 }
             }
             is JsonArray -> {

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
@@ -102,7 +103,7 @@ class PairingViewModel @Inject constructor(
         viewModelScope.launch {
             gateway.incomingMessages.collect { rawJson ->
                 try {
-                    val json = Json { ignoreUnknownKeys = true }
+                    val json = JsonUtils.json
                     val obj = json.parseToJsonElement(rawJson).jsonObject
                     
                     val type = obj["type"]?.jsonPrimitive?.content

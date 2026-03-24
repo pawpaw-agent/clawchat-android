@@ -2,6 +2,7 @@ package com.openclaw.clawchat.repository
 
 import com.openclaw.clawchat.security.EncryptedStorage
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
+import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,7 +10,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,11 +26,7 @@ class GatewayRepositoryImpl @Inject constructor(
     private val _gateways = MutableStateFlow<List<GatewayConfigUi>>(emptyList())
     private val _currentGatewayId = MutableStateFlow<String?>(null)
 
-    private val json = Json { 
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-        isLenient = true
-    }
+    private val json = JsonUtils.jsonWithDefaults
 
     companion object {
         private const val KEY_GATEWAYS = "gateway_configs"

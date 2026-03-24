@@ -1,33 +1,21 @@
 package com.openclaw.clawchat.network.protocol
 
 import android.util.Log
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.BuildConfig
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.CertificateExceptionFirstTime
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.CertificateExceptionMismatch
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.DynamicTrustManager
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.WebSocketConnectionState
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.security.SecurityModule
 import com.openclaw.clawchat.util.AppLog
+import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.coroutines.CoroutineScope
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.Dispatchers
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.Job
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.delay
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.MutableSharedFlow
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.MutableStateFlow
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.SharedFlow
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.StateFlow
 import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.asSharedFlow
@@ -110,9 +98,10 @@ class GatewayConnection(
         private const val MAX_RECONNECT_ATTEMPTS = 15
 
         private const val NONCE_LOG_PREFIX_LEN = 8
-
-        private val json = Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
     }
+
+    // 使用统一的 Json 配置（带 encodeDefaults）
+    private val json = JsonUtils.jsonWithDefaults
 
     // ── Public state ──
 

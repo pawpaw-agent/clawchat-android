@@ -1,5 +1,6 @@
 package com.openclaw.clawchat.network.protocol
 
+import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -61,8 +62,7 @@ data class ResponseFrame(
     inline fun <reified T> parsePayload(deserializer: kotlinx.serialization.DeserializationStrategy<T>): T? {
         if (payload == null) return null
         return try {
-            kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
-                .decodeFromJsonElement(deserializer, payload)
+            JsonUtils.json.decodeFromJsonElement(deserializer, payload)
         } catch (e: Exception) {
             null
         }

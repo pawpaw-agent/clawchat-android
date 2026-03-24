@@ -10,6 +10,7 @@ import com.openclaw.clawchat.network.protocol.ChatAttachmentData
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
 import com.openclaw.clawchat.util.AppLog
+import com.openclaw.clawchat.util.JsonUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
@@ -73,11 +74,10 @@ class SessionViewModel @Inject constructor(
     companion object {
         private const val TAG = "SessionViewModel"
         private const val TOOL_STREAM_LIMIT = 50
-        private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     }
 
     init {
-        AppAppLog.d(TAG, "=== SessionViewModel init")
+        AppLog.d(TAG, "=== SessionViewModel init")
         observeConnectionState()
         observeIncomingMessages()
     }
@@ -160,7 +160,7 @@ class SessionViewModel @Inject constructor(
         }
 
         try {
-            val obj = json.parseToJsonElement(rawJson).jsonObject
+            val obj = JsonUtils.json.parseToJsonElement(rawJson).jsonObject
             val type = obj["type"]?.jsonPrimitive?.content
             val event = obj["event"]?.jsonPrimitive?.content
             AppAppLog.d(TAG, "=== handleIncomingFrame: type=$type, event=$event")
@@ -441,7 +441,7 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val role = msgObj?.get("role")?.jsonPrimitive?.content ?: "assistant"
-                val contentJson = msgObj?.get("content")?.let { json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
+                val contentJson = msgObj?.get("content")?.let { JsonUtils.json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
                 messageRepository.saveMessage(
                     sessionId = sessionId,
                     role = MessageRole.fromString(role),
@@ -536,7 +536,7 @@ class SessionViewModel @Inject constructor(
                     try {
                         val msgObj = msgElement.jsonObject
                         val role = msgObj["role"]?.jsonPrimitive?.content ?: "assistant"
-                        val content = msgObj["content"]?.let { json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
+                        val content = msgObj["content"]?.let { JsonUtils.json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
                         val timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
                         
                         // 提取 toolCallId 和 toolName（TOOL 消息可能有）
