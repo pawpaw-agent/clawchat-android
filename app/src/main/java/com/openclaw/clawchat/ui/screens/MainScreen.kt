@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MainViewModel
+import SessionStatus
 import com.openclaw.clawchat.ui.state.SessionUi
 import com.openclaw.clawchat.ui.state.UiEvent
 import com.openclaw.clawchat.ui.screens.settings.SettingsScreen
@@ -75,7 +76,7 @@ fun MainScreen(
                 showSessionOptions = null
             },
             onPauseResume = {
-                if (session.status == com.openclaw.clawchat.ui.state.SessionStatus.RUNNING) {
+                if (session.status == SessionStatus.RUNNING) {
                     viewModel.pauseSession(session.id)
                 } else {
                     viewModel.resumeSession(session.id)
@@ -578,7 +579,7 @@ private fun SessionOptionsDialog(
                     )
                 ) {
                     Text(
-                        if (session.status == com.openclaw.clawchat.ui.state.SessionStatus.RUNNING) {
+                        if (session.status == SessionStatus.RUNNING) {
                             "暂停会话"
                         } else {
                             "恢复会话"
