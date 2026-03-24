@@ -103,6 +103,11 @@ class SessionViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        // 取消所有 Job
+        loadMessagesJob?.cancel()
+        observeMessagesJob?.cancel()
+        loadMessagesJob = null
+        observeMessagesJob = null
         _events.close()
     }
 

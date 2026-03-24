@@ -61,6 +61,11 @@ class MainViewModel @Inject constructor(
         _uiState.update { it.copy(error = throwable.message ?: "未知错误", isLoading = false) }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        _events.close()
+    }
+
     companion object {
         private const val TAG = "MainViewModel"
         private const val DEFAULT_GATEWAY_PORT = 18789
