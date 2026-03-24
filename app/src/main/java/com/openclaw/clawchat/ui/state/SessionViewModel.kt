@@ -462,7 +462,7 @@ class SessionViewModel @Inject constructor(
                     Log.d(TAG, "=== loadMessageHistory: local DB has ${messages.size} messages")
                     _state.update { it.copy(
                         chatMessages = messages,
-                        isLoading = false,  // 有消息后取消加载状态
+                        // 不在这里取消 isLoading，等 Gateway 加载完成后再取消
                         // 重置工具流状态
                         toolStreamById = emptyMap(),
                         toolStreamOrder = emptyList(),
