@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openclaw.clawchat.data.FontSize
@@ -63,6 +64,28 @@ fun SessionScreen(
             listState.scrollToItem(state.chatMessages.lastIndex)
         }
         lastMessageCount = state.chatMessages.size
+    }
+
+    val showScrollToBottom by remember {
+        derivedStateOf {
+            listState.canScrollForward && state.chatMessages.isNotEmpty()
+        }
+    }
+
+    // 检测输入法弹出，自动滚动到底部
+    val imeBottom = WindowInsets.ime.getBottom(LocalDensity.current)
+    val imeVisible = imeBottom > 0
+    var wasImeVisible by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(imeVisible) {
+        if (imeVisible && !wasImeVisible && state.chatMessages.isNotEmpty()) {
+            // 键盘从隐藏变为显示，滚动到底部
+            AppLog.d("SessionScreen", "IME shown, scrolling to bottom")
+            scope.launch {
+                listState.animateScrollToItem(state.chatMessages.lastIndex)
+            }
+        }
+        wasImeVisible = imeVisible
     }
 
     Scaffold(
