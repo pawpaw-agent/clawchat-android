@@ -42,6 +42,7 @@ import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
+import com.openclaw.clawchat.ui.theme.TerminalColors
 import com.openclaw.clawchat.ui.theme.ChatTokens
 import kotlinx.serialization.json.jsonPrimitive
 
