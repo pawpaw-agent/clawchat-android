@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MainViewModel
-import SessionStatus
+import com.openclaw.clawchat.ui.state.SessionStatus
 import com.openclaw.clawchat.ui.state.SessionUi
 import com.openclaw.clawchat.ui.state.UiEvent
 import com.openclaw.clawchat.ui.screens.settings.SettingsScreen
