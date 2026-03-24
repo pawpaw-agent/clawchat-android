@@ -335,8 +335,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun refreshSessions() { loadSessionsFromGateway() }
-
     fun createSession(model: String = "default", thinking: Boolean = false) {
         viewModelScope.launch(exceptionHandler) {
             try {
