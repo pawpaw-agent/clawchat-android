@@ -228,7 +228,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
         modifier = Modifier
             .widthIn(max = 280.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(TerminalColors.BubbleUser)
     ) {
         if (bitmap != null) {
             androidx.compose.foundation.Image(
@@ -248,7 +248,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
 fun SystemMessageItem(message: MessageUi) {
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = TerminalColors.BubbleUser
         ),
         shape = RoundedCornerShape(DesignTokens.radiusMd)
     ) {
@@ -286,7 +286,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
     val backgroundColor = when {
         toolCard.isError -> MaterialTheme.colorScheme.errorContainer
         toolCard.kind == ToolCardKind.CALL -> Color(0x1AE53935)
-        else -> MaterialTheme.colorScheme.surfaceVariant
+        else -> TerminalColors.BubbleUser
     }
     
     Card(
@@ -420,7 +420,7 @@ fun ToolTagExpanding(
         color = if (isError) {
             MaterialTheme.colorScheme.errorContainer
         } else {
-            MaterialTheme.colorScheme.surfaceVariant
+            TerminalColors.BubbleUser
         },
         modifier = Modifier.height(DesignTokens.space6)  // 24dp
     ) {
