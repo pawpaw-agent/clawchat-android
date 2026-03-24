@@ -13,6 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -452,6 +453,7 @@ class SessionViewModel @Inject constructor(
 
     fun setSessionId(sessionId: String) {
         Log.d(TAG, "=== setSessionId: $sessionId")
+        Log.d(TAG, "=== setSessionId: sessionId='$sessionId', length=${sessionId.length}")
         
         // 取消之前的加载任务
         loadMessagesJob?.cancel()
@@ -461,8 +463,11 @@ class SessionViewModel @Inject constructor(
         // 开始观察这个会话的消息
         observeSessionMessages(sessionId)
         
-        // 加载历史消息
-        loadMessageHistory(sessionId)
+        // 稍微延迟加载历史，确保 observeSessionMessages 先建立订阅
+        viewModelScope.launch {
+            delay(100) // 等待 observeSessionMessages 建立订阅
+            loadMessageHistory(sessionId)
+        }
         
         // 设置 verboseLevel 为 "full" 以接收工具流事件
         viewModelScope.launch {
