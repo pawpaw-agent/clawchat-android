@@ -14,13 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.data.ThemeMode
 import com.openclaw.clawchat.ui.state.ConnectionStatusUi
 import com.openclaw.clawchat.ui.state.GatewayConfigInput
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
+import com.openclaw.clawchat.ui.state.PairingViewModel
 import com.openclaw.clawchat.ui.state.SettingsUiState
 import com.openclaw.clawchat.ui.state.getStatusColor
 import com.openclaw.clawchat.ui.theme.DesignTokens
@@ -32,6 +33,7 @@ import java.util.*
  * 
  * 功能：
  * - Gateway 配置管理
+ * - 配对功能
  * - 通知设置
  * - 安全设置
  * - 关于页面
@@ -40,12 +42,12 @@ import java.util.*
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit,
-    onShowPairing: () -> Unit
+    onNavigateBack: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showGatewayDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var showPairingSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -77,7 +79,13 @@ fun SettingsScreen(
                     onClick = { showGatewayDialog = true }
                 )
                 
-                if (state.connectionStatus.isConnected) {
+                // 配对/连接按钮
+                if (!state.connectionStatus.isConnected) {
+                    PairingItem(
+                        isPaired = state.isPaired,
+                        onClick = { showPairingSheet = true }
+                    )
+                } else {
                     DisconnectItem(
                         onDisconnect = { viewModel.disconnect() }
                     )
@@ -173,10 +181,17 @@ fun SettingsScreen(
     // 关于对话框
     if (showAboutDialog) {
         AboutDialog(
-            onDismiss = { showAboutDialog = false },
-            onShowPairing = {
-                showAboutDialog = false
-                onShowPairing()
+            onDismiss = { showAboutDialog = false }
+        )
+    }
+    
+    // 配对底部抽屉
+    if (showPairingSheet) {
+        PairingBottomSheet(
+            onDismiss = { showPairingSheet = false },
+            onPairingSuccess = {
+                showPairingSheet = false
+                viewModel.refreshConnectionState()
             }
         )
     }
@@ -338,6 +353,135 @@ private fun DisconnectItem(
             .fillMaxWidth()
             .clickable(onClick = onDisconnect)
     )
+}
+
+/**
+ * 配对/连接项
+ */
+@Composable
+private fun PairingItem(
+    isPaired: Boolean,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = {
+            Text(if (isPaired) "重新连接" else "配对设备")
+        },
+        supportingContent = {
+            Text(if (isPaired) "连接到已配对的 Gateway" else "扫描二维码或输入配对码")
+        },
+        leadingContent = {
+            Icon(
+                imageVector = if (isPaired) Icons.Default.Link else Icons.Default.QrCodeScanner,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    )
+}
+
+/**
+ * 配对底部抽屉
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PairingBottomSheet(
+    onDismiss: () -> Unit,
+    onPairingSuccess: () -> Unit
+) {
+    val pairingViewModel: com.openclaw.clawchat.ui.state.PairingViewModel = hiltViewModel()
+    val pairingState by pairingViewModel.uiState.collectAsStateWithLifecycle()
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "连接到 Gateway",
+                style = MaterialTheme.typography.titleLarge
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Gateway URL 输入
+            OutlinedTextField(
+                value = pairingState.gatewayUrl,
+                onValueChange = { pairingViewModel.updateGatewayUrl(it) },
+                label = { Text("Gateway URL") },
+                placeholder = { Text("例如：http://192.168.1.100:18789") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // 配对码输入（可选）
+            OutlinedTextField(
+                value = pairingState.pairingCode,
+                onValueChange = { pairingViewModel.updatePairingCode(it) },
+                label = { Text("配对码（可选）") },
+                placeholder = { Text("如果有配对码，请输入") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // 状态显示
+            if (pairingState.isLoading) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                    Text("正在连接...")
+                }
+            }
+            
+            pairingState.error?.let { error ->
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // 按钮
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("取消")
+                }
+                
+                Button(
+                    onClick = {
+                        pairingViewModel.startPairing()
+                    },
+                    enabled = pairingState.gatewayUrl.isNotBlank() && !pairingState.isLoading,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("连接")
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
 }
 
 /**
@@ -707,8 +851,7 @@ private fun GatewayConfigDialog(
  */
 @Composable
 private fun AboutDialog(
-    onDismiss: () -> Unit,
-    onShowPairing: () -> Unit
+    onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -735,11 +878,6 @@ private fun AboutDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onShowPairing) {
-                Text("设备配对")
-            }
-        },
-        dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("关闭")
             }

@@ -180,6 +180,7 @@ data class SettingsUiState(
     val currentGateway: GatewayConfigUi? = null,
     val gatewayConfigInput: GatewayConfigInput = GatewayConfigInput(),
     val connectionStatus: ConnectionStatusUi = ConnectionStatusUi.Disconnected,
+    val isPaired: Boolean = false,
     val notificationsEnabled: Boolean = true,
     val dndEnabled: Boolean = false,
     val appVersion: String = "1.0.0",

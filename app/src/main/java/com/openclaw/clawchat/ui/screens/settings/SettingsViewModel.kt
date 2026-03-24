@@ -8,6 +8,7 @@ import com.openclaw.clawchat.data.ThemeMode
 import com.openclaw.clawchat.data.UserPreferences
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
+import com.openclaw.clawchat.security.EncryptedStorage
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.GatewayConfigInput
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
@@ -24,7 +25,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val gateway: GatewayConnection,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val encryptedStorage: EncryptedStorage
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -39,20 +41,34 @@ class SettingsViewModel @Inject constructor(
         observeConnectionState()
         observeFontSettings()
         observeThemeSettings()
+        checkPairedState()
     }
 
     private fun loadCurrentConfig() {
+        val gatewayUrl = encryptedStorage.getGatewayUrl() ?: ""
         _uiState.update {
             it.copy(
                 currentGateway = GatewayConfigUi(
-                    id = "default", name = "未配置",
-                    host = "", port = 18789
+                    id = "default", 
+                    name = if (gatewayUrl.isNotBlank()) "已配置" else "未配置",
+                    host = gatewayUrl,
+                    port = 18789
                 ),
                 gatewayConfigInput = GatewayConfigInput(
-                    name = "", host = "", port = 18789
+                    name = "", 
+                    host = gatewayUrl, 
+                    port = 18789
                 )
             )
         }
+    }
+
+    private fun checkPairedState() {
+        _uiState.update { it.copy(isPaired = encryptedStorage.isPaired()) }
+    }
+    
+    fun refreshConnectionState() {
+        checkPairedState()
     }
 
     private fun observeConnectionState() {

@@ -42,8 +42,7 @@ import java.util.*
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
-    onNavigateToSession: (String) -> Unit,
-    onDisconnect: () -> Unit
+    onNavigateToSession: (String) -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showSettings by remember { mutableStateOf(false) }
@@ -54,9 +53,6 @@ fun MainScreen(
     LaunchedEffect(viewModel.events) {
         viewModel.events.collect { event ->
             when (event) {
-                is UiEvent.ConnectionLost -> {
-                    onDisconnect()
-                }
                 is UiEvent.NavigateToSession -> {
                     onNavigateToSession(event.sessionId)
                 }
@@ -131,7 +127,7 @@ fun MainScreen(
                     // 未连接且无会话列表（首次使用）
                     NotConnectedContent(
                         connectionStatus = state.connectionStatus,
-                        onDisconnect = onDisconnect
+                        onOpenSettings = { showSettings = true }
                     )
                 }
                 else -> {
@@ -153,11 +149,7 @@ fun MainScreen(
     // 设置页面
     if (showSettings) {
         SettingsScreen(
-            onNavigateBack = { showSettings = false },
-            onShowPairing = { 
-                showSettings = false
-                onDisconnect()
-            }
+            onNavigateBack = { showSettings = false }
         )
     }
 }
@@ -230,7 +222,7 @@ private fun ConnectionStatusIcon(status: ConnectionStatus) {
 @Composable
 private fun NotConnectedContent(
     connectionStatus: ConnectionStatus,
-    onDisconnect: () -> Unit
+    onOpenSettings: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -250,7 +242,7 @@ private fun NotConnectedContent(
         
         Text(
             text = when (connectionStatus) {
-                is ConnectionStatus.Disconnected -> "未连接到网关"
+                is ConnectionStatus.Disconnected -> "未连接到 Gateway"
                 is ConnectionStatus.Connecting -> "正在连接..."
                 is ConnectionStatus.Disconnecting -> "正在断开..."
                 is ConnectionStatus.Error -> "连接错误：${connectionStatus.message}"
@@ -261,11 +253,25 @@ private fun NotConnectedContent(
             color = MaterialTheme.colorScheme.onBackground
         )
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         
         if (connectionStatus is ConnectionStatus.Disconnected || connectionStatus is ConnectionStatus.Error) {
-            Button(onClick = onDisconnect) {
-                Text("返回配对")
+            Text(
+                text = "请前往设置页面配置 Gateway 连接",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Button(onClick = onOpenSettings) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("去设置")
             }
         }
     }

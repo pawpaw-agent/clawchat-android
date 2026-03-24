@@ -19,12 +19,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.openclaw.clawchat.data.ThemeMode
-import com.openclaw.clawchat.ui.screens.PairingScreen
 import com.openclaw.clawchat.ui.screens.MainScreen
 import com.openclaw.clawchat.ui.screens.SessionScreen
 import com.openclaw.clawchat.ui.theme.TerminalFlowTheme
 import com.openclaw.clawchat.ui.state.MainViewModel
-import com.openclaw.clawchat.ui.state.PairingViewModel
 import com.openclaw.clawchat.ui.state.ThemeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -75,49 +73,27 @@ class MainActivity : ComponentActivity() {
  * ClawChat 导航主机
  * 
  * 定义应用的导航结构：
- * - pairing: 设备配对屏幕（首次启动）
- * - main: 主界面（配对成功后）
+ * - main: 主界面
  * - session/{sessionId}: 会话详情界面
+ * 
+ * 配对功能已集成到设置页面
  */
 @androidx.compose.runtime.Composable
 fun ClawChatNavHost(
-    mainViewModel: MainViewModel = hiltViewModel(),
-    pairingViewModel: PairingViewModel = hiltViewModel()
+    mainViewModel: MainViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
-    
-    // 始终从 main 开始，让 MainScreen 处理连接状态
-    // 如果未配对，MainScreen 会显示配对引导
-    val startDestination = "main"
 
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = "main"
     ) {
-        // 配对屏幕
-        composable("pairing") {
-            PairingScreen(
-                viewModel = pairingViewModel,
-                onPairingSuccess = {
-                    mainViewModel.refreshPairedState()
-                    navController.navigate("main") {
-                        popUpTo("pairing") { inclusive = true }
-                    }
-                }
-            )
-        }
-
         // 主屏幕
         composable("main") {
             MainScreen(
                 viewModel = mainViewModel,
                 onNavigateToSession = { sessionId ->
                     navController.navigate("session/$sessionId")
-                },
-                onDisconnect = {
-                    navController.navigate("pairing") {
-                        popUpTo("main") { inclusive = true }
-                    }
                 }
             )
         }
