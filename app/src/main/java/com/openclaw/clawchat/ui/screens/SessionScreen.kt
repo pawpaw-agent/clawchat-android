@@ -124,9 +124,11 @@ fun SessionScreen(
                         viewModel.executeSlashCommand(cmd, args)
                     },
                     onFocus = {
-                        if (state.chatMessages.isNotEmpty()) {
-                            scope.launch {
-                                listState.animateScrollToItem(state.chatMessages.lastIndex)
+                        scope.launch {
+                            // 滚动到最后一项
+                            val lastIdx = state.chatMessages.lastIndex
+                            if (lastIdx >= 0) {
+                                listState.animateScrollToItem(lastIdx)
                             }
                         }
                     }
