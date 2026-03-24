@@ -124,7 +124,7 @@ fun MessageContentCard(
                     )
             ) {
                 MarkdownText(
-                    content = textContent,
+                    content = if (isUser) "$ " + textContent else textContent,
                     modifier = Modifier.fillMaxWidth(),
                     fontSize = textSize,
                     textColor = MaterialTheme.colorScheme.onBackground
