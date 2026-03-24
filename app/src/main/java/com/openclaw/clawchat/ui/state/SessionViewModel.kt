@@ -98,6 +98,15 @@ class SessionViewModel @Inject constructor(
                     )
                 }
                 _state.update { it.copy(connectionStatus = status) }
+                
+                // 当连接恢复时，重新加载当前会话的消息
+                if (connectionState is WebSocketConnectionState.Connected) {
+                    val currentSessionId = _state.value.sessionId
+                    if (currentSessionId != null && _state.value.chatMessages.isEmpty()) {
+                        Log.d(TAG, "=== observeConnectionState: Connection restored, reloading messages for $currentSessionId")
+                        loadMessageHistory(currentSessionId)
+                    }
+                }
             }
         }
     }
