@@ -395,14 +395,27 @@ private fun SessionItem(
     onSessionLongPress: (() -> Unit)? = null
 ) {
     // 根据会话状态确定脉冲状态
-    val pulseState = remember(session.id, session.lastActivityAt) {
-        // 简单逻辑：最近5分钟活跃
-        val fiveMinutesAgo = System.currentTimeMillis() - 5 * 60 * 1000
-        if (session.lastActivityAt > fiveMinutesAgo) {
-            PulseState.Active
-        } else {
-            PulseState.Idle
+    val pulseState = remember(session.id, session.status, session.lastActivityAt) {
+        when (session.status) {
+            SessionStatus.RUNNING -> {
+                // 运行中：最近5分钟活跃
+                val fiveMinutesAgo = System.currentTimeMillis() - 5 * 60 * 1000
+                if (session.lastActivityAt > fiveMinutesAgo) {
+                    PulseState.Streaming
+                } else {
+                    PulseState.Active
+                }
+            }
+            SessionStatus.PAUSED -> PulseState.Thinking
+            SessionStatus.TERMINATED -> PulseState.Idle
         }
+    }
+    
+    // 根据状态确定颜色
+    val pulseColor = when (session.status) {
+        SessionStatus.RUNNING -> if (isSelected) TerminalColors.PulseAmber else TerminalColors.StatusActive
+        SessionStatus.PAUSED -> TerminalColors.StatusIdle
+        SessionStatus.TERMINATED -> TerminalColors.TextMuted
     }
     
     Row(
@@ -413,7 +426,7 @@ private fun SessionItem(
         PulseIndicator(
             state = pulseState,
             modifier = Modifier.padding(end = 8.dp),
-            color = if (isSelected) TerminalColors.PulseAmber else TerminalColors.StatusIdle
+            color = pulseColor
         )
         
         Card(

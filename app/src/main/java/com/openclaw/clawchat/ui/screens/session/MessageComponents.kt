@@ -171,7 +171,38 @@ fun MessageContentCard(
                 }
             }
         }
+        
+        // 用户消息发送状态图标
+        if (isUser && isLastInGroup) {
+            MessageStatusIndicator(
+                status = message.status,
+                modifier = Modifier.align(Alignment.End)
+            )
+        }
     }
+}
+
+/**
+ * 消息发送状态指示器
+ */
+@Composable
+private fun MessageStatusIndicator(
+    status: MessageStatus,
+    modifier: Modifier = Modifier
+) {
+    val (icon, color, contentDesc) = when (status) {
+        MessageStatus.SENDING -> Triple(Icons.Default.Schedule, MaterialTheme.colorScheme.onSurfaceVariant, "发送中")
+        MessageStatus.SENT -> Triple(Icons.Default.Check, MaterialTheme.colorScheme.primary, "已发送")
+        MessageStatus.DELIVERED -> Triple(Icons.Default.DoneAll, MaterialTheme.colorScheme.primary, "已送达")
+        MessageStatus.FAILED -> Triple(Icons.Default.Error, MaterialTheme.colorScheme.error, "发送失败")
+    }
+    
+    Icon(
+        imageVector = icon,
+        contentDescription = contentDesc,
+        tint = color,
+        modifier = modifier.size(14.dp)
+    )
 }
 
 /**

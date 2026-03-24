@@ -222,6 +222,16 @@ sealed class PairingStatus {
 // ─────────────────────────────────────────────────────────────
 
 /**
+ * 消息发送状态
+ */
+enum class MessageStatus {
+    SENDING,    // 发送中
+    SENT,       // 已发送
+    DELIVERED,  // 已送达
+    FAILED      // 发送失败
+}
+
+/**
  * 消息数据模型
  */
 data class MessageUi(
@@ -231,7 +241,8 @@ data class MessageUi(
     val timestamp: Long,
     val isLoading: Boolean = false,
     val toolCallId: String? = null,  // TOOL 消息可能有 toolCallId
-    val toolName: String? = null     // TOOL 消息可能有 toolName
+    val toolName: String? = null,    // TOOL 消息可能有 toolName
+    val status: MessageStatus = MessageStatus.SENT  // 消息发送状态
 ) {
     fun getTextContent(): String {
         return content
