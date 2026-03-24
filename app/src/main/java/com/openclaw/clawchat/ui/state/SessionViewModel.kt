@@ -86,12 +86,15 @@ class SessionViewModel @Inject constructor(
     private var observeMessagesJob: Job? = null
     
     private fun observeSessionMessages(sessionId: String) {
+        Log.d(TAG, "=== observeSessionMessages: CALLED for $sessionId")
         observeMessagesJob?.cancel()
         observeMessagesJob = viewModelScope.launch(exceptionHandler) {
-            Log.d(TAG, "=== observeSessionMessages: start observing $sessionId")
+            Log.d(TAG, "=== observeSessionMessages: STARTED collecting for $sessionId")
             messageRepository.observeMessages(sessionId).collect { messages ->
-                Log.d(TAG, "=== observeSessionMessages: session=$sessionId has ${messages.size} messages")
+                Log.d(TAG, "=== observeSessionMessages: COLLECTED ${messages.size} messages for $sessionId")
+                Log.d(TAG, "=== observeSessionMessages: message IDs: ${messages.map { it.id }}")
                 _state.update { it.copy(chatMessages = messages) }
+                Log.d(TAG, "=== observeSessionMessages: state updated, _state.value.chatMessages.size = ${_state.value.chatMessages.size}")
             }
         }
     }

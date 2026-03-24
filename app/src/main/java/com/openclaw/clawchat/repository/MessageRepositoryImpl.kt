@@ -33,8 +33,11 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
      * 观察会话消息
      */
     override fun observeMessages(sessionId: String): Flow<List<MessageUi>> {
+        android.util.Log.d("MessageRepository", "=== observeMessages called for $sessionId")
         return messagesBySession.map { map ->
-            map[sessionId]?.toList() ?: emptyList()
+            val messages = map[sessionId]?.toList() ?: emptyList()
+            android.util.Log.d("MessageRepository", "=== observeMessages map: sessionId=$sessionId, messages=${messages.size}")
+            messages
         }
     }
 
@@ -59,6 +62,8 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
     ): String {
         val messageId = java.util.UUID.randomUUID().toString()
         
+        android.util.Log.d("MessageRepository", "=== saveMessage: sessionId=$sessionId, role=$role, id=$messageId")
+        
         // 解析内容
         val contentItems = parseContent(content)
         
@@ -75,6 +80,8 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
         val sessionMessages = map.getOrPut(sessionId) { mutableListOf() }
         sessionMessages.add(message)
         messagesBySession.value = map
+        
+        android.util.Log.d("MessageRepository", "=== saveMessage: saved, total messages for session: ${sessionMessages.size}")
         
         return messageId
     }
