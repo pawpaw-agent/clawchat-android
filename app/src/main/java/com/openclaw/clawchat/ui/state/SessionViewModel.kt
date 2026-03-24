@@ -499,7 +499,10 @@ class SessionViewModel @Inject constructor(
                 }
                 
                 Log.d(TAG, "=== loadMessageHistory: fetching from Gateway...")
+                Log.d(TAG, "=== loadMessageHistory: sessionId='$sessionId', length=${sessionId.length}")
+                Log.d(TAG, "=== loadMessageHistory: connectionState=${gateway.connectionState.value}")
                 val response = gateway.chatHistory(sessionId, limit = 100)
+                Log.d(TAG, "=== loadMessageHistory: response ok=${response.isSuccess()}, error=${response.error}")
                 
                 if (!response.isSuccess()) {
                     Log.w(TAG, "=== loadMessageHistory: Gateway request failed: ${response.error?.message}")
