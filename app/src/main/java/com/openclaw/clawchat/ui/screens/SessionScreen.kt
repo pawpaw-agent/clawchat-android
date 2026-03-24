@@ -73,7 +73,8 @@ fun SessionScreen(
     }
 
     // 检测输入法弹出，自动滚动到底部
-    val imeBottom = WindowInsets.ime.getBottom(LocalDensity.current)
+    val density = LocalDensity.current
+    val imeBottom = WindowInsets.ime.getBottom(density)
     val imeVisible = imeBottom > 0
     var wasImeVisible by remember { mutableStateOf(false) }
     
@@ -83,6 +84,11 @@ fun SessionScreen(
             AppLog.d("SessionScreen", "IME shown, scrolling to bottom")
             scope.launch {
                 listState.animateScrollToItem(state.chatMessages.lastIndex)
+                // 额外滚动 IME 高度，确保消息不被遮挡
+                if (imeBottom > 0) {
+                    val imeHeightPx = with(density) { imeBottom.toPx() }
+                    listState.scrollBy(imeHeightPx)
+                }
             }
         }
         wasImeVisible = imeVisible
