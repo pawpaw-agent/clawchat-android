@@ -44,13 +44,14 @@ fun SessionScreen(
 
     // IME 状态检测 - 使用 withDensity 确保正确的像素值
     val density = LocalDensity.current
-    val imeHeight = WindowInsets.ime.getBottom(density)
-    val imeVisible = imeHeight > 0
+    val imeHeightDp = WindowInsets.ime.getBottom(density)
     
     // 滚动状态追踪
     var lastSessionId by remember { mutableStateOf<String?>(null) }
     var lastMessageCount by remember { mutableStateOf(0) }
-    var wasImeVisible by remember { mutableStateOf(false) }
+    var lastImeHeight by remember { mutableStateOf(0) }
+    
+    val imeVisible = imeHeightDp > 0
     
     // 判断用户是否在底部附近
     val isNearBottom by remember { derivedStateOf { !listState.canScrollForward } }
@@ -83,7 +84,7 @@ fun SessionScreen(
     LaunchedEffect(state.chatMessages.isNotEmpty(), sessionId) {
         if (state.chatMessages.isNotEmpty() && lastSessionId == sessionId && lastMessageCount == 0) {
             delay(100)
-            scrollToBottom(listState, imeHeight, "session enter")
+            scrollToBottom(listState, imeHeightDp, "session enter")
             lastMessageCount = state.chatMessages.size
         }
     }
@@ -93,29 +94,30 @@ fun SessionScreen(
         val currentCount = state.chatMessages.size
         if (currentCount > lastMessageCount && lastMessageCount > 0) {
             if (isNearBottom || imeVisible) {
-                scrollToBottom(listState, imeHeight, "new message")
+                scrollToBottom(listState, imeHeightDp, "new message")
             }
         }
         lastMessageCount = currentCount
     }
 
-    // IME 状态变化 - 关键修复
-    LaunchedEffect(imeVisible) {
-        if (imeVisible && !wasImeVisible) {
-            // IME 弹出：等待动画完成后滚动
+    // IME 状态变化 - 监听 imeHeight 变化
+    LaunchedEffect(imeHeightDp) {
+        val wasImeVisible = lastImeHeight > 0
+        val isImeVisible = imeHeightDp > 0
+        
+        if (isImeVisible && !wasImeVisible) {
+            // IME 开始弹出
+            delay(200)  // 等待 IME 动画完成
             if (state.chatMessages.isNotEmpty()) {
-                delay(150)  // 等待 IME 动画
-                // 使用之前获取的 imeHeight（在 Composable 上下文中）
-                AppLog.d("SessionScreen", "IME shown: height=$imeHeight")
-                scrollToBottom(listState, imeHeight, "IME shown")
+                scrollToBottom(listState, imeHeightDp, "IME shown")
             }
-        } else if (!imeVisible && wasImeVisible) {
+        } else if (!isImeVisible && wasImeVisible) {
             // IME 收起
             if (state.chatMessages.isNotEmpty() && isNearBottom) {
                 scrollToBottom(listState, 0, "IME hidden")
             }
         }
-        wasImeVisible = imeVisible
+        lastImeHeight = imeHeightDp
     }
 
     // 监听事件
@@ -124,7 +126,7 @@ fun SessionScreen(
             when (event) {
                 is SessionEvent.MessageReceived -> {
                     if (isNearBottom || imeVisible) {
-                        scrollToBottom(listState, imeHeight, "message received")
+                        scrollToBottom(listState, imeHeightDp, "message received")
                     }
                 }
                 else -> {}
