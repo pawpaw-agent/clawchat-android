@@ -2,7 +2,9 @@ package com.openclaw.clawchat.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
@@ -14,6 +16,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -22,7 +25,17 @@ import com.openclaw.clawchat.ui.state.MessageContentItem
 import com.openclaw.clawchat.ui.state.MessageUi
 
 /**
- * Markdown 文本渲染组件（支持表格）
+ * Markdown 文本渲染组件
+ * 
+ * 支持的语法：
+ * - 标题 (# ## ###)
+ * - 粗体 (**text**)
+ * - 斜体 (*text* 或 _text_)
+ * - 行内代码 (`code`)
+ * - 代码块 (```lang ... ```)
+ * - 列表 (- item 或 * item 或 1. item)
+ * - 链接 [text](url)
+ * - 表格
  */
 @Composable
 fun MarkdownText(
@@ -31,30 +44,167 @@ fun MarkdownText(
     fontSize: androidx.compose.ui.unit.TextUnit = 13.sp,
     textColor: Color = Color.Unspecified
 ) {
-    // 检查是否包含表格（更严格的检测）
+    // 检测是否有代码块或表格
+    val hasCodeBlock = content.contains("```")
     val hasTable = remember(content) {
         val lines = content.lines()
         val pipeLines = lines.count { it.trim().startsWith("|") && it.trim().endsWith("|") }
-        pipeLines >= 2 // 至少有表头和一行数据
+        pipeLines >= 2
     }
     
-    if (hasTable) {
-        // 使用表格渲染
-        MarkdownTableContent(
-            content = content,
-            fontSize = fontSize,
-            textColor = textColor,
-            modifier = modifier
-        )
-    } else {
-        // 普通文本渲染
-        MarkdownRegularContent(
-            content = content,
-            fontSize = fontSize,
-            textColor = textColor,
-            modifier = modifier
-        )
+    when {
+        hasCodeBlock -> MarkdownWithCodeBlocks(content, fontSize, textColor, modifier)
+        hasTable -> MarkdownTableContent(content, fontSize, textColor, modifier)
+        else -> MarkdownRegularContent(content, fontSize, textColor, modifier)
     }
+}
+
+/**
+ * 带代码块的 Markdown 渲染
+ */
+@Composable
+private fun MarkdownWithCodeBlocks(
+    content: String,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    textColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val segments = remember(content) { parseMarkdownSegments(content) }
+    
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        segments.forEach { segment ->
+            when (segment) {
+                is MarkdownSegment.CodeBlock -> {
+                    CodeBlockContent(
+                        code = segment.code,
+                        language = segment.language,
+                        fontSize = fontSize
+                    )
+                }
+                is MarkdownSegment.Text -> {
+                    if (segment.text.isNotBlank()) {
+                        val hasTable = segment.text.lines()
+                            .count { it.trim().startsWith("|") && it.trim().endsWith("|") } >= 2
+                        
+                        if (hasTable) {
+                            MarkdownTableContent(segment.text, fontSize, textColor, Modifier)
+                        } else {
+                            MarkdownRegularContent(segment.text, fontSize, textColor, Modifier)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 代码块内容
+ */
+@Composable
+private fun CodeBlockContent(
+    code: String,
+    language: String,
+    fontSize: androidx.compose.ui.unit.TextUnit
+) {
+    val scrollState = rememberScrollState()
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 语言标签
+            if (language.isNotBlank()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                ) {
+                    Text(
+                        text = language,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+            
+            // 代码内容
+            SelectionContainer {
+                Text(
+                    text = code.trimEnd(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(scrollState)
+                        .padding(12.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = (fontSize.value - 2).sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 解析 Markdown 段落
+ */
+private sealed class MarkdownSegment {
+    data class Text(val text: String) : MarkdownSegment()
+    data class CodeBlock(val code: String, val language: String) : MarkdownSegment()
+}
+
+private fun parseMarkdownSegments(content: String): List<MarkdownSegment> {
+    val segments = mutableListOf<MarkdownSegment>()
+    val lines = content.lines()
+    val currentText = StringBuilder()
+    var inCodeBlock = false
+    var codeBlockContent = StringBuilder()
+    var codeBlockLanguage = ""
+    
+    for (line in lines) {
+        if (line.trim().startsWith("```")) {
+            if (inCodeBlock) {
+                // 结束代码块
+                segments.add(MarkdownSegment.CodeBlock(
+                    code = codeBlockContent.toString(),
+                    language = codeBlockLanguage
+                ))
+                codeBlockContent = StringBuilder()
+                codeBlockLanguage = ""
+                inCodeBlock = false
+            } else {
+                // 开始代码块
+                if (currentText.isNotBlank()) {
+                    segments.add(MarkdownSegment.Text(currentText.toString().trimEnd()))
+                    currentText.clear()
+                }
+                codeBlockLanguage = line.trim().removePrefix("```").trim()
+                inCodeBlock = true
+            }
+        } else if (inCodeBlock) {
+            codeBlockContent.appendLine(line)
+        } else {
+            currentText.appendLine(line)
+        }
+    }
+    
+    // 处理未结束的代码块
+    if (inCodeBlock && codeBlockContent.isNotBlank()) {
+        segments.add(MarkdownSegment.CodeBlock(
+            code = codeBlockContent.toString(),
+            language = codeBlockLanguage
+        ))
+    } else if (currentText.isNotBlank()) {
+        segments.add(MarkdownSegment.Text(currentText.toString().trimEnd()))
+    }
+    
+    return segments
 }
 
 /**
@@ -88,77 +238,152 @@ private fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
     return buildAnnotatedString {
         val lines = content.lines()
         var isFirst = true
+        var inList = false
         
         for (line in lines) {
             if (!isFirst) append("\n")
             isFirst = false
             
+            val trimmedLine = line.trim()
+            
             when {
                 // 标题
-                line.startsWith("### ") -> {
+                trimmedLine.startsWith("### ") -> {
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 14.sp)) {
-                        append(line.removePrefix("### "))
+                        append(trimmedLine.removePrefix("### "))
                     }
                 }
-                line.startsWith("## ") -> {
+                trimmedLine.startsWith("## ") -> {
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp)) {
-                        append(line.removePrefix("## "))
+                        append(trimmedLine.removePrefix("## "))
                     }
                 }
-                line.startsWith("# ") -> {
+                trimmedLine.startsWith("# ") -> {
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)) {
-                        append(line.removePrefix("# "))
+                        append(trimmedLine.removePrefix("# "))
                     }
                 }
-                // 粗体 **text**
-                line.contains("**") -> {
-                    var text = line
-                    var inBold = false
-                    var result = StringBuilder()
-                    var i = 0
-                    while (i < text.length) {
-                        if (i + 1 < text.length && text[i] == '*' && text[i + 1] == '*') {
-                            if (inBold) {
-                                result.append("</b>")
-                            } else {
-                                result.append("<b>")
-                            }
-                            inBold = !inBold
-                            i += 2
-                        } else {
-                            result.append(text[i])
-                            i++
-                        }
-                    }
-                    // 简化处理：直接显示原始文本
-                    append(line.replace("**", ""))
-                }
-                // 代码块
-                line.startsWith("```") -> {
-                    // 跳过代码块标记
-                }
-                // 行内代码 `code`
-                line.contains("`") -> {
-                    val parts = line.split("`")
-                    for ((index, part) in parts.withIndex()) {
-                        if (index % 2 == 1) {
-                            withStyle(SpanStyle(fontFamily = FontFamily.Monospace, color = Color(0xFF60A5FA))) {
-                                append(part)
-                            }
-                        } else {
-                            append(part)
-                        }
+                // 有序列表
+                trimmedLine.matches(Regex("^\\d+\\.\\s+.*")) -> {
+                    val match = Regex("^(\\d+)\\.\\s+(.*)$").find(trimmedLine)
+                    if (match != null) {
+                        val number = match.groupValues[1]
+                        val text = match.groupValues[2]
+                        append("$number. ")
+                        appendStyledText(text)
+                        inList = true
                     }
                 }
-                // 列表
-                line.trim().startsWith("- ") || line.trim().startsWith("* ") -> {
+                // 无序列表
+                trimmedLine.startsWith("- ") || trimmedLine.startsWith("* ") -> {
                     append("• ")
-                    append(line.trim().removePrefix("- ").removePrefix("* "))
+                    appendStyledText(trimmedLine.removePrefix("- ").removePrefix("* "))
+                    inList = true
                 }
-                // 普通文本
+                // 空行
+                trimmedLine.isEmpty() -> {
+                    if (inList) {
+                        inList = false
+                    }
+                }
+                // 普通文本（处理行内样式）
                 else -> {
-                    append(line)
+                    appendStyledText(line)
                 }
+            }
+        }
+    }
+}
+
+/**
+ * 处理行内样式（粗体、斜体、行内代码）
+ */
+private fun Appendable.appendStyledText(text: String) {
+    var i = 0
+    while (i < text.length) {
+        when {
+            // 粗体 **text**
+            i + 1 < text.length && text[i] == '*' && text[i + 1] == '*' -> {
+                val end = text.indexOf("**", i + 2)
+                if (end != -1) {
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(text.substring(i + 2, end))
+                    }
+                    i = end + 2
+                } else {
+                    append(text[i])
+                    i++
+                }
+            }
+            // 斜体 *text* 或 _text_
+            text[i] == '*' && (i == 0 || text[i - 1] != '*') -> {
+                val end = text.indexOf('*', i + 1)
+                if (end != -1 && end > i + 1) {
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                        append(text.substring(i + 1, end))
+                    }
+                    i = end + 1
+                } else {
+                    append(text[i])
+                    i++
+                }
+            }
+            text[i] == '_' && i + 1 < text.length -> {
+                val end = text.indexOf('_', i + 1)
+                if (end != -1 && end > i + 1) {
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                        append(text.substring(i + 1, end))
+                    }
+                    i = end + 1
+                } else {
+                    append(text[i])
+                    i++
+                }
+            }
+            // 行内代码 `code`
+            text[i] == '`' -> {
+                val end = text.indexOf('`', i + 1)
+                if (end != -1 && end > i + 1) {
+                    withStyle(SpanStyle(
+                        fontFamily = FontFamily.Monospace,
+                        color = Color(0xFF60A5FA),
+                        background = Color(0x1A60A5FA)
+                    )) {
+                        append(text.substring(i + 1, end))
+                    }
+                    i = end + 1
+                } else {
+                    append(text[i])
+                    i++
+                }
+            }
+            // 链接 [text](url)
+            text[i] == '[' -> {
+                val textEnd = text.indexOf(']', i + 1)
+                if (textEnd != -1 && textEnd + 1 < text.length && text[textEnd + 1] == '(') {
+                    val urlEnd = text.indexOf(')', textEnd + 2)
+                    if (urlEnd != -1) {
+                        val linkText = text.substring(i + 1, textEnd)
+                        val url = text.substring(textEnd + 2, urlEnd)
+                        withStyle(SpanStyle(
+                            color = Color(0xFF2196F3),
+                            fontWeight = FontWeight.Medium
+                        )) {
+                            append(linkText)
+                        }
+                        i = urlEnd + 1
+                    } else {
+                        append(text[i])
+                        i++
+                    }
+                } else {
+                    append(text[i])
+                    i++
+                }
+            }
+            else -> {
+                append(text[i])
+                i++
             }
         }
     }
@@ -182,7 +407,6 @@ private fun MarkdownTableContent(
     var inTable = false
     var tableEnded = false
     
-    // 分离表格和非表格内容
     lines.forEach { line ->
         if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
             if (!tableEnded) {
@@ -204,7 +428,6 @@ private fun MarkdownTableContent(
     }
     
     Column(modifier = modifier) {
-        // 表格前的内容
         if (beforeTable.isNotEmpty()) {
             MarkdownRegularContent(
                 content = beforeTable.joinToString("\n"),
@@ -214,7 +437,6 @@ private fun MarkdownTableContent(
             Spacer(modifier = Modifier.height(8.dp))
         }
         
-        // 表格渲染
         if (tableLines.isNotEmpty()) {
             RenderTable(
                 tableLines = tableLines,
@@ -223,7 +445,6 @@ private fun MarkdownTableContent(
             )
         }
         
-        // 表格后的内容
         if (afterTable.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
             MarkdownRegularContent(
@@ -250,7 +471,6 @@ private fun RenderTable(
     val headers = parseTableRow(headerLine)
     val columnCount = headers.size
     
-    // 表格颜色
     val borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
     val headerBgColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
     val evenRowBgColor = MaterialTheme.colorScheme.surface
@@ -262,7 +482,6 @@ private fun RenderTable(
             .clip(RoundedCornerShape(4.dp))
             .border(1.dp, borderColor, RoundedCornerShape(4.dp))
     ) {
-        // 表头行
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -291,10 +510,8 @@ private fun RenderTable(
             }
         }
         
-        // 数据行
         dataLines.forEachIndexed { rowIndex, line ->
             val cells = parseTableRow(line)
-            // 确保单元格数量与表头一致
             val paddedCells = cells + List(maxOf(0, columnCount - cells.size)) { "" }
             
             Row(
