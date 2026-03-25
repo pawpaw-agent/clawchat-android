@@ -1,6 +1,9 @@
 package com.openclaw.clawchat.ui.screens
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -88,7 +91,11 @@ private fun SessionList(
                 session = session,
                 isSelected = currentSession?.id == session.id,
                 onSelect = { onSelectSession(session.id) },
-                onSessionLongPress = { onSessionLongPress(session) }
+                onSessionLongPress = { onSessionLongPress(session) },
+                modifier = Modifier.animateItem(
+                    fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                )
             )
         }
     }
@@ -103,10 +110,11 @@ private fun SessionItem(
     session: SessionUi,
     isSelected: Boolean,
     onSelect: () -> Unit,
-    onSessionLongPress: (() -> Unit)? = null
+    onSessionLongPress: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .then(
                 if (onSessionLongPress != null) {
