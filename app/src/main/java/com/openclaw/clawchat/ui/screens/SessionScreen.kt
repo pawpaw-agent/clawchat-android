@@ -227,7 +227,12 @@ fun SessionScreen(
                     // 显示"新消息"提示（当用户滚动到中间时）
                     if (chatNewMessagesBelow) {
                         NewMessagesIndicator(
-                            modifier = Modifier.align(Alignment.BottomCenter)
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                            onClick = {
+                                chatNewMessagesBelow = false
+                                chatUserNearBottom = true
+                                chatHasAutoScrolled = false
+                            }
                         )
                     }
                 }
@@ -342,14 +347,18 @@ private suspend fun scheduleChatScroll(
 }
 
 /**
- * 新消息提示组件
+ * 新消息提示组件（点击滚动到底部）
  */
 @Composable
-private fun NewMessagesIndicator(modifier: Modifier = Modifier) {
+private fun NewMessagesIndicator(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     Surface(
         modifier = modifier.padding(bottom = 16.dp),
         color = MaterialTheme.colorScheme.primary,
-        shape = MaterialTheme.shapes.small
+        shape = MaterialTheme.shapes.small,
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
