@@ -1,12 +1,14 @@
 package com.openclaw.clawchat.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -234,7 +236,7 @@ private fun MarkdownTableContent(
 }
 
 /**
- * 渲染表格
+ * 渲染表格（带边框和网格线）
  */
 @Composable
 private fun RenderTable(
@@ -246,51 +248,71 @@ private fun RenderTable(
     val dataLines = tableLines.drop(1).filter { !it.contains("---") && !it.contains(":--") }
     
     val headers = parseTableRow(headerLine)
+    val columnCount = headers.size
     
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        shape = RoundedCornerShape(4.dp)
+    // 表格颜色
+    val borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    val headerBgColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+    val evenRowBgColor = MaterialTheme.colorScheme.surface
+    val oddRowBgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+    
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(4.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(4.dp))
     ) {
-        Column(modifier = Modifier.padding(1.dp)) {
-            // 表头
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
-            ) {
-                headers.forEach { header ->
+        // 表头行
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(headerBgColor)
+        ) {
+            headers.forEachIndexed { index, header ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .border(
+                            width = 1.dp,
+                            color = borderColor,
+                            shape = if (index == 0) RoundedCornerShape(topStart = 4.dp)
+                                   else if (index == columnCount - 1) RoundedCornerShape(topEnd = 4.dp)
+                                   else RoundedCornerShape(0.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                ) {
                     Text(
                         text = header,
                         fontSize = (fontSize.value - 1).sp,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
+        }
+        
+        // 数据行
+        dataLines.forEachIndexed { rowIndex, line ->
+            val cells = parseTableRow(line)
+            // 确保单元格数量与表头一致
+            val paddedCells = cells + List(maxOf(0, columnCount - cells.size)) { "" }
             
-            // 数据行
-            dataLines.forEachIndexed { index, line ->
-                val cells = parseTableRow(line)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            if (index % 2 == 0) Color.Transparent 
-                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    cells.forEach { cell ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(if (rowIndex % 2 == 0) evenRowBgColor else oddRowBgColor)
+            ) {
+                paddedCells.take(columnCount).forEachIndexed { colIndex, cell ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .border(1.dp, borderColor)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
                         Text(
                             text = cell,
                             fontSize = (fontSize.value - 1).sp,
-                            color = textColor,
-                            modifier = Modifier.weight(1f)
+                            color = textColor
                         )
                     }
                 }
