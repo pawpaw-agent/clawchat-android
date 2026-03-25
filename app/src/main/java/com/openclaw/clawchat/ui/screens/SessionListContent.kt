@@ -234,7 +234,6 @@ private fun SessionItem(
             }
         }
     }
-}
 
 /**
  * 格式化时间为"多久以前"
