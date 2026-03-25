@@ -43,18 +43,14 @@ fun SessionScreen(
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
     // === 参考 webchat app-scroll.ts 的状态管理 ===
-    // NEAR_BOTTOM_THRESHOLD = 450 (webchat)
-    // 但 Compose 使用 canScrollForward 更简单
-    
-    // chatHasAutoScrolled: 首次加载后设为 true
     var chatHasAutoScrolled by remember { mutableStateOf(false) }
-    // chatUserNearBottom: 用户是否在底部附近
     var chatUserNearBottom by remember { mutableStateOf(true) }
-    // 当前会话 ID
     var currentSessionId by remember { mutableStateOf<String?>(null) }
     
     // 使用 derivedStateOf 判断是否在底部
     val isNearBottom by remember { derivedStateOf { !listState.canScrollForward } }
+
+    AppLog.d("SessionScreen", "=== Render: sessionId=$sessionId, currentSessionId=$currentSessionId, messages=${state.chatMessages.size}, hasAutoScrolled=$chatHasAutoScrolled")
 
     // 监听生命周期
     DisposableEffect(lifecycleOwner) {
@@ -71,8 +67,9 @@ fun SessionScreen(
 
     // 参考 webchat: resetChatScroll() - 在会话切换时重置
     LaunchedEffect(sessionId) {
+        AppLog.d("SessionScreen", "=== LaunchedEffect(sessionId): $sessionId")
         if (currentSessionId != sessionId) {
-            AppLog.d("SessionScreen", "Session changed: $sessionId, reset scroll state")
+            AppLog.d("SessionScreen", "=== Session changed: $sessionId, reset scroll state")
             currentSessionId = sessionId
             chatHasAutoScrolled = false
             chatUserNearBottom = true
@@ -82,22 +79,25 @@ fun SessionScreen(
     }
 
     // 参考 webchat: handleUpdated() - 监听消息变化触发滚动
-    // scheduleChatScroll(host, forcedByTab || forcedByLoad || streamJustStarted || !host.chatHasAutoScrolled)
-    LaunchedEffect(
-        state.chatMessages,
-        state.chatToolMessages,
-        state.chatStream,
-        state.isLoading,
-        currentSessionId
-    ) {
-        if (state.chatMessages.isEmpty()) return@LaunchedEffect
+    // 使用 size 作为 key 确保触发
+    val messageCount = state.chatMessages.size
+    LaunchedEffect(messageCount, currentSessionId, state.isLoading) {
+        AppLog.d("SessionScreen", "=== LaunchedEffect triggered: messageCount=$messageCount, currentSessionId=$currentSessionId, isLoading=${state.isLoading}")
         
-        val forcedByLoad = !state.isLoading && chatHasAutoScrolled.not()
+        if (messageCount == 0) {
+            AppLog.d("SessionScreen", "=== No messages, skip scroll")
+            return@LaunchedEffect
+        }
+        
+        // 参考 webchat: forcedByLoad = !isLoading && !chatHasAutoScrolled
+        val forcedByLoad = !state.isLoading && !chatHasAutoScrolled
         val streamJustStarted = state.chatStream != null && !chatHasAutoScrolled
         val shouldForce = forcedByLoad || streamJustStarted || !chatHasAutoScrolled
         
+        AppLog.d("SessionScreen", "=== Scroll decision: forcedByLoad=$forcedByLoad, streamJustStarted=$streamJustStarted, shouldForce=$shouldForce")
+        
         // 参考 webchat: 等待渲染完成
-        delay(50)
+        delay(100)
         
         scheduleChatScroll(
             listState = listState,
@@ -105,17 +105,13 @@ fun SessionScreen(
             chatHasAutoScrolled = { chatHasAutoScrolled },
             setHasAutoScrolled = { chatHasAutoScrolled = it },
             userNearBottom = isNearBottom || chatUserNearBottom,
-            reason = "messages changed, force=$shouldForce"
+            reason = "messageCount=$messageCount, force=$shouldForce"
         )
     }
 
-    // 参考 webchat: handleChatScroll() - 监听滚动事件更新 userNearBottom
-    // Compose 没有 scroll event，使用 derivedStateOf 代替
-    
     // 更新 chatUserNearBottom 状态
     LaunchedEffect(isNearBottom) {
         chatUserNearBottom = isNearBottom
-        AppLog.d("SessionScreen", "chatUserNearBottom updated: $isNearBottom")
     }
 
     val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
@@ -198,11 +194,6 @@ fun SessionScreen(
 
 /**
  * 参考 webchat scheduleChatScroll 实现
- * 
- * 核心逻辑：
- * 1. force=true 且未自动滚动过 → 强制滚动
- * 2. 用户在底部附近 → 滚动
- * 3. 滚动后延迟重试（webchat: 120-150ms）
  */
 private suspend fun scheduleChatScroll(
     listState: LazyListState,
@@ -213,45 +204,46 @@ private suspend fun scheduleChatScroll(
     reason: String
 ) {
     val totalItems = listState.layoutInfo.totalItemsCount
+    AppLog.d("SessionScreen", "=== scheduleChatScroll: reason=$reason, totalItems=$totalItems, force=$force, hasAutoScrolled=${chatHasAutoScrolled()}")
+    
     if (totalItems <= 0) {
-        AppLog.d("SessionScreen", "scheduleChatScroll: no items, skip")
+        AppLog.d("SessionScreen", "=== scheduleChatScroll: no items, skip")
         return
     }
     
     // 参考 webchat: effectiveForce = force && !chatHasAutoScrolled
     val effectiveForce = force && !chatHasAutoScrolled()
     
-    // 参考 webchat: shouldStick = effectiveForce || chatUserNearBottom || distanceFromBottom < THRESHOLD
-    // Compose 使用 isNearBottom 代替 distanceFromBottom 计算
+    // 参考 webchat: shouldStick = effectiveForce || chatUserNearBottom
     val shouldStick = effectiveForce || userNearBottom
     
-    AppLog.d("SessionScreen", "scheduleChatScroll: reason=$reason, force=$force, effectiveForce=$effectiveForce, userNearBottom=$userNearBottom, shouldStick=$shouldStick")
+    AppLog.d("SessionScreen", "=== scheduleChatScroll: effectiveForce=$effectiveForce, userNearBottom=$userNearBottom, shouldStick=$shouldStick")
     
     if (!shouldStick) {
-        // 用户滚动到中间，不自动滚动
-        AppLog.d("SessionScreen", "scheduleChatScroll: user scrolled up, skip")
+        AppLog.d("SessionScreen", "=== scheduleChatScroll: user scrolled up, skip")
         return
     }
     
     // 标记已自动滚动
     if (effectiveForce) {
         setHasAutoScrolled(true)
+        AppLog.d("SessionScreen", "=== scheduleChatScroll: set hasAutoScrolled=true")
     }
     
     // 滚动到底部
     val lastIndex = totalItems - 1
     listState.scrollToItem(index = lastIndex)
-    AppLog.d("SessionScreen", "scheduleChatScroll: scrolled to index $lastIndex")
+    AppLog.d("SessionScreen", "=== scheduleChatScroll: scrolled to index $lastIndex")
     
     // 参考 webchat: 延迟重试
     val retryDelay = if (effectiveForce) 150L else 120L
     delay(retryDelay)
     
-    // 重试滚动（确保位置正确）
+    // 重试滚动
     val newTotalItems = listState.layoutInfo.totalItemsCount
     if (newTotalItems > 0) {
         listState.scrollToItem(index = newTotalItems - 1)
-        AppLog.d("SessionScreen", "scheduleChatScroll: retry scrolled to index ${newTotalItems - 1}")
+        AppLog.d("SessionScreen", "=== scheduleChatScroll: retry scrolled to index ${newTotalItems - 1}")
     }
 }
 
