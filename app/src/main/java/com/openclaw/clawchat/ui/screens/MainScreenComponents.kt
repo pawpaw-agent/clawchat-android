@@ -23,6 +23,7 @@ fun SessionOptionsDialog(
     onDelete: () -> Unit
 ) {
     var showRenameDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf(session.label ?: session.getDisplayName()) }
 
     AlertDialog(
@@ -83,7 +84,7 @@ fun SessionOptionsDialog(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(
-                    onClick = onDelete,
+                    onClick = { showDeleteConfirm = true },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
@@ -99,6 +100,33 @@ fun SessionOptionsDialog(
             }
         }
     )
+
+    // 删除确认对话框
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("删除会话") },
+            text = { Text("确定要删除会话「${session.getDisplayName()}」吗？此操作不可撤销。") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirm = false
+                        onDelete()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("删除")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showDeleteConfirm = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
 
     // 重命名对话框
     if (showRenameDialog) {
