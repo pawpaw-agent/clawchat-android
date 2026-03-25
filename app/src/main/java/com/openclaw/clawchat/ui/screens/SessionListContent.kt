@@ -35,12 +35,8 @@ fun SessionListContent(
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     
-    Column(modifier = Modifier.fillMaxSize()) {
-        // 连接状态提示条（未连接时显示）
-        if (state.connectionStatus !is ConnectionStatus.Connected) {
-            ConnectionStatusBar(connectionStatus = state.connectionStatus)
-        }
-        
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 列表内容
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = {
@@ -48,7 +44,7 @@ fun SessionListContent(
                 onRefresh()
                 isRefreshing = false
             },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxSize()
         ) {
             if (state.sessions.isEmpty()) {
                 EmptySessionList(onCreateSession = onCreateSession)
@@ -60,6 +56,11 @@ fun SessionListContent(
                     onSessionLongPress = onSessionLongPress
                 )
             }
+        }
+        
+        // 连接状态提示条（未连接时显示）- 放在最上层
+        if (state.connectionStatus !is ConnectionStatus.Connected) {
+            ConnectionStatusBar(connectionStatus = state.connectionStatus)
         }
     }
 }

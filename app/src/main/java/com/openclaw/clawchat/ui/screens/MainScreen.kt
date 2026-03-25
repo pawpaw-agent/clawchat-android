@@ -108,15 +108,6 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // 连接错误 Banner
-            if (state.connectionError != null) {
-                ConnectionErrorBanner(
-                    error = state.connectionError!!,
-                    onRetry = { viewModel.retryConnection() },
-                    onDismiss = { viewModel.clearConnectionError() }
-                )
-            }
-            
             when {
                 state.connectionStatus !is ConnectionStatus.Connected && state.sessions.isEmpty() -> {
                     // 未连接且无会话列表（首次使用）
@@ -135,6 +126,15 @@ fun MainScreen(
                         onRefresh = { viewModel.refreshSessions() }
                     )
                 }
+            }
+            
+            // 连接错误 Banner - 放在 Box 最上层，确保始终可见
+            if (state.connectionError != null) {
+                ConnectionErrorBanner(
+                    error = state.connectionError!!,
+                    onRetry = { viewModel.retryConnection() },
+                    onDismiss = { viewModel.clearConnectionError() }
+                )
             }
         }
     }
