@@ -216,21 +216,25 @@ fun MessageActionDropdownMenu(
     ) {
         DropdownMenuItem(
             text = { Text("复制") },
-            onClick = onCopy
+            onClick = onCopy,
+            leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp)) }
         )
         DropdownMenuItem(
             text = { Text("复制为 Markdown") },
-            onClick = onCopy
+            onClick = onCopy,
+            leadingIcon = { Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(18.dp)) }
         )
         HorizontalDivider()
         DropdownMenuItem(
             text = { Text("删除", color = MaterialTheme.colorScheme.error) },
-            onClick = onDelete
+            onClick = onDelete,
+            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp)) }
         )
         if (!isUser) {
             DropdownMenuItem(
                 text = { Text("重新生成") },
-                onClick = onRegenerate
+                onClick = onRegenerate,
+                leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp)) }
             )
         }
     }
