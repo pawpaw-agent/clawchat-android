@@ -44,6 +44,12 @@ fun SessionScreen(
     var lastSessionId by remember { mutableStateOf<String?>(null) }
     var lastMessageCount by remember { mutableStateOf(0) }
 
+    // IME 高度检测（需要在滚动逻辑之前）
+    val density = LocalDensity.current
+    val imeBottom = WindowInsets.ime.getBottom(density)
+    val imeVisible = imeBottom > 0
+    var wasImeVisible by remember { mutableStateOf(false) }
+
     // 监听生命周期，onResume 时刷新消息
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -67,19 +73,27 @@ fun SessionScreen(
     }
 
     // 统一的滚动逻辑：首次加载、消息增加、sessionId 变化
-    LaunchedEffect(state.chatMessages.size, sessionId) {
+    // 使用 imeBottom 作为偏移量，确保滚动到 IME 上方
+    LaunchedEffect(state.chatMessages.size, sessionId, imeBottom) {
         val isFirstLoad = lastSessionId != sessionId
         val hasNewMessages = state.chatMessages.size > lastMessageCount
         
-        if (state.chatMessages.isNotEmpty() && (isFirstLoad || hasNewMessages)) {
+        if (state.chatMessages.isNotEmpty() && (isFirstLoad || hasNewMessages || (imeVisible && !wasImeVisible))) {
             // 等待列表渲染
             kotlinx.coroutines.delay(50)
-            listState.scrollToItem(state.chatMessages.lastIndex)
-            AppLog.d("SessionScreen", "Scrolled to bottom: isFirstLoad=$isFirstLoad, hasNewMessages=$hasNewMessages")
+            // 计算 scrollOffset：如果 IME 可见，使用负值向上额外滚动
+            val scrollOffset = if (imeBottom > 0) -imeBottom else 0
+            listState.scrollToItem(state.chatMessages.lastIndex, scrollOffset)
+            AppLog.d("SessionScreen", "Scrolled to bottom: isFirstLoad=$isFirstLoad, hasNewMessages=$hasNewMessages, imeOffset=$scrollOffset")
         }
         
         lastMessageCount = state.chatMessages.size
         lastSessionId = sessionId
+    }
+
+    // 更新 IME 状态
+    LaunchedEffect(imeVisible) {
+        wasImeVisible = imeVisible
     }
 
     // 监听事件
@@ -89,7 +103,8 @@ fun SessionScreen(
                 is SessionEvent.Error -> { }
                 is SessionEvent.MessageReceived -> {
                     if (listState.canScrollForward) {
-                        listState.animateScrollToItem(state.chatMessages.lastIndex)
+                        val scrollOffset = if (imeBottom > 0) -imeBottom else 0
+                        listState.animateScrollToItem(state.chatMessages.lastIndex, scrollOffset)
                     }
                 }
                 else -> {}
@@ -98,25 +113,6 @@ fun SessionScreen(
     }
 
     val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
-
-    // 检测输入法弹出，自动滚动到底部
-    val density = LocalDensity.current
-    val imeBottom = WindowInsets.ime.getBottom(density)
-    val imeVisible = imeBottom > 0
-    var wasImeVisible by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(imeVisible) {
-        if (imeVisible && !wasImeVisible && state.chatMessages.isNotEmpty()) {
-            AppLog.d("SessionScreen", "IME shown, scrolling to bottom")
-            scope.launch {
-                listState.animateScrollToItem(
-                    index = state.chatMessages.lastIndex,
-                    scrollOffset = if (imeBottom > 0) -imeBottom else 0
-                )
-            }
-        }
-        wasImeVisible = imeVisible
-    }
 
     Scaffold(
         modifier = Modifier.background(MaterialTheme.colorScheme.background),
