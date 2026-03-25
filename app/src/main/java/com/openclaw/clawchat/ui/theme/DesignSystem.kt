@@ -39,11 +39,11 @@ object DesignTokens {
     val borderStrong = Color(0xFF2E3040) // 强调边框
     val borderHover = Color(0xFF3E4050)  // 悬停边框
     
-    // 强调色 - 红色 (openclaw 主题)
-    val accent = Color(0xFFFF5C5C)       // 主按钮、链接、重点
-    val accentHover = Color(0xFFFF7070)  // 悬停状态
-    val accentSubtle = Color(0x1AFF5C5C) // 10% opacity - 强调背景
-    val accentGlow = Color(0x33FF5C5C)   // 20% opacity - 光晕效果
+    // 强调色 - 灰色 (用户要求)
+    val accent = Color(0xFF6B7280)       // 主按钮、链接、重点
+    val accentHover = Color(0xFF9CA3AF)  // 悬停状态
+    val accentSubtle = Color(0x1A6B7280) // 10% opacity - 强调背景
+    val accentGlow = Color(0x336B7280)   // 20% opacity - 光晕效果
     val accentForeground = Color(0xFFFAFAFA)
     val accentContainer = Color(0xFF2A2A35) // 按钮容器背景
     
@@ -92,10 +92,10 @@ object DesignTokens {
         val secondary = Color(0xFFF1F3F5)
         val secondaryForeground = Color(0xFF3C3C43)
         
-        val accent = Color(0xFFDC2626)       // 亮色模式用深红
-        val accentHover = Color(0xFFEF4444)
-        val accentSubtle = Color(0x14DC2626)
-        val accentGlow = Color(0x22DC2626)
+        val accent = Color(0xFF3B82F6)       // 浅蓝色 (用户要求)
+        val accentHover = Color(0xFF60A5FA)
+        val accentSubtle = Color(0x143B82F6)
+        val accentGlow = Color(0x223B82F6)
         val accentForeground = Color(0xFFFFFFFF)
         
         val accent2 = Color(0xFF0D9488)
