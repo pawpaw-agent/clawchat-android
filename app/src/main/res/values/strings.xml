@@ -28,6 +28,20 @@
     <string name="gateway_tls">Use TLS (WSS)</string>
     <string name="gateway_test">Test Connection</string>
 
+    <!-- Messages -->
+    <string name="message_hint">Type a message…</string>
+    <string name="message_send">Send</string>
+    <string name="message_attach">Attach file</string>
+    <string name="message_copy">Copy</string>
+    <string name="message_delete">Delete</string>
+    <string name="message_share">Share</string>
+    <string name="message_regenerate">Regenerate</string>
+    <string name="message_copied">Copied to clipboard</string>
+    <string name="message_delete_confirm">Delete this message?</string>
+    <string name="message_code_copied">Code copied</string>
+    <string name="message_just_now">Just now</string>
+    <string name="message_minutes_ago">%d minutes ago</string>
+    
     <!-- Sessions -->
     <string name="sessions_title">Sessions</string>
     <string name="session_new">New Session</string>
@@ -35,13 +49,12 @@
     <string name="session_terminate">Terminate</string>
     <string name="session_empty">No active sessions</string>
     <string name="session_model">Model</string>
-
-    <!-- Messages -->
-    <string name="message_hint">Type a message…</string>
-    <string name="message_send">Send</string>
-    <string name="message_attach">Attach file</string>
-    <string name="message_copy">Copy</string>
-    <string name="message_delete">Delete</string>
+    <string name="session_delete_confirm">Delete session \"%s\"? This cannot be undone.</string>
+    <string name="session_search">Search sessions…</string>
+    <string name="session_today">Today</string>
+    <string name="session_yesterday">Yesterday</string>
+    <string name="session_this_week">This Week</string>
+    <string name="session_earlier">Earlier</string>
 
     <!-- Pairing -->
     <string name="pairing_title">Device Pairing</string>
