@@ -1,5 +1,8 @@
 package com.openclaw.clawchat.ui.screens.session
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.layout.*

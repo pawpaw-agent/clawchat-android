@@ -298,7 +298,7 @@ private fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
 /**
  * 处理行内样式（粗体、斜体、行内代码）
  */
-private fun Appendable.appendStyledText(text: String) {
+private fun AnnotatedString.Builder.appendStyledText(text: String) {
     var i = 0
     while (i < text.length) {
         when {
@@ -311,7 +311,7 @@ private fun Appendable.appendStyledText(text: String) {
                     }
                     i = end + 2
                 } else {
-                    append(text[i])
+                    append(text.substring(i, i + 1))
                     i++
                 }
             }
@@ -324,7 +324,7 @@ private fun Appendable.appendStyledText(text: String) {
                     }
                     i = end + 1
                 } else {
-                    append(text[i])
+                    append(text.substring(i, i + 1))
                     i++
                 }
             }
@@ -336,7 +336,7 @@ private fun Appendable.appendStyledText(text: String) {
                     }
                     i = end + 1
                 } else {
-                    append(text[i])
+                    append(text.substring(i, i + 1))
                     i++
                 }
             }
@@ -353,7 +353,7 @@ private fun Appendable.appendStyledText(text: String) {
                     }
                     i = end + 1
                 } else {
-                    append(text[i])
+                    append(text.substring(i, i + 1))
                     i++
                 }
             }
@@ -364,7 +364,6 @@ private fun Appendable.appendStyledText(text: String) {
                     val urlEnd = text.indexOf(')', textEnd + 2)
                     if (urlEnd != -1) {
                         val linkText = text.substring(i + 1, textEnd)
-                        val url = text.substring(textEnd + 2, urlEnd)
                         withStyle(SpanStyle(
                             color = Color(0xFF2196F3),
                             fontWeight = FontWeight.Medium
@@ -373,16 +372,16 @@ private fun Appendable.appendStyledText(text: String) {
                         }
                         i = urlEnd + 1
                     } else {
-                        append(text[i])
+                        append(text.substring(i, i + 1))
                         i++
                     }
                 } else {
-                    append(text[i])
+                    append(text.substring(i, i + 1))
                     i++
                 }
             }
             else -> {
-                append(text[i])
+                append(text.substring(i, i + 1))
                 i++
             }
         }
