@@ -84,6 +84,15 @@ fun MessageContentCard(
     var showMenu by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
+    var showCopiedToast by remember { mutableStateOf(false) }
+    
+    // 双击复制提示
+    if (showCopiedToast) {
+        LaunchedEffect(Unit) {
+            kotlinx.coroutines.delay(1500)
+            showCopiedToast = false
+        }
+    }
     
     // 流式输出脉冲动画
     val infiniteTransition = rememberInfiniteTransition(label = "streaming")
@@ -149,7 +158,22 @@ fun MessageContentCard(
                     )
                 }
                 
-                if (showMenu) {
+                if (showCopiedToast) {
+            Surface(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                color = MaterialTheme.colorScheme.inverseSurface,
+                shape = RoundedCornerShape(4.dp)
+            ) {
+                Text(
+                    text = "已复制",
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    color = MaterialTheme.colorScheme.inverseOnSurface,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+        }
+        
+        if (showMenu) {
                     val messageText = formatMessageAsMarkdown(message)
                     MessageActionDropdownMenu(
                         isUser = isUser,
