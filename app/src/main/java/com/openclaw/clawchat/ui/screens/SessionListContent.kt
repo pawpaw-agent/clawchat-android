@@ -22,7 +22,8 @@ import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MainUiState
 import com.openclaw.clawchat.ui.state.SessionUi
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Locale
 
 /**
  * 会话列表内容
@@ -129,27 +130,96 @@ private fun SessionList(
     onSelectSession: (String) -> Unit,
     onSessionLongPress: (SessionUi?) -> Unit
 ) {
+    // 按日期分组
+    val groupedSessions = remember(sessions) {
+        groupSessionsByDate(sessions)
+    }
+    
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(
-            items = sessions,
-            key = { session -> session.id }
-        ) { session ->
-            SessionItem(
-                session = session,
-                isSelected = currentSession?.id == session.id,
-                onSelect = { onSelectSession(session.id) },
-                onSessionLongPress = { onSessionLongPress(session) },
-                modifier = Modifier.animateItem(
-                    fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                    placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
+        groupedSessions.forEach { (dateLabel, sessionsInGroup) ->
+            // 日期标题
+            item {
+                Text(
+                    text = dateLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp)
                 )
-            )
+            }
+            
+            // 该日期下的会话
+            items(
+                items = sessionsInGroup,
+                key = { session -> session.id }
+            ) { session ->
+                SessionItem(
+                    session = session,
+                    isSelected = currentSession?.id == session.id,
+                    onSelect = { onSelectSession(session.id) },
+                    onSessionLongPress = { onSessionLongPress(session) },
+                    modifier = Modifier.animateItem(
+                        fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                    )
+                )
+            }
         }
     }
+}
+
+/**
+ * 按日期分组会话
+ */
+private fun groupSessionsByDate(sessions: List<SessionUi>): List<Pair<String, List<SessionUi>>> {
+    val now = System.currentTimeMillis()
+    val today = Calendar.getInstance().apply {
+        timeInMillis = now
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+    
+    val yesterday = today - 86_400_000 // 24 hours in ms
+    val weekAgo = today - 7 * 86_400_000
+    
+    val groups = mutableMapOf<String, MutableList<SessionUi>>()
+    
+    sessions.forEach { session ->
+        val label = when {
+            session.lastActivityAt >= today -> "今天"
+            session.lastActivityAt >= yesterday -> "昨天"
+            session.lastActivityAt >= weekAgo -> {
+                val cal = Calendar.getInstance()
+                cal.timeInMillis = session.lastActivityAt
+                SimpleDateFormat("EEEE", Locale.getDefault()).format(cal.time)
+            }
+            else -> "更早"
+        }
+        
+        groups.getOrPut(label) { mutableListOf() }.add(session)
+    }
+    
+    // 保持顺序：今天 -> 昨天 -> 本周 -> 更早
+    return listOf("今天", "昨天", "本周", "更早")
+        .filter { groups.containsKey(it) }
+        .mapNotNull { label ->
+            // 处理 "本周" 的特殊情况
+            if (label == "本周") {
+                val weekSessions = groups.filterKeys { it != "今天" && it != "昨天" && it != "更早" }
+                    .values
+                    .flatten()
+                if (weekSessions.isNotEmpty()) {
+                    label to weekSessions
+                } else null
+            } else {
+                groups[label]?.let { label to it }
+            }
+        }
 }
 
 /**
