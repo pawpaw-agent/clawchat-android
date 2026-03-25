@@ -256,6 +256,15 @@ fun SessionScreen(
                         viewModel.executeSlashCommand(cmd, args)
                     }
                 )
+                
+                // 发送中指示器
+                if (state.isSending) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                    )
+                }
             }
 
             state.error?.let { error ->
