@@ -308,16 +308,16 @@ fun MessageGroupItem(
                 }
             }
         } else {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
-            horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
-        ) {
-            val allToolResults = group.messages.flatMap { it.getToolResults() }
-            val shownToolCallIds = mutableSetOf<String?>()
-            
-            group.messages.forEachIndexed { index, message ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
+            ) {
+                val allToolResults = group.messages.flatMap { it.getToolResults() }
+                val shownToolCallIds = mutableSetOf<String?>()
+                
+                group.messages.forEachIndexed { index, message ->
                 when (message.role) {
                     MessageRole.TOOL -> {
                         val calls = message.getToolCalls()
@@ -417,6 +417,7 @@ fun MessageGroupItem(
                 )
             }
         }
+    }
     }
 }
 
