@@ -84,6 +84,7 @@ fun MessageContentCard(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     var showCopiedToast by remember { mutableStateOf(false) }
     
     // 双击复制提示
@@ -137,7 +138,10 @@ fun MessageContentCard(
                     )
                     .combinedClickable(
                         onClick = {},
-                        onLongClick = { showMenu = true }
+                        onLongClick = {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                            showMenu = true
+                        }
                     )
                     .padding(
                         horizontal = DesignTokens.space3,
