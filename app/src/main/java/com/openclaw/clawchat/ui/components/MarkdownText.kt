@@ -108,6 +108,9 @@ private fun CodeBlockContent(
     fontSize: androidx.compose.ui.unit.TextUnit
 ) {
     val scrollState = rememberScrollState()
+    val annotatedCode = remember(code, language) {
+        highlightSyntax(code, language)
+    }
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -136,7 +139,7 @@ private fun CodeBlockContent(
             // 代码内容
             SelectionContainer {
                 Text(
-                    text = code.trimEnd(),
+                    text = annotatedCode,
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(scrollState)
@@ -146,6 +149,75 @@ private fun CodeBlockContent(
                     fontSize = (fontSize.value - 2).sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+    }
+}
+
+/**
+ * 简单的语法高亮
+ */
+private fun highlightSyntax(code: String, language: String): AnnotatedString {
+    return buildAnnotatedString {
+        val keywords = when (language.lowercase()) {
+            "kotlin", "java" -> setOf("fun", "val", "var", "class", "interface", "object", "if", "else", "when", "for", "while", "return", "import", "package", "private", "public", "protected", "suspend", "inline", "data", "sealed", "enum", "companion", "override", "abstract", "open", "lateinit", "by", "is", "in", "as", "true", "false", "null")
+            "python" -> setOf("def", "class", "if", "elif", "else", "for", "while", "return", "import", "from", "as", "with", "try", "except", "finally", "raise", "lambda", "yield", "True", "False", "None", "and", "or", "not", "in", "is")
+            "javascript", "typescript", "js", "ts" -> setOf("function", "const", "let", "var", "class", "if", "else", "for", "while", "return", "import", "export", "from", "async", "await", "try", "catch", "throw", "new", "this", "super", "extends", "implements", "interface", "type", "enum", "true", "false", "null", "undefined")
+            "rust" -> setOf("fn", "let", "mut", "pub", "struct", "enum", "impl", "trait", "mod", "use", "crate", "self", "super", "where", "match", "if", "else", "loop", "while", "for", "in", "return", "move", "ref", "true", "false", "Some", "None", "Ok", "Err")
+            "go" -> setOf("func", "var", "const", "type", "struct", "interface", "map", "chan", "package", "import", "if", "else", "for", "range", "switch", "case", "default", "return", "go", "defer", "select", "true", "false", "nil")
+            "c", "cpp", "c++" -> setOf("int", "char", "float", "double", "void", "struct", "union", "enum", "typedef", "const", "static", "extern", "if", "else", "for", "while", "do", "switch", "case", "default", "return", "break", "continue", "goto", "sizeof", "nullptr", "true", "false")
+            else -> setOf("if", "else", "for", "while", "return", "function", "class", "const", "let", "var", "true", "false", "null")
+        }
+        
+        val lines = code.lines()
+        lines.forEachIndexed { index, line ->
+            if (index > 0) append("\n")
+            
+            var i = 0
+            while (i < line.length) {
+                // 检查注释
+                if (line.substring(i).startsWith("//") || line.substring(i).startsWith("#")) {
+                    withStyle(SpanStyle(color = Color(0xFF6A9955))) {
+                        append(line.substring(i))
+                    }
+                    break
+                }
+                
+                // 检查字符串
+                if (line[i] == '"' || line[i] == '\'') {
+                    val quote = line[i]
+                    val end = line.indexOf(quote, i + 1)
+                    if (end != -1) {
+                        withStyle(SpanStyle(color = Color(0xFFCE9178))) {
+                            append(line.substring(i, end + 1))
+                        }
+                        i = end + 1
+                        continue
+                    }
+                }
+                
+                // 检查关键字
+                val wordEnd = line.indexOfAny(charArrayOf(' ', '(', ')', '{', '}', '[', ']', ',', ';', ':', '.', '=', '<', '>', '+', '-', '*', '/', '!', '&', '|', '?'), i)
+                val endPos = if (wordEnd == -1) line.length else wordEnd
+                val word = line.substring(i, endPos)
+                
+                if (word in keywords) {
+                    withStyle(SpanStyle(color = Color(0xFF569CD6), fontWeight = FontWeight.Medium)) {
+                        append(word)
+                    }
+                } else if (word.matches(Regex("\\d+(\\.\\d+)?"))) {
+                    withStyle(SpanStyle(color = Color(0xFFB5CEA8))) {
+                        append(word)
+                    }
+                } else {
+                    append(word)
+                }
+                
+                i = endPos
+                if (i < line.length) {
+                    append(line[i])
+                    i++
+                }
             }
         }
     }
