@@ -321,7 +321,7 @@ private fun EmptySessionList(onCreateSession: () -> Unit) {
             imageVector = Icons.Default.ChatBubbleOutline,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
@@ -333,7 +333,7 @@ private fun EmptySessionList(onCreateSession: () -> Unit) {
         Text(
             text = "点击下方按钮创建新会话",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         )
         Spacer(modifier = Modifier.height(24.dp))
         FilledIconButton(onClick = onCreateSession) {
