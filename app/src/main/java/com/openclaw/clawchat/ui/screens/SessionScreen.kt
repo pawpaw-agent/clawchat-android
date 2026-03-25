@@ -26,13 +26,6 @@ import kotlinx.coroutines.launch
 
 /**
  * 会话界面屏幕
- * 
- * 滚动逻辑设计：
- * 1. 进入会话：滚动到底部
- * 2. 新消息到达：如果用户在底部附近，滚动；否则保持当前位置
- * 3. IME 弹出：滚动到底部 + IME 偏移
- * 4. IME 收起：滚动到底部
- * 5. 用户在中间位置：新消息不强制滚动（除非 IME 可见）
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -49,17 +42,17 @@ fun SessionScreen(
     
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
-    // IME 状态检测
+    // IME 状态检测 - 使用 withDensity 确保正确的像素值
     val density = LocalDensity.current
-    val imeBottom = WindowInsets.ime.getBottom(density)
-    val imeVisible = imeBottom > 0
+    val imeHeight = WindowInsets.ime.getBottom(density)
+    val imeVisible = imeHeight > 0
     
     // 滚动状态追踪
     var lastSessionId by remember { mutableStateOf<String?>(null) }
     var lastMessageCount by remember { mutableStateOf(0) }
     var wasImeVisible by remember { mutableStateOf(false) }
     
-    // 判断用户是否在底部附近（允许一定误差）
+    // 判断用户是否在底部附近
     val isNearBottom by remember { derivedStateOf { !listState.canScrollForward } }
 
     // 监听生命周期
@@ -75,7 +68,7 @@ fun SessionScreen(
         }
     }
 
-    // 场景 1: 进入会话 - 设置 sessionId
+    // 进入会话
     LaunchedEffect(sessionId) {
         if (lastSessionId != sessionId) {
             AppLog.d("SessionScreen", "Session changed: $sessionId")
@@ -86,35 +79,36 @@ fun SessionScreen(
         }
     }
     
-    // 进入会话后，消息加载完成时滚动到底部
+    // 进入会话后滚动到底部
     LaunchedEffect(state.chatMessages.isNotEmpty(), sessionId) {
         if (state.chatMessages.isNotEmpty() && lastSessionId == sessionId && lastMessageCount == 0) {
-            delay(100)  // 等待列表渲染
-            scrollToBottom(listState, imeBottom, "session enter")
+            delay(100)
+            scrollToBottom(listState, imeHeight, "session enter")
             lastMessageCount = state.chatMessages.size
         }
     }
 
-    // 场景 2: 新消息到达
+    // 新消息到达
     LaunchedEffect(state.chatMessages.size) {
         val currentCount = state.chatMessages.size
         if (currentCount > lastMessageCount && lastMessageCount > 0) {
-            // 有新消息
             if (isNearBottom || imeVisible) {
-                // 用户在底部附近或 IME 可见，滚动到底部
-                scrollToBottom(listState, imeBottom, "new message")
+                scrollToBottom(listState, imeHeight, "new message")
             }
-            // 否则保持当前位置（场景 5）
         }
         lastMessageCount = currentCount
     }
 
-    // 场景 3 & 4: IME 状态变化
-    LaunchedEffect(imeVisible, imeBottom) {
+    // IME 状态变化 - 关键修复
+    LaunchedEffect(imeVisible) {
         if (imeVisible && !wasImeVisible) {
-            // IME 弹出
+            // IME 弹出：等待动画完成后滚动
             if (state.chatMessages.isNotEmpty()) {
-                scrollToBottom(listState, imeBottom, "IME shown")
+                delay(150)  // 等待 IME 动画
+                // 重新获取最新的 imeHeight
+                val currentImeHeight = WindowInsets.ime.getBottom(density)
+                AppLog.d("SessionScreen", "IME shown: height=$currentImeHeight")
+                scrollToBottom(listState, currentImeHeight, "IME shown")
             }
         } else if (!imeVisible && wasImeVisible) {
             // IME 收起
@@ -130,9 +124,8 @@ fun SessionScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is SessionEvent.MessageReceived -> {
-                    // 收到消息事件，如果用户在底部附近则滚动
                     if (isNearBottom || imeVisible) {
-                        scrollToBottom(listState, imeBottom, "message received event")
+                        scrollToBottom(listState, imeHeight, "message received")
                     }
                 }
                 else -> {}
@@ -215,25 +208,32 @@ fun SessionScreen(
 
 /**
  * 滚动到底部
- * @param imeBottom IME 底部高度（用于偏移）
+ * 
+ * @param imeHeight IME 高度（像素）
  * @param reason 日志原因
  */
 private suspend fun scrollToBottom(
     listState: LazyListState,
-    imeBottom: Int,
+    imeHeight: Int,
     reason: String
 ) {
-    val lastIndex = listState.layoutInfo.totalItemsCount - 1
-    if (lastIndex < 0) return
+    // 获取实际的 item 总数
+    val totalItems = listState.layoutInfo.totalItemsCount
+    if (totalItems <= 0) return
     
-    // scrollOffset 为负值表示向上额外滚动（IME 偏移）
-    val scrollOffset = if (imeBottom > 0) -imeBottom else 0
+    val lastIndex = totalItems - 1
     
-    listState.animateScrollToItem(
+    // scrollOffset: 负值表示向上额外滚动
+    // IME 高度需要作为负偏移，让消息在键盘上方可见
+    val scrollOffset = if (imeHeight > 0) -imeHeight else 0
+    
+    AppLog.d("SessionScreen", "scrollToBottom: reason=$reason, lastIndex=$lastIndex, imeHeight=$imeHeight, scrollOffset=$scrollOffset")
+    
+    // 使用 scrollToItem 而不是 animateScrollToItem 以获得精确控制
+    listState.scrollToItem(
         index = lastIndex,
         scrollOffset = scrollOffset
     )
-    AppLog.d("SessionScreen", "Scrolled to bottom: reason=$reason, imeOffset=$scrollOffset")
 }
 
 /**
