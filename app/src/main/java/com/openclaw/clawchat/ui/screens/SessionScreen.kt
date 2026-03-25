@@ -60,6 +60,23 @@ fun SessionScreen(
         focusRequester.requestFocus()
     }
 
+    // 首次加载消息后滚动到底部
+    var hasScrolledToBottom by remember { mutableStateOf(false) }
+    LaunchedEffect(state.chatMessages.isNotEmpty(), sessionId) {
+        if (state.chatMessages.isNotEmpty() && !hasScrolledToBottom) {
+            // 等待列表渲染完成
+            kotlinx.coroutines.delay(100)
+            listState.scrollToItem(state.chatMessages.lastIndex)
+            hasScrolledToBottom = true
+            AppLog.d("SessionScreen", "Scrolled to bottom on initial load, lastIndex=${state.chatMessages.lastIndex}")
+        }
+    }
+
+    // sessionId 变化时重置滚动状态
+    LaunchedEffect(sessionId) {
+        hasScrolledToBottom = false
+    }
+
     LaunchedEffect(viewModel.events) {
         viewModel.events.collect { event ->
             when (event) {
