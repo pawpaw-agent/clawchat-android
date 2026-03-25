@@ -426,12 +426,12 @@ class MainViewModel @Inject constructor(
             val isPaired = encryptedStorage.isPaired()
             val gatewayUrl = encryptedStorage.getGatewayUrl()
             
-            AppLog.d(TAG, "=== checkAndReconnectIfNeeded: state=$currentConnectionState, isPaired=$isPaired, url=$gatewayUrl")
+            Log.d(TAG, "=== checkAndReconnectIfNeeded: state=$currentConnectionState, isPaired=$isPaired, url=$gatewayUrl")
             
             // 如果已配对、有 URL、但未连接，则重连
             if (isPaired && !gatewayUrl.isNullOrBlank() && 
                 currentConnectionState !is WebSocketConnectionState.Connected) {
-                AppLog.i(TAG, "App resumed, reconnecting to Gateway...")
+                Log.i(TAG, "App resumed, reconnecting to Gateway...")
                 autoConnectIfNeeded()
             }
         }
