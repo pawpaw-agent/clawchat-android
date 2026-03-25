@@ -113,6 +113,8 @@ private fun CodeBlockContent(
     val annotatedCode = remember(code, language) {
         highlightSyntax(code, language)
     }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -122,19 +124,39 @@ private fun CodeBlockContent(
         shape = RoundedCornerShape(8.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // 语言标签
+            // 语言标签和复制按钮
             if (language.isNotBlank()) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                 ) {
-                    Text(
-                        text = language,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = language,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        // 复制按钮
+                        androidx.compose.material3.TextButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(code))
+                                android.widget.Toast.makeText(context, "代码已复制", android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            androidx.compose.material3.Text(
+                                text = "复制",
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
                 }
             }
             
