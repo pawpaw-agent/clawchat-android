@@ -37,7 +37,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
+import androidx.core.app.ShareCompat
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -80,6 +82,7 @@ fun MessageContentCard(
     
     var showMenu by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
     
     // 流式输出脉冲动画
     val infiniteTransition = rememberInfiniteTransition(label = "streaming")
@@ -146,10 +149,19 @@ fun MessageContentCard(
                 }
                 
                 if (showMenu) {
+                    val messageText = formatMessageAsMarkdown(message)
                     MessageActionDropdownMenu(
                         isUser = isUser,
                         onCopy = {
-                            clipboardManager.setText(AnnotatedString(formatMessageAsMarkdown(message)))
+                            clipboardManager.setText(AnnotatedString(messageText))
+                            showMenu = false
+                        },
+                        onShare = {
+                            val shareIntent = ShareCompat.IntentBuilder(context)
+                                .setType("text/plain")
+                                .setText(messageText)
+                                .intent
+                            context.startActivity(shareIntent)
                             showMenu = false
                         },
                         onDelete = {
@@ -206,6 +218,7 @@ private fun MessageStatusIndicator(
 fun MessageActionDropdownMenu(
     isUser: Boolean,
     onCopy: () -> Unit,
+    onShare: () -> Unit,
     onDelete: () -> Unit,
     onRegenerate: () -> Unit,
     onDismiss: () -> Unit
@@ -220,9 +233,9 @@ fun MessageActionDropdownMenu(
             leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp)) }
         )
         DropdownMenuItem(
-            text = { Text("复制为 Markdown") },
-            onClick = onCopy,
-            leadingIcon = { Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(18.dp)) }
+            text = { Text("分享") },
+            onClick = onShare,
+            leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp)) }
         )
         HorizontalDivider()
         DropdownMenuItem(
