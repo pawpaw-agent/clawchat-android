@@ -235,6 +235,8 @@ private fun SessionItem(
     onSessionLongPress: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -242,7 +244,10 @@ private fun SessionItem(
                 if (onSessionLongPress != null) {
                     Modifier.combinedClickable(
                         onClick = onSelect,
-                        onLongClick = onSessionLongPress
+                        onLongClick = {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                            onSessionLongPress()
+                        }
                     )
                 } else {
                     Modifier.clickable(onClick = onSelect)
