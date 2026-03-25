@@ -297,10 +297,14 @@ fun SystemMessageItem(message: MessageUi) {
 @Composable
 fun ToolDetailCard(toolCard: ToolCard) {
     var expanded by remember { mutableStateOf(false) }
-    val hasContent = toolCard.args?.isNotBlank() == true || toolCard.result?.isNotBlank() == true
+    val hasArgs = toolCard.args?.isNotBlank() == true
+    val hasResult = toolCard.result?.isNotBlank() == true
+    val isRunning = toolCard.kind == ToolCardKind.CALL && !hasResult
+    val hasContent = hasArgs || hasResult
     
     val backgroundColor = when {
         toolCard.isError -> MaterialTheme.colorScheme.errorContainer
+        toolCard.kind == ToolCardKind.CALL && !hasResult -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         toolCard.kind == ToolCardKind.CALL -> Color(0x1AE53935)
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
@@ -319,20 +323,29 @@ fun ToolDetailCard(toolCard: ToolCard) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = when {
-                        toolCard.isError -> Icons.Default.ErrorOutline
-                        toolCard.kind == ToolCardKind.CALL -> Icons.Default.Bolt
-                        else -> Icons.Default.CheckCircle
-                    },
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = when {
-                        toolCard.isError -> MaterialTheme.colorScheme.error
-                        toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.primary
-                        else -> MaterialTheme.colorScheme.tertiary
-                    }
-                )
+                // 运行中显示加载指示器
+                if (isRunning) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Icon(
+                        imageVector = when {
+                            toolCard.isError -> Icons.Default.ErrorOutline
+                            toolCard.kind == ToolCardKind.CALL -> Icons.Default.Bolt
+                            else -> Icons.Default.CheckCircle
+                        },
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = when {
+                            toolCard.isError -> MaterialTheme.colorScheme.error
+                            toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.primary
+                            else -> MaterialTheme.colorScheme.tertiary
+                        }
+                    )
+                }
                 Spacer(modifier = Modifier.width(DesignTokens.space2))
                 Text(
                     text = toolCard.name.replaceFirstChar { it.uppercase() },
@@ -340,6 +353,15 @@ fun ToolDetailCard(toolCard: ToolCard) {
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
+                // 运行中显示状态标签
+                if (isRunning) {
+                    Text(
+                        text = "执行中...",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(DesignTokens.space2))
+                }
                 if (hasContent) {
                     Icon(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -350,35 +372,37 @@ fun ToolDetailCard(toolCard: ToolCard) {
                 }
             }
             
-            if (expanded && hasContent) {
+            // 运行中时默认展开显示参数
+            if ((expanded || isRunning) && hasArgs) {
                 Spacer(modifier = Modifier.height(DesignTokens.space2))
                 SelectionContainer {
-                    Column {
-                        toolCard.args?.takeIf { it.isNotBlank() }?.let { args ->
-                            Text(
-                                text = args,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        toolCard.result?.takeIf { it.isNotBlank() }?.let { result ->
-                            if (toolCard.args?.isNotBlank() == true) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = DesignTokens.space1),
-                                    color = MaterialTheme.colorScheme.outline
-                                )
-                            }
-                            Text(
-                                text = result,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 11.sp,
-                                color = if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
-                            )
-                        }
-                    }
+                    Text(
+                        text = toolCard.args!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            
+            // 结果（完成或错误时显示）
+            if (expanded && hasResult) {
+                if (hasArgs) {
+                    Spacer(modifier = Modifier.height(DesignTokens.space2))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = DesignTokens.space1),
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+                SelectionContainer {
+                    Text(
+                        text = toolCard.result!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        color = if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
+                    )
                 }
             }
         }
