@@ -13,6 +13,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MainUiState
@@ -75,10 +76,13 @@ private fun SessionList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(sessions, key = { it.id }) { session ->
+        items(
+            items = sessions,
+            key = { session -> session.id }
+        ) { session ->
             SessionItem(
                 session = session,
                 isSelected = currentSession?.id == session.id,
@@ -103,16 +107,16 @@ private fun SessionItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .let {
+            .then(
                 if (onSessionLongPress != null) {
-                    it.combinedClickable(
+                    Modifier.combinedClickable(
                         onClick = onSelect,
                         onLongClick = onSessionLongPress
                     )
                 } else {
-                    it.clickable(onClick = onSelect)
+                    Modifier.clickable(onClick = onSelect)
                 }
-            },
+            ),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.surfaceVariant
@@ -131,7 +135,8 @@ private fun SessionItem(
                 text = session.getDisplayName(),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             
             // 最后一条消息
@@ -141,17 +146,30 @@ private fun SessionItem(
                     text = session.lastMessage,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             
-            // 时间
+            // 时间和消息数
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = formatTimeAgo(session.lastActivityAt),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = formatTimeAgo(session.lastActivityAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (session.messageCount > 0) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "· ${session.messageCount} 条消息",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }
@@ -165,10 +183,11 @@ private fun EmptySessionList(onCreateSession: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .padding(32.dp),
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            imageVector = Icons.Default.Chat,
+            imageVector = Icons.Default.ChatBubbleOutline,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -188,44 +207,6 @@ private fun EmptySessionList(onCreateSession: () -> Unit) {
         Spacer(modifier = Modifier.height(24.dp))
         FilledIconButton(onClick = onCreateSession) {
             Icon(Icons.Default.Add, contentDescription = "创建会话")
-        }
-    }
-}
-
-/**
- * 连接状态提示条
- */
-@Composable
-private fun ConnectionStatusBar(connectionStatus: ConnectionStatus) {
-    val (icon, color, text) = when (connectionStatus) {
-        is ConnectionStatus.Connecting -> Triple(Icons.Default.Sync, MaterialTheme.colorScheme.primary, "正在连接...")
-        is ConnectionStatus.Disconnected -> Triple(Icons.Default.CloudOff, MaterialTheme.colorScheme.outline, "未连接")
-        is ConnectionStatus.Error -> Triple(Icons.Default.Error, MaterialTheme.colorScheme.error, "连接错误")
-        else -> Triple(Icons.Default.CheckCircle, MaterialTheme.colorScheme.primary, "已连接")
-    }
-    
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = color.copy(alpha = 0.1f)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodySmall,
-                color = color
-            )
         }
     }
 }
