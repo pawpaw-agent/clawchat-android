@@ -7,7 +7,11 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -373,36 +377,48 @@ fun ToolDetailCard(toolCard: ToolCard) {
             }
             
             // 运行中时默认展开显示参数
-            if ((expanded || isRunning) && hasArgs) {
-                Spacer(modifier = Modifier.height(DesignTokens.space2))
-                SelectionContainer {
-                    Text(
-                        text = toolCard.args!!,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            AnimatedVisibility(
+                visible = (expanded || isRunning) && hasArgs,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(DesignTokens.space2))
+                    SelectionContainer {
+                        Text(
+                            text = toolCard.args!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
             
             // 结果（完成或错误时显示）
-            if (expanded && hasResult) {
-                if (hasArgs) {
-                    Spacer(modifier = Modifier.height(DesignTokens.space2))
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = DesignTokens.space1),
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
-                SelectionContainer {
-                    Text(
-                        text = toolCard.result!!,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
-                        color = if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
-                    )
+            AnimatedVisibility(
+                visible = expanded && hasResult,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column {
+                    if (hasArgs) {
+                        Spacer(modifier = Modifier.height(DesignTokens.space2))
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = DesignTokens.space1),
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    SelectionContainer {
+                        Text(
+                            text = toolCard.result!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp,
+                            color = if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
+                        )
+                    }
                 }
             }
         }
