@@ -6,12 +6,14 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -289,17 +291,43 @@ private fun MarkdownRegularContent(
     textColor: Color,
     modifier: Modifier = Modifier
 ) {
+    val uriHandler = LocalUriHandler.current
     val annotatedString = remember(content) {
         parseMarkdownToAnnotatedString(content)
     }
     
-    SelectionContainer {
-        Text(
+    // 检查是否有链接
+    val hasLinks = annotatedString.getStringAnnotations(0, annotatedString.length).any { it.tag == "URL" }
+    
+    if (hasLinks) {
+        ClickableText(
             text = annotatedString,
-            fontSize = fontSize,
-            color = textColor,
+            onClick = { offset ->
+                annotatedString.getStringAnnotations(offset, offset)
+                    .firstOrNull { it.tag == "URL" }
+                    ?.let { annotation ->
+                        try {
+                            uriHandler.openUri(annotation.item)
+                        } catch (e: Exception) {
+                            // 忽略无效链接
+                        }
+                    }
+            },
+            style = androidx.compose.ui.text.TextStyle(
+                fontSize = fontSize,
+                color = textColor
+            ),
             modifier = modifier
         )
+    } else {
+        SelectionContainer {
+            Text(
+                text = annotatedString,
+                fontSize = fontSize,
+                color = textColor,
+                modifier = modifier
+            )
+        }
     }
 }
 
@@ -446,12 +474,15 @@ private fun AnnotatedString.Builder.appendStyledText(text: String) {
                     val urlEnd = text.indexOf(')', textEnd + 2)
                     if (urlEnd != -1) {
                         val linkText = text.substring(i + 1, textEnd)
+                        val url = text.substring(textEnd + 2, urlEnd)
+                        pushStringAnnotation(tag = "URL", annotation = url)
                         withStyle(SpanStyle(
                             color = Color(0xFF2196F3),
                             fontWeight = FontWeight.Medium
                         )) {
                             append(linkText)
                         }
+                        pop()
                         i = urlEnd + 1
                     } else {
                         append(text.substring(i, i + 1))
