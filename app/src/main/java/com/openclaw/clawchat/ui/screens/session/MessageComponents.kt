@@ -209,12 +209,53 @@ fun MessageContentCard(
             }
         }
         
-        // 用户消息发送状态图标
+        // 用户消息发送状态图标和时间
         if (isUser && isLastInGroup) {
-            MessageStatusIndicator(
-                status = message.status,
-                modifier = Modifier.align(Alignment.End)
+            Row(
+                modifier = Modifier.align(Alignment.End),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // 时间戳
+                Text(
+                    text = formatTimestamp(message.timestamp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+                MessageStatusIndicator(
+                    status = message.status,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        } else if (isLastInGroup) {
+            // 助手消息时间戳
+            Text(
+                text = formatTimestamp(message.timestamp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.align(Alignment.Start)
             )
+        }
+    }
+}
+
+/**
+ * 格式化时间戳
+ */
+private fun formatTimestamp(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestamp
+    
+    return when {
+        diff < 60000 -> "刚刚"
+        diff < 3600000 -> "${diff / 60000} 分钟前"
+        diff < 86400000 -> {
+            val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+            sdf.format(java.util.Date(timestamp))
+        }
+        else -> {
+            val sdf = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
+            sdf.format(java.util.Date(timestamp))
         }
     }
 }
