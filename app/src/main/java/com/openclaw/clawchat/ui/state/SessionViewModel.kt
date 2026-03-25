@@ -760,6 +760,27 @@ class SessionViewModel @Inject constructor(
     fun clearError() {
         _state.update { it.copy(error = null) }
     }
+    
+    /**
+     * 重试发送失败的消息
+     */
+    fun retryMessage(messageId: String) {
+        val sessionId = _state.value.sessionId ?: return
+        val messages = _state.value.chatMessages
+        val message = messages.find { it.id == messageId } ?: return
+        
+        if (message.role != MessageRole.USER) return
+        
+        viewModelScope.launch {
+            _state.update { it.copy(isSending = true, isLoading = true) }
+            try {
+                gateway.chatSend(sessionId, message.getTextContent())
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to retry message", e)
+                _state.update { it.copy(error = "重试失败：${e.message}", isLoading = false, isSending = false) }
+            }
+        }
+    }
 }
 
 sealed class SessionEvent {

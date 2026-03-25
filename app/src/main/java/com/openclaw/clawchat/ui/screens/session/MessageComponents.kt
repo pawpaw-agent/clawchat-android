@@ -68,6 +68,7 @@ fun MessageContentCard(
     onCopy: (String) -> Unit = {},
     onDelete: () -> Unit = {},
     onRegenerate: () -> Unit = {},
+    onRetry: () -> Unit = {},
     isStreaming: Boolean = false
 ) {
     val textContent = message.getTextContent()
@@ -198,6 +199,10 @@ fun MessageContentCard(
                             onRegenerate()
                             showMenu = false
                         },
+                        onRetry = {
+                            onRetry()
+                            showMenu = false
+                        },
                         onDismiss = { showMenu = false }
                     )
                 }
@@ -247,6 +252,7 @@ fun MessageActionDropdownMenu(
     onShare: () -> Unit,
     onDelete: () -> Unit,
     onRegenerate: () -> Unit,
+    onRetry: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     DropdownMenu(
@@ -269,6 +275,13 @@ fun MessageActionDropdownMenu(
             onClick = onDelete,
             leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp)) }
         )
+        if (isUser) {
+            DropdownMenuItem(
+                text = { Text("重试") },
+                onClick = onRetry,
+                leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp)) }
+            )
+        }
         if (!isUser) {
             DropdownMenuItem(
                 text = { Text("重新生成") },
