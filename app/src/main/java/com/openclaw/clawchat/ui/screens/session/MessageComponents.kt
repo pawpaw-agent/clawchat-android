@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.core.app.ShareCompat
+import android.widget.Toast
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -154,6 +155,7 @@ fun MessageContentCard(
                         isUser = isUser,
                         onCopy = {
                             clipboardManager.setText(AnnotatedString(messageText))
+                            Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
                             showMenu = false
                         },
                         onShare = {
