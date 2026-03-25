@@ -37,7 +37,7 @@ fun MainScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showSettings by remember { mutableStateOf(false) }
     var showSessionOptions by remember { mutableStateOf<SessionUi?>(null) }
-    var searchQuery by remember { mutableStateOf("") }
+    // 搜索功能已移除
     val lifecycleOwner = LocalLifecycleOwner.current
 
     // 监听生命周期，onResume 时检查并重连
