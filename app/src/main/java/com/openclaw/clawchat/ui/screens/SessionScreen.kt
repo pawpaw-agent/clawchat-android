@@ -66,6 +66,7 @@ fun SessionScreen(
     // IME 状态
     val density = LocalDensity.current
     val imeHeightPx = WindowInsets.ime.getBottom(density)
+    var lastImeHeightPx by remember { mutableStateOf(0) }
 
     // 监听生命周期
     DisposableEffect(lifecycleOwner) {
@@ -137,6 +138,43 @@ fun SessionScreen(
         if (chatUserNearBottom) {
             chatNewMessagesBelow = false
         }
+    }
+
+    // IME 弹出时滚动到底部
+    LaunchedEffect(imeHeightPx) {
+        if (imeHeightPx > 0 && lastImeHeightPx == 0) {
+            // IME 弹出
+            AppLog.d("SessionScreen", "IME shown: height=$imeHeightPx")
+            if (state.chatMessages.isNotEmpty()) {
+                // 等待 IME 动画
+                delay(250)
+                scheduleChatScroll(
+                    listState = listState,
+                    force = true,
+                    chatHasAutoScrolled = { chatHasAutoScrolled },
+                    setHasAutoScrolled = { chatHasAutoScrolled = it },
+                    chatUserNearBottom = { chatUserNearBottom },
+                    setUserNearBottom = { chatUserNearBottom = it },
+                    setNewMessagesBelow = { chatNewMessagesBelow = it },
+                    reason = "IME shown"
+                )
+            }
+        } else if (imeHeightPx == 0 && lastImeHeightPx > 0) {
+            // IME 收起
+            if (state.chatMessages.isNotEmpty() && chatUserNearBottom) {
+                scheduleChatScroll(
+                    listState = listState,
+                    force = false,
+                    chatHasAutoScrolled = { chatHasAutoScrolled },
+                    setHasAutoScrolled = { chatHasAutoScrolled = it },
+                    chatUserNearBottom = { chatUserNearBottom },
+                    setUserNearBottom = { chatUserNearBottom = it },
+                    setNewMessagesBelow = { chatNewMessagesBelow = it },
+                    reason = "IME hidden"
+                )
+            }
+        }
+        lastImeHeightPx = imeHeightPx
     }
 
     val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
