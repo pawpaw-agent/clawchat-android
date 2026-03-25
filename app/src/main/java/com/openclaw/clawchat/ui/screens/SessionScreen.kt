@@ -105,10 +105,9 @@ fun SessionScreen(
             // IME 弹出：等待动画完成后滚动
             if (state.chatMessages.isNotEmpty()) {
                 delay(150)  // 等待 IME 动画
-                // 重新获取最新的 imeHeight
-                val currentImeHeight = WindowInsets.ime.getBottom(density)
-                AppLog.d("SessionScreen", "IME shown: height=$currentImeHeight")
-                scrollToBottom(listState, currentImeHeight, "IME shown")
+                // 使用之前获取的 imeHeight（在 Composable 上下文中）
+                AppLog.d("SessionScreen", "IME shown: height=$imeHeight")
+                scrollToBottom(listState, imeHeight, "IME shown")
             }
         } else if (!imeVisible && wasImeVisible) {
             // IME 收起
