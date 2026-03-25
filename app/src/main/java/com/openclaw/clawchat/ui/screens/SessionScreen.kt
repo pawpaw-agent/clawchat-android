@@ -22,6 +22,7 @@ import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.screens.session.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * 会话界面屏幕
@@ -50,6 +51,7 @@ fun SessionScreen(
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
     
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
@@ -229,9 +231,23 @@ fun SessionScreen(
                         NewMessagesIndicator(
                             modifier = Modifier.align(Alignment.BottomCenter),
                             onClick = {
+                                // 参考 webchat: 点击新消息按钮时滚动到底部
                                 chatNewMessagesBelow = false
                                 chatUserNearBottom = true
                                 chatHasAutoScrolled = false
+                                // 触发滚动到最新消息
+                                scope.launch {
+                                    scheduleChatScroll(
+                                        listState = listState,
+                                        force = true,
+                                        chatHasAutoScrolled = { chatHasAutoScrolled },
+                                        setHasAutoScrolled = { chatHasAutoScrolled = it },
+                                        chatUserNearBottom = { chatUserNearBottom },
+                                        setUserNearBottom = { chatUserNearBottom = it },
+                                        setNewMessagesBelow = { chatNewMessagesBelow = it },
+                                        reason = "newMessagesIndicator click"
+                                    )
+                                }
                             }
                         )
                     }
