@@ -46,7 +46,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openclaw.clawchat.data.FontSize
-import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import com.openclaw.clawchat.ui.theme.TerminalColors
@@ -260,27 +259,6 @@ fun MessageContentCard(
                     }
                 }
             )
-        }
-    }
-}
-
-/**
- * 格式化时间戳
- */
-private fun formatTimestamp(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-    
-    return when {
-        diff < 60000 -> "刚刚"
-        diff < 3600000 -> "${diff / 60000} 分钟前"
-        diff < 86400000 -> {
-            val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-            sdf.format(java.util.Date(timestamp))
-        }
-        else -> {
-            val sdf = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
-            sdf.format(java.util.Date(timestamp))
         }
     }
 }
