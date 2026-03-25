@@ -83,6 +83,7 @@ fun MessageContentCard(
     }
     
     var showMenu by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
     var showCopiedToast by remember { mutableStateOf(false) }
@@ -192,8 +193,8 @@ fun MessageContentCard(
                             showMenu = false
                         },
                         onDelete = {
-                            onDelete()
                             showMenu = false
+                            showDeleteConfirm = true
                         },
                         onRegenerate = {
                             onRegenerate()
@@ -234,6 +235,30 @@ fun MessageContentCard(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.align(Alignment.Start)
+            )
+        }
+        
+        // 删除确认对话框
+        if (showDeleteConfirm) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirm = false },
+                title = { Text("删除消息") },
+                text = { Text("确定要删除这条消息吗？") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteConfirm = false
+                            onDelete()
+                        }
+                    ) {
+                        Text("删除", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirm = false }) {
+                        Text("取消")
+                    }
+                }
             )
         }
     }
