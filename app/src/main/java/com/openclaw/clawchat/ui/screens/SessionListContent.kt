@@ -1,11 +1,13 @@
 package com.openclaw.clawchat.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,8 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.openclaw.clawchat.ui.components.PulseIndicator
-import com.openclaw.clawchat.ui.components.PulseState
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MainUiState
 import com.openclaw.clawchat.ui.state.SessionStatus
@@ -168,25 +168,8 @@ private fun SessionItem(
     onSelect: () -> Unit,
     onSessionLongPress: (() -> Unit)? = null
 ) {
-    // 根据会话状态确定脉冲状态
-    val pulseState = remember(session.id, session.status, session.lastActivityAt) {
-        when (session.status) {
-            SessionStatus.RUNNING -> {
-                // 运行中：最近5分钟活跃
-                val fiveMinutesAgo = System.currentTimeMillis() - 5 * 60 * 1000
-                if (session.lastActivityAt > fiveMinutesAgo) {
-                    PulseState.Streaming
-                } else {
-                    PulseState.Active
-                }
-            }
-            SessionStatus.PAUSED -> PulseState.Thinking
-            SessionStatus.TERMINATED -> PulseState.Idle
-        }
-    }
-    
-    // 根据状态确定颜色
-    val pulseColor = when (session.status) {
+    // 根据状态确定颜色（静态）
+    val statusColor = when (session.status) {
         SessionStatus.RUNNING -> if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
         SessionStatus.PAUSED -> MaterialTheme.colorScheme.outline
         SessionStatus.TERMINATED -> MaterialTheme.colorScheme.outlineVariant
@@ -196,11 +179,16 @@ private fun SessionItem(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 左侧脉冲指示器
-        PulseIndicator(
-            state = pulseState,
-            modifier = Modifier.padding(end = 8.dp),
-            color = pulseColor
+        // 左侧状态指示条（静态）
+        Box(
+            modifier = Modifier
+                .width(3.dp)
+                .height(32.dp)
+                .padding(end = 8.dp)
+                .background(
+                    color = statusColor,
+                    shape = RoundedCornerShape(1.5.dp)
+                )
         )
         
         Card(

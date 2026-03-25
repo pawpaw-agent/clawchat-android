@@ -134,20 +134,11 @@ fun MessageContentCard(
                     textColor = MaterialTheme.colorScheme.onBackground
                 )
                 
-                // 流式输出光标
+                // 流式输出光标（静态）
                 if (isStreaming) {
-                    val cursorAlpha by infiniteTransition.animateFloat(
-                        initialValue = 0.3f,
-                        targetValue = 1f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(500),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "cursor"
-                    )
                     Text(
                         text = "▌",
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = cursorAlpha),
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = textSize,
                         modifier = Modifier.offset(x = 2.dp)
                     )
