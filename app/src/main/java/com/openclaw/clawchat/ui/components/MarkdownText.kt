@@ -280,6 +280,16 @@ private fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
                     appendStyledText(trimmedLine.removePrefix("- ").removePrefix("* "))
                     inList = true
                 }
+                // 引用块
+                trimmedLine.startsWith("> ") -> {
+                    withStyle(SpanStyle(
+                        color = Color(0xFF666666),
+                        background = Color(0x1A666666)
+                    )) {
+                        append("│ ")
+                        appendStyledText(trimmedLine.removePrefix("> "))
+                    }
+                }
                 // 空行
                 trimmedLine.isEmpty() -> {
                     if (inList) {
