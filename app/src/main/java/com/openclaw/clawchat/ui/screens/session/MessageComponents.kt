@@ -138,6 +138,13 @@ fun MessageContentCard(
                     textColor = MaterialTheme.colorScheme.onBackground
                 )
                 
+                // 流式输出时显示闪烁光标
+                if (isStreaming) {
+                    BlinkingCursor(
+                        modifier = Modifier.padding(start = 2.dp)
+                    )
+                }
+                
                 if (showMenu) {
                     MessageActionDropdownMenu(
                         isUser = isUser,
@@ -644,4 +651,34 @@ fun StreamingIndicator(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+/**
+ * 闪烁光标（流式输出时显示）
+ */
+@Composable
+private fun BlinkingCursor(
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "cursor")
+    
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(530, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cursor_alpha"
+    )
+    
+    Box(
+        modifier = modifier
+            .width(2.dp)
+            .height(14.dp)
+            .background(
+                MaterialTheme.colorScheme.primary.copy(alpha = alpha),
+                RoundedCornerShape(1.dp)
+            )
+    )
 }
