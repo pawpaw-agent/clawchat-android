@@ -13,7 +13,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MainUiState
@@ -28,10 +27,9 @@ import java.util.*
 @Composable
 fun SessionListContent(
     state: MainUiState,
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
     onSelectSession: (String) -> Unit,
     onSessionLongPress: (SessionUi?) -> Unit,
+    onCreateSession: () -> Unit,
     onRefresh: () -> Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
@@ -51,80 +49,17 @@ fun SessionListContent(
             },
             modifier = Modifier.weight(1f)
         ) {
-            Column {
-                // 搜索栏
-                if (state.sessions.isNotEmpty()) {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = onSearchQueryChange,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        placeholder = { Text("搜索会话...") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = null
-                            )
-                        },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                        )
-                    )
-                }
-
-                // 会话列表或空状态
-                if (state.sessions.isEmpty()) {
-                    EmptySessionList()
-                } else {
-                    SessionList(
-                        sessions = filterSessions(state.sessions, searchQuery),
-                        currentSession = state.currentSession,
-                        onSelectSession = onSelectSession,
-                        onSessionLongPress = onSessionLongPress
-                    )
-                }
+            if (state.sessions.isEmpty()) {
+                EmptySessionList(onCreateSession = onCreateSession)
+            } else {
+                SessionList(
+                    sessions = state.sessions,
+                    currentSession = state.currentSession,
+                    onSelectSession = onSelectSession,
+                    onSessionLongPress = onSessionLongPress
+                )
             }
         }
-    }
-}
-
-/**
- * 空会话列表
- */
-@Composable
-private fun EmptySessionList() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.ChatBubbleOutline,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "暂无会话",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Text(
-            text = "从其他客户端创建会话",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
@@ -140,13 +75,13 @@ private fun SessionList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(8.dp),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(sessions, key = { it.id }) { session ->
             SessionItem(
                 session = session,
-                isSelected = session.id == currentSession?.id,
+                isSelected = currentSession?.id == session.id,
                 onSelect = { onSelectSession(session.id) },
                 onSessionLongPress = { onSessionLongPress(session) }
             )
@@ -181,59 +116,119 @@ private fun SessionItem(
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.surfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.surface
-                }
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                // 会话名称（显示 agent 名称）
-                Text(
-                    text = session.getDisplayName(),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            
-                Spacer(modifier = Modifier.height(4.dp))
-            
-                // 时间和消息数
-                Row {
-                    Text(
-                        text = formatTimeAgo(session.lastActivityAt),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    
-                    if (session.messageCount > 0) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "• ${session.messageCount} 条消息",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            
-                // 最后一条消息
-                if (session.lastMessage != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = session.lastMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+            } else {
+                MaterialTheme.colorScheme.surface
             }
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // 会话名称
+            Text(
+                text = session.getDisplayName(),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1
+            )
+            
+            // 最后一条消息
+            if (session.lastMessage != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = session.lastMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+            }
+            
+            // 时间
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = formatTimeAgo(session.lastActivityAt),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
+}
+
+/**
+ * 空会话列表
+ */
+@Composable
+private fun EmptySessionList(onCreateSession: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Default.Chat,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "暂无会话",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "点击下方按钮创建新会话",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        FilledIconButton(onClick = onCreateSession) {
+            Icon(Icons.Default.Add, contentDescription = "创建会话")
+        }
+    }
+}
+
+/**
+ * 连接状态提示条
+ */
+@Composable
+private fun ConnectionStatusBar(connectionStatus: ConnectionStatus) {
+    val (icon, color, text) = when (connectionStatus) {
+        is ConnectionStatus.Connecting -> Triple(Icons.Default.Sync, MaterialTheme.colorScheme.primary, "正在连接...")
+        is ConnectionStatus.Disconnected -> Triple(Icons.Default.CloudOff, MaterialTheme.colorScheme.outline, "未连接")
+        is ConnectionStatus.Error -> Triple(Icons.Default.Error, MaterialTheme.colorScheme.error, "连接错误")
+        else -> Triple(Icons.Default.CheckCircle, MaterialTheme.colorScheme.primary, "已连接")
+    }
+    
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = color.copy(alpha = 0.1f)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall,
+                color = color
+            )
+        }
+    }
+}
 
 /**
  * 格式化时间为"多久以前"
@@ -244,24 +239,9 @@ private fun formatTimeAgo(timestamp: Long): String {
     
     return when {
         diff < 60_000 -> "刚刚"
-        diff < 3600_000 -> "${diff / 60_000} 分钟前"
-        diff < 86400_000 -> "${diff / 3600_000} 小时前"
-        diff < 604800_000 -> "${diff / 86400_000} 天前"
-        else -> SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(timestamp))
-    }
-}
-
-/**
- * 过滤会话列表
- */
-private fun filterSessions(sessions: List<SessionUi>, query: String): List<SessionUi> {
-    if (query.isBlank()) {
-        return sessions
-    }
-    val lowerQuery = query.lowercase()
-    return sessions.filter { session ->
-        session.getDisplayName().lowercase().contains(lowerQuery) ||
-        session.label?.lowercase()?.contains(lowerQuery) == true ||
-        session.lastMessage?.lowercase()?.contains(lowerQuery) == true
+        diff < 3_600_000 -> "${diff / 60_000} 分钟前"
+        diff < 86_400_000 -> "${diff / 3_600_000} 小时前"
+        diff < 604_800_000 -> "${diff / 86_400_000} 天前"
+        else -> SimpleDateFormat("MM-dd", Locale.getDefault()).format(Date(timestamp))
     }
 }

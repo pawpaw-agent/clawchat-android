@@ -37,7 +37,6 @@ fun MainScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showSettings by remember { mutableStateOf(false) }
     var showSessionOptions by remember { mutableStateOf<SessionUi?>(null) }
-    // 搜索功能已移除
     val lifecycleOwner = LocalLifecycleOwner.current
 
     // 监听生命周期，onResume 时检查并重连
@@ -130,10 +129,9 @@ fun MainScreen(
                     // 显示会话列表（即使未连接也显示缓存的会话）
                     SessionListContent(
                         state = state,
-                        searchQuery = searchQuery,
-                        onSearchQueryChange = { searchQuery = it },
                         onSelectSession = { viewModel.selectSession(it) },
                         onSessionLongPress = { showSessionOptions = it },
+                        onCreateSession = { viewModel.createSession() },
                         onRefresh = { viewModel.refreshSessions() }
                     )
                 }
