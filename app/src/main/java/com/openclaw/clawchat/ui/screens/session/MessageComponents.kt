@@ -134,16 +134,6 @@ fun MessageContentCard(
                     textColor = MaterialTheme.colorScheme.onBackground
                 )
                 
-                // 流式输出光标（静态）
-                if (isStreaming) {
-                    Text(
-                        text = "▌",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = textSize,
-                        modifier = Modifier.offset(x = 2.dp)
-                    )
-                }
-                
                 if (showMenu) {
                     MessageActionDropdownMenu(
                         isUser = isUser,
