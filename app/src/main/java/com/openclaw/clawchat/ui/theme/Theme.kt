@@ -190,12 +190,13 @@ val Typography = androidx.compose.material3.Typography(
 
 /**
  * TerminalFlow 深色主题配色
+ * 主色：灰色 #6B7280
  */
 private val TerminalDarkColorScheme = darkColorScheme(
-    primary = TerminalColors.PulseAmber,
-    onPrimary = TerminalColors.TerminalBlack,
-    primaryContainer = TerminalColors.PulseAmberMuted,
-    onPrimaryContainer = TerminalColors.PulseAmberBright,
+    primary = Color(0xFF6B7280),           // 灰色
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF374151),
+    onPrimaryContainer = Color(0xFFE5E7EB),
     
     secondary = TerminalColors.TextCode,
     onSecondary = TerminalColors.TerminalBlack,
@@ -223,19 +224,20 @@ private val TerminalDarkColorScheme = darkColorScheme(
 
 /**
  * TerminalFlow 浅色主题配色
+ * 主色：浅蓝色 #3B82F6
  */
 private val TerminalLightColorScheme = lightColorScheme(
-    primary = LightTerminalColors.PulseAmber,
+    primary = Color(0xFF3B82F6),           // 浅蓝色
     onPrimary = Color.White,
-    primaryContainer = LightTerminalColors.PulseAmberMuted,
-    onPrimaryContainer = LightTerminalColors.PulseAmberBright,
+    primaryContainer = Color(0xFFDBEAFE),  // 浅蓝背景
+    onPrimaryContainer = Color(0xFF1E40AF),
     
-    secondary = LightTerminalColors.TextCode,
+    secondary = Color(0xFF64748B),
     onSecondary = Color.White,
-    secondaryContainer = LightTerminalColors.BubbleUser,
-    onSecondaryContainer = LightTerminalColors.BubbleUserText,
+    secondaryContainer = Color(0xFFF1F5F9),
+    onSecondaryContainer = Color(0xFF334155),
     
-    tertiary = LightTerminalColors.StatusActive,
+    tertiary = Color(0xFF10B981),
     onTertiary = Color.White,
     
     background = LightTerminalColors.TerminalLight,
@@ -245,13 +247,13 @@ private val TerminalLightColorScheme = lightColorScheme(
     surfaceVariant = LightTerminalColors.TerminalBg,
     onSurfaceVariant = LightTerminalColors.TextSecondary,
     
-    error = LightTerminalColors.StatusError,
+    error = Color(0xFFEF4444),
     onError = Color.White,
-    errorContainer = LightTerminalColors.StatusError.copy(alpha = 0.1f),
-    onErrorContainer = LightTerminalColors.StatusError,
+    errorContainer = Color(0xFFFEE2E2),
+    onErrorContainer = Color(0xFF991B1B),
     
-    outline = LightTerminalColors.Border,
-    outlineVariant = LightTerminalColors.BorderStrong
+    outline = Color(0xFFE2E8F0),
+    outlineVariant = Color(0xFFCBD5E1)
 )
 
 /**
