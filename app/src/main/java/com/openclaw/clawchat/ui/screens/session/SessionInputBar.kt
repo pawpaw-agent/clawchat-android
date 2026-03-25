@@ -113,7 +113,11 @@ fun MessageInputBar(
         shadowElevation = 8.dp,
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+        ) {
             if (slashMenuOpen) {
                 SlashCommandMenu(
                     items = if (slashMenuMode == "command") slashMenuItems else emptyList(),
