@@ -124,7 +124,7 @@ fun SessionScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        contentWindowInsets = WindowInsets.ime
+        contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.ime)
     ) { paddingValues ->
         Box(
             modifier = Modifier
