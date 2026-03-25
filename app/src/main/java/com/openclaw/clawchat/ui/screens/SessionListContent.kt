@@ -31,6 +31,8 @@ import java.util.*
 @Composable
 fun SessionListContent(
     state: MainUiState,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
     onSelectSession: (String) -> Unit,
     onSessionLongPress: (SessionUi?) -> Unit,
     onCreateSession: () -> Unit,
@@ -39,25 +41,74 @@ fun SessionListContent(
     var isRefreshing by remember { mutableStateOf(false) }
     
     Box(modifier = Modifier.fillMaxSize()) {
-        // 列表内容
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = {
-                isRefreshing = true
-                onRefresh()
-                isRefreshing = false
-            },
-            modifier = Modifier.fillMaxSize()
-        ) {
-            if (state.sessions.isEmpty()) {
-                EmptySessionList(onCreateSession = onCreateSession)
-            } else {
-                SessionList(
-                    sessions = state.sessions,
-                    currentSession = state.currentSession,
-                    onSelectSession = onSelectSession,
-                    onSessionLongPress = onSessionLongPress
+        Column(modifier = Modifier.fillMaxSize()) {
+            // 搜索框
+            if (state.sessions.isNotEmpty() || searchQuery.isNotBlank()) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    placeholder = { Text("搜索会话...") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null)
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotBlank()) {
+                            IconButton(onClick = { onSearchQueryChange("") }) {
+                                Icon(Icons.Default.Close, contentDescription = "清除")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
                 )
+            }
+            
+            // 列表内容
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    isRefreshing = true
+                    onRefresh()
+                    isRefreshing = false
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                if (state.sessions.isEmpty() && searchQuery.isBlank()) {
+                    EmptySessionList(onCreateSession = onCreateSession)
+                } else if (state.sessions.isEmpty() && searchQuery.isNotBlank()) {
+                    // 搜索无结果
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(modifier = Modifier.height(48.dp))
+                        Icon(
+                            imageVector = Icons.Default.SearchOff,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "未找到 \"$searchQuery\"",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    SessionList(
+                        sessions = state.sessions,
+                        currentSession = state.currentSession,
+                        onSelectSession = onSelectSession,
+                        onSessionLongPress = onSessionLongPress
+                    )
+                }
             }
         }
         
