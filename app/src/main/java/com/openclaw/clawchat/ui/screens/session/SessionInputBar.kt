@@ -20,10 +20,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.ui.components.SLASH_COMMANDS
-import com.openclaw.clawchat.ui.components.SlashCommandCategory
 import com.openclaw.clawchat.ui.components.SlashCommandDef
 import com.openclaw.clawchat.ui.components.getSlashCommandCompletions
 import com.openclaw.clawchat.ui.state.AttachmentUi
+
+/**
+ * 斜杠菜单状态
+ */
+private data class SlashMenuState(
+    val isOpen: Boolean = false,
+    val mode: String = "command",  // "command" or "args"
+    val items: List<SlashCommandDef> = emptyList(),
+    val argItems: List<String> = emptyList(),
+    val selectedIndex: Int = 0,
+    val command: SlashCommandDef? = null
+)
 
 /**
  * 消息输入框（支持附件和斜杠命令）
@@ -43,22 +54,21 @@ fun MessageInputBar(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     
-    var slashMenuOpen by remember { mutableStateOf(false) }
-    var slashMenuItems by remember { mutableStateOf<List<SlashCommandDef>>(emptyList()) }
-    var slashMenuIndex by remember { mutableStateOf(0) }
-    var slashMenuCommand by remember { mutableStateOf<SlashCommandDef?>(null) }
-    var slashMenuArgItems by remember { mutableStateOf<List<String>>(emptyList()) }
-    var slashMenuMode by remember { mutableStateOf("command") }
+    // 封装的斜杠菜单状态
+    var slashMenu by remember { mutableStateOf(SlashMenuState()) }
     
+    // 根据输入更新菜单状态
     LaunchedEffect(value) {
         val trimmed = value.trim()
         
+        // 匹配参数模式: /cmd arg...
         val argMatch = Regex("^/(\\S+)\\s+(.*)$").find(trimmed)
         if (argMatch != null) {
             val cmdName = argMatch.groupValues[1].lowercase()
             val argFilter = argMatch.groupValues[2].lowercase()
             val cmd = SLASH_COMMANDS.find { it.name == cmdName }
             val argOpts = cmd?.argOptions ?: emptyList()
+            
             if (cmd != null && argOpts.isNotEmpty()) {
                 val filtered = if (argFilter.isNotEmpty()) {
                     argOpts.filter { it.lowercase().startsWith(argFilter) }
@@ -66,38 +76,31 @@ fun MessageInputBar(
                     argOpts
                 }
                 if (filtered.isNotEmpty()) {
-                    slashMenuMode = "args"
-                    slashMenuCommand = cmd
-                    slashMenuArgItems = filtered
-                    slashMenuOpen = true
-                    slashMenuIndex = 0
-                    slashMenuItems = emptyList()
+                    slashMenu = SlashMenuState(
+                        isOpen = true,
+                        mode = "args",
+                        command = cmd,
+                        argItems = filtered
+                    )
                     return@LaunchedEffect
                 }
             }
-            slashMenuOpen = false
-            slashMenuMode = "command"
-            slashMenuCommand = null
-            slashMenuArgItems = emptyList()
+            slashMenu = SlashMenuState()
             return@LaunchedEffect
         }
         
+        // 匹配命令模式: /cmd
         val commandMatch = Regex("^/(\\S*)$").find(trimmed)
         if (commandMatch != null) {
             val filter = commandMatch.groupValues[1]
             val items = getSlashCommandCompletions(filter)
-            slashMenuItems = items
-            slashMenuOpen = items.isNotEmpty()
-            slashMenuIndex = 0
-            slashMenuMode = "command"
-            slashMenuCommand = null
-            slashMenuArgItems = emptyList()
+            slashMenu = SlashMenuState(
+                isOpen = items.isNotEmpty(),
+                mode = "command",
+                items = items
+            )
         } else {
-            slashMenuOpen = false
-            slashMenuMode = "command"
-            slashMenuCommand = null
-            slashMenuArgItems = emptyList()
-            slashMenuItems = emptyList()
+            slashMenu = SlashMenuState()
         }
     }
     
@@ -114,12 +117,12 @@ fun MessageInputBar(
         color = MaterialTheme.colorScheme.background
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            if (slashMenuOpen) {
+            if (slashMenu.isOpen) {
                 SlashCommandMenu(
-                    items = if (slashMenuMode == "command") slashMenuItems else emptyList(),
-                    argItems = if (slashMenuMode == "args") slashMenuArgItems else emptyList(),
-                    command = slashMenuCommand,
-                    selectedIndex = slashMenuIndex,
+                    items = if (slashMenu.mode == "command") slashMenu.items else emptyList(),
+                    argItems = if (slashMenu.mode == "args") slashMenu.argItems else emptyList(),
+                    command = slashMenu.command,
+                    selectedIndex = slashMenu.selectedIndex,
                     onSelect = { cmd ->
                         val argOpts = cmd.argOptions ?: emptyList()
                         if (argOpts.isNotEmpty()) {
@@ -132,14 +135,14 @@ fun MessageInputBar(
                                 onSend()
                             }
                         }
-                        slashMenuOpen = false
+                        slashMenu = SlashMenuState()
                     },
                     onSelectArg = { arg ->
-                        val cmd = slashMenuCommand ?: return@SlashCommandMenu
+                        val cmd = slashMenu.command ?: return@SlashCommandMenu
                         onValueChange("/${cmd.name} $arg ")
-                        slashMenuOpen = false
+                        slashMenu = SlashMenuState()
                     },
-                    onDismiss = { slashMenuOpen = false }
+                    onDismiss = { slashMenu = SlashMenuState() }
                 )
             }
             
@@ -291,10 +294,10 @@ private fun SlashCommandMenuItem(
     onClick: () -> Unit
 ) {
     val categoryLabel = when (command.category) {
-        SlashCommandCategory.SESSION -> "会话"
-        SlashCommandCategory.MODEL -> "模型"
-        SlashCommandCategory.AGENTS -> "Agents"
-        SlashCommandCategory.TOOLS -> "工具"
+        com.openclaw.clawchat.ui.components.SlashCommandCategory.SESSION -> "会话"
+        com.openclaw.clawchat.ui.components.SlashCommandCategory.MODEL -> "模型"
+        com.openclaw.clawchat.ui.components.SlashCommandCategory.AGENTS -> "Agents"
+        com.openclaw.clawchat.ui.components.SlashCommandCategory.TOOLS -> "工具"
     }
     
     Surface(

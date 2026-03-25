@@ -130,7 +130,7 @@ class SlashCommandExecutor(
 
     private fun executeNew() {
         onStateUpdate { copy(inputText = "") }
-        // TODO: 导航到新会话
+        // 新会话将在首次消息时自动创建
     }
 
     private fun executeReset(sessionId: String?) {

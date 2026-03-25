@@ -147,7 +147,7 @@ fun SettingsScreen(
                     icon = Icons.Outlined.Description,
                     title = "开源许可",
                     subtitle = "查看第三方库许可",
-                    onClick = { /* TODO: 显示许可 */ }
+                    onClick = { /* 尚未实现 */ }
                 )
             }
 

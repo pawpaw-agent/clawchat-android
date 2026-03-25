@@ -40,6 +40,10 @@ fun SessionScreen(
     
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
+    // 统一的滚动状态管理
+    var lastSessionId by remember { mutableStateOf<String?>(null) }
+    var lastMessageCount by remember { mutableStateOf(0) }
+
     // 监听生命周期，onResume 时刷新消息
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -54,29 +58,31 @@ fun SessionScreen(
         }
     }
 
+    // 设置会话 ID
     LaunchedEffect(sessionId) {
         AppLog.d("SessionScreen", "LaunchedEffect: sessionId=$sessionId")
         viewModel.setSessionId(sessionId)
         focusRequester.requestFocus()
+        lastSessionId = sessionId
     }
 
-    // 首次加载消息后滚动到底部
-    var hasScrolledToBottom by remember { mutableStateOf(false) }
-    LaunchedEffect(state.chatMessages.isNotEmpty(), sessionId) {
-        if (state.chatMessages.isNotEmpty() && !hasScrolledToBottom) {
-            // 等待列表渲染完成
-            kotlinx.coroutines.delay(100)
+    // 统一的滚动逻辑：首次加载、消息增加、sessionId 变化
+    LaunchedEffect(state.chatMessages.size, sessionId) {
+        val isFirstLoad = lastSessionId != sessionId
+        val hasNewMessages = state.chatMessages.size > lastMessageCount
+        
+        if (state.chatMessages.isNotEmpty() && (isFirstLoad || hasNewMessages)) {
+            // 等待列表渲染
+            kotlinx.coroutines.delay(50)
             listState.scrollToItem(state.chatMessages.lastIndex)
-            hasScrolledToBottom = true
-            AppLog.d("SessionScreen", "Scrolled to bottom on initial load, lastIndex=${state.chatMessages.lastIndex}")
+            AppLog.d("SessionScreen", "Scrolled to bottom: isFirstLoad=$isFirstLoad, hasNewMessages=$hasNewMessages")
         }
+        
+        lastMessageCount = state.chatMessages.size
+        lastSessionId = sessionId
     }
 
-    // sessionId 变化时重置滚动状态
-    LaunchedEffect(sessionId) {
-        hasScrolledToBottom = false
-    }
-
+    // 监听事件
     LaunchedEffect(viewModel.events) {
         viewModel.events.collect { event ->
             when (event) {
@@ -93,20 +99,6 @@ fun SessionScreen(
 
     val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
 
-    var lastMessageCount by remember { mutableStateOf(0) }
-    LaunchedEffect(state.chatMessages.size) {
-        if (state.chatMessages.isNotEmpty() && state.chatMessages.size > lastMessageCount) {
-            listState.scrollToItem(state.chatMessages.lastIndex)
-        }
-        lastMessageCount = state.chatMessages.size
-    }
-
-    val showScrollToBottom by remember {
-        derivedStateOf {
-            listState.canScrollForward && state.chatMessages.isNotEmpty()
-        }
-    }
-
     // 检测输入法弹出，自动滚动到底部
     val density = LocalDensity.current
     val imeBottom = WindowInsets.ime.getBottom(density)
@@ -115,18 +107,11 @@ fun SessionScreen(
     
     LaunchedEffect(imeVisible) {
         if (imeVisible && !wasImeVisible && state.chatMessages.isNotEmpty()) {
-            // 键盘从隐藏变为显示，滚动到底部
-            AppLog.d("SessionScreen", "IME shown, scrolling to bottom, imeBottom=$imeBottom")
+            AppLog.d("SessionScreen", "IME shown, scrolling to bottom")
             scope.launch {
-                // 计算额外偏移（IME 高度），确保消息不被遮挡
-                val extraOffset = if (imeBottom > 0) {
-                    -imeBottom // 负值：向上额外滚动 IME 高度
-                } else {
-                    0
-                }
                 listState.animateScrollToItem(
                     index = state.chatMessages.lastIndex,
-                    scrollOffset = extraOffset
+                    scrollOffset = if (imeBottom > 0) -imeBottom else 0
                 )
             }
         }

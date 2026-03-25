@@ -154,7 +154,10 @@ fun MessageGroupList(
         // 3. 工具消息
         if (toolMessages.isNotEmpty()) {
             AppLog.d("SessionMessageList", "Rendering toolMessages: size=${toolMessages.size}")
-            items(toolMessages, key = { "tool_${it.id}_${it.content.hashCode()}" }) { toolMessage ->
+            items(
+                items = toolMessages,
+                key = { msg -> msg.toolCallId ?: msg.id }
+            ) { toolMessage ->
                 ToolMessageCard(message = toolMessage)
             }
         }

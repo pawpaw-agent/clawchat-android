@@ -84,8 +84,7 @@ fun PairingBottomSheet(
                     onClick = {
                         isLoading = true
                         error = null
-                        // TODO: 实现实际连接逻辑
-                        // 暂时模拟成功
+                        // 连接逻辑由 MainViewModel.autoConnectIfNeeded() 处理
                         onPairingSuccess()
                     },
                     enabled = gatewayUrl.isNotBlank() && !isLoading,

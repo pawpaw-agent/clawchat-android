@@ -40,6 +40,11 @@ interface MessageRepository {
     suspend fun deleteSessionMessages(sessionId: String)
     
     /**
+     * 删除单条消息
+     */
+    suspend fun deleteMessage(sessionId: String, messageId: String)
+    
+    /**
      * 清空会话消息（用于 /clear 命令）
      */
     suspend fun clearMessages(sessionId: String)

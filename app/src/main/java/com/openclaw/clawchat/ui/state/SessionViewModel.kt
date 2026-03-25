@@ -699,12 +699,18 @@ class SessionViewModel @Inject constructor(
      * 删除消息
      */
     fun deleteMessage(messageId: String) {
+        val sessionId = _state.value.sessionId
         _state.update { state ->
             state.copy(
                 chatMessages = state.chatMessages.filter { it.id != messageId }
             )
         }
-        // TODO: 同步到 Gateway/Room
+        // 同步删除到数据库
+        if (sessionId != null) {
+            viewModelScope.launch {
+                messageRepository.deleteMessage(sessionId, messageId)
+            }
+        }
     }
     
     /**

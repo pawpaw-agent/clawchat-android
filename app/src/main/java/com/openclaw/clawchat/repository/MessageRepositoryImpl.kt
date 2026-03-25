@@ -110,6 +110,17 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
         map.remove(sessionId)
         messagesBySession.value = map
     }
+    
+    /**
+     * 删除单条消息
+     */
+    override suspend fun deleteMessage(sessionId: String, messageId: String) {
+        val map = messagesBySession.value.toMutableMap()
+        val sessionMessages = map[sessionId]?.toMutableList() ?: mutableListOf()
+        sessionMessages.removeAll { it.id == messageId }
+        map[sessionId] = sessionMessages
+        messagesBySession.value = map
+    }
 
     /**
      * 清空会话消息（用于 /clear 命令）
