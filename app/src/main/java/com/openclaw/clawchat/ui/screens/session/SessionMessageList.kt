@@ -266,48 +266,48 @@ fun MessageGroupItem(
                 }
             }
         } else if (isTool) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            val mergedToolCards = group.messages.flatMap { message ->
-                val calls = message.getToolCalls()
-                val results = message.getToolResults()
-                
-                if (calls.isEmpty() && results.isEmpty()) {
-                    val textContent = message.getTextContent()
-                    if (textContent.isNotBlank()) {
-                        listOf(ToolCard(
-                            kind = ToolCardKind.RESULT,
-                            name = "output",
-                            args = null,
-                            result = textContent,
-                            isError = false,
-                            callId = null
-                        ))
-                    } else emptyList()
-                } else {
-                    calls.map { call ->
-                        val matchingResult = results.find { it.toolCallId == call.id }
-                        ToolCard(
-                            kind = if (matchingResult != null) ToolCardKind.RESULT else ToolCardKind.CALL,
-                            name = call.name,
-                            args = call.args?.toString(),
-                            result = matchingResult?.text,
-                            isError = matchingResult?.isError ?: false,
-                            callId = call.id
-                        )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                val mergedToolCards = group.messages.flatMap { message ->
+                    val calls = message.getToolCalls()
+                    val results = message.getToolResults()
+                    
+                    if (calls.isEmpty() && results.isEmpty()) {
+                        val textContent = message.getTextContent()
+                        if (textContent.isNotBlank()) {
+                            listOf(ToolCard(
+                                kind = ToolCardKind.RESULT,
+                                name = "output",
+                                args = null,
+                                result = textContent,
+                                isError = false,
+                                callId = null
+                            ))
+                        } else emptyList()
+                    } else {
+                        calls.map { call ->
+                            val matchingResult = results.find { it.toolCallId == call.id }
+                            ToolCard(
+                                kind = if (matchingResult != null) ToolCardKind.RESULT else ToolCardKind.CALL,
+                                name = call.name,
+                                args = call.args?.toString(),
+                                result = matchingResult?.text,
+                                isError = matchingResult?.isError ?: false,
+                                callId = call.id
+                            )
+                        }
                     }
                 }
+                
+                mergedToolCards.forEach { card ->
+                    ToolDetailCard(toolCard = card)
+                }
             }
-            
-            mergedToolCards.forEach { card ->
-                ToolDetailCard(toolCard = card)
-            }
-        }
-    } else {
+        } else {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
