@@ -3,17 +3,21 @@ package com.openclaw.clawchat.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.snipme.highlights.Highlights
-import dev.snipme.highlights.model.SyntaxThemes
-import io.github.dsheirer.mmarkdown.MarkdownParser
-import io.github.dsheirer.mmarkdown.model.Element
+import com.openclaw.clawchat.ui.state.MessageContentItem
+import com.openclaw.clawchat.ui.state.MessageUi
 
 /**
  * Markdown 文本渲染组件（支持表格）
@@ -61,57 +65,97 @@ private fun MarkdownRegularContent(
     textColor: Color,
     modifier: Modifier = Modifier
 ) {
-    val elements = remember(content) {
-        try {
-            MarkdownParser.parse(content)
-        } catch (e: Exception) {
-            emptyList()
-        }
+    val annotatedString = remember(content) {
+        parseMarkdownToAnnotatedString(content)
     }
     
-    Column(modifier = modifier) {
-        elements.forEach { element ->
-            when (element) {
-                is Element.Text -> {
-                    Text(
-                        text = element.value,
-                        fontSize = fontSize,
-                        color = textColor
-                    )
+    SelectionContainer {
+        Text(
+            text = annotatedString,
+            fontSize = fontSize,
+            color = textColor,
+            modifier = modifier
+        )
+    }
+}
+
+/**
+ * 解析 Markdown 为 AnnotatedString
+ */
+private fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
+    return buildAnnotatedString {
+        val lines = content.lines()
+        var isFirst = true
+        
+        for (line in lines) {
+            if (!isFirst) append("\n")
+            isFirst = false
+            
+            when {
+                // 标题
+                line.startsWith("### ") -> {
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 14.sp)) {
+                        append(line.removePrefix("### "))
+                    }
                 }
-                is Element.Bold -> {
-                    Text(
-                        text = element.value,
-                        fontSize = fontSize,
-                        color = textColor,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                    )
+                line.startsWith("## ") -> {
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp)) {
+                        append(line.removePrefix("## "))
+                    }
                 }
-                is Element.Code -> {
-                    Text(
-                        text = element.value,
-                        fontSize = (fontSize.value - 1).sp,
-                        color = Color(0xFF60A5FA),
-                        fontFamily = FontFamily.Monospace
-                    )
+                line.startsWith("# ") -> {
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)) {
+                        append(line.removePrefix("# "))
+                    }
                 }
-                is Element.Link -> {
-                    Text(
-                        text = element.value,
-                        fontSize = fontSize,
-                        color = Color(0xFF3B82F6)
-                    )
+                // 粗体 **text**
+                line.contains("**") -> {
+                    var text = line
+                    var inBold = false
+                    var result = StringBuilder()
+                    var i = 0
+                    while (i < text.length) {
+                        if (i + 1 < text.length && text[i] == '*' && text[i + 1] == '*') {
+                            if (inBold) {
+                                result.append("</b>")
+                            } else {
+                                result.append("<b>")
+                            }
+                            inBold = !inBold
+                            i += 2
+                        } else {
+                            result.append(text[i])
+                            i++
+                        }
+                    }
+                    // 简化处理：直接显示原始文本
+                    append(line.replace("**", ""))
                 }
+                // 代码块
+                line.startsWith("```") -> {
+                    // 跳过代码块标记
+                }
+                // 行内代码 `code`
+                line.contains("`") -> {
+                    val parts = line.split("`")
+                    for ((index, part) in parts.withIndex()) {
+                        if (index % 2 == 1) {
+                            withStyle(SpanStyle(fontFamily = FontFamily.Monospace, color = Color(0xFF60A5FA))) {
+                                append(part)
+                            }
+                        } else {
+                            append(part)
+                        }
+                    }
+                }
+                // 列表
+                line.trim().startsWith("- ") || line.trim().startsWith("* ") -> {
+                    append("• ")
+                    append(line.trim().removePrefix("- ").removePrefix("* "))
+                }
+                // 普通文本
                 else -> {
-                    Text(
-                        text = when (element) {
-                            is Element.Heading -> element.value
-                            is Element.Paragraph -> element.value
-                            else -> ""
-                        },
-                        fontSize = fontSize,
-                        color = textColor
-                    )
+                    append(line)
                 }
             }
         }
@@ -223,7 +267,7 @@ private fun RenderTable(
                         text = header,
                         fontSize = (fontSize.value - 1).sp,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -270,21 +314,21 @@ private fun parseTableRow(line: String): List<String> {
 /**
  * 格式化 Markdown 消息
  */
-fun formatMessageAsMarkdown(message: com.openclaw.clawchat.ui.state.MessageUi): String {
+fun formatMessageAsMarkdown(message: MessageUi): String {
     val sb = StringBuilder()
     
     message.content.forEach { item ->
         when (item) {
-            is com.openclaw.clawchat.ui.state.MessageContentItem.Text -> {
+            is MessageContentItem.Text -> {
                 sb.append(item.text)
             }
-            is com.openclaw.clawchat.ui.state.MessageContentItem.Image -> {
+            is MessageContentItem.Image -> {
                 sb.append("[图片]")
             }
-            is com.openclaw.clawchat.ui.state.MessageContentItem.ToolCall -> {
+            is MessageContentItem.ToolCall -> {
                 sb.append("\n```\n工具调用: ${item.name}\n```")
             }
-            is com.openclaw.clawchat.ui.state.MessageContentItem.ToolResult -> {
+            is MessageContentItem.ToolResult -> {
                 sb.append("\n```\n工具结果: ${item.name}\n```")
             }
             else -> {}
