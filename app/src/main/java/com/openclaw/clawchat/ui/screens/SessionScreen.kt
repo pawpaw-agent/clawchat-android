@@ -40,18 +40,19 @@ fun SessionScreen(
     
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
-    // IME 状态检测 - 必须在 Composable 上下文中获取
+    // IME 状态检测
     val density = LocalDensity.current
-    val imeHeight = WindowInsets.ime.getBottom(density)
-    val imeVisible = imeHeight > 0
+    val imeHeightPx = WindowInsets.ime.getBottom(density)
     
     // 滚动状态追踪
     var currentSessionId by remember { mutableStateOf<String?>(null) }
     var hasScrolledOnEnter by remember { mutableStateOf(false) }
-    var lastImeHeight by remember { mutableStateOf(0) }
+    var lastImeHeightPx by remember { mutableStateOf(0) }
     
     // 判断用户是否在底部附近
     val isNearBottom by remember { derivedStateOf { !listState.canScrollForward } }
+
+    AppLog.d("SessionScreen", "=== Render: sessionId=$sessionId, messages=${state.chatMessages.size}, imeHeight=$imeHeightPx, isNearBottom=$isNearBottom")
 
     // 监听生命周期
     DisposableEffect(lifecycleOwner) {
@@ -69,20 +70,22 @@ fun SessionScreen(
     // 进入会话 - 重置状态
     LaunchedEffect(sessionId) {
         if (currentSessionId != sessionId) {
-            AppLog.d("SessionScreen", "Session changed: $sessionId")
+            AppLog.d("SessionScreen", "=== Session changed: $sessionId")
             currentSessionId = sessionId
             hasScrolledOnEnter = false
+            lastImeHeightPx = 0
             viewModel.setSessionId(sessionId)
             focusRequester.requestFocus()
         }
     }
 
     // 场景1: 进入会话后滚动到底部
-    LaunchedEffect(state.chatMessages.isNotEmpty(), sessionId) {
+    LaunchedEffect(state.chatMessages.size, currentSessionId) {
         if (state.chatMessages.isNotEmpty() && !hasScrolledOnEnter && currentSessionId == sessionId) {
+            AppLog.d("SessionScreen", "=== Try scroll on enter: messages=${state.chatMessages.size}")
             // 等待列表渲染完成
-            delay(150)
-            scrollToBottom(listState, "session enter")
+            delay(200)
+            scrollToBottom(listState, imeHeightPx, "session enter")
             hasScrolledOnEnter = true
         }
     }
@@ -90,42 +93,30 @@ fun SessionScreen(
     // 场景2: 新消息到达时滚动
     LaunchedEffect(state.chatMessages.size) {
         if (state.chatMessages.isNotEmpty() && hasScrolledOnEnter) {
-            if (isNearBottom || imeVisible) {
-                scrollToBottom(listState, "new message")
+            AppLog.d("SessionScreen", "=== Messages changed: ${state.chatMessages.size}, isNearBottom=$isNearBottom")
+            if (isNearBottom || imeHeightPx > 0) {
+                delay(50)
+                scrollToBottom(listState, imeHeightPx, "new message")
             }
         }
     }
 
     // 场景3: IME 状态变化时滚动
-    LaunchedEffect(imeHeight) {
-        if (imeHeight > 0 && lastImeHeight == 0) {
+    LaunchedEffect(imeHeightPx) {
+        AppLog.d("SessionScreen", "=== IME changed: $lastImeHeightPx -> $imeHeightPx")
+        if (imeHeightPx > 0 && lastImeHeightPx == 0) {
             // IME 弹出
-            AppLog.d("SessionScreen", "IME shown: height=$imeHeight")
             if (state.chatMessages.isNotEmpty()) {
-                delay(250)
-                scrollToBottom(listState, "IME shown")
+                delay(300)  // 等待 IME 动画
+                scrollToBottom(listState, imeHeightPx, "IME shown")
             }
-        } else if (imeHeight == 0 && lastImeHeight > 0) {
+        } else if (imeHeightPx == 0 && lastImeHeightPx > 0) {
             // IME 收起
             if (state.chatMessages.isNotEmpty() && isNearBottom) {
-                scrollToBottom(listState, "IME hidden")
+                scrollToBottom(listState, 0, "IME hidden")
             }
         }
-        lastImeHeight = imeHeight
-    }
-
-    // 监听事件
-    LaunchedEffect(viewModel.events) {
-        viewModel.events.collect { event ->
-            when (event) {
-                is SessionEvent.MessageReceived -> {
-                    if (isNearBottom || imeVisible) {
-                        scrollToBottom(listState, "message received")
-                    }
-                }
-                else -> {}
-            }
-        }
+        lastImeHeightPx = imeHeightPx
     }
 
     val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
@@ -203,22 +194,33 @@ fun SessionScreen(
 
 /**
  * 滚动到底部
+ * 
+ * @param imeHeightPx IME 高度（像素）
+ * @param reason 日志原因
  */
 private suspend fun scrollToBottom(
     listState: LazyListState,
+    imeHeightPx: Int,
     reason: String
 ) {
     val totalItems = listState.layoutInfo.totalItemsCount
     if (totalItems <= 0) {
-        AppLog.d("SessionScreen", "scrollToBottom: no items, skipping")
+        AppLog.d("SessionScreen", "=== scrollToBottom: no items, skipping")
         return
     }
     
     val lastIndex = totalItems - 1
     
-    AppLog.d("SessionScreen", "scrollToBottom: reason=$reason, totalItems=$totalItems, lastIndex=$lastIndex")
+    // scrollOffset: 负值表示向上额外滚动
+    // 让最后一个 item 的底部在 IME 上方可见
+    val scrollOffset = if (imeHeightPx > 0) -imeHeightPx else 0
     
-    listState.scrollToItem(index = lastIndex)
+    AppLog.d("SessionScreen", "=== scrollToBottom: reason=$reason, totalItems=$totalItems, lastIndex=$lastIndex, scrollOffset=$scrollOffset")
+    
+    listState.scrollToItem(
+        index = lastIndex,
+        scrollOffset = scrollOffset
+    )
 }
 
 /**

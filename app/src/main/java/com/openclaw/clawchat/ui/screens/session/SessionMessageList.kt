@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.data.FontSize
@@ -119,18 +118,10 @@ fun MessageGroupList(
     onDeleteMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {}
 ) {
-    // 获取 IME 高度，用于底部 padding
-    val imeBottom = WindowInsets.ime.getBottom(LocalDensity.current)
-    
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = 16.dp,
-            bottom = 16.dp + with(LocalDensity.current) { imeBottom.toDp() }
-        ),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 1. 历史消息
