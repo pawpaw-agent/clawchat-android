@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -56,6 +58,7 @@ fun MessageInputBar(
     
     // 封装的斜杠菜单状态
     var slashMenu by remember { mutableStateOf(SlashMenuState()) }
+    val haptic = LocalHapticFeedback.current
     
     // 根据输入更新菜单状态
     LaunchedEffect(value) {
@@ -205,7 +208,10 @@ fun MessageInputBar(
                 )
 
                 IconButton(
-                    onClick = onSend,
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onSend()
+                    },
                     enabled = enabled && (value.isNotBlank() || attachments.isNotEmpty())
                 ) {
                     Icon(
