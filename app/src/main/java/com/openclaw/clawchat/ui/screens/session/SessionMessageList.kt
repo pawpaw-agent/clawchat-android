@@ -3,6 +3,8 @@ package com.openclaw.clawchat.ui.screens.session
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.layout.*
@@ -133,7 +135,11 @@ fun MessageGroupList(
                 group = group, 
                 messageFontSize = messageFontSize,
                 onDeleteMessage = onDeleteMessage,
-                onRegenerate = onRegenerate
+                onRegenerate = onRegenerate,
+                modifier = Modifier.animateItem(
+                    fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                )
             )
         }
         
@@ -240,17 +246,21 @@ fun MessageGroupItem(
     group: MessageGroup, 
     messageFontSize: FontSize = FontSize.MEDIUM,
     onDeleteMessage: (String) -> Unit = {},
-    onRegenerate: () -> Unit = {}
+    onRegenerate: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val isUser = group.role == MessageRole.USER
     val isSystem = group.role == MessageRole.SYSTEM
     val isTool = group.role == MessageRole.TOOL
 
-    if (isSystem) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+    Column(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        if (isSystem) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
             group.messages.forEach { message ->
                 SystemMessageItem(message = message)
             }
