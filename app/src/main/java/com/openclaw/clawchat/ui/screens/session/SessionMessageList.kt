@@ -261,11 +261,11 @@ fun MessageGroupItem(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-            group.messages.forEach { message ->
-                SystemMessageItem(message = message)
+                group.messages.forEach { message ->
+                    SystemMessageItem(message = message)
+                }
             }
-        }
-    } else if (isTool) {
+        } else if (isTool) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
