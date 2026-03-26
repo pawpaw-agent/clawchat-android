@@ -67,6 +67,7 @@ fun MessageContentCard(
     onDelete: () -> Unit = {},
     onRegenerate: () -> Unit = {},
     onRetry: () -> Unit = {},
+    onSpeak: (String) -> Unit = {},
     isStreaming: Boolean = false
 ) {
     val textContent = message.getTextContent()
@@ -206,6 +207,10 @@ fun MessageContentCard(
                             onRetry()
                             showMenu = false
                         },
+                        onSpeak = {
+                            onSpeak(messageText)
+                            showMenu = false
+                        },
                         onDismiss = { showMenu = false }
                     )
                 }
@@ -300,6 +305,7 @@ fun MessageActionDropdownMenu(
     onDelete: () -> Unit,
     onRegenerate: () -> Unit,
     onRetry: () -> Unit = {},
+    onSpeak: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     DropdownMenu(
@@ -315,6 +321,11 @@ fun MessageActionDropdownMenu(
             text = { Text("分享") },
             onClick = onShare,
             leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp)) }
+        )
+        DropdownMenuItem(
+            text = { Text("朗读") },
+            onClick = onSpeak,
+            leadingIcon = { Icon(Icons.Default.VolumeUp, contentDescription = null, modifier = Modifier.size(18.dp)) }
         )
         HorizontalDivider()
         DropdownMenuItem(

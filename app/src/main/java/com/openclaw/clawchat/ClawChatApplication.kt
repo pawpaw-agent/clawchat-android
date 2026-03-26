@@ -1,6 +1,7 @@
 package com.openclaw.clawchat
 
 import android.app.Application
+import com.openclaw.clawchat.util.MessageSpeaker
 import dagger.hilt.android.HiltAndroidApp
 
 /**
@@ -14,6 +15,7 @@ class ClawChatApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Application initialization
+        // Initialize TTS
+        MessageSpeaker.init(this)
     }
 }

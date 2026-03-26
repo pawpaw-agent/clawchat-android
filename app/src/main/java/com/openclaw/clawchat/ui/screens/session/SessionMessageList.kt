@@ -121,7 +121,8 @@ fun MessageGroupList(
     chatStream: String? = null,
     messageFontSize: FontSize = FontSize.MEDIUM,
     onDeleteMessage: (String) -> Unit = {},
-    onRegenerate: () -> Unit = {}
+    onRegenerate: () -> Unit = {},
+    onSpeak: (String) -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -136,6 +137,7 @@ fun MessageGroupList(
                 messageFontSize = messageFontSize,
                 onDeleteMessage = onDeleteMessage,
                 onRegenerate = onRegenerate,
+                onSpeak = onSpeak,
                 modifier = Modifier.animateItem(
                     fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
                     placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
@@ -247,6 +249,7 @@ fun MessageGroupItem(
     messageFontSize: FontSize = FontSize.MEDIUM,
     onDeleteMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {},
+    onSpeak: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isUser = group.role == MessageRole.USER
@@ -367,7 +370,8 @@ fun MessageGroupItem(
                             isLastInGroup = index == group.messages.lastIndex,
                             messageFontSize = messageFontSize,
                             onDelete = { onDeleteMessage(message.id) },
-                            onRegenerate = onRegenerate
+                            onRegenerate = onRegenerate,
+                            onSpeak = onSpeak
                         )
                         
                         val toolCalls = message.getToolCalls()
