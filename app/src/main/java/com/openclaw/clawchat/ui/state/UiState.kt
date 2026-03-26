@@ -2,6 +2,7 @@ package com.openclaw.clawchat.ui.state
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
 import com.openclaw.clawchat.data.FontSize
 import kotlinx.serialization.json.JsonObject
@@ -9,6 +10,7 @@ import kotlinx.serialization.json.JsonObject
 /**
  * 会话数据模型
  */
+@Stable
 data class SessionUi(
     val id: String,
     val label: String?,
@@ -235,6 +237,7 @@ enum class MessageStatus {
 /**
  * 消息数据模型
  */
+@Stable
 data class MessageUi(
     val id: String,
     val content: List<MessageContentItem>,
@@ -283,13 +286,17 @@ data class MessageUi(
 /**
  * 消息内容项
  */
+@Stable
 sealed class MessageContentItem {
+    @Stable
     data class Text(val text: String) : MessageContentItem()
+    @Stable
     data class ToolCall(
         val id: String? = null,
         val name: String,
         val args: JsonObject? = null
     ) : MessageContentItem()
+    @Stable
     data class ToolResult(
         val toolCallId: String? = null,
         val name: String? = null,
@@ -297,6 +304,7 @@ sealed class MessageContentItem {
         val text: String,
         val isError: Boolean = false
     ) : MessageContentItem()
+    @Stable
     data class Image(
         val url: String? = null,
         val base64: String? = null,
