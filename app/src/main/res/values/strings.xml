@@ -111,6 +111,8 @@
     <string name="session_search_placeholder">Search sessions…</string>
     <string name="session_delete_confirm_title">Delete message</string>
     <string name="session_delete_confirm_message">Delete this message?</string>
+    <string name="session_no_messages">No messages yet</string>
+    <string name="session_start_conversation">Start typing to begin</string>
 
     <!-- Pairing -->
     <string name="pairing_title">Device Pairing</string>
