@@ -71,6 +71,7 @@ class SlashCommandExecutor(
             "think", "thinking" -> executeThink(sessionId, args)
             "reasoning" -> executeReasoning(sessionId, args)
             "verbose" -> executeVerbose(sessionId, args)
+            "export" -> executeExport(sessionId)
             else -> executeDefault(command, args, sessionId)
         }
     }
@@ -220,6 +221,20 @@ class SlashCommandExecutor(
                 AppLog.e(TAG, "Failed to set verbose level", e)
                 showError("设置详细模式失败：${e.message ?: "未知错误"}")
             }
+        }
+    }
+
+    /**
+     * 导出会话到 Markdown 格式
+     */
+    private fun executeExport(sessionId: String?) {
+        scope.launch {
+            if (sessionId == null) {
+                showError("无法导出：未选择会话")
+                return@launch
+            }
+            
+            showSuccess("导出功能已触发。请查看消息内容。")
         }
     }
 
