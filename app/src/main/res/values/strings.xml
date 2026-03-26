@@ -61,6 +61,17 @@
     <string name="session_title">Session</string>
     <string name="session_input_placeholder">Type a message…</string>
     <string name="session_image_reset">Reset</string>
+    <string name="session_options">Session Options</string>
+    <string name="session_rename">Rename</string>
+    <string name="session_terminate_button">Terminate Session</string>
+    <string name="session_delete_button">Delete Session</string>
+    <string name="session_close">Close</string>
+    <string name="session_delete_title">Delete Session</string>
+    <string name="session_delete_message">Delete session \"%s\"? This action cannot be undone.</string>
+    <string name="session_rename_title">Rename Session</string>
+    <string name="session_name">Session Name</string>
+    <string name="session_confirm">Confirm</string>
+    <string name="session_search_placeholder">Search sessions…</string>
 
     <!-- Pairing -->
     <string name="pairing_title">Device Pairing</string>
