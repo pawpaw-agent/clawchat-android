@@ -11,6 +11,10 @@
     <string name="loading">Loading…</string>
     <string name="error">Error</string>
     <string name="success">Success</string>
+    <string name="delete">Delete</string>
+    <string name="close">Close</string>
+    <string name="confirm_button">Confirm</string>
+    <string name="cancel_connection">Cancel Connection</string>
 
     <!-- Connection Status -->
     <string name="status_connected">Connected</string>
