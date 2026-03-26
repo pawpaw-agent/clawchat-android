@@ -99,6 +99,8 @@
     <string name="session_name">Session Name</string>
     <string name="session_confirm">Confirm</string>
     <string name="session_search_placeholder">Search sessions…</string>
+    <string name="session_delete_confirm_title">Delete message</string>
+    <string name="session_delete_confirm_message">Delete this message?</string>
 
     <!-- Pairing -->
     <string name="pairing_title">Device Pairing</string>
