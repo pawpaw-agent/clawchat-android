@@ -101,6 +101,7 @@
     <string name="pairing_invalid_address">Please enter a valid address</string>
     <string name="pairing_waiting_approval">Waiting for admin approval</string>
     <string name="pairing_run_command">Run in terminal: openclaw devices approve</string>
+    <string name="pairing_connecting">Connecting…</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
