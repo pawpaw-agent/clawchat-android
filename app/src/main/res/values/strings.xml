@@ -86,6 +86,8 @@
     <string name="input_message">Type a message…</string>
     <string name="new_messages">New messages</string>
     <string name="scroll_to_bottom">Scroll to bottom</string>
+    <string name="no_internet">No internet connection</string>
+    <string name="retrying">Retrying…</string>
 
     <!-- Sessions -->
     <string name="sessions_title">Sessions</string>
