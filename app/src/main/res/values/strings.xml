@@ -21,6 +21,10 @@
     <string name="status_connecting">Connecting…</string>
     <string name="status_disconnected">Disconnected</string>
     <string name="status_error">Connection Error</string>
+    <string name="status_connect">Connect</string>
+    <string name="status_connect_success">Connection successful!</string>
+    <string name="status_connect_paired">Connect to paired Gateway</string>
+    <string name="status_scan_or_code">Scan QR code or enter pairing code</string>
 
     <!-- Gateway Configuration -->
     <string name="gateway_title">Gateway</string>
