@@ -69,6 +69,8 @@
     <string name="empty_session_hint">Start typing to begin the conversation</string>
     <string name="empty_search">No results found</string>
     <string name="empty_search_hint">Try a different search term</string>
+    <string name="search_sessions">Search sessions…</string>
+    <string name="input_message">Type a message…</string>
 
     <!-- Sessions -->
     <string name="sessions_title">Sessions</string>
