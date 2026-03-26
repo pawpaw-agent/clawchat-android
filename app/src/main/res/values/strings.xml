@@ -131,6 +131,8 @@
     <string name="pairing_connecting">Connecting…</string>
     <string name="pairing_back">Back</string>
     <string name="pairing_please_run">Please run in terminal: openclaw devices approve</string>
+    <string name="pairing_enter_gateway">Enter Gateway URL</string>
+    <string name="pairing_paste_token">Paste token</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
