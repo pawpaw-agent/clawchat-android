@@ -183,6 +183,8 @@
     <string name="notification_tap_to_open">Tap to open</string>
     <string name="notification_reply">Reply</string>
     <string name="notification_mark_as_read">Mark as read</string>
+    <string name="notification_channel_description">Message notifications</string>
+    <string name="notification_new_message_title">New message from %s</string>
 
     <!-- Errors -->
     <string name="error_network">Network error. Please check your connection.</string>
