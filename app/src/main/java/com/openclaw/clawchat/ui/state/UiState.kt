@@ -39,6 +39,7 @@ enum class SessionStatus {
     TERMINATED
 }
 
+@Stable
 data class GatewayConfigUi(
     val id: String,
     val name: String,
@@ -47,6 +48,7 @@ data class GatewayConfigUi(
     val isCurrent: Boolean = false
 )
 
+@Stable
 data class MainUiState(
     val connectionStatus: ConnectionStatus = ConnectionStatus.Disconnected,
     val sessions: List<SessionUi> = emptyList(),
@@ -62,6 +64,7 @@ data class MainUiState(
 /**
  * 附件数据（用于 UI 显示）
  */
+@Stable
 data class AttachmentUi(
     val id: String,
     val uri: android.net.Uri,
@@ -84,6 +87,7 @@ data class SlashCommandCompletion(
 /**
  * 会话界面 UI 状态（1:1 对应 webchat ChatState + ToolStreamHost）
  */
+@Stable
 data class SessionUiState(
     // 连接状态
     val connectionStatus: ConnectionStatus = ConnectionStatus.Disconnected,
