@@ -53,6 +53,14 @@
     <string name="message_just_now">Just now</string>
     <string name="message_minutes_ago">%d minutes ago</string>
     
+    <!-- Empty States -->
+    <string name="empty_sessions">No active sessions</string>
+    <string name="empty_sessions_hint">Tap the button below to create a new session</string>
+    <string name="empty_session">No messages yet</string>
+    <string name="empty_session_hint">Start typing to begin the conversation</string>
+    <string name="empty_search">No results found</string>
+    <string name="empty_search_hint">Try a different search term</string>
+
     <!-- Sessions -->
     <string name="sessions_title">Sessions</string>
     <string name="session_new">New Session</string>
