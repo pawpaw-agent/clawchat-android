@@ -449,7 +449,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
     val backgroundColor = when {
         toolCard.isError -> MaterialTheme.colorScheme.errorContainer
         toolCard.kind == ToolCardKind.CALL && !hasResult -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-        toolCard.kind == ToolCardKind.CALL -> Color(0x1AE53935)
+        toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
     
