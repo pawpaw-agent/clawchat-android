@@ -5,6 +5,7 @@ import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -412,10 +413,17 @@ private fun NewMessagesIndicator(
  * 错误提示条
  */
 @Composable
+@Composable
 private fun ErrorSnackbar(
     message: String,
     onDismiss: () -> Unit
 ) {
+    // 自动关闭
+    LaunchedEffect(message) {
+        kotlinx.coroutines.delay(5000)
+        onDismiss()
+    }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -423,6 +431,7 @@ private fun ErrorSnackbar(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer
         ),
+        shape = RoundedCornerShape(12.dp),
         onClick = onDismiss
     ) {
         Row(
@@ -441,14 +450,15 @@ private fun ErrorSnackbar(
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.weight(1f)
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.weight(1f),
+                maxLines = 3
             )
             IconButton(onClick = onDismiss) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "关闭",
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
         }
