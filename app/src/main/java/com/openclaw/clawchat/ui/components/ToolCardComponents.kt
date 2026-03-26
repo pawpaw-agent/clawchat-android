@@ -36,7 +36,7 @@ fun ToolCardCompact(
     val backgroundColor by animateColorAsState(
         targetValue = when {
             toolCard.isError -> DesignTokens.dangerSubtle
-            toolCard.kind == ToolCardKind.CALL -> Color(0x1AE53935)  // 浅红色
+            toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
             else -> DesignTokens.bgHover
         },
         label = "tool_card_bg"
@@ -44,7 +44,7 @@ fun ToolCardCompact(
     
     val iconColor = when {
         toolCard.isError -> DesignTokens.danger
-        toolCard.kind == ToolCardKind.CALL -> Color(0xFFE53935)
+        toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.tertiary
         else -> DesignTokens.accent2
     }
     
@@ -123,7 +123,7 @@ fun ToolCardExpanded(
     
     val backgroundColor = when {
         toolCard.isError -> DesignTokens.dangerSubtle
-        toolCard.kind == ToolCardKind.CALL -> Color(0x1AE53935)
+        toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
         else -> DesignTokens.bgHover
     }
     
@@ -150,7 +150,7 @@ fun ToolCardExpanded(
                     contentDescription = null,
                     tint = when {
                         toolCard.isError -> DesignTokens.danger
-                        toolCard.kind == ToolCardKind.CALL -> Color(0xFFE53935)
+                        toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.tertiary
                         else -> DesignTokens.accent2
                     },
                     modifier = Modifier.size(16.dp)
@@ -229,14 +229,14 @@ fun ToolTag(
 ) {
     val backgroundColor = when {
         isError -> DesignTokens.dangerSubtle
-        isCall -> Color(0x1AE53935)
+        isCall -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
         isActive -> DesignTokens.accentSubtle
         else -> DesignTokens.bgHover
     }
     
     val textColor = when {
         isError -> DesignTokens.danger
-        isCall -> Color(0xFFE53935)
+        isCall -> MaterialTheme.colorScheme.tertiary
         isActive -> DesignTokens.accent
         else -> DesignTokens.muted
     }
