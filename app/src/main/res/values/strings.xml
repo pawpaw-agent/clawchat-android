@@ -79,7 +79,6 @@
     <string name="empty_search_hint">Try a different search term</string>
     <string name="search_sessions">Search sessions…</string>
     <string name="input_message">Type a message…</string>
-    <string name="reset">Reset</string>
     <string name="new_messages">New messages</string>
     <string name="scroll_to_bottom">Scroll to bottom</string>
 
