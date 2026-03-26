@@ -195,10 +195,15 @@
     <string name="error_send_failed">Failed to send message</string>
     <string name="error_load_failed">Failed to load messages</string>
 
-    <!-- About Links -->
+    <!-- About -->
+    <string name="about_app_name">ClawChat</string>
+    <string name="about_description">OpenClaw Android Client</string>
+    <string name="about_version">Version %s</string>
     <string name="about_website">Website</string>
     <string name="about_source">Source Code</string>
     <string name="about_license">License</string>
     <string name="about_github">GitHub</string>
     <string name="about_documentation">Documentation</string>
+    <string name="about_developer">Developer</string>
+    <string name="about_openclaw">OpenClaw</string>
 </resources>
