@@ -348,7 +348,22 @@ fun MessageImageContent(image: MessageContentItem.Image) {
         try {
             val base64Data = image.base64 ?: return@remember null
             val bytes = Base64.decode(base64Data, Base64.DEFAULT)
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            
+            // 先解码尺寸
+            val options = android.graphics.BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+            
+            // 计算采样率，限制最大尺寸为 1024px
+            val maxSize = 1024
+            val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxSize)
+            
+            // 用采样率解码
+            val loadOptions = android.graphics.BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+            }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, loadOptions)
         } catch (e: Exception) {
             null
         }
@@ -369,6 +384,21 @@ fun MessageImageContent(image: MessageContentItem.Image) {
             )
         }
     }
+}
+
+/**
+ * 计算图片采样率
+ */
+private fun calculateSampleSize(width: Int, height: Int, maxSize: Int): Int {
+    var sampleSize = 1
+    val halfWidth = width / 2
+    val halfHeight = height / 2
+    
+    while (halfWidth / sampleSize >= maxSize || halfHeight / sampleSize >= maxSize) {
+        sampleSize *= 2
+    }
+    
+    return sampleSize
 }
 
 /**
