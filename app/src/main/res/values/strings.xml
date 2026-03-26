@@ -36,7 +36,10 @@
     <string name="message_delete">Delete</string>
     <string name="message_share">Share</string>
     <string name="message_regenerate">Regenerate</string>
+    <string name="message_speak">Speak</string>
+    <string name="message_retry">Retry</string>
     <string name="message_copied">Copied to clipboard</string>
+    <string name="message_delete_title">Delete message</string>
     <string name="message_delete_confirm">Delete this message?</string>
     <string name="message_code_copied">Code copied</string>
     <string name="message_just_now">Just now</string>
