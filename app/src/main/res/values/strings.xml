@@ -146,6 +146,8 @@
     <string name="pairing_please_run">Please run in terminal: openclaw devices approve</string>
     <string name="pairing_enter_gateway">Enter Gateway URL</string>
     <string name="pairing_paste_token">Paste token</string>
+    <string name="pairing_scan_qr">Scan QR Code</string>
+    <string name="pairing_or_enter_code">Or enter pairing code</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
