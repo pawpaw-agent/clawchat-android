@@ -19,6 +19,11 @@
     <string name="reset">Reset</string>
     <string name="rename">Rename</string>
     <string name="regenerate">Regenerate</string>
+    <string name="undo">Undo</string>
+    <string name="redo">Redo</string>
+    <string name="clear">Clear</string>
+    <string name="save">Save</string>
+    <string name="discard">Discard</string>
 
     <!-- Connection Status -->
     <string name="status_connected">Connected</string>
