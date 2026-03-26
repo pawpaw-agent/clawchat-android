@@ -58,6 +58,9 @@
     <string name="session_yesterday">Yesterday</string>
     <string name="session_this_week">This Week</string>
     <string name="session_earlier">Earlier</string>
+    <string name="session_title">Session</string>
+    <string name="session_input_placeholder">Type a message…</string>
+    <string name="session_image_reset">Reset</string>
 
     <!-- Pairing -->
     <string name="pairing_title">Device Pairing</string>
@@ -66,6 +69,19 @@
     <string name="pairing_approved">Device approved</string>
     <string name="pairing_rejected">Pairing rejected</string>
     <string name="pairing_timeout">Pairing timed out</string>
+    <string name="pairing_connect_gateway">Connect Gateway</string>
+    <string name="pairing_gateway_address">Gateway address</string>
+    <string name="pairing_gateway_address_hint">192.168.0.213:18789</string>
+    <string name="pairing_gateway_token">Gateway Token</string>
+    <string name="pairing_gateway_token_hint">Paste OPENCLAW_GATEWAY_TOKEN</string>
+    <string name="pairing_connect">Connect</string>
+    <string name="pairing_start">Start Pairing</string>
+    <string name="pairing_generating_key">Generating Ed25519 device key…</string>
+    <string name="pairing_device_id">Device ID</string>
+    <string name="pairing_public_key">Public Key (Ed25519)</string>
+    <string name="pairing_invalid_address">Please enter a valid address</string>
+    <string name="pairing_waiting_approval">Waiting for admin approval</string>
+    <string name="pairing_run_command">Run in terminal: openclaw devices approve</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
