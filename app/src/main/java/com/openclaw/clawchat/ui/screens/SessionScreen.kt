@@ -413,7 +413,6 @@ private fun NewMessagesIndicator(
  * 错误提示条
  */
 @Composable
-@Composable
 private fun ErrorSnackbar(
     message: String,
     onDismiss: () -> Unit
