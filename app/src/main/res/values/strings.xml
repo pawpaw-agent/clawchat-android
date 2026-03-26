@@ -164,6 +164,9 @@
     <string name="error_gateway">Cannot connect to Gateway</string>
     <string name="error_pairing">Pairing failed</string>
     <string name="error_unknown">An unexpected error occurred</string>
+    <string name="error_connection_lost">Connection lost</string>
+    <string name="error_timeout">Request timed out</string>
+    <string name="error_unauthorized">Unauthorized. Please pair again.</string>
 
     <!-- About Links -->
     <string name="about_website">Website</string>
