@@ -36,6 +36,8 @@
     <string name="status_scan_or_code">Scan QR code or enter pairing code</string>
     <string name="status_retry">Retry</string>
     <string name="status_go_to_settings">Go to Settings</string>
+    <string name="status_latency">Latency: %d ms</string>
+    <string name="status_gateway">Gateway: %s</string>
 
     <!-- Gateway Configuration -->
     <string name="gateway_title">Gateway</string>
