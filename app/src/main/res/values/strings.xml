@@ -169,4 +169,6 @@
     <string name="about_website">Website</string>
     <string name="about_source">Source Code</string>
     <string name="about_license">License</string>
+    <string name="about_github">GitHub</string>
+    <string name="about_documentation">Documentation</string>
 </resources>
