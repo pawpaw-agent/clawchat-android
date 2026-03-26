@@ -8,6 +8,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -710,4 +712,101 @@ fun formatMessageAsMarkdown(message: MessageUi): String {
     }
     
     return sb.toString()
+}
+
+/**
+ * 从文本中提取所有 URL
+ */
+fun extractUrls(text: String): List<String> {
+    val urlRegex = Regex("""https?://[^\s\)\]\}\"'<>]+""")
+    return urlRegex.findAll(text).map { it.value }.distinct().toList()
+}
+
+/**
+ * 链接预览卡片
+ */
+@Composable
+fun LinkPreviewCard(
+    url: String,
+    modifier: Modifier = Modifier
+) {
+    val uriHandler = LocalUriHandler.current
+    
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        onClick = {
+            try {
+                uriHandler.openUri(url)
+            } catch (e: Exception) {
+                // 忽略无效链接
+            }
+        }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 链接图标
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "🔗",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            // URL 信息
+            Column(modifier = Modifier.weight(1f)) {
+                // 显示域名
+                val domain = try {
+                    java.net.URL(url).host
+                } catch (e: Exception) {
+                    url.take(30)
+                }
+                
+                Text(
+                    text = domain,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+                
+                Spacer(modifier = Modifier.height(2.dp))
+                
+                // 显示完整 URL（截断）
+                Text(
+                    text = url.take(50) + if (url.length > 50) "..." else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+            }
+            
+            // 打开图标
+            Icon(
+                modifier = Modifier.size(20.dp),
+                imageVector = androidx.compose.material.icons.Icons.Default.OpenInBrowser,
+                contentDescription = "打开链接",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
 }
