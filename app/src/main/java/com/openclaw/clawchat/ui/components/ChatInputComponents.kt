@@ -291,14 +291,49 @@ private fun AttachmentPreview(
                     val base64Match = Regex("base64,(.+)").find(attachment.dataUrl)
                     val base64 = base64Match?.groupValues?.get(1) ?: attachment.dataUrl
                     val bytes = Base64.decode(base64, Base64.DEFAULT)
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    
+                    // 采样解码
+                    val options = BitmapFactory.Options().apply {
+                        inJustDecodeBounds = true
+                    }
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+                    
+                    val maxSize = 256
+                    var sampleSize = 1
+                    val halfWidth = options.outWidth / 2
+                    val halfHeight = options.outHeight / 2
+                    while (halfWidth / sampleSize >= maxSize || halfHeight / sampleSize >= maxSize) {
+                        sampleSize *= 2
+                    }
+                    
+                    val loadOptions = BitmapFactory.Options().apply {
+                        inSampleSize = sampleSize
+                    }
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, loadOptions)
                 } else {
                     // 从 uri 加载
                     val inputStream = context.contentResolver.openInputStream(attachment.uri)
                     val bytes = inputStream?.readBytes()
                     inputStream?.close()
                     if (bytes != null) {
-                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        // 采样解码
+                        val options = BitmapFactory.Options().apply {
+                            inJustDecodeBounds = true
+                        }
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+                        
+                        val maxSize = 256
+                        var sampleSize = 1
+                        val halfWidth = options.outWidth / 2
+                        val halfHeight = options.outHeight / 2
+                        while (halfWidth / sampleSize >= maxSize || halfHeight / sampleSize >= maxSize) {
+                            sampleSize *= 2
+                        }
+                        
+                        val loadOptions = BitmapFactory.Options().apply {
+                            inSampleSize = sampleSize
+                        }
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, loadOptions)
                     } else {
                         null
                     }
