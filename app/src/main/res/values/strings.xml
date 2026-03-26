@@ -188,6 +188,8 @@
     <string name="error_connection_lost">Connection lost</string>
     <string name="error_timeout">Request timed out</string>
     <string name="error_unauthorized">Unauthorized. Please pair again.</string>
+    <string name="error_send_failed">Failed to send message</string>
+    <string name="error_load_failed">Failed to load messages</string>
 
     <!-- About Links -->
     <string name="about_website">Website</string>
