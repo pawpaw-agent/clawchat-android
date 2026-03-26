@@ -30,6 +30,7 @@
     <string name="status_connect_success">Connection successful!</string>
     <string name="status_connect_paired">Connect to paired Gateway</string>
     <string name="status_scan_or_code">Scan QR code or enter pairing code</string>
+    <string name="status_retry">Retry</string>
 
     <!-- Gateway Configuration -->
     <string name="gateway_title">Gateway</string>
