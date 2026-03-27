@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.offset
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -107,14 +108,16 @@ fun SessionScreen(
     val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
 
     Scaffold(
-        modifier = Modifier.background(MaterialTheme.colorScheme.background),
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.background)
+            .offset(y = -imeHeightDp),
         topBar = {
             SessionTopAppBar(
                 connectionStatus = state.connectionStatus,
                 onNavigateBack = onNavigateBack
             )
         },
-        contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.ime)
+        contentWindowInsets = WindowInsets.systemBars
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -142,7 +145,6 @@ fun SessionScreen(
                             toolMessages = state.chatToolMessages,
                             chatStream = state.chatStream,
                             messageFontSize = messageFontSize,
-                            imePadding = imeHeightDp,
                             onDeleteMessage = { viewModel.deleteMessage(it) },
                             onRegenerate = { viewModel.regenerateLastMessage() },
                             onSpeak = { text ->

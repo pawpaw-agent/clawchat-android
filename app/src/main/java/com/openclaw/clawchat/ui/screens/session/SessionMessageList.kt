@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
@@ -111,7 +110,7 @@ fun LoadingOverlay() {
 }
 
 /**
- * 消息分组列表（1:1 复刻 webchat）
+ * 消息分组列表
  */
 @Composable
 fun MessageGroupList(
@@ -121,7 +120,6 @@ fun MessageGroupList(
     toolMessages: List<MessageUi> = emptyList(),
     chatStream: String? = null,
     messageFontSize: FontSize = FontSize.MEDIUM,
-    imePadding: Dp = 0.dp,
     onDeleteMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {},
     onSpeak: (String) -> Unit = {}
@@ -133,7 +131,7 @@ fun MessageGroupList(
             start = 16.dp,
             end = 16.dp,
             top = 16.dp,
-            bottom = 16.dp + imePadding
+            bottom = 16.dp
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
