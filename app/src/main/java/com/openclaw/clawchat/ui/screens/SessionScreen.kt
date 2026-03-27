@@ -1,7 +1,6 @@
 package com.openclaw.clawchat.ui.screens
 
 import androidx.compose.foundation.background
-import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -22,24 +21,14 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.screens.session.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
  * 会话界面屏幕
  * 
- * 滚动逻辑严格参考 webchat app-scroll.ts 实现
- * 
- * Webchat 关键常量和状态：
- * - NEAR_BOTTOM_THRESHOLD = 450px
- * - chatHasAutoScrolled: 首次加载后设为 true
- * - chatUserNearBottom: 用户是否在底部附近
- * - chatNewMessagesBelow: 有新消息在下方（用户滚动到中间时）
- * 
- * 滚动条件：
- * - distanceFromBottom = scrollHeight - scrollTop - clientHeight
- * - effectiveForce = force && !chatHasAutoScrolled
- * - shouldStick = effectiveForce || chatUserNearBottom || distanceFromBottom < THRESHOLD
+ * 滚动逻辑：
+ * 1. 新消息按钮点击 → 滚动到最底部
+ * 2. 键盘弹出 → 消息列表同步上移相同距离（通过 imePadding 实现）
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -56,21 +45,19 @@ fun SessionScreen(
     
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
-    // === 参考 webchat app-scroll.ts 的状态管理 ===
-    // chatHasAutoScrolled: 首次加载后设为 true
-    var chatHasAutoScrolled by remember { mutableStateOf(false) }
-    // chatUserNearBottom: 用户是否在底部附近
-    var chatUserNearBottom by remember { mutableStateOf(true) }
-    // chatNewMessagesBelow: 有新消息在下方
-    var chatNewMessagesBelow by remember { mutableStateOf(false) }
     // 当前会话 ID
     var currentSessionId by remember { mutableStateOf<String?>(null) }
     
-    // IME 状态
+    // 用户是否在底部附近（用于显示"新消息"按钮）
+    val isUserNearBottom by remember { derivedStateOf { !listState.canScrollForward } }
+    
+    // 是否显示"新消息"按钮
+    var showNewMessagesButton by remember { mutableStateOf(false) }
+
+    // IME 高度（用于消息列表同步上移）
     val density = LocalDensity.current
     val imeHeightPx = WindowInsets.ime.getBottom(density)
     val imeHeightDp = with(density) { imeHeightPx.toDp() }
-    var lastImeHeightPx by remember { mutableStateOf(0) }
 
     // 监听生命周期
     DisposableEffect(lifecycleOwner) {
@@ -85,100 +72,36 @@ fun SessionScreen(
         }
     }
 
-    // 参考 webchat: resetChatScroll() - 在会话切换时重置
+    // 会话切换时重置状态
     LaunchedEffect(sessionId) {
         if (currentSessionId != sessionId) {
-            AppLog.d("SessionScreen", "Session changed: $sessionId, reset scroll state")
             currentSessionId = sessionId
-            // resetChatScroll(host)
-            chatHasAutoScrolled = false
-            chatUserNearBottom = true
-            chatNewMessagesBelow = false
+            showNewMessagesButton = false
             viewModel.setSessionId(sessionId)
             focusRequester.requestFocus()
         }
     }
 
-    // 参考 webchat: handleUpdated() - 监听消息变化触发滚动
-    // scheduleChatScroll(host, forcedByTab || forcedByLoad || streamJustStarted || !host.chatHasAutoScrolled)
+    // 监听消息变化：用户在底部时自动滚动，不在底部时显示"新消息"按钮
     val messageCount = state.chatMessages.size
-    val isLoading = state.isLoading
-    val hasStream = state.chatStream != null
-    
-    LaunchedEffect(messageCount, currentSessionId, isLoading, hasStream) {
-        if (messageCount == 0) return@LaunchedEffect
-        
-        // 计算 force 条件
-        // webchat: forcedByTab || forcedByLoad || streamJustStarted || !host.chatHasAutoScrolled
-        val forcedByLoad = !isLoading && !chatHasAutoScrolled
-        val streamJustStarted = hasStream && !chatHasAutoScrolled
-        val force = forcedByLoad || streamJustStarted || !chatHasAutoScrolled
-        
-        AppLog.d("SessionScreen", "scheduleChatScroll trigger: messageCount=$messageCount, force=$force, chatHasAutoScrolled=$chatHasAutoScrolled")
-        
-        scheduleChatScroll(
-            listState = listState,
-            force = force,
-            chatHasAutoScrolled = { chatHasAutoScrolled },
-            setHasAutoScrolled = { chatHasAutoScrolled = it },
-            chatUserNearBottom = { chatUserNearBottom },
-            setUserNearBottom = { chatUserNearBottom = it },
-            setNewMessagesBelow = { chatNewMessagesBelow = it },
-            reason = "messageCount=$messageCount, force=$force"
-        )
-    }
-
-    // 参考 webchat: handleChatScroll() - 监听滚动事件更新 chatUserNearBottom
-    // Compose 使用 derivedStateOf 代替滚动事件
-    val layoutInfo = listState.layoutInfo
-    LaunchedEffect(layoutInfo) {
-        // 计算 distanceFromBottom
-        // webchat: distanceFromBottom = scrollHeight - scrollTop - clientHeight
-        // Compose: !canScrollForward 表示在底部
-        val isAtBottom = !listState.canScrollForward
-        chatUserNearBottom = isAtBottom
-        
-        // Clear the "new messages below" indicator when user scrolls back to bottom.
-        if (chatUserNearBottom) {
-            chatNewMessagesBelow = false
+    LaunchedEffect(messageCount) {
+        if (messageCount > 0) {
+            if (isUserNearBottom) {
+                // 用户在底部，自动滚动到最新消息
+                listState.scrollToItem(messageCount - 1)
+                showNewMessagesButton = false
+            } else {
+                // 用户不在底部，显示"新消息"按钮
+                showNewMessagesButton = true
+            }
         }
     }
 
-    // IME 弹出时滚动到底部
-    LaunchedEffect(imeHeightPx) {
-        if (imeHeightPx > 0 && lastImeHeightPx == 0) {
-            // IME 弹出
-            AppLog.d("SessionScreen", "IME shown: height=$imeHeightPx")
-            if (state.chatMessages.isNotEmpty()) {
-                // 等待 IME 动画
-                delay(250)
-                scheduleChatScroll(
-                    listState = listState,
-                    force = true,
-                    chatHasAutoScrolled = { chatHasAutoScrolled },
-                    setHasAutoScrolled = { chatHasAutoScrolled = it },
-                    chatUserNearBottom = { chatUserNearBottom },
-                    setUserNearBottom = { chatUserNearBottom = it },
-                    setNewMessagesBelow = { chatNewMessagesBelow = it },
-                    reason = "IME shown"
-                )
-            }
-        } else if (imeHeightPx == 0 && lastImeHeightPx > 0) {
-            // IME 收起
-            if (state.chatMessages.isNotEmpty() && chatUserNearBottom) {
-                scheduleChatScroll(
-                    listState = listState,
-                    force = false,
-                    chatHasAutoScrolled = { chatHasAutoScrolled },
-                    setHasAutoScrolled = { chatHasAutoScrolled = it },
-                    chatUserNearBottom = { chatUserNearBottom },
-                    setUserNearBottom = { chatUserNearBottom = it },
-                    setNewMessagesBelow = { chatNewMessagesBelow = it },
-                    reason = "IME hidden"
-                )
-            }
+    // 当用户滚动到底部时，隐藏"新消息"按钮
+    LaunchedEffect(isUserNearBottom) {
+        if (isUserNearBottom) {
+            showNewMessagesButton = false
         }
-        lastImeHeightPx = imeHeightPx
     }
 
     val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
@@ -232,27 +155,14 @@ fun SessionScreen(
                         LoadingOverlay()
                     }
                     
-                    // 显示"新消息"提示（当用户滚动到中间时）
-                    if (chatNewMessagesBelow) {
+                    // "新消息"按钮：点击滚动到最底部
+                    if (showNewMessagesButton) {
                         NewMessagesIndicator(
                             modifier = Modifier.align(Alignment.BottomCenter),
                             onClick = {
-                                // 参考 webchat: 点击新消息按钮时滚动到底部
-                                chatNewMessagesBelow = false
-                                chatUserNearBottom = true
-                                chatHasAutoScrolled = false
-                                // 触发滚动到最新消息
+                                showNewMessagesButton = false
                                 scope.launch {
-                                    scheduleChatScroll(
-                                        listState = listState,
-                                        force = true,
-                                        chatHasAutoScrolled = { chatHasAutoScrolled },
-                                        setHasAutoScrolled = { chatHasAutoScrolled = it },
-                                        chatUserNearBottom = { chatUserNearBottom },
-                                        setUserNearBottom = { chatUserNearBottom = it },
-                                        setNewMessagesBelow = { chatNewMessagesBelow = it },
-                                        reason = "newMessagesIndicator click"
-                                    )
+                                    listState.scrollToItem(messageCount - 1)
                                 }
                             }
                         )
@@ -263,10 +173,6 @@ fun SessionScreen(
                     value = state.inputText,
                     onValueChange = { viewModel.updateInputText(it) },
                     onSend = { 
-                        // 参考 webchat: 发送前 resetChatScroll
-                        chatHasAutoScrolled = false
-                        chatUserNearBottom = true
-                        chatNewMessagesBelow = false
                         viewModel.sendMessage(state.inputText) 
                     },
                     enabled = state.connectionStatus is ConnectionStatus.Connected && !state.isSending,
@@ -300,85 +206,7 @@ fun SessionScreen(
 }
 
 /**
- * 参考 webchat scheduleChatScroll 实现
- * 
- * 核心逻辑：
- * 1. force=true 且未自动滚动过 → 强制滚动
- * 2. 用户在底部附近 → 滚动
- * 3. 滚动后延迟重试（webchat: 120-150ms）
- */
-private suspend fun scheduleChatScroll(
-    listState: LazyListState,
-    force: Boolean,
-    chatHasAutoScrolled: () -> Boolean,
-    setHasAutoScrolled: (Boolean) -> Unit,
-    chatUserNearBottom: () -> Boolean,
-    setUserNearBottom: (Boolean) -> Unit,
-    setNewMessagesBelow: (Boolean) -> Unit,
-    reason: String
-) {
-    val totalItems = listState.layoutInfo.totalItemsCount
-    if (totalItems <= 0) {
-        AppLog.d("SessionScreen", "scheduleChatScroll: no items, skip")
-        return
-    }
-    
-    // 等待渲染完成（类似 webchat 的 updateComplete.then）
-    delay(50)
-    
-    // 参考 webchat: effectiveForce = force && !chatHasAutoScrolled
-    val effectiveForce = force && !chatHasAutoScrolled()
-    
-    // 参考 webchat: distanceFromBottom = scrollHeight - scrollTop - clientHeight
-    // Compose: canScrollForward 表示可以继续向下滚动
-    val isAtBottom = !listState.canScrollForward
-    
-    // 参考 webchat: shouldStick = effectiveForce || chatUserNearBottom || distanceFromBottom < NEAR_BOTTOM_THRESHOLD
-    // Compose: 使用 isAtBottom 代替 distanceFromBottom < THRESHOLD
-    val shouldStick = effectiveForce || chatUserNearBottom() || isAtBottom
-    
-    AppLog.d("SessionScreen", "scheduleChatScroll: reason=$reason, totalItems=$totalItems, effectiveForce=$effectiveForce, userNearBottom=${chatUserNearBottom()}, isAtBottom=$isAtBottom, shouldStick=$shouldStick")
-    
-    if (!shouldStick) {
-        // User is scrolled up — flag that new content arrived below.
-        setNewMessagesBelow(true)
-        AppLog.d("SessionScreen", "scheduleChatScroll: user scrolled up, set newMessagesBelow=true")
-        return
-    }
-    
-    // 标记已自动滚动
-    if (effectiveForce) {
-        setHasAutoScrolled(true)
-        AppLog.d("SessionScreen", "scheduleChatScroll: set hasAutoScrolled=true")
-    }
-    
-    // 滚动到底部
-    val lastIndex = totalItems - 1
-    listState.scrollToItem(index = lastIndex)
-    setUserNearBottom(true)
-    setNewMessagesBelow(false)
-    AppLog.d("SessionScreen", "scheduleChatScroll: scrolled to $lastIndex")
-    
-    // 参考 webchat: 延迟重试
-    // const retryDelay = effectiveForce ? 150 : 120;
-    val retryDelay = if (effectiveForce) 150L else 120L
-    delay(retryDelay)
-    
-    // 重试滚动
-    val newTotalItems = listState.layoutInfo.totalItemsCount
-    if (newTotalItems > 0) {
-        val newIsAtBottom = !listState.canScrollForward
-        val shouldStickRetry = effectiveForce || chatUserNearBottom() || newIsAtBottom
-        if (shouldStickRetry) {
-            listState.scrollToItem(index = newTotalItems - 1)
-            setUserNearBottom(true)
-            AppLog.d("SessionScreen", "scheduleChatScroll: retry scrolled to ${newTotalItems - 1}")
-        }
-    }
-}
-
-/**
- * 新消息提示组件（点击滚动到底部）
+ * 新消息提示按钮
  */
 @Composable
 private fun NewMessagesIndicator(
