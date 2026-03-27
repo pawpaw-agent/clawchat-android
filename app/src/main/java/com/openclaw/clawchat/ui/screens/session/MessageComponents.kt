@@ -156,13 +156,6 @@ fun MessageContentCard(
                     textColor = MaterialTheme.colorScheme.onBackground
                 )
                 
-                // 流式输出时显示闪烁光标
-                if (isStreaming) {
-                    BlinkingCursor(
-                        modifier = Modifier.padding(start = 2.dp)
-                    )
-                }
-                
                 if (showCopiedToast) {
             Surface(
                 modifier = Modifier.align(Alignment.BottomCenter),
@@ -769,22 +762,12 @@ fun StreamingIndicator(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(DesignTokens.space2)
     ) {
-        // 脉冲圆点
-        val pulseAlpha by infiniteTransition.animateFloat(
-            initialValue = 0.4f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(600),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "pulse"
-        )
-        
+        // 静态圆点
         Box(
             modifier = Modifier
                 .size(6.dp)
                 .background(
-                    MaterialTheme.colorScheme.primary.copy(alpha = pulseAlpha),
+                    MaterialTheme.colorScheme.primary,
                     CircleShape
                 )
         )
@@ -797,32 +780,3 @@ fun StreamingIndicator(
     }
 }
 
-/**
- * 闪烁光标（流式输出时显示）
- */
-@Composable
-private fun BlinkingCursor(
-    modifier: Modifier = Modifier
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "cursor")
-    
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(530, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "cursor_alpha"
-    )
-    
-    Box(
-        modifier = modifier
-            .width(2.dp)
-            .height(14.dp)
-            .background(
-                MaterialTheme.colorScheme.primary.copy(alpha = alpha),
-                RoundedCornerShape(1.dp)
-            )
-    )
-}
