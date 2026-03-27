@@ -88,7 +88,7 @@ fun SessionScreen(
         if (messageCount > 0) {
             if (isUserNearBottom) {
                 // 用户在底部，自动滚动到最新消息
-                listState.scrollToItem(messageCount - 1)
+                listState.scrollToItem(Int.MAX_VALUE)
                 showNewMessagesButton = false
             } else {
                 // 用户不在底部，显示"新消息"按钮
@@ -163,7 +163,8 @@ fun SessionScreen(
                             onClick = {
                                 showNewMessagesButton = false
                                 scope.launch {
-                                    listState.scrollToItem(messageCount - 1)
+                                    // 滚动到最后一个 item（Int.MAX_VALUE 会自动限制到末尾）
+                                    listState.animateScrollToItem(Int.MAX_VALUE)
                                 }
                             }
                         )
