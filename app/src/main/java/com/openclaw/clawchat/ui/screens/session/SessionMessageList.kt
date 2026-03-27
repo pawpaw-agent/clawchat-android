@@ -175,7 +175,7 @@ fun MessageGroupList(
         
         // 4. 当前流式文本
         if (!chatStream.isNullOrBlank()) {
-            item(key = "stream_${chatStream.length}") {
+            item(key = "stream_current") {
                 MessageContentCard(
                     message = MessageUi(
                         id = "stream",
