@@ -200,9 +200,6 @@
     <string name="error_load_failed">Failed to load messages</string>
 
     <!-- About -->
-    <string name="about_app_name">ClawChat</string>
-    <string name="about_description">OpenClaw Android Client</string>
-    <string name="about_version">Version %s</string>
     <string name="about_website">Website</string>
     <string name="about_source">Source Code</string>
     <string name="about_license">License</string>
