@@ -1,6 +1,8 @@
 package com.openclaw.clawchat.ui.screens.settings
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -300,7 +302,3 @@ private fun StatusIndicator(status: PairingStatus, isPairing: Boolean) {
         else -> {}
     }
 }
-
-// 需要导入 Icons
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
