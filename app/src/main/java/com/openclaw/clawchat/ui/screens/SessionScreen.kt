@@ -48,11 +48,8 @@ fun SessionScreen(
     // 当前会话 ID
     var currentSessionId by remember { mutableStateOf<String?>(null) }
     
-    // 用户是否在底部附近（用于显示"新消息"按钮）
-    val isUserNearBottom by remember { derivedStateOf { !listState.canScrollForward } }
-    
-    // 是否显示"新消息"按钮
-    var showNewMessagesButton by remember { mutableStateOf(false) }
+    // 是否显示"新消息"按钮：只要没滑到底部就显示
+    val showNewMessagesButton by remember { derivedStateOf { listState.canScrollForward } }
 
     // IME 高度（用于消息列表同步上移）
     val density = LocalDensity.current
@@ -76,31 +73,17 @@ fun SessionScreen(
     LaunchedEffect(sessionId) {
         if (currentSessionId != sessionId) {
             currentSessionId = sessionId
-            showNewMessagesButton = false
             viewModel.setSessionId(sessionId)
             focusRequester.requestFocus()
         }
     }
 
-    // 监听消息变化：用户在底部时自动滚动，不在底部时显示"新消息"按钮
+    // 监听消息变化：在底部时自动滚动到最新
     val messageCount = state.chatMessages.size
     LaunchedEffect(messageCount) {
-        if (messageCount > 0) {
-            if (isUserNearBottom) {
-                // 用户在底部，自动滚动到最新消息
-                listState.scrollToItem(Int.MAX_VALUE)
-                showNewMessagesButton = false
-            } else {
-                // 用户不在底部，显示"新消息"按钮
-                showNewMessagesButton = true
-            }
-        }
-    }
-
-    // 当用户滚动到底部时，隐藏"新消息"按钮
-    LaunchedEffect(isUserNearBottom) {
-        if (isUserNearBottom) {
-            showNewMessagesButton = false
+        if (messageCount > 0 && !listState.canScrollForward) {
+            // 用户在底部，自动滚动到最新消息
+            listState.scrollToItem(Int.MAX_VALUE)
         }
     }
 
@@ -161,9 +144,7 @@ fun SessionScreen(
                         NewMessagesIndicator(
                             modifier = Modifier.align(Alignment.BottomCenter),
                             onClick = {
-                                showNewMessagesButton = false
                                 scope.launch {
-                                    // 滚动到最后一个 item（Int.MAX_VALUE 会自动限制到末尾）
                                     listState.animateScrollToItem(Int.MAX_VALUE)
                                 }
                             }
