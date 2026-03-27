@@ -180,6 +180,7 @@ fun PairingItem(
 @Composable
 fun GatewayConfigDialog(
     currentConfig: GatewayConfigInput,
+    isPaired: Boolean = false,
     onDismiss: () -> Unit,
     onSave: (GatewayConfigInput) -> Unit
 ) {
@@ -240,7 +241,7 @@ fun GatewayConfigDialog(
                     )
                 }
             ) {
-                Text("保存")
+                Text(if (isPaired) "保存并连接" else "保存")
             }
         },
         dismissButton = {

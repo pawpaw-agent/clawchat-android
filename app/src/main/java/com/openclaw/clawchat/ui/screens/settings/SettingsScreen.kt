@@ -159,6 +159,7 @@ fun SettingsScreen(
     if (showGatewayDialog) {
         GatewayConfigDialog(
             currentConfig = state.gatewayConfigInput,
+            isPaired = state.isPaired,
             onDismiss = { showGatewayDialog = false },
             onSave = { config ->
                 viewModel.updateGatewayConfig(config)

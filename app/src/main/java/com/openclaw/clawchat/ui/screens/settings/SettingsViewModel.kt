@@ -110,6 +110,10 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun updateGatewayConfig(config: GatewayConfigInput) {
+        // 保存 Gateway URL
+        val url = "ws://${config.host}:${config.port}/ws"
+        encryptedStorage.saveGatewayUrl(url)
+        
         _uiState.update {
             it.copy(
                 gatewayConfigInput = config,
@@ -122,6 +126,15 @@ class SettingsViewModel @Inject constructor(
             )
         }
         AppLog.d(TAG, "Gateway 配置已更新：${config.host}:${config.port}")
+        
+        // 如果已配对，自动连接
+        if (encryptedStorage.isPaired()) {
+            val token = encryptedStorage.getDeviceToken()
+            viewModelScope.launch {
+                AppLog.d(TAG, "自动连接到 Gateway: $url")
+                gateway.connect(url, token)
+            }
+        }
     }
 
     fun disconnect() {
