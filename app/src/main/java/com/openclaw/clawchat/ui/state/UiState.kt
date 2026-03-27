@@ -125,6 +125,7 @@ data class SessionUiState(
 /**
  * 文本段（工具执行前提交的文本）
  */
+@Stable
 data class StreamSegment(
     val text: String,
     val ts: Long
@@ -133,6 +134,7 @@ data class StreamSegment(
 /**
  * 工具流条目（1:1 对应 webchat ToolStreamEntry）
  */
+@Stable
 data class ToolStreamEntry(
     val toolCallId: String,
     val runId: String,
@@ -338,6 +340,7 @@ enum class MessageRole {
 /**
  * 消息分组
  */
+@Stable
 data class MessageGroup(
     val role: MessageRole,
     val messages: List<MessageUi>,
@@ -355,6 +358,7 @@ data class MessageGroup(
 /**
  * 工具卡片数据
  */
+@Stable
 data class ToolCard(
     val kind: ToolCardKind,
     val name: String,
