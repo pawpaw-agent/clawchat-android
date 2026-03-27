@@ -120,6 +120,7 @@ fun MessageGroupList(
     toolMessages: List<MessageUi> = emptyList(),
     chatStream: String? = null,
     messageFontSize: FontSize = FontSize.MEDIUM,
+    imePadding: Dp = 0.dp,
     onDeleteMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {},
     onSpeak: (String) -> Unit = {}
@@ -127,7 +128,12 @@ fun MessageGroupList(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 16.dp,
+            bottom = 16.dp + imePadding
+        ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 1. 历史消息

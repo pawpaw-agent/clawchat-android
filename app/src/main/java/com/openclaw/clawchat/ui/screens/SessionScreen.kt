@@ -69,6 +69,7 @@ fun SessionScreen(
     // IME 状态
     val density = LocalDensity.current
     val imeHeightPx = WindowInsets.ime.getBottom(density)
+    val imeHeightDp = with(density) { imeHeightPx.toDp() }
     var lastImeHeightPx by remember { mutableStateOf(0) }
 
     // 监听生命周期
@@ -218,6 +219,7 @@ fun SessionScreen(
                             toolMessages = state.chatToolMessages,
                             chatStream = state.chatStream,
                             messageFontSize = messageFontSize,
+                            imePadding = imeHeightDp,
                             onDeleteMessage = { viewModel.deleteMessage(it) },
                             onRegenerate = { viewModel.regenerateLastMessage() },
                             onSpeak = { text ->
