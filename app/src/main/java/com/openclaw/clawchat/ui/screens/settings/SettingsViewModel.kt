@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.data.ThemeMode
 import com.openclaw.clawchat.data.UserPreferences
+import com.openclaw.clawchat.network.GatewayUrlUtil
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.security.EncryptedStorage
@@ -111,8 +112,8 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun updateGatewayConfig(config: GatewayConfigInput) {
-        // 保存 Gateway URL 和名称
-        val url = "ws://${config.host}:${config.port}/ws"
+        // 使用 GatewayUrlUtil 标准化 URL（避免端口重复）
+        val url = GatewayUrlUtil.normalizeToWebSocketUrl(config.host)
         encryptedStorage.saveGatewayUrl(url)
         val name = config.name.ifEmpty { "Gateway" }
         encryptedStorage.saveGatewayName(name)
@@ -128,7 +129,7 @@ class SettingsViewModel @Inject constructor(
                 )
             )
         }
-        AppLog.d(TAG, "Gateway 配置已更新：${config.host}:${config.port}")
+        AppLog.d(TAG, "Gateway 配置已更新：${config.host}")
         
         // 如果已配对，自动连接
         if (encryptedStorage.isPaired()) {

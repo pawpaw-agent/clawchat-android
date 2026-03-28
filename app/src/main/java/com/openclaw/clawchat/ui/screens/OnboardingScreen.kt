@@ -97,7 +97,7 @@ fun OnboardingScreen(
                 value = state.gatewayName,
                 onValueChange = { viewModel.setGatewayName(it) },
                 label = { Text("Gateway 名称（可选）") },
-                placeholder = { Text("My Gateway") },
+                placeholder = { Text("例如：Home Server") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = {
@@ -112,7 +112,7 @@ fun OnboardingScreen(
                 value = state.gatewayUrl,
                 onValueChange = { viewModel.setGatewayUrl(it) },
                 label = { Text("Gateway 地址") },
-                placeholder = { Text("192.168.0.213:18789") },
+                placeholder = { Text("例如：192.168.1.100:18789") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = {

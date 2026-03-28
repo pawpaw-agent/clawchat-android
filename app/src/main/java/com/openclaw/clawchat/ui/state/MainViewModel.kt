@@ -103,7 +103,12 @@ class MainViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
 
             try {
-                val wsUrl = GatewayUrlUtil.normalizeToWebSocketUrl(gatewayUrl)
+                // 如果 URL 已经是完整的 WebSocket URL，直接使用；否则标准化
+                val wsUrl = if (gatewayUrl.startsWith("ws://") || gatewayUrl.startsWith("wss://")) {
+                    gatewayUrl
+                } else {
+                    GatewayUrlUtil.normalizeToWebSocketUrl(gatewayUrl)
+                }
                 val result = gateway.connect(wsUrl, token)
 
                 result.onSuccess {

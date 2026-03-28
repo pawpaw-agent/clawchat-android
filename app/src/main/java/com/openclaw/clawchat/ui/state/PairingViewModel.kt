@@ -184,9 +184,6 @@ class PairingViewModel @Inject constructor(
     fun connectWithToken() {
         val url = _state.value.gatewayUrl.trim()
         val token = _state.value.token.trim()
-        val name = _state.value.gatewayName.trim()
-
-        Log.d(TAG, "connectWithToken: url='$url', token='${token.take(10)}...', name='$name'")
 
         if (url.isEmpty()) { emitError("请输入 Gateway 地址"); return }
         if (token.isEmpty()) { emitError("请输入 Token"); return }
