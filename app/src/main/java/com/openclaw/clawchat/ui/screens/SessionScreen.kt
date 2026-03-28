@@ -90,35 +90,38 @@ fun SessionScreen(
         }
     }
     
-    // 监听流式响应：平滑滚动到底部
-    // 流式过程中用 scrollToItem（无动画，避免卡顿）
-    // 流式结束时用 animateScrollToItem（平滑过渡）
+    // 监听流式响应：优化滚动策略
+    // 流式开始时滚动到底部，之后每 500ms 滚动一次保持位置
     val chatStream = state.chatStream
     var wasStreaming by remember { mutableStateOf(false) }
     val isStreaming = chatStream != null && chatStream.isNotBlank()
+    var lastScrollTime by remember { mutableStateOf(0L) }
     
-    // 流式响应内容更新：无动画滚动（高频更新，避免卡顿）
+    // 流式响应滚动：使用节流（throttle）降低滚动频率
     LaunchedEffect(chatStream) {
         if (isStreaming) {
-            // 流式过程中直接跳转，无动画
-            val lastIndex = listState.layoutInfo.totalItemsCount - 1
-            if (lastIndex >= 0) {
-                listState.scrollToItem(lastIndex)
+            val now = System.currentTimeMillis()
+            // 每 500ms 最多滚动一次，避免高频滚动导致卡顿
+            if (now - lastScrollTime >= 500) {
+                lastScrollTime = now
+                val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                if (lastIndex >= 0) {
+                    listState.scrollToItem(lastIndex)
+                }
             }
             wasStreaming = true
         }
     }
     
-    // 流式响应结束：平滑动画滚动（低频，视觉效果好）
+    // 流式响应结束：平滑动画滚动确认
     LaunchedEffect(isStreaming) {
         if (!isStreaming && wasStreaming) {
-            // 流式结束，平滑滚动到底部确认
-            scope.launch {
-                val lastIndex = listState.layoutInfo.totalItemsCount - 1
-                if (lastIndex >= 0) {
-                    listState.animateScrollToItem(lastIndex)
-                }
+            // 流式结束，立即滚动到底部并重置状态
+            val lastIndex = listState.layoutInfo.totalItemsCount - 1
+            if (lastIndex >= 0) {
+                listState.scrollToItem(lastIndex)
             }
+            lastScrollTime = 0L
             wasStreaming = false
         }
     }
