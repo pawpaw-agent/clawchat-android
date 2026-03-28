@@ -735,22 +735,25 @@ fun TypingIndicator(
 }
 
 /**
- * 流式输出加载指示器
+ * 流式输出加载指示器 - 优化动画效果
  */
 @Composable
 fun StreamingIndicator(
     text: String = "思考中",
     modifier: Modifier = Modifier
 ) {
-    var dots by remember { mutableStateOf(0) }
     val infiniteTransition = rememberInfiniteTransition(label = "streaming")
     
-    LaunchedEffect(Unit) {
-        while (true) {
-            kotlinx.coroutines.delay(300)
-            dots = (dots + 1) % 4
-        }
-    }
+    // 动态跳动的圆点
+    val dotScale by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dotScale"
+    )
     
     Row(
         modifier = modifier
@@ -760,17 +763,41 @@ fun StreamingIndicator(
             )
             .padding(horizontal = DesignTokens.space3, vertical = DesignTokens.space2),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(DesignTokens.space2)
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        // 静态圆点
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .background(
-                    MaterialTheme.colorScheme.primary,
-                    CircleShape
-                )
+        // 动态跳动的圆点
+        repeat(3) { index ->
+            val delay = index * 100
+            val scale by infiniteTransition.animateFloat(
+                initialValue = 0.6f,
+                targetValue = 1.2f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(400, delayMillis = delay, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "dot_$index"
+            )
+            
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .scale(scale)
+                    .background(
+                        MaterialTheme.colorScheme.primary,
+                        CircleShape
+                    )
+            )
+        }
+        
+        Spacer(modifier = Modifier.width(4.dp))
+        
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
         
         Text(
             text = "$text${".".repeat(dots)}",

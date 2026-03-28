@@ -13,9 +13,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.SwipeToDismiss
-import androidx.compose.material3.DismissValue
-import androidx.compose.material3.rememberDismissState
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -229,7 +229,7 @@ private fun groupSessionsByDate(sessions: List<SessionUi>): List<Pair<String, Li
 }
 
 /**
- * 会话列表项（支持滑动删除）
+ * 会话列表项（支持长按删除）
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -241,111 +241,105 @@ private fun SessionItem(
     onDelete: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val dismissState = rememberDismissState(
-        confirmValueChange = { dismissValue ->
-            if (dismissValue == DismissValue.DismissedToStart) {
-                onDelete()
-                true
-            } else {
-                false
-            }
-        }
-    )
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     
-    SwipeToDismiss(
-        state = dismissState,
-        modifier = modifier.padding(vertical = 4.dp),
-        background = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.errorContainer)
-                    .padding(horizontal = 20.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "删除",
-                    tint = MaterialTheme.colorScheme.onErrorContainer
+    // 删除确认对话框
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("删除会话") },
+            text = { Text("确定要删除「${session.getDisplayName()}」吗？") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDelete()
+                        showDeleteConfirm = false
+                    }
+                ) {
+                    Text("删除", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+    
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .then(
+                if (onSessionLongPress != null) {
+                    Modifier.combinedClickable(
+                        onClick = onSelect,
+                        onLongClick = {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                            showDeleteConfirm = true
+                        }
+                    )
+                } else {
+                    Modifier.clickable(onClick = onSelect)
+                }
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.surfaceVariant
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // 会话名称
+            Text(
+                text = session.getDisplayName(),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            
+            // 最后一条消息
+            if (session.lastMessage != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = session.lastMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-        },
-        dismissContent = {
-            val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
             
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(
-                        if (onSessionLongPress != null) {
-                            Modifier.combinedClickable(
-                                onClick = onSelect,
-                                onLongClick = {
-                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                                    onSessionLongPress()
-                                }
-                            )
-                        } else {
-                            Modifier.clickable(onClick = onSelect)
-                        }
-                    ),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isSelected) {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    }
-                )
+            // 时间和消息数
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    // 会话名称
+                Text(
+                    text = formatTimeAgo(session.lastActivityAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (session.messageCount > 0) {
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = session.getDisplayName(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        text = "· ${session.messageCount} 条消息",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    
-                    // 最后一条消息
-                    if (session.lastMessage != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = session.lastMessage,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    
-                    // 时间和消息数
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = formatTimeAgo(session.lastActivityAt),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (session.messageCount > 0) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "· ${session.messageCount} 条消息",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
                 }
             }
         }
-    )
+    }
 }
 
 /**
