@@ -52,7 +52,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.ClawChat"
-            android:windowSoftInputMode="adjustResize"
+            android:windowSoftInputMode="adjustPan"
             android:launchMode="singleTop">
             
             <intent-filter>
