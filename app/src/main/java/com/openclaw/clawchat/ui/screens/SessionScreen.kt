@@ -41,11 +41,15 @@ fun SessionScreen(
     val focusRequester = remember { FocusRequester() }
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
     // 当前会话 ID
     var currentSessionId by remember { mutableStateOf<String?>(null) }
+    
+    // 是否显示设置面板
+    var showSettingsSheet by remember { mutableStateOf(false) }
     
     // 是否显示"新消息"按钮：只要没滑到底部就显示
     val showNewMessagesButton by remember { derivedStateOf { listState.canScrollForward } }
@@ -91,7 +95,8 @@ fun SessionScreen(
         topBar = {
             SessionTopAppBar(
                 connectionStatus = state.connectionStatus,
-                onNavigateBack = onNavigateBack
+                onNavigateBack = onNavigateBack,
+                onSettingsClick = { showSettingsSheet = true }
             )
         },
         contentWindowInsets = WindowInsets.systemBars
@@ -181,6 +186,30 @@ fun SessionScreen(
                     onDismiss = { viewModel.clearError() }
                 )
             }
+        }
+    }
+
+    // 会话设置底部抽屉
+    if (showSettingsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSettingsSheet = false },
+            sheetState = sheetState
+        ) {
+            SessionSettingsBottomSheet(
+                thinkingLevel = state.thinkingLevel,
+                fastMode = state.fastMode,
+                verboseLevel = state.verboseLevel,
+                reasoningLevel = state.reasoningLevel,
+                onUpdateSettings = { thinking, fast, verbose, reasoning ->
+                    viewModel.updateSessionSettings(
+                        thinkingLevel = thinking,
+                        fastMode = fast,
+                        verboseLevel = verbose,
+                        reasoningLevel = reasoning
+                    )
+                },
+                onDismiss = { showSettingsSheet = false }
+            )
         }
     }
 }

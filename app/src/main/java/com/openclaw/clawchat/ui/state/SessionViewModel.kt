@@ -760,6 +760,45 @@ class SessionViewModel @Inject constructor(
     fun clearError() {
         _state.update { it.copy(error = null) }
     }
+
+    /**
+     * 更新会话设置
+     */
+    fun updateSessionSettings(
+        thinkingLevel: String? = null,
+        fastMode: Boolean? = null,
+        verboseLevel: String? = null,
+        reasoningLevel: String? = null
+    ) {
+        val sessionId = _state.value.sessionId ?: return
+        
+        viewModelScope.launch(exceptionHandler) {
+            try {
+                gateway.sessionsPatch(
+                    sessionKey = sessionId,
+                    thinkingLevel = thinkingLevel,
+                    fastMode = fastMode,
+                    verboseLevel = verboseLevel,
+                    reasoningLevel = reasoningLevel
+                )
+                
+                // 更新本地状态
+                _state.update { state ->
+                    state.copy(
+                        thinkingLevel = thinkingLevel ?: state.thinkingLevel,
+                        fastMode = fastMode ?: state.fastMode,
+                        verboseLevel = verboseLevel ?: state.verboseLevel,
+                        reasoningLevel = reasoningLevel ?: state.reasoningLevel
+                    )
+                }
+                
+                AppLog.d(TAG, "Session settings updated: thinking=$thinkingLevel, fast=$fastMode, verbose=$verboseLevel, reasoning=$reasoningLevel")
+            } catch (e: Exception) {
+                AppLog.e(TAG, "Failed to update session settings", e)
+                _state.update { it.copy(error = "更新设置失败：${e.message}") }
+            }
+        }
+    }
     
     /**
      * 重试发送失败的消息

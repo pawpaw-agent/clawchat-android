@@ -580,12 +580,23 @@ class GatewayConnection(
         return call("sessions.list", params.ifEmpty { null })
     }
 
-    /** sessions.patch — 设置会话属性如 verboseLevel */
-    suspend fun sessionsPatch(sessionKey: String, verboseLevel: String? = null): ResponseFrame {
+    /** sessions.patch — 设置会话属性 */
+    suspend fun sessionsPatch(
+        sessionKey: String,
+        label: String? = null,
+        thinkingLevel: String? = null,
+        fastMode: Boolean? = null,
+        verboseLevel: String? = null,
+        reasoningLevel: String? = null
+    ): ResponseFrame {
         val params = mutableMapOf<String, JsonElement>(
             "key" to JsonPrimitive(sessionKey)
         )
+        if (label != null) params["label"] = JsonPrimitive(label)
+        if (thinkingLevel != null) params["thinkingLevel"] = JsonPrimitive(thinkingLevel)
+        if (fastMode != null) params["fast"] = JsonPrimitive(fastMode)
         if (verboseLevel != null) params["verboseLevel"] = JsonPrimitive(verboseLevel)
+        if (reasoningLevel != null) params["reasoningLevel"] = JsonPrimitive(reasoningLevel)
         return call("sessions.patch", params)
     }
 
