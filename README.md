@@ -188,64 +188,34 @@ clawchat-android/
 
 ## 🚀 快速开始
 
-### 1. 环境准备
+### 1. 下载安装
 
-确保已安装以下工具：
+从 [GitHub Releases](https://github.com/pawpaw-agent/clawchat-android/releases) 下载最新 APK。
 
-```bash
-# 必需
-- Android Studio Hedgehog (2023.1.1) 或更新
-- JDK 17 或 21
-- Android SDK (API 34 推荐)
-- Git
+### 2. 连接 Gateway
 
-# 可选
-- Tailscale App（用于远程连接）
-```
+**Token 模式**（推荐）：
+1. 打开应用，选择 **Token** 模式
+2. 输入 Gateway 地址（如 `192.168.0.213:18789`）
+3. 输入 Token（从 Gateway 获取：`cat ~/.openclaw/openclaw.json | grep token`）
+4. 点击 **连接**
 
-### 2. 克隆项目
+**配对模式**：
+1. 选择 **配对** 模式
+2. 输入 Gateway 地址
+3. 点击 **开始配对**
+4. 在 Gateway 终端运行：`openclaw devices approve <request-id>`
 
-```bash
-git clone https://github.com/openclaw/clawchat-android.git
-cd clawchat-android
-```
+### 3. 开始聊天
 
-### 3. 配置本地属性
-
-```bash
-# 创建 local.properties
-echo "sdk.dir=$ANDROID_HOME" > local.properties
-
-# 或者手动编辑
-# sdk.dir=/Users/username/Library/Android/sdk  # macOS
-# sdk.dir=C:\\Users\\username\\AppData\\Local\\Android\\Sdk  # Windows
-```
-
-### 4. 构建并运行
-
-```bash
-# 构建 Debug 版本
-./gradlew assembleDebug
-
-# 运行测试
-./gradlew test
-
-# 安装到连接的设备
-./gradlew installDebug
-
-# 或直接使用 Android Studio 运行
-```
-
-### 5. 首次使用
-
-1. 打开应用，进入 **设置** → **Gateway 配置**
-2. 添加你的 OpenClaw Gateway 地址（如 `ws://192.168.1.100:18789`）
-3. 返回主页，点击 **连接**
-4. 首次连接需要设备配对（见 [使用文档](#-使用文档)）
+连接成功后即可：
+- 查看会话列表
+- 发送消息
+- 查看历史记录
 
 ---
 
-## 🛠 构建指南
+## 🛠 开发者指南
 
 ### 构建变体
 
@@ -327,7 +297,25 @@ okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhtt
 
 ## 📚 使用文档
 
-### 设备配对流程
+### 连接方式
+
+ClawChat 支持两种连接方式：
+
+#### Token 模式（推荐）
+
+使用 `OPENCLAW_GATEWAY_TOKEN` 直接连接，与 webchat 体验一致：
+
+1. 在 Gateway 服务器获取 Token：
+   ```bash
+   cat ~/.openclaw/openclaw.json | grep token
+   ```
+2. 打开 ClawChat，选择 **Token** 模式
+3. 输入 Gateway 地址和 Token
+4. 点击 **连接**
+
+> 💡 Token 和地址会自动保存，下次无需重新输入
+
+#### 配对模式
 
 首次连接 Gateway 需要管理员批准：
 
@@ -347,7 +335,7 @@ okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhtt
        │                        │                        │
        │                        │  3. 批准               │
        │                        │ <──────────────────────│
-       │                        │  openclaw device pair approve
+       │                        │  openclaw devices approve
        │                        │                        │
        │  4. 返回设备令牌        │                        │
        │ <──────────────────────│                        │
@@ -358,13 +346,14 @@ okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhtt
 
 **操作步骤：**
 
-1. 在 ClawChat 中添加 Gateway 配置
-2. 点击 **配对设备**
-3. 在 Gateway 服务器上执行批准命令：
+1. 在 ClawChat 中选择 **配对** 模式
+2. 输入 Gateway 地址
+3. 点击 **开始配对**
+4. 在 Gateway 服务器上执行批准命令：
    ```bash
-   openclaw device pair approve --device-id <device_id>
+   openclaw devices approve <request-id>
    ```
-4. 等待应用显示 **已连接**
+5. 等待应用显示 **连接成功**
 
 ### 连接 Gateway
 
