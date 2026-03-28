@@ -163,7 +163,7 @@ private fun SessionList(
                     isSelected = currentSession?.id == session.id,
                     onSelect = { onSelectSession(session.id) },
                     onSessionLongPress = { onSessionLongPress(session) },
-                    onDelete = { onDeleteSession(session.id) },
+                    onDelete = { id -> onDeleteSession(id) },
                     modifier = Modifier.animateItem(
                         fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
                         placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
@@ -235,7 +235,7 @@ private fun SessionItem(
     isSelected: Boolean,
     onSelect: () -> Unit,
     onSessionLongPress: (() -> Unit)? = null,
-    onDelete: () -> Unit = {},
+    onDelete: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -250,7 +250,7 @@ private fun SessionItem(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onDelete()
+                        onDelete(session.id)
                         showDeleteConfirm = false
                     }
                 ) {
