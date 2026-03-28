@@ -140,9 +140,11 @@ fun SessionScreen(
                             modifier = Modifier.align(Alignment.BottomCenter),
                             onClick = {
                                 scope.launch {
-                                    // 使用 Int.MAX_VALUE 滚动到最后
-                                    // scrollToItem 会自动限制到最后一个 item
-                                    listState.scrollToItem(Int.MAX_VALUE, scrollOffset = -1000)
+                                    // 先滚动到最后一个 item
+                                    listState.scrollToItem(Int.MAX_VALUE)
+                                    // 然后延迟一帧后再滚动，确保到达底部
+                                    kotlinx.coroutines.delay(50)
+                                    listState.scrollBy(1000f)
                                 }
                             }
                         )
