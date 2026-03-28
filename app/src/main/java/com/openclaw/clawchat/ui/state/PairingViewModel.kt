@@ -187,6 +187,7 @@ class PairingViewModel @Inject constructor(
                 val result = gateway.connect(wsUrl, token)
 
                 result.onSuccess {
+                    // 保存 token（用于自动重连）
                     securityModule.saveGatewayAuthToken(token)
                     _state.value = _state.value.copy(isPairing = false, status = PairingStatus.Approved)
                     _events.emit(PairingEvent.PairingSuccess)

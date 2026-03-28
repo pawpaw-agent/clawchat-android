@@ -268,9 +268,10 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
      */
     fun isPaired(): Boolean {
         val status = getPairingStatus()
-        val hasToken = hasDeviceToken()
-        val result = status == PAIRING_STATUS_APPROVED && hasToken
-        AppLog.d("EncryptedStorage", "isPaired: status=$status, hasToken=$hasToken, result=$result")
+        val hasDeviceToken = hasDeviceToken()
+        val hasGatewayAuthToken = !getString("gateway_auth_token").isNullOrBlank()
+        val result = status == PAIRING_STATUS_APPROVED && hasDeviceToken || hasGatewayAuthToken
+        AppLog.d("EncryptedStorage", "isPaired: status=$status, hasDeviceToken=$hasDeviceToken, hasGatewayAuthToken=$hasGatewayAuthToken, result=$result")
         return result
     }
     

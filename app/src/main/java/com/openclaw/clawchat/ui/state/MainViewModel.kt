@@ -82,15 +82,17 @@ class MainViewModel @Inject constructor(
      */
     private fun autoConnectIfNeeded() {
         viewModelScope.launch(exceptionHandler) {
-            // 检查是否已配对
+            // 检查是否已配对或有 Gateway auth token
             if (!encryptedStorage.isPaired()) {
                 Log.i(TAG, "Not paired, skipping auto-connect")
                 return@launch
             }
 
-            // 获取保存的 Gateway URL 和 deviceToken
+            // 获取保存的 Gateway URL 和 token
             val gatewayUrl = encryptedStorage.getGatewayUrl()
-            val deviceToken = encryptedStorage.getDeviceToken()
+            // 优先使用 deviceToken，否则使用 gatewayAuthToken
+            val token = encryptedStorage.getDeviceToken() 
+                ?: encryptedStorage.getString("gateway_auth_token")
 
             if (gatewayUrl.isNullOrBlank()) {
                 Log.i(TAG, "No saved gateway URL, skipping auto-connect")
@@ -102,7 +104,7 @@ class MainViewModel @Inject constructor(
 
             try {
                 val wsUrl = GatewayUrlUtil.normalizeToWebSocketUrl(gatewayUrl)
-                val result = gateway.connect(wsUrl, deviceToken)
+                val result = gateway.connect(wsUrl, token)
 
                 result.onSuccess {
                     Log.i(TAG, "Auto-connect successful")
