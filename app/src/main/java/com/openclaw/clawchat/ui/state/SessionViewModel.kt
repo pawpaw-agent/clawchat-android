@@ -80,6 +80,7 @@ class SessionViewModel @Inject constructor(
         AppLog.d(TAG, "=== SessionViewModel init")
         observeConnectionState()
         observeIncomingMessages()
+        observeToolStreamEvents()
     }
     
     /**
@@ -143,6 +144,42 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch(exceptionHandler) {
             gateway.incomingMessages.collect { rawJson ->
                 handleIncomingFrame(rawJson)
+            }
+        }
+    }
+
+    /**
+     * 观察工具流事件
+     */
+    private fun observeToolStreamEvents() {
+        viewModelScope.launch(exceptionHandler) {
+            gateway.toolStreamEvents.collect { events ->
+                // 转换 ToolStreamEvent 到 ToolStreamEntry
+                val newEntries = mutableMapOf<String, ToolStreamEntry>()
+                events.forEach { (id, event) ->
+                    newEntries[id] = ToolStreamEntry(
+                        toolCallId = event.toolCallId,
+                        runId = "",
+                        sessionKey = _state.value.sessionId,
+                        name = event.name,
+                        args = null,
+                        output = event.output ?: event.stream ?: event.error,
+                        startedAt = event.timestamp,
+                        updatedAt = event.timestamp
+                    )
+                }
+                
+                // 更新状态
+                _state.update { state ->
+                    val currentOrder = state.toolStreamOrder.toMutableList()
+                    val newOrder = events.keys.filter { it !in currentOrder } + currentOrder.filter { it in events }
+                    
+                    state.copy(
+                        toolStreamById = newEntries,
+                        toolStreamOrder = newOrder,
+                        chatToolMessages = newOrder.mapNotNull { newEntries[it]?.buildMessage() }
+                    )
+                }
             }
         }
     }

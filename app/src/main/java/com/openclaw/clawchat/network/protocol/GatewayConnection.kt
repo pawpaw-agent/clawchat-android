@@ -91,6 +91,14 @@ class GatewayConnection(
     private val _certificateEvent = MutableSharedFlow<CertificateEvent>(replay = 0)
     val certificateEvent: SharedFlow<CertificateEvent> = _certificateEvent.asSharedFlow()
 
+    /** Tool stream events for real-time tool card updates */
+    private val _toolStreamEvents = MutableStateFlow<Map<String, ToolStreamEvent>>(emptyMap())
+    val toolStreamEvents: StateFlow<Map<String, ToolStreamEvent>> = _toolStreamEvents.asStateFlow()
+
+    /** Tool stream order for UI rendering */
+    private val _toolStreamOrder = MutableStateFlow<List<String>>(emptyList())
+    val toolStreamOrder: StateFlow<List<String>> = _toolStreamOrder.asStateFlow()
+
     /** hello-ok snapshot (available after connect) */
     var helloOkPayload: JsonObject? = null
         private set
@@ -302,6 +310,7 @@ class GatewayConnection(
 
             when (event) {
                 "connect.challenge" -> handleConnectChallenge(obj)
+                "agent.event" -> handleAgentEvent(obj)
                 // chat / tick / all other events → forward to upstream
                 else -> _incomingMessages.emit(rawText)
             }
@@ -382,6 +391,41 @@ class GatewayConnection(
             Log.e(TAG, "connect.challenge handling failed: ${e.message}", e)
             _connectionState.value = WebSocketConnectionState.Error(e)
         }
+    }
+
+    /**
+     * Handle agent.event for tool stream updates
+     */
+    private suspend fun handleAgentEvent(obj: JsonObject) {
+        val payload = obj["payload"]?.jsonObject ?: return
+        val kind = payload["kind"]?.jsonPrimitive?.content
+        
+        if (kind != "tool") return
+
+        val toolCallId = payload["toolCallId"]?.jsonPrimitive?.content ?: return
+        val event = ToolStreamEvent(
+            toolCallId = toolCallId,
+            name = payload["name"]?.jsonPrimitive?.content ?: "unknown",
+            status = payload["status"]?.jsonPrimitive?.content ?: "pending",
+            title = payload["title"]?.jsonPrimitive?.content,
+            output = payload["output"]?.jsonPrimitive?.content,
+            error = payload["error"]?.jsonPrimitive?.content,
+            stream = payload["stream"]?.jsonPrimitive?.content,
+            timestamp = System.currentTimeMillis()
+        )
+
+        // Update the tool stream events map
+        val currentEvents = _toolStreamEvents.value.toMutableMap()
+        currentEvents[toolCallId] = event
+        _toolStreamEvents.value = currentEvents
+
+        // Update the order (add to end if new, move to end if updated)
+        val currentOrder = _toolStreamOrder.value.toMutableList()
+        currentOrder.remove(toolCallId)
+        currentOrder.add(toolCallId)
+        _toolStreamOrder.value = currentOrder
+
+        Log.d(TAG, "Tool stream event: ${event.name} [${event.status}]")
     }
 
     /** Parse hello-ok response */
@@ -705,4 +749,18 @@ data class ChatAttachmentData(
     val type: String = "image",
     val mimeType: String,
     val content: String   // base64 content (without data URL prefix)
+)
+
+/**
+ * 工具流事件（用于 agent.event 处理）
+ */
+data class ToolStreamEvent(
+    val toolCallId: String,
+    val name: String,
+    val status: String,
+    val title: String? = null,
+    val output: String? = null,
+    val error: String? = null,
+    val stream: String? = null,
+    val timestamp: Long = System.currentTimeMillis()
 )
