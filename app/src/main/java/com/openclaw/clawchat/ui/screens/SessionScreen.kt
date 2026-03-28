@@ -84,7 +84,7 @@ fun SessionScreen(
             kotlinx.coroutines.delay(100)
             // reverseLayout=true: index 0 是最新消息
             listState.scrollToItem(0)
-            AppLog.d("SessionScreen", "Scrolled to bottom (index 0) for session $sessionId, messages=${state.chatMessages.size}")
+            android.util.Log.d("SessionScreen", "Scrolled to bottom (index 0) for session $sessionId, messages=${state.chatMessages.size}")
         }
     }
 
