@@ -77,7 +77,10 @@ fun SessionScreen(
     LaunchedEffect(messageCount) {
         if (messageCount > 0 && !listState.canScrollForward) {
             // 用户在底部，自动滚动到最新消息
-            listState.scrollToItem(Int.MAX_VALUE)
+            val lastIndex = listState.layoutInfo.totalItemsCount - 1
+            if (lastIndex >= 0) {
+                listState.scrollToItem(lastIndex)
+            }
         }
     }
 
@@ -137,7 +140,11 @@ fun SessionScreen(
                             modifier = Modifier.align(Alignment.BottomCenter),
                             onClick = {
                                 scope.launch {
-                                    listState.animateScrollToItem(Int.MAX_VALUE)
+                                    // 滚动到最后一个实际存在的 item
+                                    val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                                    if (lastIndex >= 0) {
+                                        listState.animateScrollToItem(lastIndex)
+                                    }
                                 }
                             }
                         )
