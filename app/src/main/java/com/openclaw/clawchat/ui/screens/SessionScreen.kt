@@ -74,12 +74,18 @@ fun SessionScreen(
 
     // 监听消息变化：在底部时自动滚动到最新
     val messageCount = state.chatMessages.size
+    var lastMessageCount by remember { mutableStateOf(0) }
+    
     LaunchedEffect(messageCount) {
-        if (messageCount > 0 && !listState.canScrollForward) {
+        // 只在新消息增加时自动滚动（排除加载旧消息的情况）
+        if (messageCount > lastMessageCount && messageCount > 0) {
+            lastMessageCount = messageCount
             // 用户在底部，自动滚动到最新消息
-            val lastIndex = listState.layoutInfo.totalItemsCount - 1
-            if (lastIndex >= 0) {
-                listState.scrollToItem(lastIndex)
+            if (!listState.canScrollForward) {
+                val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                if (lastIndex >= 0) {
+                    listState.scrollToItem(lastIndex)
+                }
             }
         }
     }
