@@ -173,6 +173,7 @@ private fun ConnectionDiagnosticsTab(state: DebugUiState) {
 /**
  * 日志查看器 Tab
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LogViewerTab(
     state: DebugUiState,
