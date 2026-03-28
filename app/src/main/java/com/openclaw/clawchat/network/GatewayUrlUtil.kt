@@ -37,7 +37,9 @@ object GatewayUrlUtil {
             .removeSuffix("/ws").removeSuffix("/")
 
         val withPort = ensurePort(hostPort, DEFAULT_PORT)
-        return "ws://$withPort$WS_PATH"
+        val result = "ws://$withPort$WS_PATH"
+        println("GatewayUrlUtil: input='$input' -> hostPort='$hostPort' -> withPort='$withPort' -> result='$result'")
+        return result
     }
 
     /**
