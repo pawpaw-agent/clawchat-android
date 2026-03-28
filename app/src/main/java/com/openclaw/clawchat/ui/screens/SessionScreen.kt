@@ -90,12 +90,30 @@ fun SessionScreen(
         }
     }
     
-    // 监听流式响应：自动滚动到底部
+    // 监听流式响应：强制滚动到底部
+    // 用户发送消息后应该立即看到回复，不需要等待用户滚动到底部
     val chatStream = state.chatStream
-    LaunchedEffect(chatStream) {
-        // 流式响应正在进行时，自动滚动到底部
-        if (chatStream != null && chatStream.isNotBlank()) {
-            if (!listState.canScrollForward) {
+    var wasStreaming by remember { mutableStateOf(false) }
+    val isStreaming = chatStream != null && chatStream.isNotBlank()
+    
+    LaunchedEffect(isStreaming) {
+        if (isStreaming) {
+            // 流式响应开始或进行中，强制滚动到底部
+            // 使用 animateScrollToItem 提供更好的视觉效果
+            scope.launch {
+                val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                if (lastIndex >= 0) {
+                    listState.animateScrollToItem(lastIndex)
+                }
+            }
+            wasStreaming = true
+        }
+    }
+    
+    // 流式响应内容更新时也滚动（保持在底部）
+    LaunchedEffect(chatStream, isStreaming) {
+        if (isStreaming && wasStreaming) {
+            scope.launch {
                 val lastIndex = listState.layoutInfo.totalItemsCount - 1
                 if (lastIndex >= 0) {
                     listState.scrollToItem(lastIndex)
