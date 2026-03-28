@@ -77,10 +77,8 @@ fun SessionScreen(
     var lastMessageCount by remember { mutableStateOf(0) }
     
     LaunchedEffect(messageCount) {
-        // 只在新消息增加时自动滚动（排除加载旧消息的情况）
         if (messageCount > lastMessageCount && messageCount > 0) {
             lastMessageCount = messageCount
-            // 用户在底部，自动滚动到最新消息
             if (!listState.canScrollForward) {
                 val lastIndex = listState.layoutInfo.totalItemsCount - 1
                 if (lastIndex >= 0) {
@@ -90,39 +88,27 @@ fun SessionScreen(
         }
     }
     
-    // 监听流式响应：优化滚动策略
-    // 流式开始时滚动到底部，之后每 500ms 滚动一次保持位置
-    val chatStream = state.chatStream
-    var wasStreaming by remember { mutableStateOf(false) }
-    val isStreaming = chatStream != null && chatStream.isNotBlank()
-    var lastScrollTime by remember { mutableStateOf(0L) }
+    // 流式响应滚动：基于内容长度变化触发（而非每次 token）
+    // 参考开源项目最佳实践：避免高频滚动
+    val streamLength = state.chatStream?.length ?: 0
+    var lastStreamLength by remember { mutableStateOf(0) }
     
-    // 流式响应滚动：使用节流（throttle）降低滚动频率
-    LaunchedEffect(chatStream) {
-        if (isStreaming) {
-            val now = System.currentTimeMillis()
-            // 每 500ms 最多滚动一次，避免高频滚动导致卡顿
-            if (now - lastScrollTime >= 500) {
-                lastScrollTime = now
-                val lastIndex = listState.layoutInfo.totalItemsCount - 1
-                if (lastIndex >= 0) {
-                    listState.scrollToItem(lastIndex)
-                }
-            }
-            wasStreaming = true
-        }
-    }
-    
-    // 流式响应结束：平滑动画滚动确认
-    LaunchedEffect(isStreaming) {
-        if (!isStreaming && wasStreaming) {
-            // 流式结束，立即滚动到底部并重置状态
+    LaunchedEffect(streamLength) {
+        // 只在内容长度增加超过 30 字符时滚动
+        // 降低滚动频率，提升性能
+        if (streamLength > lastStreamLength + 30) {
+            lastStreamLength = streamLength
             val lastIndex = listState.layoutInfo.totalItemsCount - 1
             if (lastIndex >= 0) {
                 listState.scrollToItem(lastIndex)
             }
-            lastScrollTime = 0L
-            wasStreaming = false
+        } else if (streamLength == 0 && lastStreamLength > 0) {
+            // 流式结束，确保滚动到底部
+            lastStreamLength = 0
+            val lastIndex = listState.layoutInfo.totalItemsCount - 1
+            if (lastIndex >= 0) {
+                listState.scrollToItem(lastIndex)
+            }
         }
     }
 
