@@ -25,18 +25,21 @@ import com.openclaw.clawchat.data.ThemeMode
  * - 通知设置
  * - 安全设置
  * - 关于页面
+ * - Debug 调试
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToDebug: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showGatewayDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showPairingSheet by remember { mutableStateOf(false) }
     var showDeviceInfo by remember { mutableStateOf(false) }
+    var debugClickCount by remember { mutableStateOf(0) }
 
     Scaffold(
         topBar = {
@@ -140,7 +143,15 @@ fun SettingsScreen(
                     icon = Icons.Outlined.Info,
                     title = "ClawChat",
                     subtitle = "版本 ${state.appVersion}",
-                    onClick = { showAboutDialog = true }
+                    onClick = { 
+                        showAboutDialog = true
+                        // 连续点击 7 次进入 Debug
+                        debugClickCount++
+                        if (debugClickCount >= 7) {
+                            debugClickCount = 0
+                            onNavigateToDebug()
+                        }
+                    }
                 )
                 
                 ClickableSettingItem(
@@ -149,6 +160,16 @@ fun SettingsScreen(
                     subtitle = "查看第三方库许可",
                     onClick = { /* 尚未实现 */ }
                 )
+                
+                // Debug 入口（开发版显示）
+                if (com.openclaw.clawchat.BuildConfig.DEBUG) {
+                    ClickableSettingItem(
+                        icon = Icons.Outlined.BugReport,
+                        title = "Debug",
+                        subtitle = "调试和诊断工具",
+                        onClick = onNavigateToDebug
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))

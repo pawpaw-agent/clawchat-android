@@ -27,6 +27,8 @@ import com.openclaw.clawchat.security.EncryptedStorage
 import com.openclaw.clawchat.ui.screens.MainScreen
 import com.openclaw.clawchat.ui.screens.OnboardingScreen
 import com.openclaw.clawchat.ui.screens.SessionScreen
+import com.openclaw.clawchat.ui.screens.debug.DebugScreen
+import com.openclaw.clawchat.ui.screens.settings.SettingsScreen
 import com.openclaw.clawchat.ui.theme.TerminalFlowTheme
 import com.openclaw.clawchat.ui.state.MainViewModel
 import com.openclaw.clawchat.ui.state.ThemeViewModel
@@ -132,6 +134,9 @@ fun ClawChatNavHost(
                 viewModel = mainViewModel,
                 onNavigateToSession = { sessionId ->
                     navController.navigate("session/$sessionId")
+                },
+                onNavigateToDebug = {
+                    navController.navigate("debug")
                 }
             )
         }
@@ -148,6 +153,23 @@ fun ClawChatNavHost(
             SessionScreen(
                 viewModel = hiltViewModel(),
                 sessionId = sessionId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // 设置屏幕
+        composable("settings") {
+            SettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDebug = { navController.navigate("debug") }
+            )
+        }
+
+        // Debug 屏幕
+        composable("debug") {
+            DebugScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
