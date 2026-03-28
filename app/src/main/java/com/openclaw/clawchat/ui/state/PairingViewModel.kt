@@ -85,7 +85,7 @@ class PairingViewModel @Inject constructor(
             _state.value = _state.value.copy(gatewayUrl = displayUrl)
         }
         // 加载保存的 token
-        val savedToken = securityModule.getAuthToken()
+        val savedToken = securityModule.getGatewayAuthToken()
         if (!savedToken.isNullOrBlank()) {
             _state.value = _state.value.copy(token = savedToken)
         }
