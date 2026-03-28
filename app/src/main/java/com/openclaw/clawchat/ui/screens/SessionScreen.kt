@@ -47,6 +47,9 @@ fun SessionScreen(
     // 当前会话 ID
     var currentSessionId by remember { mutableStateOf<String?>(null) }
     
+    // 下拉刷新状态
+    var isRefreshing by remember { mutableStateOf(false) }
+    
     // reverseLayout = true 后，滚动语义反转：
     // - canScrollForward: 可以向上滚动（查看历史）
     // - canScrollBackward: 可以向下滚动（查看新消息）
@@ -98,10 +101,18 @@ fun SessionScreen(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
             ) {
-                Box(
+                // 下拉刷新容器
+                PullToRefreshBox(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth()
+                        .fillMaxWidth(),
+                    isRefreshing = isRefreshing,
+                    onRefresh = {
+                        isRefreshing = true
+                        viewModel.loadEarlierMessages {
+                            isRefreshing = false
+                        }
+                    }
                 ) {
                     if (state.chatMessages.isEmpty() && !state.isLoading) {
                         EmptySessionContent(connectionStatus = state.connectionStatus)
@@ -121,7 +132,7 @@ fun SessionScreen(
                         )
                     }
 
-                    if (state.isLoading) {
+                    if (state.isLoading && !isRefreshing) {
                         LoadingOverlay()
                     }
                     
