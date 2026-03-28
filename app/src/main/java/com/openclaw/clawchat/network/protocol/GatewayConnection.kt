@@ -629,7 +629,7 @@ class GatewayConnection(
                             "assistant" -> MessageRole.ASSISTANT
                             else -> MessageRole.ASSISTANT
                         },
-                        timestamp = obj["timestamp"]?.jsonPrimitive?.longOrNull ?: System.currentTimeMillis()
+                        timestamp = obj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
                     )
                 }
             } else {
