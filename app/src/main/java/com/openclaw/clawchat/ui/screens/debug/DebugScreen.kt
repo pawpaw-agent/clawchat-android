@@ -349,7 +349,7 @@ private fun MessageDetailsTab(state: DebugUiState) {
                 Text("暂无消息", style = MaterialTheme.typography.bodyMedium)
             }
         } else {
-            items(state.recentMessages) { msg ->
+            items(state.recentMessages, key = { it.id }) { msg ->
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(
