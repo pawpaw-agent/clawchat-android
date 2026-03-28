@@ -798,12 +798,4 @@ fun StreamingIndicator(
         )
     }
 }
-        
-        Text(
-            text = "$text${".".repeat(dots)}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
 
