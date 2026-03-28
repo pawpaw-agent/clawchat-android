@@ -392,7 +392,10 @@ class GatewayConnection(
             ?.get("sessionDefaults")?.jsonObject
             ?.get("mainSessionKey")?.jsonPrimitive?.content
 
-        // Log granted scopes for debugging
+        // Log full hello-ok response for debugging
+        Log.i(TAG, "hello-ok response: ${payload}")
+
+        // Extract granted scopes
         val grantedScopes = payload?.get("grantedScopes")?.jsonArray?.map { it.jsonPrimitive.content }
         Log.i(TAG, "hello-ok: defaultSessionKey=$defaultSessionKey, grantedScopes=$grantedScopes")
 
@@ -421,7 +424,9 @@ class GatewayConnection(
             "commands" to JsonArray(emptyList()),
             "permissions" to JsonObject(emptyMap()),
             "locale" to JsonPrimitive("zh-CN"),
-            "userAgent" to JsonPrimitive("openclaw-android/${req.client.clientVersion}")
+            "userAgent" to JsonPrimitive("openclaw-android/${req.client.clientVersion}"),
+            // 关键：使用 ws-control-ui 认证表面，让 Gateway 自动授予 operator 权限
+            "authSurface" to JsonPrimitive("ws-control-ui")
         )
         
         // Token 模式：只发送 token，不发送 device 签名
