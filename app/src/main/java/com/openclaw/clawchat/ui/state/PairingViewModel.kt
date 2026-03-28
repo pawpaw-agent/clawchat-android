@@ -80,7 +80,14 @@ class PairingViewModel @Inject constructor(
     private fun loadSavedConfig() {
         val savedUrl = securityModule.getGatewayUrl()
         if (!savedUrl.isNullOrBlank()) {
-            _state.value = _state.value.copy(gatewayUrl = savedUrl)
+            // 提取显示用的地址（不含协议和路径）
+            val displayUrl = GatewayUrlUtil.extractDisplayAddress(savedUrl)
+            _state.value = _state.value.copy(gatewayUrl = displayUrl)
+        }
+        // 加载保存的 token
+        val savedToken = securityModule.getAuthToken()
+        if (!savedToken.isNullOrBlank()) {
+            _state.value = _state.value.copy(token = savedToken)
         }
     }
 
