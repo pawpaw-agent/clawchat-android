@@ -356,7 +356,7 @@ private fun MessageDetailsTab(state: DebugUiState) {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            text = msg.timestamp,
+                            text = msg.timestamp.toString(),
                             style = MaterialTheme.typography.labelSmall
                         )
                         Text(
