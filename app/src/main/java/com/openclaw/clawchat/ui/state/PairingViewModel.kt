@@ -33,6 +33,7 @@ data class PairingState(
     val deviceId: String? = null,
     val publicKey: String? = null,
     val gatewayUrl: String = "",
+    val gatewayName: String = "",
     val status: PairingStatus = PairingStatus.Initializing,
     val isInitializing: Boolean = false,
     val isPairing: Boolean = false,
@@ -83,6 +84,11 @@ class PairingViewModel @Inject constructor(
             // 提取显示用的地址（不含协议和路径）
             val displayUrl = GatewayUrlUtil.extractDisplayAddress(savedUrl)
             _state.value = _state.value.copy(gatewayUrl = displayUrl)
+        }
+        // 加载保存的 Gateway 名称
+        val savedName = securityModule.getGatewayName()
+        if (!savedName.isNullOrBlank()) {
+            _state.value = _state.value.copy(gatewayName = savedName)
         }
         // 加载保存的 token
         val savedToken = securityModule.getGatewayAuthToken()
@@ -160,6 +166,10 @@ class PairingViewModel @Inject constructor(
         _state.value = _state.value.copy(gatewayUrl = url)
     }
 
+    fun setGatewayName(name: String) {
+        _state.value = _state.value.copy(gatewayName = name)
+    }
+
     fun setConnectMode(mode: ConnectMode) {
         _state.value = _state.value.copy(connectMode = mode)
     }
@@ -189,9 +199,9 @@ class PairingViewModel @Inject constructor(
                 result.onSuccess {
                     // 保存 token（用于自动重连）
                     securityModule.saveGatewayAuthToken(token)
-                    // 保存 Gateway 名称（从地址提取）
-                    val displayName = extractGatewayName(url)
-                    securityModule.saveGatewayName(displayName)
+                    // 保存 Gateway 名称
+                    val name = _state.value.gatewayName.ifBlank { "Gateway" }
+                    securityModule.saveGatewayName(name)
                     _state.value = _state.value.copy(isPairing = false, status = PairingStatus.Approved)
                     _events.emit(PairingEvent.PairingSuccess)
                 }
@@ -341,14 +351,5 @@ class PairingViewModel @Inject constructor(
 
     private fun emitError(message: String) {
         viewModelScope.launch { _events.emit(PairingEvent.PairingError(message)) }
-    }
-    
-    /**
-     * 从 Gateway 地址中提取名称
-     * 例如：192.168.0.213:18789 -> Gateway@192.168.0.213
-     */
-    private fun extractGatewayName(address: String): String {
-        val host = address.substringBefore(":").trim()
-        return "Gateway@$host"
     }
 }

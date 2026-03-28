@@ -92,6 +92,21 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
+            // Gateway 名称输入（可选）
+            OutlinedTextField(
+                value = state.gatewayName,
+                onValueChange = { viewModel.setGatewayName(it) },
+                label = { Text("Gateway 名称（可选）") },
+                placeholder = { Text("My Gateway") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = {
+                    Icon(Icons.Default.Label, contentDescription = null)
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Gateway 地址输入
             OutlinedTextField(
                 value = state.gatewayUrl,
