@@ -47,8 +47,11 @@ fun SessionScreen(
     // 当前会话 ID
     var currentSessionId by remember { mutableStateOf<String?>(null) }
     
-    // 是否显示"新消息"按钮：只要没滑到底部就显示
-    val showNewMessagesButton by remember { derivedStateOf { listState.canScrollForward } }
+    // reverseLayout = true 后，滚动语义反转：
+    // - canScrollForward: 可以向上滚动（查看历史）
+    // - canScrollBackward: 可以向下滚动（查看新消息）
+    // 显示"新消息"按钮当用户向上滚动查看历史时
+    val showNewMessagesButton by remember { derivedStateOf { listState.canScrollBackward } }
 
     // 监听生命周期
     DisposableEffect(lifecycleOwner) {
@@ -69,46 +72,6 @@ fun SessionScreen(
             currentSessionId = sessionId
             viewModel.setSessionId(sessionId)
             focusRequester.requestFocus()
-        }
-    }
-
-    // 监听消息变化：在底部时自动滚动到最新
-    val messageCount = state.chatMessages.size
-    var lastMessageCount by remember { mutableStateOf(0) }
-    
-    LaunchedEffect(messageCount) {
-        if (messageCount > lastMessageCount && messageCount > 0) {
-            lastMessageCount = messageCount
-            if (!listState.canScrollForward) {
-                val lastIndex = listState.layoutInfo.totalItemsCount - 1
-                if (lastIndex >= 0) {
-                    listState.scrollToItem(lastIndex)
-                }
-            }
-        }
-    }
-    
-    // 流式响应滚动：基于内容长度变化触发（而非每次 token）
-    // 参考开源项目最佳实践：避免高频滚动
-    val streamLength = state.chatStream?.length ?: 0
-    var lastStreamLength by remember { mutableStateOf(0) }
-    
-    LaunchedEffect(streamLength) {
-        // 只在内容长度增加超过 30 字符时滚动
-        // 降低滚动频率，提升性能
-        if (streamLength > lastStreamLength + 30) {
-            lastStreamLength = streamLength
-            val lastIndex = listState.layoutInfo.totalItemsCount - 1
-            if (lastIndex >= 0) {
-                listState.scrollToItem(lastIndex)
-            }
-        } else if (streamLength == 0 && lastStreamLength > 0) {
-            // 流式结束，确保滚动到底部
-            lastStreamLength = 0
-            val lastIndex = listState.layoutInfo.totalItemsCount - 1
-            if (lastIndex >= 0) {
-                listState.scrollToItem(lastIndex)
-            }
         }
     }
 
@@ -162,14 +125,14 @@ fun SessionScreen(
                         LoadingOverlay()
                     }
                     
-                    // "新消息"按钮：点击滚动到最底部
+                    // "新消息"按钮：点击滚动到最底部（最新消息）
                     if (showNewMessagesButton) {
                         NewMessagesIndicator(
                             modifier = Modifier.align(Alignment.BottomCenter),
                             onClick = {
                                 scope.launch {
-                                    // 使用 animateScrollToItem 滚动到最后
-                                    listState.animateScrollToItem(Int.MAX_VALUE, scrollOffset = 0)
+                                    // reverseLayout 模式下，index 0 是最新消息
+                                    listState.animateScrollToItem(0)
                                 }
                             }
                         )

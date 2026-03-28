@@ -124,9 +124,13 @@ fun MessageGroupList(
     onRegenerate: () -> Unit = {},
     onSpeak: (String) -> Unit = {}
 ) {
+    // 使用 reverseLayout = true 实现最优雅的自动滚动
+    // 新消息自动显示在底部，无需手动滚动逻辑
+    // 参考：lambiengcode/compose-chatgpt-kotlin-android-chatbot 最佳实践
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
+        reverseLayout = true,  // 关键：反转布局，新消息在底部
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
@@ -135,50 +139,10 @@ fun MessageGroupList(
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. 历史消息
-        items(groups, key = { it.messages.first().id }) { group ->
-            MessageGroupItem(
-                group = group, 
-                messageFontSize = messageFontSize,
-                onDeleteMessage = onDeleteMessage,
-                onRegenerate = onRegenerate,
-                onSpeak = onSpeak,
-                modifier = Modifier.animateItem(
-                    fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                    placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
-                )
-            )
-        }
+        // 注意：reverseLayout = true 时，items 顺序也需要反转
+        // 显示顺序（从下到上）：流式文本 → 工具消息 → 文本段 → 历史消息
         
-        // 2. 文本段（工具执行前提交的文本）
-        if (streamSegments.isNotEmpty()) {
-            items(streamSegments, key = { "segment_${it.ts}" }) { segment ->
-                MessageContentCard(
-                    message = MessageUi(
-                        id = "segment_${segment.ts}",
-                        content = listOf(MessageContentItem.Text(segment.text)),
-                        role = MessageRole.ASSISTANT,
-                        timestamp = segment.ts
-                    ),
-                    isUser = false,
-                    isLastInGroup = true,
-                    messageFontSize = messageFontSize
-                )
-            }
-        }
-        
-        // 3. 工具消息
-        if (toolMessages.isNotEmpty()) {
-            AppLog.d("SessionMessageList", "Rendering toolMessages: size=${toolMessages.size}")
-            items(
-                items = toolMessages,
-                key = { msg -> msg.toolCallId ?: msg.id }
-            ) { toolMessage ->
-                ToolMessageCard(message = toolMessage)
-            }
-        }
-        
-        // 4. 当前流式文本
+        // 1. 当前流式文本（显示在最底部）
         if (!chatStream.isNullOrBlank()) {
             item(key = "stream_current") {
                 MessageContentCard(
@@ -195,6 +159,49 @@ fun MessageGroupList(
                     isStreaming = true
                 )
             }
+        }
+        
+        // 2. 工具消息
+        if (toolMessages.isNotEmpty()) {
+            AppLog.d("SessionMessageList", "Rendering toolMessages: size=${toolMessages.size}")
+            items(
+                items = toolMessages.reversed(),  // 反转以保持正确顺序
+                key = { msg -> msg.toolCallId ?: msg.id }
+            ) { toolMessage ->
+                ToolMessageCard(message = toolMessage)
+            }
+        }
+        
+        // 3. 文本段（工具执行前提交的文本）
+        if (streamSegments.isNotEmpty()) {
+            items(streamSegments.reversed(), key = { "segment_${it.ts}" }) { segment ->
+                MessageContentCard(
+                    message = MessageUi(
+                        id = "segment_${segment.ts}",
+                        content = listOf(MessageContentItem.Text(segment.text)),
+                        role = MessageRole.ASSISTANT,
+                        timestamp = segment.ts
+                    ),
+                    isUser = false,
+                    isLastInGroup = true,
+                    messageFontSize = messageFontSize
+                )
+            }
+        }
+        
+        // 4. 历史消息（显示在最上方）
+        items(groups.reversed(), key = { it.messages.first().id }) { group ->
+            MessageGroupItem(
+                group = group, 
+                messageFontSize = messageFontSize,
+                onDeleteMessage = onDeleteMessage,
+                onRegenerate = onRegenerate,
+                onSpeak = onSpeak,
+                modifier = Modifier.animateItem(
+                    fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                )
+            )
         }
     }
 }
