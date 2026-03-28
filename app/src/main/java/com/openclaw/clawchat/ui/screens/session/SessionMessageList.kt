@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -376,15 +377,39 @@ fun MessageGroupItem(
                         }
                     }
                     else -> {
-                        MessageContentCard(
-                            message = message,
-                            isUser = isUser,
-                            isLastInGroup = index == group.messages.lastIndex,
-                            messageFontSize = messageFontSize,
-                            onDelete = { onDeleteMessage(message.id) },
-                            onRegenerate = onRegenerate,
-                            onSpeak = onSpeak
-                        )
+                        // 消息行：头像 + 消息气泡
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            // AI 头像（左侧）
+                            if (!isUser) {
+                                AvatarIcon(
+                                    isUser = false,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                            }
+                            
+                            // 消息气泡
+                            MessageContentCard(
+                                message = message,
+                                isUser = isUser,
+                                isLastInGroup = index == group.messages.lastIndex,
+                                messageFontSize = messageFontSize,
+                                onDelete = { onDeleteMessage(message.id) },
+                                onRegenerate = onRegenerate,
+                                onSpeak = onSpeak
+                            )
+                            
+                            // 用户头像（右侧）
+                            if (isUser) {
+                                AvatarIcon(
+                                    isUser = true,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        }
                         
                         val toolCalls = message.getToolCalls()
                         if (toolCalls.isNotEmpty()) {
@@ -489,5 +514,33 @@ fun ToolMessageCard(message: MessageUi) {
                 }
             }
         }
+    }
+}
+
+/**
+ * 消息头像图标
+ */
+@Composable
+private fun AvatarIcon(
+    isUser: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(
+                if (isUser) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.tertiary
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (isUser) Icons.Default.Person else Icons.Default.SmartToy,
+            contentDescription = if (isUser) "User" else "AI",
+            tint = if (isUser) MaterialTheme.colorScheme.onPrimary
+                   else MaterialTheme.colorScheme.onTertiary,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
