@@ -424,9 +424,7 @@ class GatewayConnection(
             "commands" to JsonArray(emptyList()),
             "permissions" to JsonObject(emptyMap()),
             "locale" to JsonPrimitive("zh-CN"),
-            "userAgent" to JsonPrimitive("openclaw-android/${req.client.clientVersion}"),
-            // 关键：使用 ws-control-ui 认证表面，让 Gateway 自动授予 operator 权限
-            "authSurface" to JsonPrimitive("ws-control-ui")
+            "userAgent" to JsonPrimitive("openclaw-android/${req.client.clientVersion}")
         )
         
         // Token 模式：只发送 token，不发送 device 签名

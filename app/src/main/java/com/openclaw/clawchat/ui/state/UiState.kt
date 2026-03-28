@@ -198,13 +198,7 @@ data class SettingsUiState(
     val themeMode: com.openclaw.clawchat.data.ThemeMode = com.openclaw.clawchat.data.ThemeMode.SYSTEM
 )
 
-enum class ConnectMode {
-    TOKEN,
-    PAIRING
-}
-
 data class PairingUiState(
-    val connectMode: ConnectMode = ConnectMode.TOKEN,
     val gatewayUrl: String = "",
     val isPairing: Boolean = false,
     val isInitializing: Boolean = false,
@@ -213,8 +207,7 @@ data class PairingUiState(
     val publicKey: String? = null,
     val deviceToken: String? = null,
     val pairingStartTime: Long? = null,
-    val error: String? = null,
-    val token: String = ""
+    val error: String? = null
 )
 
 sealed class PairingStatus {
