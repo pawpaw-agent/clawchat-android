@@ -392,7 +392,9 @@ class GatewayConnection(
             ?.get("sessionDefaults")?.jsonObject
             ?.get("mainSessionKey")?.jsonPrimitive?.content
 
-        Log.i(TAG, "hello-ok: defaultSessionKey=$defaultSessionKey")
+        // Log granted scopes for debugging
+        val grantedScopes = payload?.get("grantedScopes")?.jsonArray?.map { it.jsonPrimitive.content }
+        Log.i(TAG, "hello-ok: defaultSessionKey=$defaultSessionKey, grantedScopes=$grantedScopes")
 
         _connectionState.value = WebSocketConnectionState.Connected
         reconnectAttempt = 0
