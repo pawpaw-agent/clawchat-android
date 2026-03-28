@@ -189,6 +189,9 @@ class PairingViewModel @Inject constructor(
                 result.onSuccess {
                     // 保存 token（用于自动重连）
                     securityModule.saveGatewayAuthToken(token)
+                    // 保存 Gateway 名称（从地址提取）
+                    val displayName = extractGatewayName(url)
+                    securityModule.saveGatewayName(displayName)
                     _state.value = _state.value.copy(isPairing = false, status = PairingStatus.Approved)
                     _events.emit(PairingEvent.PairingSuccess)
                 }
@@ -338,5 +341,14 @@ class PairingViewModel @Inject constructor(
 
     private fun emitError(message: String) {
         viewModelScope.launch { _events.emit(PairingEvent.PairingError(message)) }
+    }
+    
+    /**
+     * 从 Gateway 地址中提取名称
+     * 例如：192.168.0.213:18789 -> Gateway@192.168.0.213
+     */
+    private fun extractGatewayName(address: String): String {
+        val host = address.substringBefore(":").trim()
+        return "Gateway@$host"
     }
 }

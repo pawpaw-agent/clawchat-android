@@ -252,6 +252,20 @@ class SecurityModule(private val context: Context) {
         return encryptedStorage.getString("gateway_auth_token")
     }
     
+    /**
+     * 保存 Gateway 名称
+     */
+    fun saveGatewayName(name: String) {
+        encryptedStorage.saveGatewayName(name)
+    }
+    
+    /**
+     * 获取 Gateway 名称
+     */
+    fun getGatewayName(): String? {
+        return encryptedStorage.getGatewayName()
+    }
+    
     fun getGatewayUrl(): String? = encryptedStorage.getGatewayUrl()
     fun getTlsFingerprint(): String? = encryptedStorage.getTlsFingerprint()
     

@@ -47,16 +47,17 @@ class SettingsViewModel @Inject constructor(
 
     private fun loadCurrentConfig() {
         val gatewayUrl = encryptedStorage.getGatewayUrl() ?: ""
+        val gatewayName = encryptedStorage.getGatewayName() ?: "Gateway"
         _uiState.update {
             it.copy(
                 currentGateway = GatewayConfigUi(
                     id = "default", 
-                    name = if (gatewayUrl.isNotBlank()) "已配置" else "未配置",
+                    name = gatewayName,
                     host = gatewayUrl,
                     port = 18789
                 ),
                 gatewayConfigInput = GatewayConfigInput(
-                    name = "", 
+                    name = gatewayName, 
                     host = gatewayUrl, 
                     port = 18789
                 )
@@ -110,16 +111,18 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun updateGatewayConfig(config: GatewayConfigInput) {
-        // 保存 Gateway URL
+        // 保存 Gateway URL 和名称
         val url = "ws://${config.host}:${config.port}/ws"
         encryptedStorage.saveGatewayUrl(url)
+        val name = config.name.ifEmpty { "Gateway" }
+        encryptedStorage.saveGatewayName(name)
         
         _uiState.update {
             it.copy(
                 gatewayConfigInput = config,
                 currentGateway = GatewayConfigUi(
                     id = "default",
-                    name = config.name.ifEmpty { "默认 Gateway" },
+                    name = name,
                     host = config.host, port = config.port,
                     isCurrent = true
                 )

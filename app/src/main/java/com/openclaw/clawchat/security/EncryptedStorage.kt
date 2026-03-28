@@ -65,6 +65,7 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
         const val KEY_PAIRING_STATUS = "pairing_status"
         const val KEY_LAST_CONNECTED = "last_connected_timestamp"
         const val KEY_LAST_SESSION_ID = "last_session_id"
+        const val KEY_GATEWAY_NAME = "gateway_name"
         const val KEY_FALLBACK_TO_SOFTWARE_KEYSTORE = "fallback_to_software_keystore"
         
         // 配对状态枚举
@@ -317,6 +318,22 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
         sharedPreferences.edit()
             .remove(KEY_LAST_SESSION_ID)
             .apply()
+    }
+    
+    /**
+     * 保存 Gateway 名称
+     */
+    fun saveGatewayName(name: String) {
+        sharedPreferences.edit()
+            .putString(KEY_GATEWAY_NAME, name)
+            .apply()
+    }
+    
+    /**
+     * 获取 Gateway 名称
+     */
+    fun getGatewayName(): String? {
+        return sharedPreferences.getString(KEY_GATEWAY_NAME, null)
     }
     
     // ==================== 高级加密操作 ====================
