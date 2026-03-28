@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,6 +89,9 @@ fun SessionScreen(
             android.util.Log.d("SessionScreen", "Scrolled to bottom (index 0) for session $sessionId, messages=${state.chatMessages.size}")
         }
     }
+    
+    // 下拉刷新状态
+    var isRefreshing by remember { mutableStateOf(false) }
 
     val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
 
@@ -116,25 +121,37 @@ fun SessionScreen(
                         .weight(1f)
                         .fillMaxWidth()
                 ) {
-                    if (state.chatMessages.isEmpty() && !state.isLoading) {
-                        EmptySessionContent(connectionStatus = state.connectionStatus)
-                    } else if (state.chatMessages.isNotEmpty()) {
-                        MessageGroupList(
-                            groups = messageGroups,
-                            listState = listState,
-                            streamSegments = state.chatStreamSegments,
-                            toolMessages = state.chatToolMessages,
-                            chatStream = state.chatStream,
-                            messageFontSize = messageFontSize,
-                            onDeleteMessage = { viewModel.deleteMessage(it) },
-                            onRegenerate = { viewModel.regenerateLastMessage() },
-                            onSpeak = { text ->
-                                com.openclaw.clawchat.util.MessageSpeaker.speak(text)
+                    // 下拉刷新容器
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = {
+                            isRefreshing = true
+                            viewModel.loadEarlierMessages {
+                                isRefreshing = false
                             }
-                        )
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        if (state.chatMessages.isEmpty() && !state.isLoading) {
+                            EmptySessionContent(connectionStatus = state.connectionStatus)
+                        } else if (state.chatMessages.isNotEmpty()) {
+                            MessageGroupList(
+                                groups = messageGroups,
+                                listState = listState,
+                                streamSegments = state.chatStreamSegments,
+                                toolMessages = state.chatToolMessages,
+                                chatStream = state.chatStream,
+                                messageFontSize = messageFontSize,
+                                onDeleteMessage = { viewModel.deleteMessage(it) },
+                                onRegenerate = { viewModel.regenerateLastMessage() },
+                                onSpeak = { text ->
+                                    com.openclaw.clawchat.util.MessageSpeaker.speak(text)
+                                }
+                            )
+                        }
                     }
 
-                    if (state.isLoading) {
+                    if (state.isLoading && !isRefreshing) {
                         LoadingOverlay()
                     }
                     
