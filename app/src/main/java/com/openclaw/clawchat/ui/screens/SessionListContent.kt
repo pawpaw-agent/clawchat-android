@@ -38,7 +38,8 @@ fun SessionListContent(
     onSelectSession: (String) -> Unit,
     onSessionLongPress: (SessionUi?) -> Unit,
     onCreateSession: () -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onDeleteSession: (String) -> Unit = {}
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     
@@ -162,6 +163,7 @@ private fun SessionList(
                     isSelected = currentSession?.id == session.id,
                     onSelect = { onSelectSession(session.id) },
                     onSessionLongPress = { onSessionLongPress(session) },
+                    onDelete = { onDeleteSession(session.id) },
                     modifier = Modifier.animateItem(
                         fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
                         placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
@@ -224,7 +226,7 @@ private fun groupSessionsByDate(sessions: List<SessionUi>): List<Pair<String, Li
 }
 
 /**
- * 会话列表项
+ * 会话列表项（支持滑动删除）
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -233,9 +235,40 @@ private fun SessionItem(
     isSelected: Boolean,
     onSelect: () -> Unit,
     onSessionLongPress: (() -> Unit)? = null,
+    onDelete: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val dismissState = rememberDismissState(
+        confirmValueChange = { dismissValue ->
+            if (dismissValue == DismissValue.DismissedToStart) {
+                onDelete()
+                true
+            } else {
+                false
+            }
+        }
+    )
+    
+    SwipeToDismiss(
+        state = dismissState,
+        modifier = modifier.padding(vertical = 4.dp),
+        background = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "删除",
+                    tint = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        },
+        dismissContent = {
+            val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     
     Card(
         modifier = modifier
@@ -307,6 +340,7 @@ private fun SessionItem(
                 }
             }
         }
+    }
     }
 }
 

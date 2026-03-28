@@ -139,7 +139,8 @@ fun MainScreen(
                         onSelectSession = { viewModel.selectSession(it) },
                         onSessionLongPress = { showSessionOptions = it },
                         onCreateSession = { viewModel.createSession() },
-                        onRefresh = { viewModel.refreshSessions() }
+                        onRefresh = { viewModel.refreshSessions() },
+                        onDeleteSession = { viewModel.deleteSession(it) }
                     )
                 }
             }
