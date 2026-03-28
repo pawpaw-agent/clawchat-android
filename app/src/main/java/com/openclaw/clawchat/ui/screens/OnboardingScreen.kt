@@ -3,6 +3,7 @@ package com.openclaw.clawchat.ui.screens
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -11,12 +12,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openclaw.clawchat.BuildConfig
 import com.openclaw.clawchat.R
+import com.openclaw.clawchat.ui.state.ConnectMode
 import com.openclaw.clawchat.ui.state.PairingEvent
 import com.openclaw.clawchat.ui.state.PairingStatus
 import com.openclaw.clawchat.ui.state.PairingViewModel
@@ -24,10 +28,10 @@ import com.openclaw.clawchat.ui.state.PairingViewModel
 /**
  * 首次使用引导页
  *
- * 单页面完成配对流程：
+ * 单页面完成所有配置：
  * - Gateway 地址输入
- * - 开始配对
- * - 等待管理员批准
+ * - 连接模式选择（Token / 配对）
+ * - 连接/配对流程
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,40 +106,110 @@ fun OnboardingScreen(
                 isError = state.status is PairingStatus.Error && state.gatewayUrl.isBlank()
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // 配对说明
-            Card(
+            // 连接模式选择
+            Text(
+                text = "连接方式",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
+                // Token 模式
+                FilterChip(
+                    selected = state.connectMode == ConnectMode.TOKEN,
+                    onClick = { viewModel.setConnectMode(ConnectMode.TOKEN) },
+                    label = { Text("Token") },
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 配对模式
+                FilterChip(
+                    selected = state.connectMode == ConnectMode.PAIRING,
+                    onClick = { viewModel.setConnectMode(ConnectMode.PAIRING) },
+                    label = { Text("配对") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Token 模式：显示 Token 输入框
+            if (state.connectMode == ConnectMode.TOKEN) {
+                var tokenVisible by remember { mutableStateOf(false) }
+
+                OutlinedTextField(
+                    value = state.token,
+                    onValueChange = { viewModel.setToken(it) },
+                    label = { Text("Token") },
+                    placeholder = { Text("输入 Gateway Token") },
+                    singleLine = true,
+                    visualTransformation = if (tokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = {
+                        Icon(Icons.Default.Key, contentDescription = null)
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { tokenVisible = !tokenVisible }) {
+                            Icon(
+                                imageVector = if (tokenVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (tokenVisible) "隐藏" else "显示"
+                            )
+                        }
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "从 Gateway 设置获取 OPENCLAW_GATEWAY_TOKEN",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // 配对模式：显示说明
+            if (state.connectMode == ConnectMode.PAIRING) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Column(
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = "配对流程",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "配对流程",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = "1. 输入 Gateway 地址\n2. 点击\"开始配对\"\n3. 在 Gateway 终端运行 openclaw devices approve 批准",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "1. 输入 Gateway 地址\n2. 点击\"开始配对\"\n3. 在 Gateway 终端运行 openclaw devices approve 批准",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
 
@@ -168,7 +242,7 @@ fun OnboardingScreen(
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                                 Text(
-                                    text = "请在 Gateway 终端批准此设备",
+                                    text = "请在 Gateway 管理界面批准此设备",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                                 )
@@ -222,8 +296,14 @@ fun OnboardingScreen(
                 }
                 else -> {
                     Button(
-                        onClick = { viewModel.startPairing() },
-                        enabled = !state.isPairing && state.gatewayUrl.isNotBlank(),
+                        onClick = {
+                            when (state.connectMode) {
+                                ConnectMode.TOKEN -> viewModel.connectWithToken()
+                                ConnectMode.PAIRING -> viewModel.startPairing()
+                            }
+                        },
+                        enabled = !state.isPairing && state.gatewayUrl.isNotBlank() &&
+                                  (state.connectMode == ConnectMode.PAIRING || state.token.isNotBlank()),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         if (state.isPairing) {
@@ -233,11 +313,14 @@ fun OnboardingScreen(
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("配对中...")
+                            Text("连接中...")
                         } else {
-                            Icon(Icons.Default.QrCodeScanner, contentDescription = null)
+                            Icon(
+                                imageVector = if (state.connectMode == ConnectMode.TOKEN) Icons.Default.Link else Icons.Default.QrCodeScanner,
+                                contentDescription = null
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("开始配对")
+                            Text(if (state.connectMode == ConnectMode.TOKEN) "连接" else "开始配对")
                         }
                     }
                 }

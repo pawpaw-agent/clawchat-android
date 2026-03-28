@@ -411,7 +411,7 @@ class GatewayConnection(
             "minProtocol" to JsonPrimitive(3),
             "maxProtocol" to JsonPrimitive(3),
             "client" to buildJsonObject {
-                put("id", "openclaw-android")
+                put("id", "openclaw-control-ui")  // 使用 control-ui ID 以获得 Gateway 认可
                 put("version", req.client.clientVersion)
                 put("platform", req.client.platform)
                 put("mode", "ui")

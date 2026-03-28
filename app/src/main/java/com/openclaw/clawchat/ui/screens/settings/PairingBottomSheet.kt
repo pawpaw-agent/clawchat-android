@@ -3,16 +3,22 @@ package com.openclaw.clawchat.ui.screens.settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openclaw.clawchat.network.GatewayUrlUtil
+import com.openclaw.clawchat.ui.state.ConnectMode
 import com.openclaw.clawchat.ui.state.PairingEvent
 import com.openclaw.clawchat.ui.state.PairingStatus
 import com.openclaw.clawchat.ui.state.PairingViewModel
@@ -59,6 +65,27 @@ fun PairingBottomSheet(
             
             Spacer(modifier = Modifier.height(16.dp))
             
+            // 连接模式选择
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = state.connectMode == ConnectMode.TOKEN,
+                    onClick = { viewModel.setConnectMode(ConnectMode.TOKEN) },
+                    label = { Text("Token") },
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    selected = state.connectMode == ConnectMode.PAIRING,
+                    onClick = { viewModel.setConnectMode(ConnectMode.PAIRING) },
+                    label = { Text("配对") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
             // Gateway 地址
             val urlValid = state.gatewayUrl.isBlank() || GatewayUrlUtil.isValidInput(state.gatewayUrl)
             val wsPreview = if (state.gatewayUrl.isNotBlank() && urlValid) {
@@ -82,15 +109,42 @@ fun PairingBottomSheet(
             )
 
             Spacer(modifier = Modifier.height(12.dp))
-
-            // 设备 ID
-            state.deviceId?.let { id ->
-                Text(
-                    text = "设备 ID: $id",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            
+            // Token 模式
+            if (state.connectMode == ConnectMode.TOKEN) {
+                var tokenVisible by remember { mutableStateOf(false) }
+                
+                OutlinedTextField(
+                    value = state.token,
+                    onValueChange = { viewModel.setToken(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Token") },
+                    placeholder = { Text("输入 Gateway Token") },
+                    enabled = !state.isPairing,
+                    singleLine = true,
+                    visualTransformation = if (tokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        IconButton(onClick = { tokenVisible = !tokenVisible }) {
+                            Icon(
+                                imageVector = if (tokenVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (tokenVisible) "隐藏" else "显示"
+                            )
+                        }
+                    }
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+            }
+            
+            // 配对模式：显示设备 ID
+            if (state.connectMode == ConnectMode.PAIRING) {
+                state.deviceId?.let { id ->
+                    Text(
+                        text = "设备 ID: $id",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
 
             // 状态显示
@@ -98,32 +152,53 @@ fun PairingBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 开始配对按钮
-            Button(
-                onClick = { viewModel.startPairing() },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !state.isPairing
-                        && state.gatewayUrl.isNotBlank() && urlValid
-            ) {
-                if (state.isPairing) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+            // 操作按钮
+            when (state.status) {
+                is PairingStatus.WaitingForApproval -> {
+                    OutlinedButton(
+                        onClick = { viewModel.cancelPairing() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("取消配对")
+                    }
                 }
-                Text("开始配对")
+                else -> {
+                    Button(
+                        onClick = {
+                            when (state.connectMode) {
+                                ConnectMode.TOKEN -> viewModel.connectWithToken()
+                                ConnectMode.PAIRING -> viewModel.startPairing()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isPairing
+                                && state.gatewayUrl.isNotBlank() && urlValid
+                                && (state.connectMode == ConnectMode.PAIRING || state.token.isNotBlank())
+                    ) {
+                        if (state.isPairing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("连接中...")
+                        } else {
+                            Text(if (state.connectMode == ConnectMode.TOKEN) "连接" else "开始配对")
+                        }
+                    }
+                    
+                    if (state.connectMode == ConnectMode.PAIRING) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "配对后需在 Gateway 终端运行: openclaw devices approve",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "配对后需在 Gateway 终端运行: openclaw devices approve",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
             
             Spacer(modifier = Modifier.height(32.dp))
         }

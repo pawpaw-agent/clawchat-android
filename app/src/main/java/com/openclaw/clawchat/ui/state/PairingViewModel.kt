@@ -36,8 +36,15 @@ data class PairingState(
     val status: PairingStatus = PairingStatus.Initializing,
     val isInitializing: Boolean = false,
     val isPairing: Boolean = false,
+    val connectMode: ConnectMode = ConnectMode.TOKEN,
+    val token: String = "",
     val certificateEvent: CertificateEvent? = null
 )
+
+enum class ConnectMode {
+    TOKEN,
+    PAIRING
+}
 
 /**
  * 配对 ViewModel
@@ -146,6 +153,57 @@ class PairingViewModel @Inject constructor(
         _state.value = _state.value.copy(gatewayUrl = url)
     }
 
+    fun setConnectMode(mode: ConnectMode) {
+        _state.value = _state.value.copy(connectMode = mode)
+    }
+
+    fun setToken(token: String) {
+        _state.value = _state.value.copy(token = token)
+    }
+
+    /**
+     * Token 直连
+     */
+    fun connectWithToken() {
+        val url = _state.value.gatewayUrl.trim()
+        val token = _state.value.token.trim()
+
+        if (url.isEmpty()) { emitError("请输入 Gateway 地址"); return }
+        if (token.isEmpty()) { emitError("请输入 Token"); return }
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isPairing = true, status = PairingStatus.Initializing)
+            try {
+                val wsUrl = GatewayUrlUtil.normalizeToWebSocketUrl(url)
+                securityModule.saveGatewayConfig(wsUrl)
+
+                val result = gateway.connect(wsUrl, token)
+
+                result.onSuccess {
+                    securityModule.saveGatewayAuthToken(token)
+                    _state.value = _state.value.copy(isPairing = false, status = PairingStatus.Approved)
+                    _events.emit(PairingEvent.PairingSuccess)
+                }
+
+                result.onFailure { e ->
+                    Log.e(TAG, "Token 连接失败", e)
+                    _state.value = _state.value.copy(
+                        isPairing = false,
+                        status = PairingStatus.Error(e.message ?: "连接失败")
+                    )
+                    _events.emit(PairingEvent.PairingError(e.message ?: "连接失败"))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Token 连接异常", e)
+                _state.value = _state.value.copy(
+                    isPairing = false,
+                    status = PairingStatus.Error(e.message ?: "连接失败")
+                )
+                _events.emit(PairingEvent.PairingError(e.message ?: "连接失败"))
+            }
+        }
+    }
+
     fun initializePairing() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isInitializing = true)
@@ -234,7 +292,10 @@ class PairingViewModel @Inject constructor(
                 _state.value = _state.value.copy(certificateEvent = null)
 
                 // 重试连接
-                startPairing()
+                when (_state.value.connectMode) {
+                    ConnectMode.TOKEN -> connectWithToken()
+                    ConnectMode.PAIRING -> startPairing()
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to save certificate trust", e)
                 _state.value = _state.value.copy(
