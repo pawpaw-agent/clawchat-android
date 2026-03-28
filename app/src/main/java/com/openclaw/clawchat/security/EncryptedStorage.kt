@@ -64,6 +64,7 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
         const val KEY_GATEWAY_TLS_FINGERPRINT = "gateway_tls_fingerprint"
         const val KEY_PAIRING_STATUS = "pairing_status"
         const val KEY_LAST_CONNECTED = "last_connected_timestamp"
+        const val KEY_LAST_SESSION_ID = "last_session_id"
         const val KEY_FALLBACK_TO_SOFTWARE_KEYSTORE = "fallback_to_software_keystore"
         
         // 配对状态枚举
@@ -291,6 +292,31 @@ class EncryptedStorage(context: Context) : SoftwareKeyStore {
      */
     fun getLastConnectedTimestamp(): Long {
         return sharedPreferences.getLong(KEY_LAST_CONNECTED, 0L)
+    }
+    
+    /**
+     * 保存最后访问的会话 ID
+     */
+    fun saveLastSessionId(sessionId: String) {
+        sharedPreferences.edit()
+            .putString(KEY_LAST_SESSION_ID, sessionId)
+            .apply()
+    }
+    
+    /**
+     * 获取最后访问的会话 ID
+     */
+    fun getLastSessionId(): String? {
+        return sharedPreferences.getString(KEY_LAST_SESSION_ID, null)
+    }
+    
+    /**
+     * 清除最后访问的会话 ID
+     */
+    fun clearLastSessionId() {
+        sharedPreferences.edit()
+            .remove(KEY_LAST_SESSION_ID)
+            .apply()
     }
     
     // ==================== 高级加密操作 ====================

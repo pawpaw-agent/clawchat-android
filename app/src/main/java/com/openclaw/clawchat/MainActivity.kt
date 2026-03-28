@@ -8,8 +8,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -93,8 +96,19 @@ fun ClawChatNavHost(
 ) {
     val navController = rememberNavController()
     
-    // 检查是否已配对，决定起始路由
-    val isPaired = remember { encryptedStorage.isPaired() }
+    // 使用 mutableStateOf 观察 isPaired 变化（配对成功后自动更新）
+    var isPaired by remember { mutableStateOf(encryptedStorage.isPaired()) }
+    
+    // 监听配对状态变化
+    LaunchedEffect(Unit) {
+        // 当从 onboarding 配对成功返回时，重新检查配对状态
+        navController.currentBackStackEntryFlow.collect { entry ->
+            if (entry.destination.route == "main") {
+                isPaired = encryptedStorage.isPaired()
+            }
+        }
+    }
+    
     val startDestination = if (isPaired) "main" else "onboarding"
 
     NavHost(
