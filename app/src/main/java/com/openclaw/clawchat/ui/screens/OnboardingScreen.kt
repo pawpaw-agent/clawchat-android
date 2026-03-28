@@ -206,7 +206,7 @@ fun OnboardingScreen(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "1. 输入 Gateway 地址\n2. 点击"开始配对"\n3. 在 Gateway 管理界面批准配对请求",
+                            text = "1. 输入 Gateway 地址\n2. 点击\"开始配对\"\n3. 在 Gateway 管理界面批准配对请求",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
