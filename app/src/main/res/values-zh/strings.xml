@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">ClawChat</string>
+
+    <!-- General -->
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+    <string name="confirm">确认</string>
+    <string name="retry">重试</string>
+    <string name="loading">加载中…</string>
+    <string name="error">错误</string>
+    <string name="success">成功</string>
+    <string name="delete">删除</string>
+    <string name="close">关闭</string>
+    <string name="confirm_button">确认</string>
+    <string name="cancel_connection">取消连接</string>
+    <string name="go_to_settings">前往设置</string>
+    <string name="reset">重置</string>
+    <string name="rename">重命名</string>
+    <string name="regenerate">重新生成</string>
+    <string name="undo">撤销</string>
+    <string name="redo">重做</string>
+    <string name="clear">清空</string>
+    <string name="save">保存</string>
+    <string name="discard">放弃</string>
+
+    <!-- Connection Status -->
+    <string name="status_connected">已连接</string>
+    <string name="status_connecting">连接中…</string>
+    <string name="status_disconnected">已断开</string>
+    <string name="status_error">连接错误</string>
+    <string name="status_connect">连接</string>
+    <string name="status_connect_success">连接成功！</string>
+    <string name="status_connect_paired">连接已配对的网关</string>
+    <string name="status_scan_or_code">扫描二维码或输入配对码</string>
+    <string name="status_retry">重试</string>
+    <string name="status_go_to_settings">前往设置</string>
+    <string name="status_latency">延迟：%d 毫秒</string>
+    <string name="status_gateway">网关：%s</string>
+
+    <!-- Gateway Configuration -->
+    <string name="gateway_title">网关</string>
+    <string name="gateway_add">添加网关</string>
+    <string name="gateway_edit">编辑网关</string>
+    <string name="gateway_delete">删除网关</string>
+    <string name="gateway_host">主机</string>
+    <string name="gateway_port">端口</string>
+    <string name="gateway_tls">使用 TLS (WSS)</string>
+    <string name="gateway_test">测试连接</string>
+
+    <!-- Messages -->
+    <string name="message_hint">输入消息…</string>
+    <string name="message_send">发送</string>
+    <string name="message_attach">添加附件</string>
+    <string name="message_copy">复制</string>
+    <string name="message_delete">删除</string>
+    <string name="message_share">分享</string>
+    <string name="message_regenerate">重新生成</string>
+    <string name="message_speak">朗读</string>
+    <string name="message_retry">重试</string>
+    <string name="message_copied">已复制到剪贴板</string>
+    <string name="message_delete_title">删除消息</string>
+    <string name="message_delete_confirm">删除这条消息？</string>
+    <string name="message_code_copied">代码已复制</string>
+    <string name="message_just_now">刚刚</string>
+    <string name="message_minutes_ago">%d 分钟前</string>
+    <string name="message_input_placeholder">输入消息…</string>
+    <string name="message_image_reset">重置</string>
+    <string name="message_delete_button">删除</string>
+    <string name="message_cancel">取消</string>
+    <string name="message_delete_confirm_title">删除消息</string>
+    <string name="message_delete_confirm_message">确定要删除这条消息吗？</string>
+    <string name="message_speaking">正在朗读…</string>
+    <string name="message_stop_speaking">停止朗读</string>
+    <string name="message_copy_code">复制代码</string>
+    
+    <!-- Empty States -->
+    <string name="empty_sessions">暂无会话</string>
+    <string name="empty_sessions_hint">点击下方按钮创建新会话</string>
+    <string name="empty_session">暂无消息</string>
+    <string name="empty_session_hint">开始输入以开始对话</string>
+    <string name="empty_search">未找到结果</string>
+    <string name="empty_search_hint">尝试其他搜索词</string>
+    <string name="search_sessions">搜索会话…</string>
+    <string name="input_message">输入消息…</string>
+    <string name="new_messages">新消息</string>
+    <string name="scroll_to_bottom">滚动到底部</string>
+    <string name="no_internet">无网络连接</string>
+    <string name="retrying">重试中…</string>
+
+    <!-- Sessions -->
+    <string name="sessions_title">会话</string>
+    <string name="session_new">新会话</string>
+    <string name="session_delete">删除会话</string>
+    <string name="session_terminate">终止</string>
+    <string name="session_empty">暂无会话</string>
+    <string name="session_model">模型</string>
+    <string name="session_delete_confirm">删除会话「%s」？此操作无法撤销。</string>
+    <string name="session_search">搜索会话…</string>
+    <string name="session_today">今天</string>
+    <string name="session_yesterday">昨天</string>
+    <string name="session_this_week">本周</string>
+    <string name="session_earlier">更早</string>
+    <string name="session_title">会话</string>
+    <string name="session_input_placeholder">输入消息…</string>
+    <string name="session_image_reset">重置</string>
+    <string name="session_options">会话选项</string>
+    <string name="session_rename">重命名</string>
+    <string name="session_terminate_button">终止会话</string>
+    <string name="session_delete_button">删除会话</string>
+    <string name="session_close">关闭</string>
+    <string name="session_delete_title">删除会话</string>
+    <string name="session_delete_message">删除会话「%s」？此操作无法撤销。</string>
+    <string name="session_rename_title">重命名会话</string>
+    <string name="session_name">会话名称</string>
+    <string name="session_confirm">确认</string>
+    <string name="session_search_placeholder">搜索会话…</string>
+    <string name="session_delete_confirm_title">删除消息</string>
+    <string name="session_delete_confirm_message">删除这条消息？</string>
+    <string name="session_no_messages">暂无消息</string>
+    <string name="session_start_conversation">开始输入以开始对话</string>
+
+    <!-- Pairing -->
+    <string name="pairing_title">设备配对</string>
+    <string name="pairing_request">请求配对</string>
+    <string name="pairing_pending">等待批准…</string>
+    <string name="pairing_approved">设备已批准</string>
+    <string name="pairing_rejected">配对被拒绝</string>
+    <string name="pairing_timeout">配对超时</string>
+    <string name="pairing_connect_gateway">连接网关</string>
+    <string name="pairing_gateway_address">网关地址</string>
+    <string name="pairing_gateway_address_hint">192.168.0.213:18789</string>
+    <string name="pairing_gateway_token">网关令牌</string>
+    <string name="pairing_gateway_token_hint">粘贴 OPENCLAW_GATEWAY_TOKEN</string>
+    <string name="pairing_connect">连接</string>
+    <string name="pairing_start">开始配对</string>
+    <string name="pairing_generating_key">正在生成 Ed25519 设备密钥…</string>
+    <string name="pairing_device_id">设备 ID</string>
+    <string name="pairing_public_key">公钥 (Ed25519)</string>
+    <string name="pairing_invalid_address">请输入有效的地址</string>
+    <string name="pairing_waiting_approval">等待管理员批准</string>
+    <string name="pairing_run_command">在终端运行：openclaw devices approve</string>
+    <string name="pairing_connecting">连接中…</string>
+    <string name="pairing_back">返回</string>
+    <string name="pairing_please_run">请在终端运行：openclaw devices approve</string>
+    <string name="pairing_enter_gateway">输入网关 URL</string>
+    <string name="pairing_paste_token">粘贴令牌</string>
+    <string name="pairing_scan_qr">扫描二维码</string>
+    <string name="pairing_or_enter_code">或输入配对码</string>
+
+    <!-- Settings -->
+    <string name="settings_title">设置</string>
+    <string name="settings_notifications">通知</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_version">版本</string>
+    <string name="settings_device_info">设备信息</string>
+    <string name="settings_pairing_status">配对状态</string>
+    <string name="settings_close">关闭</string>
+    <string name="settings_confirm">确认</string>
+    <string name="settings_cancel">取消</string>
+    <string name="settings_disconnect">断开连接</string>
+    <string name="settings_disconnect_description">断开当前网关连接</string>
+    <string name="settings_configure_gateway">配置网关</string>
+    <string name="settings_gateway_url">网关 URL</string>
+    <string name="settings_gateway_url_hint">例如：http://192.168.1.100:18789</string>
+    <string name="settings_connecting">连接中…</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_font_size">字体大小</string>
+    <string name="settings_font_small">小</string>
+    <string name="settings_font_medium">中</string>
+    <string name="settings_font_large">大</string>
+    <string name="about_app_name">ClawChat</string>
+    <string name="about_description">OpenClaw Android 客户端</string>
+    <string name="about_version">版本 %s</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_messages">消息</string>
+    <string name="notification_channel_system">系统</string>
+    <string name="notification_new_message">新消息</string>
+    <string name="notification_tap_to_open">点击打开</string>
+    <string name="notification_reply">回复</string>
+    <string name="notification_mark_as_read">标记为已读</string>
+    <string name="notification_channel_description">消息通知</string>
+    <string name="notification_new_message_title">来自 %s 的新消息</string>
+
+    <!-- Errors -->
+    <string name="error_network">网络错误，请检查您的连接。</string>
+    <string name="error_gateway">无法连接到网关</string>
+    <string name="error_pairing">配对失败</string>
+    <string name="error_unknown">发生意外错误</string>
+    <string name="error_connection_lost">连接已断开</string>
+    <string name="error_timeout">请求超时</string>
+    <string name="error_unauthorized">未授权，请重新配对。</string>
+    <string name="error_send_failed">发送消息失败</string>
+    <string name="error_load_failed">加载消息失败</string>
+
+    <!-- About -->
+    <string name="about_website">网站</string>
+    <string name="about_source">源代码</string>
+    <string name="about_license">许可证</string>
+    <string name="about_github">GitHub</string>
+    <string name="about_documentation">文档</string>
+    <string name="about_developer">开发者</string>
+    <string name="about_openclaw">OpenClaw</string>
+</resources>
