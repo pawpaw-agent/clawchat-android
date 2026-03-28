@@ -410,14 +410,39 @@ class GatewayConnection(
         if (kind != "tool") return
 
         val toolCallId = payload["toolCallId"]?.jsonPrimitive?.content ?: return
+        val name = payload["name"]?.jsonPrimitive?.content ?: "unknown"
+        val status = payload["status"]?.jsonPrimitive?.content ?: "pending"
+        val streamContent = payload["stream"]?.jsonPrimitive?.content
+        val outputContent = payload["output"]?.jsonPrimitive?.content
+        val errorContent = payload["error"]?.jsonPrimitive?.content
+        val titleContent = payload["title"]?.jsonPrimitive?.content
+        
+        // 获取当前事件（用于追加流式内容）
+        val currentEvent = _toolStreamEvents.value[toolCallId]
+        val currentOutput = currentEvent?.output ?: ""
+        
+        // 处理流式内容：追加而非替换
+        val finalOutput = when {
+            // 完成状态：使用最终输出
+            status == "complete" || status == "done" -> outputContent ?: currentOutput
+            // 流式内容：追加到现有内容
+            streamContent != null -> currentOutput + streamContent
+            // 直接输出：替换
+            outputContent != null -> outputContent
+            // 错误：显示错误
+            errorContent != null -> errorContent
+            // 保持当前内容
+            else -> currentOutput
+        }
+        
         val event = ToolStreamEvent(
             toolCallId = toolCallId,
-            name = payload["name"]?.jsonPrimitive?.content ?: "unknown",
-            status = payload["status"]?.jsonPrimitive?.content ?: "pending",
-            title = payload["title"]?.jsonPrimitive?.content,
-            output = payload["output"]?.jsonPrimitive?.content,
-            error = payload["error"]?.jsonPrimitive?.content,
-            stream = payload["stream"]?.jsonPrimitive?.content,
+            name = name,
+            status = status,
+            title = titleContent ?: currentEvent?.title,
+            output = finalOutput,
+            error = errorContent,
+            stream = streamContent,
             timestamp = System.currentTimeMillis()
         )
 
@@ -432,7 +457,7 @@ class GatewayConnection(
         currentOrder.add(toolCallId)
         _toolStreamOrder.value = currentOrder
 
-        Log.d(TAG, "Tool stream event: ${event.name} [${event.status}]")
+        Log.d(TAG, "Tool stream event: ${event.name} [${event.status}] stream=${streamContent?.take(50)} output=${finalOutput.take(50)}")
     }
 
     /** Parse hello-ok response */
