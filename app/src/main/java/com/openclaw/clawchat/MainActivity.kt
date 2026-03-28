@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -19,12 +20,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.openclaw.clawchat.data.ThemeMode
+import com.openclaw.clawchat.security.EncryptedStorage
 import com.openclaw.clawchat.ui.screens.MainScreen
+import com.openclaw.clawchat.ui.screens.OnboardingScreen
 import com.openclaw.clawchat.ui.screens.SessionScreen
 import com.openclaw.clawchat.ui.theme.TerminalFlowTheme
 import com.openclaw.clawchat.ui.state.MainViewModel
 import com.openclaw.clawchat.ui.state.ThemeViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * ClawChat 主 Activity
@@ -36,6 +40,9 @@ import dagger.hilt.android.AndroidEntryPoint
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    
+    @Inject
+    lateinit var encryptedStorage: EncryptedStorage
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // 安装启动屏
@@ -62,7 +69,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ClawChatNavHost()
+                    ClawChatNavHost(
+                        encryptedStorage = encryptedStorage
+                    )
                 }
             }
         }
@@ -73,21 +82,36 @@ class MainActivity : ComponentActivity() {
  * ClawChat 导航主机
  * 
  * 定义应用的导航结构：
+ * - onboarding: 首次使用引导页
  * - main: 主界面
  * - session/{sessionId}: 会话详情界面
- * 
- * 配对功能已集成到设置页面
  */
 @androidx.compose.runtime.Composable
 fun ClawChatNavHost(
-    mainViewModel: MainViewModel = hiltViewModel()
+    mainViewModel: MainViewModel = hiltViewModel(),
+    encryptedStorage: EncryptedStorage
 ) {
     val navController = rememberNavController()
+    
+    // 检查是否已配对，决定起始路由
+    val isPaired = remember { encryptedStorage.isPaired() }
+    val startDestination = if (isPaired) "main" else "onboarding"
 
     NavHost(
         navController = navController,
-        startDestination = "main"
+        startDestination = startDestination
     ) {
+        // 首次使用引导页
+        composable("onboarding") {
+            OnboardingScreen(
+                onPairingSuccess = {
+                    navController.navigate("main") {
+                        popUpTo("onboarding") { inclusive = true }
+                    }
+                }
+            )
+        }
+
         // 主屏幕
         composable("main") {
             MainScreen(
