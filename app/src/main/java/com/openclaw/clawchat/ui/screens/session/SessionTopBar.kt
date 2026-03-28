@@ -13,8 +13,7 @@ import com.openclaw.clawchat.ui.state.ConnectionStatus
 @Composable
 fun SessionTopAppBar(
     connectionStatus: ConnectionStatus,
-    onNavigateBack: () -> Unit,
-    onSettingsClick: () -> Unit = {}
+    onNavigateBack: () -> Unit
 ) {
     TopAppBar(
         title = { Text("会话") },
@@ -27,14 +26,6 @@ fun SessionTopAppBar(
             }
         },
         actions = {
-            // 设置按钮
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "会话设置"
-                )
-            }
-            // 连接状态图标
             ConnectionStatusIcon(connectionStatus)
         },
         colors = TopAppBarDefaults.topAppBarColors(

@@ -99,12 +99,6 @@ data class SessionUiState(
     val sessionId: String? = null,
     val session: SessionUi? = null,
     
-    // 会话设置状态
-    val thinkingLevel: String? = null,
-    val fastMode: Boolean? = null,
-    val verboseLevel: String? = null,
-    val reasoningLevel: String? = null,
-    
     // 消息状态（1:1 对应 webchat）
     val chatMessages: List<MessageUi> = emptyList(),           // 历史消息
     val chatStream: String? = null,                             // 当前流式文本
