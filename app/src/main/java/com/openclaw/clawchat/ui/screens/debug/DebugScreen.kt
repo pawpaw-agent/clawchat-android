@@ -234,7 +234,7 @@ private fun LogViewerTab(
                 Text("自动滚动", style = MaterialTheme.typography.bodySmall)
                 Switch(
                     checked = state.autoScroll,
-                    onCheckedChange = { viewModel.setAutoScroll(it) }
+                    onCheckedChange = { viewModel.toggleAutoScroll() }
                 )
             }
         }
@@ -252,7 +252,7 @@ private fun LogViewerTab(
                 }
             ) { logLine ->
                 Text(
-                    text = logLine.formatted,
+                    text = "${logLine.timestamp} ${logLine.level.name.first()} ${logLine.message}",
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace,
                     color = when (logLine.level) {
@@ -318,7 +318,7 @@ private fun PerformanceTab(state: DebugUiState) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("应用", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("运行时间: ${state.uptimeSeconds}秒")
+                    Text("运行时间: ${state.appUptime}秒")
                 }
             }
         }
