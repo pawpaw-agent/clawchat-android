@@ -338,10 +338,10 @@ private fun SessionItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
         }
     }
     }
+    )
 }
 
 /**
