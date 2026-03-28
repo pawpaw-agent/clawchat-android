@@ -269,78 +269,79 @@ private fun SessionItem(
         },
         dismissContent = {
             val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-    
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(
-                if (onSessionLongPress != null) {
-                    Modifier.combinedClickable(
-                        onClick = onSelect,
-                        onLongClick = {
-                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                            onSessionLongPress()
+            
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (onSessionLongPress != null) {
+                            Modifier.combinedClickable(
+                                onClick = onSelect,
+                                onLongClick = {
+                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                    onSessionLongPress()
+                                }
+                            )
+                        } else {
+                            Modifier.clickable(onClick = onSelect)
                         }
-                    )
-                } else {
-                    Modifier.clickable(onClick = onSelect)
-                }
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.surfaceVariant
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // 会话名称
-            Text(
-                text = session.getDisplayName(),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            
-            // 最后一条消息
-            if (session.lastMessage != null) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = session.lastMessage,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    ),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isSelected) {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    }
                 )
-            }
-            
-            // 时间和消息数
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = formatTimeAgo(session.lastActivityAt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                if (session.messageCount > 0) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    // 会话名称
                     Text(
-                        text = "· ${session.messageCount} 条消息",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = session.getDisplayName(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
+                    
+                    // 最后一条消息
+                    if (session.lastMessage != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = session.lastMessage,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    
+                    // 时间和消息数
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = formatTimeAgo(session.lastActivityAt),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (session.messageCount > 0) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "· ${session.messageCount} 条消息",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
+            }
         }
-    }
-    }
     )
 }
 
