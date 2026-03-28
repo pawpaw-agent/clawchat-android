@@ -109,7 +109,8 @@ fun SessionListContent(
                         sessions = state.sessions,
                         currentSession = state.currentSession,
                         onSelectSession = onSelectSession,
-                        onSessionLongPress = onSessionLongPress
+                        onSessionLongPress = onSessionLongPress,
+                        onDeleteSession = onDeleteSession
                     )
                 }
             }
@@ -130,7 +131,8 @@ private fun SessionList(
     sessions: List<SessionUi>,
     currentSession: SessionUi?,
     onSelectSession: (String) -> Unit,
-    onSessionLongPress: (SessionUi?) -> Unit
+    onSessionLongPress: (SessionUi?) -> Unit,
+    onDeleteSession: (String) -> Unit = {}
 ) {
     // 按日期分组
     val groupedSessions = remember(sessions) {
