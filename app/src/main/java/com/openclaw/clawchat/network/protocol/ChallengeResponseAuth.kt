@@ -95,19 +95,41 @@ class ChallengeResponseAuth(
     /**
      * 步骤 2: 构建 connect 请求
      *
-     * 使用 SecurityModule.signV3Payload() 构建完整 v3 签名:
-     * payload = "v3|deviceId|clientId|clientMode|role|scopes|signedAtMs|token|nonce|platform|deviceFamily"
+     * Token 模式：不生成设备签名，直接返回 token
+     * 配对模式：使用 SecurityModule.signV3Payload() 构建完整 v3 签名
      */
     suspend fun buildConnectRequest(): ConnectRequest {
         val challenge = pendingChallenge
             ?: throw IllegalStateException("No pending challenge. Call handleChallenge() first.")
 
-        // 初始化安全模块
-        securityModule.initialize()
-
+        val clientInfo = buildClientInfo()
         val signedAtMs = System.currentTimeMillis()
 
-        // 使用 v3 签名 payload
+        // Token 模式：不需要设备签名
+        if (!gatewayToken.isNullOrBlank()) {
+            AppLog.d(TAG, "Token 模式：跳过设备签名")
+            pendingChallenge = null
+            return ConnectRequest(
+                device = DeviceInfo(
+                    id = "",
+                    publicKey = "",
+                    signature = "",
+                    signedAt = signedAtMs,
+                    nonce = challenge.nonce
+                ),
+                client = clientInfo,
+                nonce = challenge.nonce,
+                signature = "",
+                signedAt = signedAtMs,
+                role = role,
+                scopes = scopes,
+                token = gatewayToken
+            )
+        }
+
+        // 配对模式：生成设备签名
+        securityModule.initialize()
+
         val signed: SignedPayload = securityModule.signV3Payload(
             nonce = challenge.nonce,
             signedAtMs = signedAtMs,
@@ -115,14 +137,12 @@ class ChallengeResponseAuth(
             clientMode = "ui",
             role = role,
             scopes = scopes,
-            token = gatewayToken ?: "",
+            token = "",
             platform = "android",
             deviceFamily = "phone"
         )
 
         AppLog.d(TAG, "v3 签名完成, deviceId=${signed.deviceId.take(16)}...")
-
-        val clientInfo = buildClientInfo()
 
         // 清除待处理的挑战
         pendingChallenge = null
@@ -130,7 +150,7 @@ class ChallengeResponseAuth(
         return ConnectRequest(
             device = DeviceInfo(
                 id = signed.deviceId,
-                publicKey = signed.publicKeyBase64Url,  // raw 32 bytes base64url
+                publicKey = signed.publicKeyBase64Url,
                 signature = signed.signature,
                 signedAt = signedAtMs,
                 nonce = challenge.nonce
@@ -141,7 +161,7 @@ class ChallengeResponseAuth(
             signedAt = signedAtMs,
             role = role,
             scopes = scopes,
-            token = gatewayToken ?: securityModule.getAuthToken()
+            token = null
         )
     }
 

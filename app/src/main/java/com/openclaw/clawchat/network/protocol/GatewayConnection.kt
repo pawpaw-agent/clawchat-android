@@ -400,7 +400,9 @@ class GatewayConnection(
 
     /** Build connect request params (aligned with ConnectParamsSchema) */
     private fun buildConnectParams(req: ConnectRequest): Map<String, JsonElement> {
-        return mapOf(
+        val hasToken = req.token != null && req.token.isNotBlank()
+        
+        val baseParams = mutableMapOf(
             "minProtocol" to JsonPrimitive(3),
             "maxProtocol" to JsonPrimitive(3),
             "client" to buildJsonObject {
@@ -416,27 +418,29 @@ class GatewayConnection(
             "caps" to JsonArray(emptyList()),
             "commands" to JsonArray(emptyList()),
             "permissions" to JsonObject(emptyMap()),
-            "auth" to buildJsonObject {
-                // 首次配对使用 pairingToken，已配对使用 token
-                if (req.token != null && req.token.isNotBlank()) {
-                    // 检查是否是 setupCode 格式（通常是 4-8 位数字或字母）
-                    if (req.token.matches(Regex("^[A-Z0-9]{4,8}$"))) {
-                        put("pairingToken", req.token)
-                    } else {
-                        put("token", req.token)
-                    }
-                }
-            },
-            "device" to buildJsonObject {
+            "locale" to JsonPrimitive("zh-CN"),
+            "userAgent" to JsonPrimitive("openclaw-android/${req.client.clientVersion}")
+        )
+        
+        // Token 模式：只发送 token，不发送 device 签名
+        if (hasToken) {
+            baseParams["auth"] = buildJsonObject {
+                put("token", req.token)
+            }
+            // 不发送 device 信息，Gateway 会用 token 直接认证
+        } else {
+            // 配对模式：发送 device 签名
+            baseParams["auth"] = JsonObject(emptyMap())
+            baseParams["device"] = buildJsonObject {
                 put("id", req.device.id)
                 put("publicKey", req.device.publicKey)
                 put("signature", req.device.signature)
                 put("signedAt", req.device.signedAt)
                 put("nonce", req.device.nonce)
-            },
-            "locale" to JsonPrimitive("zh-CN"),
-            "userAgent" to JsonPrimitive("openclaw-android/${req.client.clientVersion}")
-        )
+            }
+        }
+        
+        return baseParams
     }
 
     // ── RPC ──
