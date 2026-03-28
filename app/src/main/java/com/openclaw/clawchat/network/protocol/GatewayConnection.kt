@@ -430,7 +430,7 @@ class GatewayConnection(
             },
             "role" to JsonPrimitive(req.role),
             "scopes" to JsonArray(req.scopes.map { JsonPrimitive(it) }),
-            "caps" to JsonArray(emptyList()),
+            "caps" to JsonArray(listOf(JsonPrimitive("tool_events"))),
             "commands" to JsonArray(emptyList()),
             "permissions" to JsonObject(emptyMap()),
             "locale" to JsonPrimitive("zh-CN"),
