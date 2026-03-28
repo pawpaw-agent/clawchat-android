@@ -75,11 +75,6 @@ class PairingViewModel @Inject constructor(
         if (!savedUrl.isNullOrBlank()) {
             _state.value = _state.value.copy(gatewayUrl = savedUrl)
         }
-        // 也加载保存的 Gateway auth token（用于 deviceToken 失效时重新连接）
-        val savedToken = securityModule.getGatewayAuthToken()
-        if (!savedToken.isNullOrBlank()) {
-            _state.value = _state.value.copy(token = savedToken)
-        }
     }
 
     /**
