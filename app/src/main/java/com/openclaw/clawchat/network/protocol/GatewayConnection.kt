@@ -234,7 +234,11 @@ class GatewayConnection(
                 startHeartbeat()
                 Result.success(Unit)
             } else {
-                Result.failure(IllegalStateException("Authentication timeout"))
+                // 更新状态为 Error（超时或认证失败）
+                val errorState = (finalState as? WebSocketConnectionState.Error)
+                    ?: WebSocketConnectionState.Error(IllegalStateException("Authentication timeout"))
+                _connectionState.value = errorState
+                Result.failure(errorState.throwable)
             }
         } catch (e: Exception) {
             _connectionState.value = WebSocketConnectionState.Error(e)
