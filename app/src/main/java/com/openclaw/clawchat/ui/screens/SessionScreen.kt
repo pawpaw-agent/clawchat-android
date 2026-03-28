@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -28,7 +27,7 @@ import kotlinx.coroutines.launch
  * 
  * 滚动逻辑：
  * 1. 新消息按钮点击 → 滚动到最底部
- * 2. 键盘弹出 → 消息列表同步上移相同距离（通过 imePadding 实现）
+ * 2. 键盘弹出 → 系统自动调整布局（adjustResize）
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -50,11 +49,6 @@ fun SessionScreen(
     
     // 是否显示"新消息"按钮：只要没滑到底部就显示
     val showNewMessagesButton by remember { derivedStateOf { listState.canScrollForward } }
-
-    // IME 高度（用于消息列表同步上移）
-    val density = LocalDensity.current
-    val imeHeightPx = WindowInsets.ime.getBottom(density)
-    val imeHeightDp = with(density) { imeHeightPx.toDp() }
 
     // 监听生命周期
     DisposableEffect(lifecycleOwner) {
@@ -90,16 +84,14 @@ fun SessionScreen(
     val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
 
     Scaffold(
-        modifier = Modifier
-            .background(MaterialTheme.colorScheme.background)
-            .offset(y = -imeHeightDp),
+        modifier = Modifier.background(MaterialTheme.colorScheme.background),
         topBar = {
             SessionTopAppBar(
                 connectionStatus = state.connectionStatus,
                 onNavigateBack = onNavigateBack
             )
         },
-        contentWindowInsets = WindowInsets.systemBars
+        contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.ime)
     ) { paddingValues ->
         Box(
             modifier = Modifier
