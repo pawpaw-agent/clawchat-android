@@ -140,10 +140,10 @@ fun SessionScreen(
                             modifier = Modifier.align(Alignment.BottomCenter),
                             onClick = {
                                 scope.launch {
-                                    // 滚动到最后一个实际存在的 item
-                                    val lastIndex = listState.layoutInfo.totalItemsCount - 1
-                                    if (lastIndex >= 0) {
-                                        listState.animateScrollToItem(lastIndex)
+                                    // 使用 Int.MAX_VALUE，Compose 会自动限制到最后一个 item
+                                    // 但需要确保有内容
+                                    if (listState.layoutInfo.totalItemsCount > 0) {
+                                        listState.scrollToItem(Int.MAX_VALUE)
                                     }
                                 }
                             }
