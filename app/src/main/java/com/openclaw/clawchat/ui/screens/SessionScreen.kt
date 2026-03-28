@@ -89,6 +89,20 @@ fun SessionScreen(
             }
         }
     }
+    
+    // 监听流式响应：自动滚动到底部
+    val chatStream = state.chatStream
+    LaunchedEffect(chatStream) {
+        // 流式响应正在进行时，自动滚动到底部
+        if (chatStream != null && chatStream.isNotBlank()) {
+            if (!listState.canScrollForward) {
+                val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                if (lastIndex >= 0) {
+                    listState.scrollToItem(lastIndex)
+                }
+            }
+        }
+    }
 
     val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
 
