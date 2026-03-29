@@ -78,14 +78,9 @@ fun SessionListContent(
                     CircularProgressIndicator()
                 }
             } else if (state.sessions.isEmpty()) {
-                    onRefresh()
-                    isRefreshing = false
-                },
-                modifier = Modifier.weight(1f)
-            ) {
-                if (state.sessions.isEmpty() && searchQuery.isBlank()) {
+                if (searchQuery.isBlank()) {
                     EmptySessionList(onCreateSession = onCreateSession)
-                } else if (state.sessions.isEmpty() && searchQuery.isNotBlank()) {
+                } else {
                     // 搜索无结果
                     Column(
                         modifier = Modifier.fillMaxSize(),
