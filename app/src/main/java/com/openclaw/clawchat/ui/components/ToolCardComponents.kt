@@ -59,9 +59,9 @@ fun ToolCardCompact(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // 图标
             Icon(
@@ -72,7 +72,7 @@ fun ToolCardCompact(
                 },
                 contentDescription = null,
                 tint = iconColor,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(14.dp)
             )
             
             // 工具名称
@@ -135,11 +135,11 @@ fun ToolCardExpanded(
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(10.dp)) {
             // 头部
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Icon(
                     imageVector = when {
@@ -153,7 +153,7 @@ fun ToolCardExpanded(
                         toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.tertiary
                         else -> DesignTokens.accent2
                     },
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(14.dp)
                 )
                 
                 Text(
@@ -169,17 +169,17 @@ fun ToolCardExpanded(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = null,
                         tint = DesignTokens.muted,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(14.dp)
                     )
                 }
             }
             
             // 展开内容
             if (expanded && hasContent) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 
                 SelectionContainer {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         // 参数
                         if (toolCard.args != null && toolCard.args.isNotBlank()) {
                             Text(
@@ -249,9 +249,9 @@ fun ToolTag(
         border = null
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             Icon(
                 imageVector = when {
@@ -261,7 +261,7 @@ fun ToolTag(
                 },
                 contentDescription = null,
                 tint = textColor,
-                modifier = Modifier.size(12.dp)
+                modifier = Modifier.size(10.dp)
             )
             Text(
                 text = name,
