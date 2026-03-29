@@ -262,6 +262,7 @@ fun MessageGroupItem(
     group: MessageGroup, 
     messageFontSize: FontSize = FontSize.MEDIUM,
     onDeleteMessage: (String) -> Unit = {},
+    onRetryMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {},
     onSpeak: (String) -> Unit = {},
     modifier: Modifier = Modifier
@@ -378,20 +379,11 @@ fun MessageGroupItem(
                         }
                     }
                     else -> {
-                        // 消息行：头像 + 消息气泡
-                        Row(
+                        // 消息行
+                        Box(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
-                            verticalAlignment = Alignment.Bottom
+                            contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
                         ) {
-                            // AI 头像（左侧）
-                            if (!isUser) {
-                                AvatarIcon(
-                                    isUser = false,
-                                    modifier = Modifier.padding(end = 8.dp)
-                                )
-                            }
-                            
                             // 消息气泡
                             MessageContentCard(
                                 message = message,
@@ -403,14 +395,6 @@ fun MessageGroupItem(
                                 onRetry = { onRetryMessage(message.id) },
                                 onSpeak = onSpeak
                             )
-                            
-                            // 用户头像（右侧）
-                            if (isUser) {
-                                AvatarIcon(
-                                    isUser = true,
-                                    modifier = Modifier.padding(start = 8.dp)
-                                )
-                            }
                         }
                         
                         val toolCalls = message.getToolCalls()
