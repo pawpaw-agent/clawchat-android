@@ -100,15 +100,15 @@ fun SessionListContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                } else {
-                    SessionList(
-                        sessions = state.sessions,
-                        currentSession = state.currentSession,
-                        onSelectSession = onSelectSession,
-                        onSessionLongPress = onSessionLongPress,
-                        onDeleteSession = onDeleteSession
-                    )
                 }
+            } else {
+                SessionList(
+                    sessions = state.sessions,
+                    currentSession = state.currentSession,
+                    onSelectSession = onSelectSession,
+                    onSessionLongPress = onSessionLongPress,
+                    onDeleteSession = onDeleteSession
+                )
             }
         }
         
