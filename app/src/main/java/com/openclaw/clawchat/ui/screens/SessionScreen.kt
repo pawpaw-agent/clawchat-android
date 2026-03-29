@@ -66,12 +66,19 @@ fun SessionScreen(
         }
     }
 
+    // 搜索状态
+    var isSearchMode by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+
     // 会话切换时重置状态
     LaunchedEffect(sessionId) {
         if (currentSessionId != sessionId) {
             currentSessionId = sessionId
             viewModel.setSessionId(sessionId)
             focusRequester.requestFocus()
+            // 切换会话时重置搜索
+            isSearchMode = false
+            searchQuery = ""
         }
     }
 
@@ -90,12 +97,39 @@ fun SessionScreen(
 
     val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
 
+    // 搜索过滤消息
+    val filteredMessages = remember(state.chatMessages, searchQuery) {
+        if (searchQuery.isBlank()) {
+            state.chatMessages
+        } else {
+            state.chatMessages.filter { message ->
+                message.content.any { content ->
+                    when (content) {
+                        is com.openclaw.clawchat.ui.state.MessageContentItem.Text ->
+                            content.text.contains(searchQuery, ignoreCase = true)
+                        else -> false
+                    }
+                }
+            }
+        }
+    }
+    val filteredGroups = remember(filteredMessages) { groupMessages(filteredMessages) }
+
     Scaffold(
         modifier = Modifier.background(MaterialTheme.colorScheme.background),
         topBar = {
             SessionTopAppBar(
                 connectionStatus = state.connectionStatus,
-                onNavigateBack = onNavigateBack
+                onNavigateBack = onNavigateBack,
+                isSearchMode = isSearchMode,
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                onToggleSearch = {
+                    isSearchMode = !isSearchMode
+                    if (!isSearchMode) {
+                        searchQuery = ""
+                    }
+                }
             )
         },
         contentWindowInsets = WindowInsets.systemBars
@@ -118,9 +152,9 @@ fun SessionScreen(
                 ) {
                     if (state.chatMessages.isEmpty() && !state.isLoading) {
                         EmptySessionContent(connectionStatus = state.connectionStatus)
-                    } else if (state.chatMessages.isNotEmpty()) {
+                    } else if (filteredGroups.isNotEmpty()) {
                         MessageGroupList(
-                            groups = messageGroups,
+                            groups = filteredGroups,
                             listState = listState,
                             streamSegments = state.chatStreamSegments,
                             toolMessages = state.chatToolMessages,
@@ -132,6 +166,26 @@ fun SessionScreen(
                                 com.openclaw.clawchat.util.MessageSpeaker.speak(text)
                             }
                         )
+                    } else if (isSearchMode && searchQuery.isNotBlank()) {
+                        // 搜索无结果
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Spacer(modifier = Modifier.height(48.dp))
+                            Icon(
+                                imageVector = Icons.Default.SearchOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "未找到 \"$searchQuery\"",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     if (state.isLoading) {

@@ -1,9 +1,20 @@
 package com.openclaw.clawchat.ui.screens.session
 
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 
 /**
@@ -13,27 +24,74 @@ import com.openclaw.clawchat.ui.state.ConnectionStatus
 @Composable
 fun SessionTopAppBar(
     connectionStatus: ConnectionStatus,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    isSearchMode: Boolean = false,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
+    onToggleSearch: () -> Unit = {}
 ) {
-    TopAppBar(
-        title = { Text("会话") },
-        navigationIcon = {
-            IconButton(onClick = onNavigateBack) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "返回"
+    if (isSearchMode) {
+        // 搜索模式
+        TopAppBar(
+            title = {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("搜索消息...") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { }),
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { onSearchQueryChange("") }) {
+                                Icon(Icons.Default.Close, "清除")
+                            }
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
                 )
-            }
-        },
-        actions = {
-            ConnectionStatusIcon(connectionStatus)
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            actionIconContentColor = MaterialTheme.colorScheme.onBackground
+            },
+            navigationIcon = {
+                IconButton(onClick = onToggleSearch) {
+                    Icon(Icons.Default.ArrowBack, "关闭搜索")
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
         )
-    )
+    } else {
+        // 正常模式
+        TopAppBar(
+            title = { Text("会话") },
+            navigationIcon = {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "返回"
+                    )
+                }
+            },
+            actions = {
+                IconButton(onClick = onToggleSearch) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "搜索消息"
+                    )
+                }
+                ConnectionStatusIcon(connectionStatus)
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                actionIconContentColor = MaterialTheme.colorScheme.onBackground
+            )
+        )
+    }
 }
 
 /**
