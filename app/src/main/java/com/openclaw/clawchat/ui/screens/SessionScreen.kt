@@ -18,6 +18,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.openclaw.clawchat.data.FontSize
+import com.openclaw.clawchat.ui.components.LoadingSkeleton
+import com.openclaw.clawchat.ui.components.SkeletonType
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.screens.session.*
 import kotlinx.coroutines.launch
@@ -150,7 +152,13 @@ fun SessionScreen(
                         .weight(1f)
                         .fillMaxWidth()
                 ) {
-                    if (state.chatMessages.isEmpty() && !state.isLoading) {
+                    if (state.isLoading && state.chatMessages.isEmpty()) {
+                        // 加载骨架屏
+                        LoadingSkeleton(
+                            type = SkeletonType.MESSAGE,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else if (state.chatMessages.isEmpty()) {
                         EmptySessionContent(connectionStatus = state.connectionStatus)
                     } else if (filteredGroups.isNotEmpty()) {
                         MessageGroupList(
