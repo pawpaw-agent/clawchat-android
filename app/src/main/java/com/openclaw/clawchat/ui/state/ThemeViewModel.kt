@@ -28,4 +28,14 @@ class ThemeViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = ThemeMode.SYSTEM
         )
+    
+    /**
+     * 动态颜色（Material You）
+     */
+    val dynamicColor = userPreferences.dynamicColor
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
 }

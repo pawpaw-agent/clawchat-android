@@ -83,6 +83,17 @@ fun SettingsScreen(
 
             // 显示设置区域
             SettingsSection(title = "显示") {
+                // 动态颜色（Android 12+）
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    ToggleSettingItem(
+                        icon = Icons.Outlined.Palette,
+                        title = "动态颜色",
+                        subtitle = "使用系统壁纸颜色（Material You）",
+                        checked = state.dynamicColor,
+                        onCheckedChange = { viewModel.setDynamicColor(it) }
+                    )
+                }
+                
                 ThemeModeSettingItem(
                     title = "主题模式",
                     subtitle = "选择应用主题外观",

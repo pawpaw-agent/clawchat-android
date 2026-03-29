@@ -54,6 +54,7 @@ class UserPreferences @Inject constructor(
     companion object {
         private val MESSAGE_FONT_SIZE = intPreferencesKey("message_font_size")
         private val THEME_MODE = intPreferencesKey("theme_mode")
+        private val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
     }
     
     /**
@@ -71,6 +72,23 @@ class UserPreferences @Inject constructor(
     suspend fun setMessageFontSize(fontSize: FontSize) {
         context.dataStore.edit { preferences ->
             preferences[MESSAGE_FONT_SIZE] = fontSize.value
+        }
+    }
+
+    /**
+     * 动态颜色（Android 12+ Material You）
+     */
+    val dynamicColor: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[DYNAMIC_COLOR] ?: true // 默认开启
+        }
+    
+    /**
+     * 设置动态颜色
+     */
+    suspend fun setDynamicColor(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[DYNAMIC_COLOR] = enabled
         }
     }
 

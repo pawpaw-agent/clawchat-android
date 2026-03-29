@@ -109,6 +109,12 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(themeMode = themeMode) }
             }
         }
+        
+        viewModelScope.launch {
+            userPreferences.dynamicColor.collect { dynamicColor ->
+                _uiState.update { it.copy(dynamicColor = dynamicColor) }
+            }
+        }
     }
 
     fun updateGatewayConfig(config: GatewayConfigInput) {
@@ -165,6 +171,12 @@ class SettingsViewModel @Inject constructor(
     fun setThemeMode(themeMode: ThemeMode) {
         viewModelScope.launch {
             userPreferences.setThemeMode(themeMode)
+        }
+    }
+    
+    fun setDynamicColor(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferences.setDynamicColor(enabled)
         }
     }
 }

@@ -60,6 +60,7 @@ class MainActivity : ComponentActivity() {
             // 主题 ViewModel
             val themeViewModel: ThemeViewModel = hiltViewModel()
             val themeMode by themeViewModel.themeMode.collectAsStateWithLifecycle()
+            val dynamicColor by themeViewModel.dynamicColor.collectAsStateWithLifecycle()
             val systemDarkTheme = isSystemInDarkTheme()
             
             // 计算实际使用的暗色主题值
@@ -69,7 +70,10 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.SYSTEM -> systemDarkTheme
             }
             
-            TerminalFlowTheme(darkTheme = darkTheme) {
+            TerminalFlowTheme(
+                darkTheme = darkTheme,
+                dynamicColor = dynamicColor
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

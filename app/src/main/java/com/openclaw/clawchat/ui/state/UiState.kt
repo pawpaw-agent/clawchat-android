@@ -195,7 +195,9 @@ data class SettingsUiState(
     // 字体大小设置（统一）
     val messageFontSize: FontSize = FontSize.MEDIUM,
     // 主题模式设置
-    val themeMode: com.openclaw.clawchat.data.ThemeMode = com.openclaw.clawchat.data.ThemeMode.SYSTEM
+    val themeMode: com.openclaw.clawchat.data.ThemeMode = com.openclaw.clawchat.data.ThemeMode.SYSTEM,
+    // 动态颜色（Material You）
+    val dynamicColor: Boolean = true
 )
 
 data class PairingUiState(
