@@ -518,31 +518,4 @@ fun ToolMessageCard(message: MessageUi) {
         }
     }
 }
-
-/**
- * 消息头像图标
- */
-@Composable
-private fun AvatarIcon(
-    isUser: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .size(32.dp)
-            .clip(CircleShape)
-            .background(
-                if (isUser) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.tertiary
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = if (isUser) Icons.Default.Person else Icons.Default.SmartToy,
-            contentDescription = if (isUser) "User" else "AI",
-            tint = if (isUser) MaterialTheme.colorScheme.onPrimary
-                   else MaterialTheme.colorScheme.onTertiary,
-            modifier = Modifier.size(18.dp)
-        )
-    }
 }
