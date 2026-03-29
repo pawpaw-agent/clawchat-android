@@ -85,14 +85,16 @@ fun SessionScreen(
     }
 
     // 滚动到最新消息
-    // reverseLayout=true 模式：index 0 = 视觉上的底部 = 最新消息
+    // 只在首次进入会话时触发，避免流式响应时循环滚动
+    var hasScrolledForSession by remember(sessionId) { mutableStateOf(false) }
+    
     LaunchedEffect(state.chatMessages.size, sessionId) {
-        if (state.chatMessages.isNotEmpty()) {
+        if (state.chatMessages.isNotEmpty() && !hasScrolledForSession) {
             // 等待 LazyColumn 完成 layout
             kotlinx.coroutines.delay(150)
             // reverseLayout=true: scrollToItem(0) 滚动到最新消息
-            // 但可能需要额外的 scrollOffset 确保在底部
             listState.scrollToItem(0, scrollOffset = -100)
+            hasScrolledForSession = true
         }
     }
 
