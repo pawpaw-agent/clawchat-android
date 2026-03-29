@@ -1,5 +1,6 @@
 package com.openclaw.clawchat.ui.state
 
+import android.content.Context
 import android.os.Build
 import android.os.Process
 import android.util.Log
@@ -12,6 +13,7 @@ import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.util.CrashHandler
 import com.openclaw.clawchat.util.CrashReport
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -94,7 +96,8 @@ data class MessageDebugInfo(
  */
 @HiltViewModel
 class DebugViewModel @Inject constructor(
-    private val gateway: GatewayConnection
+    private val gateway: GatewayConnection,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DebugUiState())
@@ -284,18 +287,16 @@ class DebugViewModel @Inject constructor(
 
     fun loadCrashReport() {
         viewModelScope.launch {
-            val report = CrashHandler.getCrashReport(gateway.helloOkPayload?.let { 
-                kotlinx.coroutines.Dispatchers.Default 
-            }?.let { 
-                android.app.Application().applicationContext 
-            } ?: return@launch)
+            val report = CrashHandler.getCrashReport(context)
             _state.update { it.copy(lastCrashReport = report) }
         }
     }
 
     fun clearCrashReport() {
-        // Note: 需要应用 context
-        _state.update { it.copy(lastCrashReport = null) }
+        viewModelScope.launch {
+            CrashHandler.clearCrashReport(context)
+            _state.update { it.copy(lastCrashReport = null) }
+        }
     }
 
     // === Tab 切换 ===
