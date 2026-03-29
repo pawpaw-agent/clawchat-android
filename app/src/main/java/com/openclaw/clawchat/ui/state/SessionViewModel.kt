@@ -537,38 +537,6 @@ class SessionViewModel @Inject constructor(
         loadMessageHistory(sessionId)
     }
 
-    /**
-     * 加载更早的消息（下拉刷新时调用）
-     */
-    fun loadEarlierMessages(onComplete: () -> Unit = {}) {
-        val sessionId = _state.value.sessionId ?: return
-        AppLog.d(TAG, "=== loadEarlierMessages: sessionId=$sessionId")
-        
-        viewModelScope.launch {
-            try {
-                // 获取当前最早的消息时间戳
-                val earliestTimestamp = _state.value.chatMessages.minOfOrNull { it.timestamp } ?: System.currentTimeMillis()
-                
-                // 从 Gateway 加载更早的消息
-                val earlierMessages = gateway.loadEarlierMessages(sessionId, earliestTimestamp, limit = 20)
-                
-                if (earlierMessages.isNotEmpty()) {
-                    // 插入到消息列表开头
-                    val currentMessages = _state.value.chatMessages.toMutableList()
-                    currentMessages.addAll(0, earlierMessages)
-                    _state.update { it.copy(chatMessages = currentMessages) }
-                    AppLog.d(TAG, "=== loadEarlierMessages: loaded ${earlierMessages.size} earlier messages")
-                } else {
-                    AppLog.d(TAG, "=== loadEarlierMessages: no earlier messages found")
-                }
-            } catch (e: Exception) {
-                AppLog.e(TAG, "=== loadEarlierMessages failed: ${e.message}", e)
-            } finally {
-                onComplete()
-            }
-        }
-    }
-
     private fun loadMessageHistory(sessionId: String) {
         AppLog.d(TAG, "=== loadMessageHistory: sessionId=$sessionId")
         

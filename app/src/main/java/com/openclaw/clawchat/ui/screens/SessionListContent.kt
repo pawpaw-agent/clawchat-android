@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,8 +40,6 @@ fun SessionListContent(
     onRefresh: () -> Unit,
     onDeleteSession: (String) -> Unit = {}
 ) {
-    var isRefreshing by remember { mutableStateOf(false) }
-    
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // 搜索框
@@ -73,10 +70,14 @@ fun SessionListContent(
             }
             
             // 列表内容
-            PullToRefreshBox(
-                isRefreshing = isRefreshing,
-                onRefresh = {
-                    isRefreshing = true
+            if (state.isLoading && state.sessions.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (state.sessions.isEmpty()) {
                     onRefresh()
                     isRefreshing = false
                 },

@@ -7,9 +7,6 @@ import com.openclaw.clawchat.network.CertificateExceptionMismatch
 import com.openclaw.clawchat.network.DynamicTrustManager
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.security.SecurityModule
-import com.openclaw.clawchat.ui.state.MessageContentItem
-import com.openclaw.clawchat.ui.state.MessageRole
-import com.openclaw.clawchat.ui.state.MessageUi
 import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.coroutines.CoroutineScope
@@ -630,56 +627,6 @@ class GatewayConnection(
             AppLog.d("GatewayConnection", "=== chatHistory: messages count=${messagesArray?.size ?: 0}")
         }
         return response
-    }
-
-    /** 加载更早的消息 */
-    suspend fun loadEarlierMessages(sessionKey: String, before: Long, limit: Int = 20): List<MessageUi> {
-        return try {
-            val params = mapOf(
-                "sessionKey" to JsonPrimitive(sessionKey),
-                "before" to JsonPrimitive(before),
-                "limit" to JsonPrimitive(limit)
-            )
-            val response = call("chat.history", params)
-            
-            if (response.isSuccess() && response.payload is JsonObject) {
-                val messagesArray = (response.payload as JsonObject)["messages"]?.jsonArray ?: return emptyList()
-                messagesArray.mapNotNull { element ->
-                    val obj = element.jsonObject
-                    MessageUi(
-                        id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
-                        content = parseContent(obj["content"]),
-                        role = when (obj["role"]?.jsonPrimitive?.content) {
-                            "user" -> MessageRole.USER
-                            "assistant" -> MessageRole.ASSISTANT
-                            else -> MessageRole.ASSISTANT
-                        },
-                        timestamp = obj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
-                    )
-                }
-            } else {
-                emptyList()
-            }
-        } catch (e: Exception) {
-            AppLog.e("GatewayConnection", "=== loadEarlierMessages failed: ${e.message}", e)
-            emptyList()
-        }
-    }
-    
-    private fun parseContent(content: JsonElement?): List<MessageContentItem> {
-        return when (content) {
-            is JsonPrimitive -> listOf(MessageContentItem.Text(content.content))
-            is JsonArray -> content.mapNotNull { item ->
-                val obj = item.jsonObject
-                val type = obj["type"]?.jsonPrimitive?.content
-                when (type) {
-                    "text" -> MessageContentItem.Text(obj["text"]?.jsonPrimitive?.content ?: "")
-                    "image" -> MessageContentItem.Image(obj["url"]?.jsonPrimitive?.content ?: "")
-                    else -> null
-                }
-            }
-            else -> emptyList()
-        }
     }
 
     /** chat.abort */
