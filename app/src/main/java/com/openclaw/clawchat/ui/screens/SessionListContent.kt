@@ -71,12 +71,11 @@ fun SessionListContent(
             
             // 列表内容
             if (state.isLoading && state.sessions.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                // 加载骨架屏
+                com.openclaw.clawchat.ui.components.LoadingSkeleton(
+                    type = com.openclaw.clawchat.ui.components.SkeletonType.SESSION,
+                    modifier = Modifier.fillMaxSize()
+                )
             } else if (state.sessions.isEmpty()) {
                 if (searchQuery.isBlank()) {
                     EmptySessionList(onCreateSession = onCreateSession)
