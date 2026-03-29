@@ -170,6 +170,7 @@ fun SessionScreen(
                             messageFontSize = messageFontSize,
                             onDeleteMessage = { viewModel.deleteMessage(it) },
                             onRegenerate = { viewModel.regenerateLastMessage() },
+                            onRetryMessage = { viewModel.retryMessage(it) },
                             onSpeak = { text ->
                                 com.openclaw.clawchat.util.MessageSpeaker.speak(text)
                             }

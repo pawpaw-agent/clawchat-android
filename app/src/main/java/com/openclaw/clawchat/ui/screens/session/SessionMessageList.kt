@@ -123,6 +123,7 @@ fun MessageGroupList(
     messageFontSize: FontSize = FontSize.MEDIUM,
     onDeleteMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {},
+    onRetryMessage: (String) -> Unit = {},
     onSpeak: (String) -> Unit = {}
 ) {
     // 使用 reverseLayout = true 实现最优雅的自动滚动
@@ -399,6 +400,7 @@ fun MessageGroupItem(
                                 messageFontSize = messageFontSize,
                                 onDelete = { onDeleteMessage(message.id) },
                                 onRegenerate = onRegenerate,
+                                onRetry = { onRetryMessage(message.id) },
                                 onSpeak = onSpeak
                             )
                             
