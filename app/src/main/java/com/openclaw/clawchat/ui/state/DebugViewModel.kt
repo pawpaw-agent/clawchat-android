@@ -287,15 +287,23 @@ class DebugViewModel @Inject constructor(
 
     fun loadCrashReport() {
         viewModelScope.launch {
-            val report = CrashHandler.getCrashReport(context)
-            _state.update { it.copy(lastCrashReport = report) }
+            try {
+                val report = CrashHandler.getCrashReport(context)
+                _state.update { it.copy(lastCrashReport = report) }
+            } catch (e: Exception) {
+                Log.e("DebugViewModel", "Failed to load crash report", e)
+            }
         }
     }
 
     fun clearCrashReport() {
         viewModelScope.launch {
-            CrashHandler.clearCrashReport(context)
-            _state.update { it.copy(lastCrashReport = null) }
+            try {
+                CrashHandler.clearCrashReport(context)
+                _state.update { it.copy(lastCrashReport = null) }
+            } catch (e: Exception) {
+                Log.e("DebugViewModel", "Failed to clear crash report", e)
+            }
         }
     }
 
