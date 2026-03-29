@@ -84,16 +84,15 @@ fun SessionScreen(
         }
     }
 
-    // 进入会话时滚动到最后一条消息
-    // reverseLayout=true 模式下，index 0 是最新消息
-    // 使用 sessionId 作为 key，确保每次进入会话都触发
-    LaunchedEffect(sessionId, state.chatMessages.size) {
+    // 滚动到最新消息
+    // reverseLayout=true 模式：index 0 = 视觉上的底部 = 最新消息
+    LaunchedEffect(state.chatMessages.size, sessionId) {
         if (state.chatMessages.isNotEmpty()) {
-            // 等待 LazyColumn 完成布局
-            kotlinx.coroutines.delay(100)
-            // reverseLayout=true: index 0 是最新消息
-            listState.scrollToItem(0)
-            android.util.Log.d("SessionScreen", "Scrolled to bottom (index 0) for session $sessionId, messages=${state.chatMessages.size}")
+            // 等待 LazyColumn 完成 layout
+            kotlinx.coroutines.delay(150)
+            // reverseLayout=true: scrollToItem(0) 滚动到最新消息
+            // 但可能需要额外的 scrollOffset 确保在底部
+            listState.scrollToItem(0, scrollOffset = -100)
         }
     }
 
