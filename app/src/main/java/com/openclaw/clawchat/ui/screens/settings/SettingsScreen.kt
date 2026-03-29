@@ -5,7 +5,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,7 +22,6 @@ import com.openclaw.clawchat.data.ThemeMode
  * - Gateway 配置管理
  * - 配对功能
  * - 通知设置
- * - 安全设置
  * - 关于页面
  * - Debug 调试
  */
@@ -38,7 +36,6 @@ fun SettingsScreen(
     var showGatewayDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showPairingSheet by remember { mutableStateOf(false) }
-    var showDeviceInfo by remember { mutableStateOf(false) }
     var debugClickCount by remember { mutableStateOf(0) }
 
     Scaffold(
@@ -120,23 +117,6 @@ fun SettingsScreen(
                 )
             }
 
-            // 安全设置区域
-            SettingsSection(title = "安全") {
-                ClickableSettingItem(
-                    icon = Icons.Outlined.Security,
-                    title = "设备信息",
-                    subtitle = "查看设备 ID 和配对状态",
-                    onClick = { showDeviceInfo = true }
-                )
-                
-                ClickableSettingItem(
-                    icon = Icons.Outlined.Fingerprint,
-                    title = "生物识别",
-                    subtitle = "使用指纹/面部解锁应用",
-                    onClick = { /* 功能开发中 */ }
-                )
-            }
-
             // 关于区域
             SettingsSection(title = "关于") {
                 ClickableSettingItem(
@@ -206,63 +186,4 @@ fun SettingsScreen(
             }
         )
     }
-    
-    // 设备信息对话框
-    if (showDeviceInfo) {
-        DeviceInfoDialog(
-            isPaired = state.isPaired,
-            onDismiss = { showDeviceInfo = false }
-        )
-    }
-}
-
-/**
- * 设备信息对话框
- */
-@Composable
-private fun DeviceInfoDialog(
-    isPaired: Boolean,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                Icons.Default.Devices,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-        },
-        title = { Text("设备信息") },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("配对状态", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        if (isPaired) "已配对" else "未配对",
-                        color = if (isPaired) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                    )
-                }
-                
-                HorizontalDivider()
-                
-                Text(
-                    "此设备已与 OpenClaw Gateway 配对，可以接收和发送消息。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("关闭")
-            }
-        }
-    )
 }
