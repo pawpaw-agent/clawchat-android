@@ -465,17 +465,17 @@ fun ToolDetailCard(toolCard: ToolCard) {
                 onClick = { expanded = !expanded }
             ),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        shape = RoundedCornerShape(DesignTokens.radiusMd)
+        shape = RoundedCornerShape(6.dp)
     ) {
-        Column(modifier = Modifier.padding(DesignTokens.space3)) {
+        Column(modifier = Modifier.padding(6.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 运行中显示加载指示器
                 if (isRunning) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(10.dp),
+                        strokeWidth = 1.5.dp,
                         color = MaterialTheme.colorScheme.primary
                     )
                 } else {
@@ -486,7 +486,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                             else -> Icons.Default.CheckCircle
                         },
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(10.dp),
                         tint = when {
                             toolCard.isError -> MaterialTheme.colorScheme.error
                             toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.primary
@@ -494,11 +494,12 @@ fun ToolDetailCard(toolCard: ToolCard) {
                         }
                     )
                 }
-                Spacer(modifier = Modifier.width(DesignTokens.space2))
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = toolCard.name.replaceFirstChar { it.uppercase() },
                     modifier = Modifier.weight(1f),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 // 运行中显示状态标签
@@ -506,15 +507,16 @@ fun ToolDetailCard(toolCard: ToolCard) {
                     Text(
                         text = "执行中...",
                         style = MaterialTheme.typography.labelSmall,
+                        fontSize = 9.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.width(DesignTokens.space2))
+                    Spacer(modifier = Modifier.width(4.dp))
                 }
                 if (hasContent) {
                     Icon(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(10.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -527,13 +529,13 @@ fun ToolDetailCard(toolCard: ToolCard) {
                 exit = fadeOut() + shrinkVertically()
             ) {
                 Column {
-                    Spacer(modifier = Modifier.height(DesignTokens.space2))
+                    Spacer(modifier = Modifier.height(4.dp))
                     SelectionContainer {
                         Text(
                             text = toolCard.args!!,
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
+                            fontSize = 9.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -548,9 +550,9 @@ fun ToolDetailCard(toolCard: ToolCard) {
             ) {
                 Column {
                     if (hasArgs) {
-                        Spacer(modifier = Modifier.height(DesignTokens.space2))
+                        Spacer(modifier = Modifier.height(3.dp))
                         HorizontalDivider(
-                            modifier = Modifier.padding(vertical = DesignTokens.space1),
+                            modifier = Modifier.padding(vertical = 2.dp),
                             color = MaterialTheme.colorScheme.outline
                         )
                     }
@@ -559,7 +561,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                             text = toolCard.result!!,
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
+                            fontSize = 9.sp,
                             color = if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -576,9 +578,9 @@ fun ToolDetailCard(toolCard: ToolCard) {
 fun ToolTagsRow(toolCards: List<ToolCard>) {
     var expandedIndex by remember { mutableStateOf(-1) }
     
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             toolCards.forEachIndexed { index, card ->
@@ -616,26 +618,26 @@ fun ToolTagExpanding(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(DesignTokens.radiusSm),
+        shape = RoundedCornerShape(4.dp),
         color = if (isError) {
             MaterialTheme.colorScheme.errorContainer
         } else {
             MaterialTheme.colorScheme.surfaceVariant
         },
-        modifier = Modifier.height(DesignTokens.space6)  // 24dp
+        modifier = Modifier.height(18.dp)
     ) {
         Row(
             modifier = Modifier.padding(
-                horizontal = DesignTokens.space2,  // 8dp
-                vertical = DesignTokens.space1     // 4dp
+                horizontal = 5.dp,
+                vertical = 2.dp
             ),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(DesignTokens.space1)
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Icon(
                 imageVector = if (isError) Icons.Default.ErrorOutline else Icons.Default.Terminal,
                 contentDescription = null,
-                modifier = Modifier.size(12.dp),
+                modifier = Modifier.size(8.dp),
                 tint = if (isError) {
                     MaterialTheme.colorScheme.error
                 } else {
@@ -645,7 +647,7 @@ fun ToolTagExpanding(
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelSmall,
-                fontSize = 11.sp,
+                fontSize = 9.sp,
                 color = if (isError) {
                     MaterialTheme.colorScheme.error
                 } else {
@@ -655,7 +657,7 @@ fun ToolTagExpanding(
             Icon(
                 imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                 contentDescription = null,
-                modifier = Modifier.size(12.dp),
+                modifier = Modifier.size(8.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
