@@ -249,14 +249,17 @@ class SessionViewModel @Inject constructor(
      * 处理工具流事件（1:1 复刻 webchat）
      */
     private fun handleToolStreamEvent(payload: JsonObject) {
-        val data = payload["data"]?.jsonObject ?: return
-        val toolCallId = data["toolCallId"]?.jsonPrimitive?.content ?: return
-        val name = data["name"]?.jsonPrimitive?.content ?: "tool"
-        val phase = data["phase"]?.jsonPrimitive?.content ?: ""
+        // payload 直接包含 toolCallId, name, status, stream 等（不是在 data 子对象中）
+        val toolCallId = payload["toolCallId"]?.jsonPrimitive?.content ?: return
+        val name = payload["name"]?.jsonPrimitive?.content ?: "tool"
+        val status = payload["status"]?.jsonPrimitive?.content ?: "pending"
+        val streamContent = payload["stream"]?.jsonPrimitive?.content
+        val outputContent = payload["output"]?.jsonPrimitive?.content
+        val errorContent = payload["error"]?.jsonPrimitive?.content
         val runId = payload["runId"]?.jsonPrimitive?.content ?: ""
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
         
-        AppLog.d(TAG, "=== Tool stream event: toolCallId=$toolCallId, name=$name, phase=$phase")
+        AppLog.d(TAG, "=== Tool stream event: toolCallId=$toolCallId, name=$name, status=$status")
         
         _state.update { currentState ->
             val now = System.currentTimeMillis()
@@ -270,7 +273,6 @@ class SessionViewModel @Inject constructor(
             
             // 如果是新的 toolCall，提交当前流式文本到 segments
             if (toolCallId !in toolStreamById) {
-                // 1:1 复刻 webchat: Commit any in-progress streaming text as a segment
                 if (!chatStream.isNullOrBlank()) {
                     chatStreamSegments = chatStreamSegments + StreamSegment(chatStream.trim(), now)
                     chatStream = null
@@ -279,21 +281,24 @@ class SessionViewModel @Inject constructor(
                 }
             }
             
-            // 解析 args 和 output
-            val args = if (phase == "start") data["args"]?.jsonObject else null
-            val output = when (phase) {
-                "update" -> MessageHandler.formatToolOutput(data["partialResult"])
-                "result" -> MessageHandler.formatToolOutput(data["result"])
-                else -> null
+            // 获取现有 entry 并追加流式内容
+            val existingEntry = toolStreamById[toolCallId]
+            val currentOutput = existingEntry?.output ?: ""
+            
+            // 处理流式内容：追加而非替换
+            val finalOutput = when {
+                status == "complete" || status == "done" -> outputContent ?: currentOutput
+                streamContent != null -> currentOutput + streamContent
+                outputContent != null -> outputContent
+                errorContent != null -> errorContent
+                else -> currentOutput
             }
             
             // 更新或创建 entry
-            val existingEntry = toolStreamById[toolCallId]
             val newEntry = if (existingEntry != null) {
                 existingEntry.copy(
                     name = name,
-                    args = args ?: existingEntry.args,
-                    output = output ?: existingEntry.output,
+                    output = finalOutput,
                     updatedAt = now
                 )
             } else {
@@ -303,8 +308,8 @@ class SessionViewModel @Inject constructor(
                     runId = runId,
                     sessionKey = sessionKey,
                     name = name,
-                    args = args,
-                    output = output,
+                    args = null,
+                    output = finalOutput,
                     startedAt = ts,
                     updatedAt = now
                 )
