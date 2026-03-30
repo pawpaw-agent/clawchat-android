@@ -314,7 +314,7 @@ class GatewayConnection(
 
             when (event) {
                 "connect.challenge" -> handleConnectChallenge(obj)
-                "agent.event" -> handleAgentEvent(obj)
+                "agent" -> handleAgentEvent(obj)
                 // chat / tick / all other events → forward to upstream
                 else -> _incomingMessages.emit(rawText)
             }
