@@ -420,8 +420,13 @@ class MainViewModel @Inject constructor(
      * 重试连接
      */
     fun retryConnection() {
-        clearConnectionError()
-        autoConnectIfNeeded()
+        val currentConnectionState = gateway.connectionState.value
+        // 只有在未连接且未在连接中时才重试
+        if (currentConnectionState !is WebSocketConnectionState.Connected &&
+            currentConnectionState !is WebSocketConnectionState.Connecting) {
+            clearConnectionError()
+            autoConnectIfNeeded()
+        }
     }
 
     /**
@@ -435,9 +440,10 @@ class MainViewModel @Inject constructor(
             
             Log.d(TAG, "=== checkAndReconnectIfNeeded: state=$currentConnectionState, isPaired=$isPaired, url=$gatewayUrl")
             
-            // 如果已配对、有 URL、但未连接，则重连
+            // 如果已配对、有 URL、且未连接/未在连接中，则重连
             if (isPaired && !gatewayUrl.isNullOrBlank() && 
-                currentConnectionState !is WebSocketConnectionState.Connected) {
+                currentConnectionState !is WebSocketConnectionState.Connected &&
+                currentConnectionState !is WebSocketConnectionState.Connecting) {
                 Log.i(TAG, "App resumed, reconnecting to Gateway...")
                 autoConnectIfNeeded()
             }
