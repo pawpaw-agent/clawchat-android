@@ -360,12 +360,20 @@ class SessionViewModel @Inject constructor(
     }
 }
 
+// ── 事件定义 ──
+
+sealed class SessionEvent {
+    data class MessageReceived(val message: MessageUi) : SessionEvent()
+    data class Error(val message: String) : SessionEvent()
+    data object MessageSent : SessionEvent()
+}
+
 // ── 扩展函数 ──
 
 private fun WebSocketConnectionState.toStatus(): ConnectionStatus = when (this) {
-    is WebSocketConnectionState.Connected -> ConnectionStatus.Connected
+    is WebSocketConnectionState.Connected -> ConnectionStatus.Connected()
     is WebSocketConnectionState.Connecting -> ConnectionStatus.Connecting
     is WebSocketConnectionState.Disconnecting -> ConnectionStatus.Disconnecting
     is WebSocketConnectionState.Disconnected -> ConnectionStatus.Disconnected
-    is WebSocketConnectionState.Error -> ConnectionStatus.Error(this.throwable.message ?: "Unknown error")
+    is WebSocketConnectionState.Error -> ConnectionStatus.Error(this.throwable.message ?: "Unknown error", this.throwable)
 }

@@ -8,6 +8,7 @@ import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -140,8 +141,7 @@ class ChatEventHandler(
                 currentState.copy(
                     chatStream = newStream,
                     chatStreamSegments = newSegments,
-                    chatStreamStartedAt = currentState.chatStreamStartedAt ?: now,
-                    isStreaming = true
+                    chatStreamStartedAt = currentState.chatStreamStartedAt ?: now
                 )
             }
         }
@@ -166,8 +166,7 @@ class ChatEventHandler(
             currentState.copy(
                 chatStream = null,
                 chatStreamSegments = finalSegments,
-                chatStreamStartedAt = null,
-                isStreaming = false
+                chatStreamStartedAt = null
             )
         }
 
@@ -197,7 +196,6 @@ class ChatEventHandler(
                 chatStream = null,
                 chatStreamSegments = finalSegments,
                 chatStreamStartedAt = null,
-                isStreaming = false,
                 isSending = false
             )
         }
@@ -217,7 +215,6 @@ class ChatEventHandler(
                 chatStream = null,
                 chatStreamSegments = segments + StreamSegment("(error: $errorMsg)", now),
                 chatStreamStartedAt = null,
-                isStreaming = false,
                 isSending = false,
                 error = errorMsg
             )
@@ -230,28 +227,31 @@ class ChatEventHandler(
     private fun saveMessageToDb(runId: String, msgObj: JsonObject?, sessionId: String) {
         if (msgObj == null) return
         
-        try {
-            val role = msgObj["role"]?.jsonPrimitive?.content ?: "assistant"
-            val content = msgObj["content"]?.let { JsonUtils.json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
-            val timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
-            
-            // 提取 toolCallId 和 toolName
-            val toolCallId = msgObj["toolCallId"]?.jsonPrimitive?.content
-            val toolName = msgObj["toolName"]?.jsonPrimitive?.content
-            
-            messageRepository.saveMessage(
-                sessionId = sessionId,
-                role = MessageRole.fromString(role),
-                content = content,
-                timestamp = timestamp,
-                toolCallId = toolCallId,
-                toolName = toolName
-            )
-            
-            // 更新发送状态
-            state.update { it.copy(isSending = false) }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to save message: ${e.message}")
+        val role = msgObj["role"]?.jsonPrimitive?.content ?: "assistant"
+        val content = msgObj["content"]?.let { JsonUtils.json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
+        val timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
+        
+        // 提取 toolCallId 和 toolName
+        val toolCallId = msgObj["toolCallId"]?.jsonPrimitive?.content
+        val toolName = msgObj["toolName"]?.jsonPrimitive?.content
+        
+        // 在协程中调用 suspend 函数
+        scope.launch {
+            try {
+                messageRepository.saveMessage(
+                    sessionId = sessionId,
+                    role = MessageRole.fromString(role),
+                    content = content,
+                    timestamp = timestamp,
+                    toolCallId = toolCallId,
+                    toolName = toolName
+                )
+                
+                // 更新发送状态
+                state.update { it.copy(isSending = false) }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to save message: ${e.message}")
+            }
         }
     }
 
