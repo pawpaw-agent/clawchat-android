@@ -52,16 +52,16 @@ fun ToolCardCompact(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(DesignTokens.radiusMd),
+        shape = RoundedCornerShape(6.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(horizontal = 6.dp, vertical = 3.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             // 图标
             Icon(
@@ -72,14 +72,14 @@ fun ToolCardCompact(
                 },
                 contentDescription = null,
                 tint = iconColor,
-                modifier = Modifier.size(12.dp)
+                modifier = Modifier.size(10.dp)
             )
             
             // 工具名称
             Text(
                 text = toolCard.name.replaceFirstChar { it.uppercase() },
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
                 color = DesignTokens.text,
                 modifier = Modifier.weight(1f)
             )
@@ -90,14 +90,14 @@ fun ToolCardCompact(
                     text = "运行中",
                     style = MaterialTheme.typography.labelSmall,
                     color = DesignTokens.muted,
-                    fontSize = 10.sp
+                    fontSize = 9.sp
                 )
             } else if (toolCard.result != null) {
                 Text(
                     text = if (toolCard.isError) "错误" else "完成",
                     style = MaterialTheme.typography.labelSmall,
                     color = if (toolCard.isError) DesignTokens.danger else DesignTokens.ok,
-                    fontSize = 10.sp
+                    fontSize = 9.sp
                 )
             }
         }
@@ -131,15 +131,15 @@ fun ToolCardExpanded(
         modifier = modifier
             .fillMaxWidth()
             .clickable(enabled = hasContent) { expanded = !expanded },
-        shape = RoundedCornerShape(DesignTokens.radiusMd),
+        shape = RoundedCornerShape(6.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
+        Column(modifier = Modifier.padding(6.dp)) {
             // 头部
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 Icon(
                     imageVector = when {
@@ -153,13 +153,13 @@ fun ToolCardExpanded(
                         toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.tertiary
                         else -> DesignTokens.accent2
                     },
-                    modifier = Modifier.size(12.dp)
+                    modifier = Modifier.size(10.dp)
                 )
                 
                 Text(
                     text = toolCard.name.replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Medium,
                     color = DesignTokens.text,
                     modifier = Modifier.weight(1f)
                 )
@@ -169,17 +169,17 @@ fun ToolCardExpanded(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = null,
                         tint = DesignTokens.muted,
-                        modifier = Modifier.size(12.dp)
+                        modifier = Modifier.size(10.dp)
                     )
                 }
             }
             
             // 展开内容
             if (expanded && hasContent) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 
                 SelectionContainer {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         // 参数
                         if (toolCard.args != null && toolCard.args.isNotBlank()) {
                             Text(
@@ -187,7 +187,7 @@ fun ToolCardExpanded(
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
                                 color = DesignTokens.muted,
-                                fontSize = 11.sp
+                                fontSize = 9.sp
                             )
                         }
                         
@@ -195,7 +195,7 @@ fun ToolCardExpanded(
                         if (toolCard.result != null && toolCard.result.isNotBlank()) {
                             if (toolCard.args != null && toolCard.args.isNotBlank()) {
                                 HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    modifier = Modifier.padding(vertical = 2.dp),
                                     color = DesignTokens.border
                                 )
                             }
@@ -204,7 +204,7 @@ fun ToolCardExpanded(
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
                                 color = if (toolCard.isError) DesignTokens.danger else DesignTokens.text,
-                                fontSize = 11.sp
+                                fontSize = 9.sp
                             )
                         }
                     }
@@ -249,7 +249,7 @@ fun ToolTag(
         border = null
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp)
         ) {
@@ -261,13 +261,13 @@ fun ToolTag(
                 },
                 contentDescription = null,
                 tint = textColor,
-                modifier = Modifier.size(8.dp)
+                modifier = Modifier.size(7.dp)
             )
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelSmall,
                 color = textColor,
-                fontSize = 11.sp,
+                fontSize = 9.sp,
                 fontWeight = FontWeight.Medium
             )
         }
