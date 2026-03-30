@@ -207,15 +207,15 @@ class SessionViewModel @Inject constructor(
             val payload = obj["payload"]?.jsonObject ?: return
             val eventSessionKey = payload["sessionKey"]?.jsonPrimitive?.content
             
-            // agent 事件：检查 stream 字段
-            if (event == "agent") {
-                val stream = payload["stream"]?.jsonPrimitive?.content
-                AppLog.d(TAG, "=== handleIncomingFrame: agent event, stream=$stream")
-                if (stream != null) {
+            // agent.event 事件：检查 kind 字段
+            if (event == "agent.event") {
+                val kind = payload["kind"]?.jsonPrimitive?.content
+                AppLog.d(TAG, "=== handleIncomingFrame: agent.event, kind=$kind")
+                if (kind == "tool") {
                     if (eventSessionKey != null && eventSessionKey != sessionId) {
                         return
                     }
-                    handleAgentEvent(payload, stream)
+                    handleToolStreamEvent(payload)
                 }
                 return
             }
