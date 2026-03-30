@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -124,7 +125,13 @@ class GatewayConnection(
     // ── Connection ──
 
     suspend fun connect(url: String, token: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
-        if (_connectionState.value is WebSocketConnectionState.Connected) {
+        // P0-1: 防止重复连接 - 检查已连接或正在连接状态
+        val currentState = _connectionState.value
+        if (currentState is WebSocketConnectionState.Connected) {
+            return@withContext Result.success(Unit)
+        }
+        if (currentState is WebSocketConnectionState.Connecting) {
+            Log.w(TAG, "connect() called while already connecting, skipping")
             return@withContext Result.success(Unit)
         }
 
@@ -443,16 +450,18 @@ class GatewayConnection(
             timestamp = System.currentTimeMillis()
         )
 
-        // Update the tool stream events map
-        val currentEvents = _toolStreamEvents.value.toMutableMap()
-        currentEvents[toolCallId] = event
-        _toolStreamEvents.value = currentEvents
+        // P0-2: 使用 update{} 原子操作，避免竞态条件
+        _toolStreamEvents.update { events ->
+            events.toMutableMap().apply { this[toolCallId] = event }
+        }
 
-        // Update the order (add to end if new, move to end if updated)
-        val currentOrder = _toolStreamOrder.value.toMutableList()
-        currentOrder.remove(toolCallId)
-        currentOrder.add(toolCallId)
-        _toolStreamOrder.value = currentOrder
+        // P0-2: 同样使用 update{} 原子操作更新顺序
+        _toolStreamOrder.update { order ->
+            order.toMutableList().apply {
+                remove(toolCallId)
+                add(toolCallId)
+            }
+        }
 
         Log.d(TAG, "Tool stream event: ${event.name} [${event.status}] stream=${streamContent?.take(50)} output=${finalOutput.take(50)}")
     }

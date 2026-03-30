@@ -98,25 +98,28 @@ fun SessionScreen(
         }
     }
 
-    val messageGroups = remember(state.chatMessages) { groupMessages(state.chatMessages) }
+    // P1-3: 使用 derivedStateOf 优化消息分组计算，避免不必要的重组
+    val messageGroups by remember { derivedStateOf { groupMessages(state.chatMessages) } }
 
     // 搜索过滤消息
-    val filteredMessages = remember(state.chatMessages, searchQuery) {
-        if (searchQuery.isBlank()) {
-            state.chatMessages
-        } else {
-            state.chatMessages.filter { message ->
-                message.content.any { content ->
-                    when (content) {
-                        is com.openclaw.clawchat.ui.state.MessageContentItem.Text ->
-                            content.text.contains(searchQuery, ignoreCase = true)
-                        else -> false
+    val filteredMessages by remember(state.chatMessages, searchQuery) {
+        derivedStateOf {
+            if (searchQuery.isBlank()) {
+                state.chatMessages
+            } else {
+                state.chatMessages.filter { message ->
+                    message.content.any { content ->
+                        when (content) {
+                            is com.openclaw.clawchat.ui.state.MessageContentItem.Text ->
+                                content.text.contains(searchQuery, ignoreCase = true)
+                            else -> false
+                        }
                     }
                 }
             }
         }
     }
-    val filteredGroups = remember(filteredMessages) { groupMessages(filteredMessages) }
+    val filteredGroups by remember { derivedStateOf { groupMessages(filteredMessages) } }
 
     Scaffold(
         modifier = Modifier.background(MaterialTheme.colorScheme.background),
