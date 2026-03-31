@@ -346,6 +346,21 @@ class MainViewModel @Inject constructor(
             _events.trySend(UiEvent.ShowSuccess("会话已删除"))
         }
     }
+    
+    /**
+     * 清除当前会话的所有消息
+     */
+    fun clearCurrentSession() {
+        val sessionId = _uiState.value.currentSession?.id ?: return
+        viewModelScope.launch(exceptionHandler) {
+            try {
+                gateway.call("sessions.reset", mapOf("key" to JsonPrimitive(sessionId)))
+                _events.trySend(UiEvent.ShowSuccess("会话已清除"))
+            } catch (e: Exception) {
+                _events.trySend(UiEvent.ShowError("清除失败：${e.message}"))
+            }
+        }
+    }
 
     fun createSession(model: String = "default", thinking: Boolean = false) {
         viewModelScope.launch(exceptionHandler) {

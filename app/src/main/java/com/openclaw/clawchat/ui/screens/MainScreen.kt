@@ -196,7 +196,7 @@ fun MainScreen(
                 when (commandId) {
                     "new-session" -> viewModel.createSession()
                     "settings" -> showSettings = true
-                    "clear-chat" -> { /* TODO: 清除当前会话 */ }
+                    "clear-chat" -> viewModel.clearCurrentSession()
                     "debug" -> onNavigateToDebug()
                 }
             },
