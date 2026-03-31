@@ -184,7 +184,7 @@ private fun CodeBlockContent(
 /**
  * 简单的语法高亮
  */
-private fun highlightSyntax(code: String, language: String): AnnotatedString {
+internal fun highlightSyntax(code: String, language: String): AnnotatedString {
     return buildAnnotatedString {
         val keywords = when (language.lowercase()) {
             "kotlin", "java" -> setOf("fun", "val", "var", "class", "interface", "object", "if", "else", "when", "for", "while", "return", "import", "package", "private", "public", "protected", "suspend", "inline", "data", "sealed", "enum", "companion", "override", "abstract", "open", "lateinit", "by", "is", "in", "as", "true", "false", "null")
@@ -253,12 +253,12 @@ private fun highlightSyntax(code: String, language: String): AnnotatedString {
 /**
  * 解析 Markdown 段落
  */
-private sealed class MarkdownSegment {
+internal sealed class MarkdownSegment {
     data class Text(val text: String) : MarkdownSegment()
     data class CodeBlock(val code: String, val language: String) : MarkdownSegment()
 }
 
-private fun parseMarkdownSegments(content: String): List<MarkdownSegment> {
+internal fun parseMarkdownSegments(content: String): List<MarkdownSegment> {
     val segments = mutableListOf<MarkdownSegment>()
     val lines = content.lines()
     val currentText = StringBuilder()
@@ -359,7 +359,7 @@ private fun MarkdownRegularContent(
 /**
  * 解析 Markdown 为 AnnotatedString
  */
-private fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
+internal fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
     return buildAnnotatedString {
         val lines = content.lines()
         var isFirst = true
@@ -678,7 +678,7 @@ private fun RenderTable(
 /**
  * 解析表格行
  */
-private fun parseTableRow(line: String): List<String> {
+internal fun parseTableRow(line: String): List<String> {
     return line
         .trim()
         .trim('|')
