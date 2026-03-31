@@ -63,17 +63,6 @@ class GatewayConnection(
 ) {
     companion object {
         private const val TAG = "GatewayConnection"
-
-        private const val AUTH_TIMEOUT_MS = 60_000L
-        private const val REQUEST_TIMEOUT_MS = 30_000L
-        private const val HEARTBEAT_INTERVAL_MS = 30_000L
-
-        private const val INITIAL_RECONNECT_DELAY_MS = 1000L
-        private const val MAX_RECONNECT_DELAY_MS = 30_000L
-        private const val RECONNECT_BACKOFF_FACTOR = 2.0
-        private const val MAX_RECONNECT_ATTEMPTS = 15
-
-        private const val NONCE_LOG_PREFIX_LEN = 8
     }
 
     // 使用统一的 Json 配置（带 encodeDefaults）
@@ -111,7 +100,7 @@ class GatewayConnection(
     // ── Internal components ──
 
     private var authHandler = ChallengeResponseAuth(securityModule)
-    private val requestTracker = RequestTracker(timeoutMs = REQUEST_TIMEOUT_MS, scope = appScope)
+    private val requestTracker = RequestTracker(timeoutMs = GatewayConfig.REQUEST_TIMEOUT_MS, scope = appScope)
     private val sequenceManager = SequenceManager()
     private val eventDeduplicator = EventDeduplicator()
 
@@ -231,7 +220,7 @@ class GatewayConnection(
             })
 
             // Wait for auth to complete (suspends until Connected or Error)
-            val finalState = withTimeoutOrNull(AUTH_TIMEOUT_MS) {
+            val finalState = withTimeoutOrNull(GatewayConfig.AUTH_TIMEOUT_MS) {
                 _connectionState.first {
                     it is WebSocketConnectionState.Connected || it is WebSocketConnectionState.Error
                 }
@@ -347,7 +336,7 @@ class GatewayConnection(
             }
 
             if (BuildConfig.DEBUG) {
-                Log.i(TAG, "connect.challenge received, nonce=${nonce.take(NONCE_LOG_PREFIX_LEN)}...")
+                Log.i(TAG, "connect.challenge received, nonce=${nonce.take(GatewayConfig.NONCE_LOG_PREFIX_LEN)}...")
             } else {
                 Log.i(TAG, "connect.challenge received")
             }
@@ -386,7 +375,7 @@ class GatewayConnection(
             Log.i(TAG, "connect request sent, waiting for hello-ok res...")
 
             // 4. Await hello-ok response
-            val response = withTimeout(AUTH_TIMEOUT_MS) { deferred.await() }
+            val response = withTimeout(GatewayConfig.AUTH_TIMEOUT_MS) { deferred.await() }
 
             if (response.ok) {
                 handleHelloOk(response)
@@ -563,7 +552,7 @@ class GatewayConnection(
             throw IllegalStateException("WebSocket not connected")
         }
 
-        return withTimeout(REQUEST_TIMEOUT_MS) { deferred.await() }
+        return withTimeout(GatewayConfig.REQUEST_TIMEOUT_MS) { deferred.await() }
     }
 
     /** chat.send — with required idempotencyKey and optional attachments */
@@ -694,7 +683,7 @@ class GatewayConnection(
         heartbeatJob = appScope.launch {
             while (_connectionState.value is WebSocketConnectionState.Connected) {
                 try { ping() } catch (_: Exception) {}
-                delay(HEARTBEAT_INTERVAL_MS)
+                delay(GatewayConfig.HEARTBEAT_INTERVAL_MS)
             }
         }
     }
@@ -702,16 +691,16 @@ class GatewayConnection(
     private fun scheduleReconnect(url: String, token: String? = null) {
         reconnectJob?.cancel()
 
-        if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
-            Log.e(TAG, "Max reconnect attempts ($MAX_RECONNECT_ATTEMPTS) reached, giving up")
+        if (reconnectAttempt >= GatewayConfig.MAX_RECONNECT_ATTEMPTS) {
+            Log.e(TAG, "Max reconnect attempts (${GatewayConfig.MAX_RECONNECT_ATTEMPTS}) reached, giving up")
             _connectionState.value = WebSocketConnectionState.Error(
                 IllegalStateException("Max reconnect attempts reached")
             )
             return
         }
 
-        val delayMs = (INITIAL_RECONNECT_DELAY_MS * Math.pow(RECONNECT_BACKOFF_FACTOR, reconnectAttempt.toDouble()))
-            .toLong().coerceAtMost(MAX_RECONNECT_DELAY_MS)
+        val delayMs = (GatewayConfig.INITIAL_RECONNECT_DELAY_MS * Math.pow(GatewayConfig.RECONNECT_BACKOFF_FACTOR, reconnectAttempt.toDouble()))
+            .toLong().coerceAtMost(GatewayConfig.MAX_RECONNECT_DELAY_MS)
         reconnectAttempt++
 
         reconnectJob = appScope.launch {
