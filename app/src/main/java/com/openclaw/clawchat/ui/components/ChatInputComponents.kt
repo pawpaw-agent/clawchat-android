@@ -261,6 +261,18 @@ fun ChatInputBar(
                     )
                 }
                 
+                // 语音输入按钮
+                IconButton(
+                    onClick = onVoiceInput,
+                    enabled = enabled
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = "语音输入",
+                        tint = if (enabled) DesignTokens.accent else DesignTokens.muted.copy(alpha = 0.5f)
+                    )
+                }
+                
                 // 输入框
                 OutlinedTextField(
                     value = value,
