@@ -30,7 +30,8 @@ import com.openclaw.clawchat.data.ThemeMode
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
-    onNavigateToDebug: () -> Unit = {}
+    onNavigateToDebug: () -> Unit = {},
+    onNavigateToCron: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showGatewayDialog by remember { mutableStateOf(false) }
@@ -125,6 +126,16 @@ fun SettingsScreen(
                     subtitle = "定时静音通知",
                     checked = state.dndEnabled,
                     onCheckedChange = { viewModel.toggleDnd(it) }
+                )
+            }
+
+            // 自动化区域
+            SettingsSection(title = "自动化") {
+                ClickableSettingItem(
+                    icon = Icons.Outlined.Schedule,
+                    title = "定时任务",
+                    subtitle = "管理定时执行的任务",
+                    onClick = onNavigateToCron
                 )
             }
 

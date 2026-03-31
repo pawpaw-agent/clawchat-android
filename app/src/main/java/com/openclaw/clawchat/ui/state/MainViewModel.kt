@@ -430,6 +430,28 @@ class MainViewModel @Inject constructor(
     }
 
     /**
+     * 向会话发送引导消息
+     */
+    fun steerSession(sessionKey: String, text: String) {
+        viewModelScope.launch(exceptionHandler) {
+            if (_uiState.value.connectionStatus !is ConnectionStatus.Connected) {
+                _events.trySend(UiEvent.ShowError("未连接到 Gateway"))
+                return@launch
+            }
+            try {
+                val response = gateway.sessionsSteer(sessionKey, text)
+                if (response.isSuccess()) {
+                    _events.trySend(UiEvent.ShowSuccess("引导消息已发送"))
+                } else {
+                    _events.trySend(UiEvent.ShowError(response.error?.message ?: "发送失败"))
+                }
+            } catch (e: Exception) {
+                _events.trySend(UiEvent.ShowError("发送失败：${e.message}"))
+            }
+        }
+    }
+
+    /**
      * 检查连接状态并在需要时重连（从后台返回前台时调用）
      */
     fun checkAndReconnectIfNeeded() {
