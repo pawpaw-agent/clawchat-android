@@ -491,6 +491,16 @@ private fun SessionItem(
             expanded = showMenu,
             onDismissRequest = { showMenu = false }
         ) {
+            // 重命名选项
+            DropdownMenuItem(
+                text = { Text("重命名") },
+                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                onClick = {
+                    showMenu = false
+                    // TODO: 显示重命名对话框
+                }
+            )
+            
             // 置顶选项
             DropdownMenuItem(
                 text = { Text(if (session.isPinned) "取消置顶" else "置顶会话") },

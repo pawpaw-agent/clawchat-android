@@ -467,6 +467,32 @@ class MainViewModel @Inject constructor(
     }
 
     /**
+     * 重命名会话
+     */
+    fun renameSession(sessionId: String, newLabel: String) {
+        viewModelScope.launch(exceptionHandler) {
+            try {
+                gateway.call("sessions.patch", mapOf(
+                    "key" to JsonPrimitive(sessionId),
+                    "label" to JsonPrimitive(newLabel)
+                ))
+                _uiState.update { state ->
+                    state.copy(
+                        sessions = state.sessions.map { session ->
+                            if (session.id == sessionId) {
+                                session.copy(label = newLabel)
+                            } else session
+                        }
+                    )
+                }
+                _events.trySend(UiEvent.ShowSuccess("会话已重命名"))
+            } catch (e: Exception) {
+                _events.trySend(UiEvent.ShowError("重命名失败：${e.message}"))
+            }
+        }
+    }
+
+    /**
      * 检查连接状态并在需要时重连（从后台返回前台时调用）
      */
     fun checkAndReconnectIfNeeded() {
