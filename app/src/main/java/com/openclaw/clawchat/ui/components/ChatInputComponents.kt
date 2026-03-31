@@ -123,6 +123,37 @@ fun ChatInputBar(
     
     // 图片选择器
     val context = androidx.compose.ui.platform.LocalContext.current
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+    
+    // 粘贴图片处理
+    val handlePaste: () -> Unit = {
+        // 检查剪贴板是否有图片
+        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        val clip = clipboard.primaryClip
+        
+        if (clip != null && clip.itemCount > 0) {
+            for (i in 0 until clip.itemCount) {
+                val item = clip.getItemAt(i)
+                val uri = item.uri
+                if (uri != null) {
+                    // 剪贴板有图片 URI
+                    try {
+                        val mimeType = context.contentResolver.getType(uri) ?: "image/png"
+                        if (mimeType.startsWith("image/")) {
+                            onAddAttachment(AttachmentUi(
+                                id = "paste-${System.currentTimeMillis()}-${(0..9999).random()}",
+                                uri = uri,
+                                mimeType = mimeType
+                            ))
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("ChatInputBar", "Failed to paste image: ${e.message}")
+                    }
+                }
+            }
+        }
+    }
+    
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -215,6 +246,18 @@ fun ChatInputBar(
                         } else {
                             DesignTokens.muted.copy(alpha = 0.5f)
                         }
+                    )
+                }
+                
+                // 粘贴按钮（从剪贴板粘贴图片）
+                IconButton(
+                    onClick = handlePaste,
+                    enabled = enabled
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ContentPaste,
+                        contentDescription = "粘贴图片",
+                        tint = if (enabled) DesignTokens.muted else DesignTokens.muted.copy(alpha = 0.5f)
                     )
                 }
                 
