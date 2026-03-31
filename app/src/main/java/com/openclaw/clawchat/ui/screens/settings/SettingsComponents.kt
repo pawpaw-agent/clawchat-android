@@ -9,9 +9,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.data.ThemeMode
+import com.openclaw.clawchat.ui.components.ColorUtils
 
 /**
  * 设置区域容器
@@ -315,6 +317,116 @@ fun ThemeModeDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedMode) }) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+/**
+ * 主题色选择项
+ */
+@Composable
+fun ThemeColorSettingItem(
+    title: String,
+    subtitle: String,
+    currentColorIndex: Int,
+    onColorChange: (Int) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = { Text(subtitle) },
+        leadingContent = {
+            Icon(
+                imageVector = Icons.Outlined.Palette,
+                contentDescription = null,
+                tint = ColorUtils.PRESET_COLORS[currentColorIndex].primary
+            )
+        },
+        trailingContent = {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .padding(4.dp)
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = ColorUtils.PRESET_COLORS[currentColorIndex].primary,
+                    shape = MaterialTheme.shapes.small
+                ) {}
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showDialog = true }
+    )
+
+    if (showDialog) {
+        ThemeColorDialog(
+            title = title,
+            currentColorIndex = currentColorIndex,
+            onDismiss = { showDialog = false },
+            onConfirm = { index ->
+                onColorChange(index)
+                showDialog = false
+            }
+        )
+    }
+}
+
+/**
+ * 主题色选择对话框
+ */
+@Composable
+fun ThemeColorDialog(
+    title: String,
+    currentColorIndex: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
+    var selectedIndex by remember { mutableStateOf(currentColorIndex) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                ColorUtils.PRESET_COLORS.forEachIndexed { index, preset ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedIndex = index }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedIndex == index,
+                            onClick = { selectedIndex = index }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            modifier = Modifier.size(32.dp),
+                            color = preset.primary,
+                            shape = MaterialTheme.shapes.small
+                        ) {}
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = preset.name,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selectedIndex) }) {
                 Text("确定")
             }
         },

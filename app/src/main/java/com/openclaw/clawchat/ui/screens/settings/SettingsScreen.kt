@@ -108,6 +108,13 @@ fun SettingsScreen(
                     currentSize = state.messageFontSize,
                     onSizeChange = { viewModel.setMessageFontSize(it) }
                 )
+                
+                ThemeColorSettingItem(
+                    title = "主题色",
+                    subtitle = "选择应用主题颜色",
+                    currentColorIndex = state.themeColorIndex,
+                    onColorChange = { viewModel.setThemeColor(it) }
+                )
             }
 
             // 通知设置区域
