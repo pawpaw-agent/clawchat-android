@@ -41,6 +41,66 @@ import com.openclaw.clawchat.ui.components.SlashCommandDef
 import com.openclaw.clawchat.ui.components.getSlashCommandCompletions
 
 /**
+ * 斜杠命令菜单状态
+ */
+private data class SlashMenuState(
+    val isOpen: Boolean = false,
+    val mode: String = "command",  // "command" or "args"
+    val items: List<SlashCommandDef> = emptyList(),
+    val argItems: List<String> = emptyList(),
+    val command: SlashCommandDef? = null,
+    val selectedIndex: Int = 0
+)
+
+/**
+ * 计算斜杠命令菜单状态
+ */
+private fun computeSlashMenuState(inputValue: String): SlashMenuState {
+    val trimmed = inputValue.trim()
+    
+    // 参数模式: /command <partial-arg>
+    val argMatch = Regex("^/(\\S+)\\s+(.*)$").find(trimmed)
+    if (argMatch != null) {
+        val cmdName = argMatch.groupValues[1].lowercase()
+        val argFilter = argMatch.groupValues[2].lowercase()
+        val cmd = SLASH_COMMANDS.find { it.name == cmdName }
+        val argOpts = cmd?.argOptions ?: emptyList()
+        if (cmd != null && argOpts.isNotEmpty()) {
+            val filtered = if (argFilter.isNotEmpty()) {
+                argOpts.filter { it.lowercase().startsWith(argFilter) }
+            } else {
+                argOpts
+            }
+            if (filtered.isNotEmpty()) {
+                return SlashMenuState(
+                    isOpen = true,
+                    mode = "args",
+                    command = cmd,
+                    argItems = filtered,
+                    selectedIndex = 0
+                )
+            }
+        }
+        return SlashMenuState()
+    }
+    
+    // 命令模式: /partial-command
+    val commandMatch = Regex("^/(\\S*)$").find(trimmed)
+    if (commandMatch != null) {
+        val filter = commandMatch.groupValues[1]
+        val items = getSlashCommandCompletions(filter)
+        return SlashMenuState(
+            isOpen = items.isNotEmpty(),
+            mode = "command",
+            items = items,
+            selectedIndex = 0
+        )
+    }
+    
+    return SlashMenuState()
+}
+
+/**
  * 聊天输入栏
  * 对应 WebChat chat input area
  */
@@ -57,67 +117,9 @@ fun ChatInputBar(
     onRemoveAttachment: (String) -> Unit = {},
     onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> }
 ) {
-    // 斜杠命令菜单状态
-    var slashMenuOpen by remember { mutableStateOf(false) }
-    var slashMenuItems by remember { mutableStateOf<List<SlashCommandDef>>(emptyList()) }
+    // 使用 derivedStateOf 计算斜杠命令菜单状态
     var slashMenuIndex by remember { mutableStateOf(0) }
-    var slashMenuCommand by remember { mutableStateOf<SlashCommandDef?>(null) }
-    var slashMenuArgItems by remember { mutableStateOf<List<String>>(emptyList()) }
-    var slashMenuMode by remember { mutableStateOf("command") }
-    
-    // 更新斜杠菜单
-    LaunchedEffect(value) {
-        val trimmed = value.trim()
-        
-        // 参数模式: /command <partial-arg>
-        val argMatch = Regex("^/(\\S+)\\s+(.*)$").find(trimmed)
-        if (argMatch != null) {
-            val cmdName = argMatch.groupValues[1].lowercase()
-            val argFilter = argMatch.groupValues[2].lowercase()
-            val cmd = SLASH_COMMANDS.find { it.name == cmdName }
-            val argOpts = cmd?.argOptions ?: emptyList()
-            if (cmd != null && argOpts.isNotEmpty()) {
-                val filtered = if (argFilter.isNotEmpty()) {
-                    argOpts.filter { it.lowercase().startsWith(argFilter) }
-                } else {
-                    argOpts
-                }
-                if (filtered.isNotEmpty()) {
-                    slashMenuMode = "args"
-                    slashMenuCommand = cmd
-                    slashMenuArgItems = filtered
-                    slashMenuOpen = true
-                    slashMenuIndex = 0
-                    slashMenuItems = emptyList()
-                    return@LaunchedEffect
-                }
-            }
-            slashMenuOpen = false
-            slashMenuMode = "command"
-            slashMenuCommand = null
-            slashMenuArgItems = emptyList()
-            return@LaunchedEffect
-        }
-        
-        // 命令模式: /partial-command
-        val commandMatch = Regex("^/(\\S*)$").find(trimmed)
-        if (commandMatch != null) {
-            val filter = commandMatch.groupValues[1]
-            val items = getSlashCommandCompletions(filter)
-            slashMenuItems = items
-            slashMenuOpen = items.isNotEmpty()
-            slashMenuIndex = 0
-            slashMenuMode = "command"
-            slashMenuCommand = null
-            slashMenuArgItems = emptyList()
-        } else {
-            slashMenuOpen = false
-            slashMenuMode = "command"
-            slashMenuCommand = null
-            slashMenuArgItems = emptyList()
-            slashMenuItems = emptyList()
-        }
-    }
+    val menuState = remember { derivedStateOf { computeSlashMenuState(value) } }
     
     // 图片选择器
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -144,11 +146,11 @@ fun ChatInputBar(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // 斜杠命令菜单
-            if (slashMenuOpen) {
+            if (menuState.value.isOpen) {
                 SlashCommandMenu(
-                    items = if (slashMenuMode == "command") slashMenuItems else emptyList(),
-                    argItems = if (slashMenuMode == "args") slashMenuArgItems else emptyList(),
-                    command = slashMenuCommand,
+                    items = if (menuState.value.mode == "command") menuState.value.items else emptyList(),
+                    argItems = if (menuState.value.mode == "args") menuState.value.argItems else emptyList(),
+                    command = menuState.value.command,
                     selectedIndex = slashMenuIndex,
                     onSelect = { cmd ->
                         val argOpts = cmd.argOptions ?: emptyList()
@@ -162,14 +164,14 @@ fun ChatInputBar(
                                 onSend()
                             }
                         }
-                        slashMenuOpen = false
+                        slashMenuIndex = 0
                     },
                     onSelectArg = { arg ->
-                        val cmd = slashMenuCommand ?: return@SlashCommandMenu
+                        val cmd = menuState.value.command ?: return@SlashCommandMenu
                         onValueChange("/${cmd.name} $arg ")
-                        slashMenuOpen = false
+                        slashMenuIndex = 0
                     },
-                    onDismiss = { slashMenuOpen = false }
+                    onDismiss = { slashMenuIndex = 0 }
                 )
             }
             
