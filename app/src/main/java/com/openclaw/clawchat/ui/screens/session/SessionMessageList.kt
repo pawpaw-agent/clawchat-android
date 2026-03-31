@@ -176,7 +176,8 @@ fun MessageGroupList(
             AppLog.d("SessionMessageList", "Rendering toolMessages: size=${toolMessages.size}")
             items(
                 items = toolMessages.reversed(),  // 反转以保持正确顺序
-                key = { msg -> msg.toolCallId ?: msg.id }
+                key = { msg -> msg.toolCallId ?: msg.id },
+                contentType = { "tool_message" }
             ) { toolMessage ->
                 ToolMessageCard(message = toolMessage)
             }
@@ -184,7 +185,11 @@ fun MessageGroupList(
         
         // 3. 文本段（工具执行前提交的文本）
         if (streamSegments.isNotEmpty()) {
-            items(streamSegments.reversed(), key = { "segment_${it.ts}" }) { segment ->
+            items(
+                items = streamSegments.reversed(), 
+                key = { "segment_${it.ts}" },
+                contentType = { "stream_segment" }
+            ) { segment ->
                 MessageContentCard(
                     message = MessageUi(
                         id = "segment_${segment.ts}",
@@ -200,7 +205,11 @@ fun MessageGroupList(
         }
         
         // 4. 历史消息（显示在最上方）
-        items(groups.reversed(), key = { it.messages.first().id }) { group ->
+        items(
+            items = groups.reversed(), 
+            key = { it.messages.first().id },
+            contentType = { "message_group" }
+        ) { group ->
             MessageGroupItem(
                 group = group, 
                 messageFontSize = messageFontSize,
