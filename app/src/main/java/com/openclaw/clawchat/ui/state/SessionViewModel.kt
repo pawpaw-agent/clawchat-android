@@ -248,7 +248,7 @@ class SessionViewModel @Inject constructor(
                 gateway.chatSend(sessionId, trimmedMessage, apiAttachments)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send message", e)
-                _state.update { it.copy(error = "发送失败：${e.message}", isLoading = false, isSending = false) }
+                _state.update { it.copy(error = "发送失败：${e.message}，请检查网络连接后重试", isLoading = false, isSending = false) }
             }
         }
     }
@@ -328,7 +328,7 @@ class SessionViewModel @Inject constructor(
                 gateway.chatSend(sessionId, userText)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to regenerate message", e)
-                _state.update { it.copy(error = "重发失败：${e.message}", isLoading = false, isSending = false) }
+                _state.update { it.copy(error = "重发失败：${e.message}，请检查网络连接后重试", isLoading = false, isSending = false) }
             }
         }
     }

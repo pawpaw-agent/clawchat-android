@@ -79,7 +79,7 @@ class SlashCommandExecutor(
     private fun executeClear(sessionId: String?) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法清除消息：未选择会话")
+                showError("无法清除消息：请先在左侧选择一个会话")
                 return@launch
             }
             messageRepository.clearMessages(sessionId)
@@ -127,7 +127,7 @@ class SlashCommandExecutor(
     private fun executeReset(sessionId: String?) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法重置会话：未选择会话")
+                showError("无法重置会话：请先在左侧选择一个会话")
                 return@launch
             }
             try {
@@ -136,7 +136,7 @@ class SlashCommandExecutor(
                 showSuccess("会话已重置")
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to reset session", e)
-                showError("重置会话失败：${e.message ?: "未知错误"}")
+                showError("重置会话失败：${e.message ?: "连接异常"}，请检查网络后重试")
             }
         }
     }
@@ -144,7 +144,7 @@ class SlashCommandExecutor(
     private fun executeThink(sessionId: String?, args: String) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法设置思考级别：未选择会话")
+                showError("无法设置思考级别：请先在左侧选择一个会话")
                 return@launch
             }
             val level = args.trim().lowercase().ifEmpty { "medium" }
@@ -156,7 +156,7 @@ class SlashCommandExecutor(
                 showSuccess("思考级别已设置为: $level")
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to set thinking level", e)
-                showError("设置思考级别失败：${e.message ?: "未知错误"}")
+                showError("设置思考级别失败：${e.message ?: "连接异常"}，请检查网络后重试")
             }
         }
     }
@@ -164,7 +164,7 @@ class SlashCommandExecutor(
     private fun executeReasoning(sessionId: String?, args: String) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法切换推理模式：未选择会话")
+                showError("无法切换推理模式：请先在左侧选择一个会话")
                 return@launch
             }
             val enabled = args.trim().lowercase().let { 
@@ -179,7 +179,7 @@ class SlashCommandExecutor(
                 showSuccess("推理模式已$status")
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to toggle reasoning", e)
-                showError("切换推理模式失败：${e.message ?: "未知错误"}")
+                showError("切换推理模式失败：${e.message ?: "连接异常"}，请检查网络后重试")
             }
         }
     }
@@ -187,7 +187,7 @@ class SlashCommandExecutor(
     private fun executeVerbose(sessionId: String?, args: String) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法设置详细模式：未选择会话")
+                showError("无法设置详细模式：请先在左侧选择一个会话")
                 return@launch
             }
             val level = args.trim().lowercase().ifEmpty { "on" }
@@ -199,7 +199,7 @@ class SlashCommandExecutor(
                 showSuccess("详细模式已设置: $level")
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to set verbose level", e)
-                showError("设置详细模式失败：${e.message ?: "未知错误"}")
+                showError("设置详细模式失败：${e.message ?: "连接异常"}，请检查网络后重试")
             }
         }
     }
@@ -210,7 +210,7 @@ class SlashCommandExecutor(
     private fun executeExport(sessionId: String?) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法导出：未选择会话")
+                showError("无法导出：请先在左侧选择一个会话")
                 return@launch
             }
             
@@ -221,7 +221,7 @@ class SlashCommandExecutor(
     private fun executeDefault(command: SlashCommandDef, args: String, sessionId: String?) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法执行命令：未选择会话")
+                showError("无法执行命令：请先在左侧选择一个会话")
                 return@launch
             }
             val message = "/${command.name}${if (args.isNotBlank()) " $args" else ""}"
@@ -230,7 +230,7 @@ class SlashCommandExecutor(
                 onStateUpdate { copy(inputText = "", isSending = true, isLoading = true) }
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to send command", e)
-                showError("执行命令失败：${e.message ?: "未知错误"}")
+                showError("执行命令失败：${e.message ?: "连接异常"}，请检查网络后重试")
             }
         }
     }
