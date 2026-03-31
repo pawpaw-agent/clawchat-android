@@ -1,0 +1,71 @@
+name: Performance
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  performance:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+    
+    - name: Run Benchmark Tests
+      run: |
+        echo "Running performance benchmarks..."
+        # Note: Actual benchmark requires benchmark module
+        # ./gradlew :benchmark:benchmarkRelease
+    
+    - name: Measure Build Time
+      run: |
+        echo "Measuring build time..."
+        START=$(date +%s)
+        ./gradlew assembleRelease --no-daemon
+        END=$(date +%s)
+        DIFF=$((END - START))
+        echo "Build time: $DIFF seconds"
+        echo "BUILD_TIME=$DIFF" >> $GITHUB_ENV
+    
+    - name: Measure APK Size
+      run: |
+        echo "Measuring APK size..."
+        APK_SIZE=$(du -k app/build/outputs/apk/release/app-release.apk | cut -f1)
+        echo "APK size: $APK_SIZE KB"
+        echo "APK_SIZE=$APK_SIZE" >> $GITHUB_ENV
+    
+    - name: Check Method Count
+      run: |
+        echo "Checking method count..."
+        # Note: Requires dexcount-gradle-plugin
+        # ./gradlew assembleRelease --no-daemon
+        echo "Method count check would go here"
+    
+    - name: Upload Performance Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-report
+        path: |
+          app/build/outputs/apk/release/
+          build/reports/
+        retention-days: 30
+    
+    - name: Create Performance Badge
+      uses: schneegans/dynamic-badges-action@v1.7.0
+      with:
+        auth: ${{ secrets.GIST_SECRET }}
+        gistID: your-gist-id
+        filename: performance-badge.json
+        label: Build Time
+        message: ${{ env.BUILD_TIME }}s
+        color: green

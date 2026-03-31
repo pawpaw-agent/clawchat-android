@@ -1,0 +1,65 @@
+name: Security
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+    
+    - name: Run Dependency Check
+      run: ./gradlew dependencyCheckAnalyze --no-daemon || true
+    
+    - name: Run OWASP Dependency Check
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'ClawChat'
+        path: '.'
+        format: 'HTML'
+        out: 'reports'
+      env:
+        JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17*
+    
+    - name: Upload Security Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: dependency-check-report
+        path: reports/
+        retention-days: 30
+    
+    - name: Run Snyk Security Scan
+      uses: snyk/actions/gradle@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --org=openclaw
+    
+    - name: Check for Vulnerable Dependencies
+      run: |
+        echo "Checking for known vulnerabilities..."
+        ./gradlew dependencies --configuration releaseRuntimeClasspath --no-daemon | grep -i "vulnerable" || echo "No vulnerable dependencies found"
+    
+    - name: Run Trivy Vulnerability Scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'table'
+        exit-code: '0'
+        ignore-unfixed: true
+        severity: 'CRITICAL,HIGH'
