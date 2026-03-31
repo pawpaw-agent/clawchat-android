@@ -1,6 +1,5 @@
 package com.openclaw.clawchat.ui.state
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.network.GatewayUrlUtil
@@ -8,6 +7,7 @@ import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.SessionRepository
 import com.openclaw.clawchat.security.EncryptedStorage
+import com.openclaw.clawchat.util.AppLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.channels.Channel
@@ -57,7 +57,7 @@ class MainViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        Log.e(TAG, "Uncaught coroutine exception", throwable)
+        AppLog.e(TAG, "Uncaught coroutine exception", throwable)
         _uiState.update { it.copy(error = throwable.message ?: "未知错误", isLoading = false) }
     }
 
@@ -84,7 +84,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch(exceptionHandler) {
             // 检查是否已配对或有 Gateway auth token
             if (!encryptedStorage.isPaired()) {
-                Log.i(TAG, "Not paired, skipping auto-connect")
+                AppLog.i(TAG, "Not paired, skipping auto-connect")
                 return@launch
             }
 
@@ -95,11 +95,11 @@ class MainViewModel @Inject constructor(
                 ?: encryptedStorage.getString("gateway_auth_token")
 
             if (gatewayUrl.isNullOrBlank()) {
-                Log.i(TAG, "No saved gateway URL, skipping auto-connect")
+                AppLog.i(TAG, "No saved gateway URL, skipping auto-connect")
                 return@launch
             }
 
-            Log.i(TAG, "Auto-connecting to $gatewayUrl...")
+            AppLog.i(TAG, "Auto-connecting to $gatewayUrl...")
             _uiState.update { it.copy(isLoading = true) }
 
             try {
@@ -112,7 +112,7 @@ class MainViewModel @Inject constructor(
                 val result = gateway.connect(wsUrl, token)
 
                 result.onSuccess {
-                    Log.i(TAG, "Auto-connect successful")
+                    AppLog.i(TAG, "Auto-connect successful")
                     _uiState.update {
                         it.copy(
                             currentGateway = GatewayConfigUi(
@@ -128,7 +128,7 @@ class MainViewModel @Inject constructor(
                 }
 
                 result.onFailure { error ->
-                    Log.w(TAG, "Auto-connect failed: ${error.message}")
+                    AppLog.w(TAG, "Auto-connect failed: ${error.message}")
                     _uiState.update { 
                         it.copy(
                             isLoading = false,
@@ -138,7 +138,7 @@ class MainViewModel @Inject constructor(
                     _events.trySend(UiEvent.ShowConnectionError(error.message ?: "连接失败"))
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Auto-connect exception: ${e.message}")
+                AppLog.w(TAG, "Auto-connect exception: ${e.message}")
                 _uiState.update { it.copy(isLoading = false) }
             }
         }
@@ -207,7 +207,7 @@ class MainViewModel @Inject constructor(
                 }
 
                 result.onFailure { error ->
-                    Log.e(TAG, "连接失败", error)
+                    AppLog.e(TAG, "连接失败", error)
                     _uiState.update {
                         it.copy(
                             connectionStatus = ConnectionStatus.Error(
@@ -219,7 +219,7 @@ class MainViewModel @Inject constructor(
                     _events.trySend(UiEvent.ShowError("连接失败：${error.message}"))
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "连接异常", e)
+                AppLog.e(TAG, "连接异常", e)
                 _uiState.update {
                     it.copy(
                         connectionStatus = ConnectionStatus.Error(
@@ -241,7 +241,7 @@ class MainViewModel @Inject constructor(
             try {
                 val response = gateway.sessionsList()
                 if (!response.isSuccess()) {
-                    Log.w(TAG, "sessions.list failed: ${response.error?.message}")
+                    AppLog.w(TAG, "sessions.list failed: ${response.error?.message}")
                     return@launch
                 }
 
@@ -280,7 +280,7 @@ class MainViewModel @Inject constructor(
                             thinking = false
                         )
                     } catch (e: Exception) {
-                        Log.w(TAG, "Failed to parse session: ${e.message}")
+                        AppLog.w(TAG, "Failed to parse session: ${e.message}")
                         null
                     }
                 }
@@ -291,9 +291,9 @@ class MainViewModel @Inject constructor(
                 // 同步到 Room 缓存
                 sessionRepository.saveSessions(uiSessions)
 
-                Log.i(TAG, "Loaded ${uiSessions.size} sessions from Gateway, synced to Room")
+                AppLog.i(TAG, "Loaded ${uiSessions.size} sessions from Gateway, synced to Room")
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to load sessions: ${e.message}")
+                AppLog.w(TAG, "Failed to load sessions: ${e.message}")
             }
         }
     }
@@ -374,11 +374,11 @@ class MainViewModel @Inject constructor(
                     ))
                 } else {
                     // 如果没有默认会话，创建新会话需要通过 chat.send 触发
-                    Log.w(TAG, "No default session key, sessions will be created on first message")
+                    AppLog.w(TAG, "No default session key, sessions will be created on first message")
                 }
                 refreshSessions()
             } catch (e: Exception) {
-                Log.w(TAG, "Create session failed: ${e.message}")
+                AppLog.w(TAG, "Create session failed: ${e.message}")
             }
         }
     }
@@ -399,7 +399,7 @@ class MainViewModel @Inject constructor(
                     } else state
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Rename session failed: ${e.message}")
+                AppLog.w(TAG, "Rename session failed: ${e.message}")
             }
         }
     }
@@ -501,13 +501,13 @@ class MainViewModel @Inject constructor(
             val isPaired = encryptedStorage.isPaired()
             val gatewayUrl = encryptedStorage.getGatewayUrl()
             
-            Log.d(TAG, "=== checkAndReconnectIfNeeded: state=$currentConnectionState, isPaired=$isPaired, url=$gatewayUrl")
+            AppLog.d(TAG, "=== checkAndReconnectIfNeeded: state=$currentConnectionState, isPaired=$isPaired, url=$gatewayUrl")
             
             // 如果已配对、有 URL、且未连接/未在连接中，则重连
             if (isPaired && !gatewayUrl.isNullOrBlank() && 
                 currentConnectionState !is WebSocketConnectionState.Connected &&
                 currentConnectionState !is WebSocketConnectionState.Connecting) {
-                Log.i(TAG, "App resumed, reconnecting to Gateway...")
+                AppLog.i(TAG, "App resumed, reconnecting to Gateway...")
                 autoConnectIfNeeded()
             }
         }
