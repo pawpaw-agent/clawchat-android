@@ -74,7 +74,8 @@ fun MessageContentCard(
     onRegenerate: () -> Unit = {},
     onRetry: () -> Unit = {},
     onSpeak: (String) -> Unit = {},
-    onFeedback: ((MessageFeedback) -> Unit)? = null,  // 反馈回调 (点赞/点踩)
+    onFeedback: ((MessageFeedback) -> Unit)? = null,
+    onShare: ((String) -> Unit)? = null,  // 分享回调
     isStreaming: Boolean = false
 ) {
     val textContent = message.getTextContent()
