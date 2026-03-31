@@ -40,7 +40,8 @@ fun SessionListContent(
     onSessionLongPress: (SessionUi?) -> Unit,
     onCreateSession: () -> Unit,
     onRefresh: () -> Unit,
-    onDeleteSession: (String) -> Unit = {}
+    onDeleteSession: (String) -> Unit = {},
+    onSteerSession: ((String, String) -> Unit)? = null  // sessionKey, steerText
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -163,6 +164,7 @@ private fun SessionList(
                     onSelect = { onSelectSession(session.id) },
                     onSessionLongPress = { onSessionLongPress(session) },
                     onDelete = { id -> onDeleteSession(id) },
+                    onSteer = onSteerSession,
                     modifier = Modifier.animateItem(
                         fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
                         placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
@@ -225,7 +227,7 @@ private fun groupSessionsByDate(sessions: List<SessionUi>): List<Pair<String, Li
 }
 
 /**
- * 会话列表项（支持长按删除）
+ * 会话列表项（支持长按删除和引导）
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -235,10 +237,50 @@ private fun SessionItem(
     onSelect: () -> Unit,
     onSessionLongPress: (() -> Unit)? = null,
     onDelete: (String) -> Unit = {},
+    onSteer: ((String, String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showSteerDialog by remember { mutableStateOf(false) }
+    var steerText by remember { mutableStateOf("") }
+    var showMenu by remember { mutableStateOf(false) }
+    
+    // 引导对话框
+    if (showSteerDialog) {
+        AlertDialog(
+            onDismissRequest = { showSteerDialog = false },
+            title = { Text("引导会话") },
+            text = {
+                OutlinedTextField(
+                    value = steerText,
+                    onValueChange = { steerText = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("输入引导消息...") },
+                    singleLine = false,
+                    maxLines = 3
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (steerText.isNotBlank() && onSteer != null) {
+                            onSteer(session.id, steerText)
+                            steerText = ""
+                        }
+                        showSteerDialog = false
+                    }
+                ) {
+                    Text("发送")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSteerDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
     
     // 删除确认对话框
     if (showDeleteConfirm) {
@@ -269,12 +311,12 @@ private fun SessionItem(
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .then(
-                if (onSessionLongPress != null) {
+                if (onSessionLongPress != null || onSteer != null) {
                     Modifier.combinedClickable(
                         onClick = onSelect,
                         onLongClick = {
                             haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                            showDeleteConfirm = true
+                            showMenu = true
                         }
                     )
                 } else {
@@ -360,6 +402,33 @@ private fun SessionItem(
                     }
                 }
             }
+        }
+        
+        // 长按菜单
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false }
+        ) {
+            // 引导选项
+            if (onSteer != null) {
+                DropdownMenuItem(
+                    text = { Text("引导会话") },
+                    leadingIcon = { Icon(Icons.Default.Navigation, contentDescription = null) },
+                    onClick = {
+                        showMenu = false
+                        showSteerDialog = true
+                    }
+                )
+            }
+            // 删除选项
+            DropdownMenuItem(
+                text = { Text("删除会话", color = MaterialTheme.colorScheme.error) },
+                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                onClick = {
+                    showMenu = false
+                    showDeleteConfirm = true
+                }
+            )
         }
     }
 }
