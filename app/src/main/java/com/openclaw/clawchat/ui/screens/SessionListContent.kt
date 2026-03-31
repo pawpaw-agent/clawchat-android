@@ -247,22 +247,57 @@ private fun SessionList(
                 )
             }
             
-            // 该日期下的会话
+            // 该日期下的会话（支持滑动删除）
             items(
                 items = sessionsInGroup,
                 key = { session -> session.id }
             ) { session ->
-                SessionItem(
-                    session = session,
-                    isSelected = currentSession?.id == session.id,
-                    onSelect = { onSelectSession(session.id) },
-                    onSessionLongPress = { onSessionLongPress(session) },
-                    onDelete = { id -> onDeleteSession(id) },
-                    onSteer = onSteerSession,
-                    modifier = Modifier.animateItem(
-                        fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                        placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
-                    )
+                val dismissState = rememberDismissState(
+                    confirmValueChange = { dismissValue ->
+                        if (dismissValue == DismissValue.DismissedToEnd || 
+                            dismissValue == DismissValue.DismissedToStart) {
+                            onDeleteSession(session.id)
+                            true
+                        } else {
+                            false
+                        }
+                    },
+                    positionalThreshold = { totalDistance -> totalDistance * 0.5f }
+                )
+                
+                SwipeToDismiss(
+                    state = dismissState,
+                    background = {
+                        // 滑动背景（红色删除提示）
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.error)
+                                .padding(horizontal = 20.dp),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "删除",
+                                tint = MaterialTheme.colorScheme.onError
+                            )
+                        }
+                    },
+                    dismissContent = {
+                        SessionItem(
+                            session = session,
+                            isSelected = currentSession?.id == session.id,
+                            onSelect = { onSelectSession(session.id) },
+                            onSessionLongPress = { onSessionLongPress(session) },
+                            onDelete = { id -> onDeleteSession(id) },
+                            onSteer = onSteerSession,
+                            modifier = Modifier.animateItem(
+                                fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                                placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                            )
+                        )
+                    },
+                    directions = setOf(DismissDirection.EndToStart)
                 )
             }
         }
