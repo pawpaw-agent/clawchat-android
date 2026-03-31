@@ -41,8 +41,13 @@ fun SessionListContent(
     onCreateSession: () -> Unit,
     onRefresh: () -> Unit,
     onDeleteSession: (String) -> Unit = {},
-    onSteerSession: ((String, String) -> Unit)? = null  // sessionKey, steerText
+    onSteerSession: ((String, String) -> Unit)? = null,  // sessionKey, steerText
+    onDeleteSessions: ((List<String>) -> Unit)? = null  // 批量删除回调
 ) {
+    // 批量操作状态
+    var isSelectionMode by remember { mutableStateOf(false) }
+    var selectedSessions by remember { mutableStateOf<Set<String>>(emptySet()) }
+    
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // 搜索框
@@ -62,6 +67,11 @@ fun SessionListContent(
                             IconButton(onClick = { onSearchQueryChange("") }) {
                                 Icon(Icons.Default.Close, contentDescription = "清除")
                             }
+                        } else if (!isSelectionMode && state.sessions.isNotEmpty()) {
+                            // 选择模式按钮
+                            IconButton(onClick = { isSelectionMode = true }) {
+                                Icon(Icons.Default.Checklist, contentDescription = "批量选择")
+                            }
                         }
                     },
                     singleLine = true,
@@ -70,6 +80,44 @@ fun SessionListContent(
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
+            }
+            
+            // 批量操作栏
+            if (isSelectionMode) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    tonalElevation = 2.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = {
+                            if (selectedSessions.size == state.sessions.size) {
+                                selectedSessions = emptySet()
+                            } else {
+                                selectedSessions = state.sessions.map { it.id }.toSet()
+                            }
+                        }) {
+                            Text(if (selectedSessions.size == state.sessions.size) "取消全选" else "全选")
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "已选 ${selectedSessions.size}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        TextButton(onClick = {
+                            isSelectionMode = false
+                            selectedSessions = emptySet()
+                        }) {
+                            Text("取消")
+                        }
+                    }
+                }
             }
             
             // 列表内容
@@ -118,6 +166,31 @@ fun SessionListContent(
         // 连接状态提示条（未连接时显示）- 放在最上层
         if (state.connectionStatus !is ConnectionStatus.Connected) {
             ConnectionStatusBar(connectionStatus = state.connectionStatus)
+        }
+        
+        // 批量删除按钮
+        if (isSelectionMode && selectedSessions.isNotEmpty()) {
+            FloatingActionButton(
+                onClick = {
+                    onDeleteSessions?.invoke(selectedSessions.toList())
+                    selectedSessions = emptySet()
+                    isSelectionMode = false
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("删除 (${selectedSessions.size})")
+                }
+            }
         }
     }
 }
