@@ -53,6 +53,11 @@ import com.openclaw.clawchat.ui.theme.ChatTokens
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
+ * 消息组件常量
+ */
+private const val MAX_IMAGE_SIZE = 1024  // 最大图片尺寸 (px)
+
+/**
  * 消息内容卡片
  * 支持：文本/图片渲染、长按菜单、流式脉冲动画
  */
@@ -359,8 +364,8 @@ fun MessageImageContent(image: MessageContentItem.Image) {
             }
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
             
-            // 计算采样率，限制最大尺寸为 1024px
-            val maxSize = 1024
+            // 计算采样率，限制最大尺寸
+            val maxSize = MAX_IMAGE_SIZE
             val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxSize)
             
             // 用采样率解码
