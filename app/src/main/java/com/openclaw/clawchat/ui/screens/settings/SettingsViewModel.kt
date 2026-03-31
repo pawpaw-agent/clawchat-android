@@ -1,6 +1,6 @@
 package com.openclaw.clawchat.ui.screens.settings
 
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.util.AppLog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -135,13 +135,13 @@ class SettingsViewModel @Inject constructor(
                 )
             )
         }
-        AppLog.d(TAG, "Gateway 配置已更新：${config.host}")
+        AppAppLog.d(TAG, "Gateway 配置已更新：${config.host}")
         
         // 如果已配对，自动连接
         if (encryptedStorage.isPaired()) {
             val token = encryptedStorage.getDeviceToken()
             viewModelScope.launch {
-                AppLog.d(TAG, "自动连接到 Gateway: $url")
+                AppAppLog.d(TAG, "自动连接到 Gateway: $url")
                 gateway.connect(url, token)
             }
         }
@@ -150,7 +150,7 @@ class SettingsViewModel @Inject constructor(
     fun disconnect() {
         viewModelScope.launch {
             gateway.disconnect()
-            AppLog.d(TAG, "已断开连接")
+            AppAppLog.d(TAG, "已断开连接")
         }
     }
 

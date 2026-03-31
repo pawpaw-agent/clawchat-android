@@ -1,6 +1,6 @@
 package com.openclaw.clawchat.network
 
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharedFlow
@@ -28,7 +28,7 @@ class OkHttpWebSocketService(
         get() = gateway.incomingMessages
 
     override suspend fun connect(url: String, token: String?): Result<Unit> {
-        Log.i(TAG, "Connecting to $url")
+        AppLog.i(TAG, "Connecting to $url")
         return gateway.connect(url, token)
     }
 
@@ -41,7 +41,7 @@ class OkHttpWebSocketService(
     }
 
     override suspend fun disconnect(): Result<Unit> {
-        Log.i(TAG, "Disconnecting")
+        AppLog.i(TAG, "Disconnecting")
         return gateway.disconnect()
     }
 

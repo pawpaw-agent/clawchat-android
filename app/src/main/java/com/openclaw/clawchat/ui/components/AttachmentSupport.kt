@@ -6,7 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.Serializable
 
 /**
@@ -65,7 +65,7 @@ fun loadAttachmentFromUri(
         val mimeType = contentResolver.getType(uri)
         
         if (!isSupportedChatAttachmentMimeType(mimeType)) {
-            Log.w(TAG, "Unsupported MIME type: $mimeType")
+            AppLog.w(TAG, "Unsupported MIME type: $mimeType")
             return null
         }
         
@@ -92,7 +92,7 @@ fun loadAttachmentFromUri(
         val actualMimeType = mimeType ?: "image/jpeg"
         val dataUrl = "data:$actualMimeType;base64,$base64"
         
-        Log.i(TAG, "Attachment loaded: $fileName, size=${bytes.size} bytes, mimeType=$actualMimeType")
+        AppLog.i(TAG, "Attachment loaded: $fileName, size=${bytes.size} bytes, mimeType=$actualMimeType")
         
         ChatAttachment(
             mimeType = actualMimeType,
@@ -101,7 +101,7 @@ fun loadAttachmentFromUri(
             fileSize = bytes.size.toLong()
         )
     } catch (e: Exception) {
-        Log.e(TAG, "Failed to load attachment from uri: $uri", e)
+        AppLog.e(TAG, "Failed to load attachment from uri: $uri", e)
         null
     }
 }

@@ -6,7 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.net.Uri
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.ui.state.MessageContentItem
 import com.openclaw.clawchat.ui.state.MessageUi
 import com.openclaw.clawchat.ui.state.MessageRole
@@ -128,7 +128,7 @@ object ExportUtils {
             
             bitmap
         } catch (e: Exception) {
-            Log.e("ExportUtils", "Failed to export messages to bitmap: ${e.message}")
+            AppLog.e("ExportUtils", "Failed to export messages to bitmap: ${e.message}")
             null
         }
     }
@@ -148,7 +148,7 @@ object ExportUtils {
                 file
             )
         } catch (e: Exception) {
-            Log.e("ExportUtils", "Failed to save file: ${e.message}")
+            AppLog.e("ExportUtils", "Failed to save file: ${e.message}")
             null
         }
     }

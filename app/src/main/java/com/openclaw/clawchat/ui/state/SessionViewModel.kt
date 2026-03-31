@@ -1,6 +1,6 @@
 package com.openclaw.clawchat.ui.state
 
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -50,7 +50,7 @@ class SessionViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        Log.e(TAG, "Uncaught coroutine exception", throwable)
+        AppLog.e(TAG, "Uncaught coroutine exception", throwable)
         _state.update { it.copy(error = throwable.message ?: "未知错误", isLoading = false, isSending = false) }
     }
     
@@ -88,7 +88,7 @@ class SessionViewModel @Inject constructor(
     }
 
     init {
-        AppLog.d(TAG, "=== SessionViewModel init")
+        AppAppLog.d(TAG, "=== SessionViewModel init")
         observeConnectionState()
         observeIncomingMessages()
         observeToolStreamEvents()
@@ -99,12 +99,12 @@ class SessionViewModel @Inject constructor(
     private var observeMessagesJob: Job? = null
     
     private fun observeSessionMessages(sessionId: String) {
-        AppLog.d(TAG, "=== observeSessionMessages: CALLED for $sessionId")
+        AppAppLog.d(TAG, "=== observeSessionMessages: CALLED for $sessionId")
         observeMessagesJob?.cancel()
         observeMessagesJob = viewModelScope.launch(exceptionHandler) {
-            AppLog.d(TAG, "=== observeSessionMessages: STARTED collecting for $sessionId")
+            AppAppLog.d(TAG, "=== observeSessionMessages: STARTED collecting for $sessionId")
             messageRepository.observeMessages(sessionId).collect { messages ->
-                AppLog.d(TAG, "=== observeSessionMessages: COLLECTED ${messages.size} messages for $sessionId")
+                AppAppLog.d(TAG, "=== observeSessionMessages: COLLECTED ${messages.size} messages for $sessionId")
                 _state.update { it.copy(chatMessages = messages) }
             }
         }
@@ -165,7 +165,7 @@ class SessionViewModel @Inject constructor(
             return
         }
 
-        AppLog.d(TAG, "=== setSessionId: $currentSessionId -> $sessionId")
+        AppAppLog.d(TAG, "=== setSessionId: $currentSessionId -> $sessionId")
         
         // 切换会话：清除旧状态，设置新 sessionId
         _state.update { 
@@ -247,7 +247,7 @@ class SessionViewModel @Inject constructor(
             try {
                 gateway.chatSend(sessionId, trimmedMessage, apiAttachments)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to send message", e)
+                AppLog.e(TAG, "Failed to send message", e)
                 _state.update { it.copy(error = "发送失败：${e.message}，请检查网络连接后重试", isLoading = false, isSending = false) }
             }
         }
@@ -274,7 +274,7 @@ class SessionViewModel @Inject constructor(
                 // 发送空消息触发继续生成
                 gateway.chatSend(sessionId, "")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to continue generation", e)
+                AppLog.e(TAG, "Failed to continue generation", e)
                 _state.update { it.copy(error = "继续生成失败：${e.message}", isLoading = false, isSending = false) }
             }
         }
@@ -325,7 +325,7 @@ class SessionViewModel @Inject constructor(
             
             val lastUserMessage = messages.lastOrNull { it.role == MessageRole.USER }
             if (lastUserMessage == null) {
-                AppLog.w(TAG, "No user message to regenerate from")
+                AppAppLog.w(TAG, "No user message to regenerate from")
                 return@launch
             }
             
@@ -345,7 +345,7 @@ class SessionViewModel @Inject constructor(
             try {
                 gateway.chatSend(sessionId, userText)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to regenerate message", e)
+                AppLog.e(TAG, "Failed to regenerate message", e)
                 _state.update { it.copy(error = "重发失败：${e.message}，请检查网络连接后重试", isLoading = false, isSending = false) }
             }
         }

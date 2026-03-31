@@ -1,6 +1,6 @@
 package com.openclaw.clawchat.ui.state
 
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
 import com.openclaw.clawchat.util.AppLog
@@ -45,7 +45,7 @@ class ChatEventHandler(
             val json = JsonUtils.json.parseToJsonElement(rawJson) as JsonObject
             val type = json["type"]?.jsonPrimitive?.content ?: return
 
-            AppLog.d(TAG, "=== Received frame type=$type")
+            AppAppLog.d(TAG, "=== Received frame type=$type")
 
             when (type) {
                 "event" -> {
@@ -68,7 +68,7 @@ class ChatEventHandler(
                 }
             }
         } catch (e: Exception) {
-            AppLog.e(TAG, "Failed to parse incoming frame: ${e.message}")
+            AppAppLog.e(TAG, "Failed to parse incoming frame: ${e.message}")
         }
     }
 
@@ -92,7 +92,7 @@ class ChatEventHandler(
         val seq = payload["seq"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
         val chatState = payload["state"]?.jsonPrimitive?.content ?: return
 
-        AppLog.d(TAG, "=== Chat event: runId=$runId, seq=$seq, state=$chatState")
+        AppAppLog.d(TAG, "=== Chat event: runId=$runId, seq=$seq, state=$chatState")
 
         // 提取 message 对象
         val msgObj = payload["message"]?.jsonObject
@@ -178,7 +178,7 @@ class ChatEventHandler(
      * 处理 aborted 状态
      */
     private fun handleAborted(runId: String, msgObj: JsonObject?) {
-        Log.w(TAG, "Message aborted: runId=$runId")
+        AppLog.w(TAG, "Message aborted: runId=$runId")
         
         state.update { currentState ->
             val now = System.currentTimeMillis()
@@ -205,7 +205,7 @@ class ChatEventHandler(
      * 处理 error 状态
      */
     private fun handleError(runId: String, errorMsg: String) {
-        Log.e(TAG, "Message error: runId=$runId, error=$errorMsg")
+        AppLog.e(TAG, "Message error: runId=$runId, error=$errorMsg")
         
         state.update { currentState ->
             val now = System.currentTimeMillis()
@@ -250,7 +250,7 @@ class ChatEventHandler(
                 // 更新发送状态
                 state.update { it.copy(isSending = false) }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to save message: ${e.message}")
+                AppLog.e(TAG, "Failed to save message: ${e.message}")
             }
         }
     }

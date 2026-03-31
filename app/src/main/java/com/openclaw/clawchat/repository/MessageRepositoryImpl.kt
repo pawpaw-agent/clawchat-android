@@ -199,7 +199,7 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
                 }
             } ?: listOf(MessageContentItem.Text(content))
         } catch (e: Exception) {
-            android.util.Log.w("MessageRepository", "=== parseContent error: ${e.message}")
+            AppLog.w("MessageRepository", "=== parseContent error: ${e.message}")
             listOf(MessageContentItem.Text(content))
         }
     }

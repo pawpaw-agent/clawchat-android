@@ -1,6 +1,6 @@
 package com.openclaw.clawchat.network.protocol
 
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.BuildConfig
 import com.openclaw.clawchat.network.CertificateExceptionFirstTime
 import com.openclaw.clawchat.network.CertificateExceptionMismatch
@@ -120,7 +120,7 @@ class GatewayConnection(
             return@withContext Result.success(Unit)
         }
         if (currentState is WebSocketConnectionState.Connecting) {
-            Log.w(TAG, "connect() called while already connecting, skipping")
+            AppLog.w(TAG, "connect() called while already connecting, skipping")
             return@withContext Result.success(Unit)
         }
 
@@ -156,14 +156,14 @@ class GatewayConnection(
             // 添加 origin header（Gateway 要求 Control UI 客户端必须发送）
             if (origin != null) {
                 requestBuilder.addHeader("Origin", origin)
-                Log.d(TAG, "Adding Origin header: $origin")
+                AppLog.d(TAG, "Adding Origin header: $origin")
             }
             
             val request = requestBuilder.build()
 
             webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
-                    Log.i(TAG, "WebSocket opened, waiting for connect.challenge...")
+                    AppLog.i(TAG, "WebSocket opened, waiting for connect.challenge...")
                 }
 
                 override fun onMessage(webSocket: WebSocket, text: String) {
@@ -171,13 +171,13 @@ class GatewayConnection(
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    Log.e(TAG, "WebSocket failure: ${t.message}", t)
+                    AppLog.e(TAG, "WebSocket failure: ${t.message}", t)
                     DynamicTrustManager.clearCurrentHostname()
                     
                     // 检查是否是证书问题
                     val certException = findCertificateException(t)
                     if (certException != null) {
-                        Log.i(TAG, "Certificate verification failed, emitting certificate event")
+                        AppLog.i(TAG, "Certificate verification failed, emitting certificate event")
                         val hostname = when (certException) {
                             is CertificateExceptionFirstTime -> certException.hostname
                             is CertificateExceptionMismatch -> certException.hostname
@@ -207,7 +207,7 @@ class GatewayConnection(
                 }
 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    Log.i(TAG, "WebSocket closed: $code $reason")
+                    AppLog.i(TAG, "WebSocket closed: $code $reason")
                     DynamicTrustManager.clearCurrentHostname()
                     _connectionState.value = WebSocketConnectionState.Disconnected
                     this@GatewayConnection.webSocket = null
@@ -268,7 +268,7 @@ class GatewayConnection(
                 else -> appScope.launch { _incomingMessages.emit(text) }
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Frame parse error: ${e.message}")
+            AppLog.w(TAG, "Frame parse error: ${e.message}")
             appScope.launch { _incomingMessages.emit(text) }
         }
     }
@@ -280,7 +280,7 @@ class GatewayConnection(
                 val response = json.decodeFromString<ResponseFrame>(text)
                 requestTracker.completeRequest(response)
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to parse res frame: ${e.message}")
+                AppLog.w(TAG, "Failed to parse res frame: ${e.message}")
             }
             // 也透传给上层
             _incomingMessages.emit(text)
@@ -331,14 +331,14 @@ class GatewayConnection(
             val ts = payload["ts"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
 
             if (nonce.isNullOrBlank()) {
-                Log.e(TAG, "connect.challenge: empty nonce")
+                AppLog.e(TAG, "connect.challenge: empty nonce")
                 return
             }
 
             if (BuildConfig.DEBUG) {
-                Log.i(TAG, "connect.challenge received, nonce=${nonce.take(GatewayConfig.NONCE_LOG_PREFIX_LEN)}...")
+                AppLog.i(TAG, "connect.challenge received, nonce=${nonce.take(GatewayConfig.NONCE_LOG_PREFIX_LEN)}...")
             } else {
-                Log.i(TAG, "connect.challenge received")
+                AppLog.i(TAG, "connect.challenge received")
             }
 
             // 1. Handle challenge
@@ -356,12 +356,12 @@ class GatewayConnection(
             )
 
             // 调试：打印请求内容
-            Log.i(TAG, "connect request params: ${JsonObject(connectParams)}")
+            AppLog.i(TAG, "connect request params: ${JsonObject(connectParams)}")
 
             // 3. Track request → send → await res
             val deferred = requestTracker.trackRequest(requestId, "connect")
             val frameJson = json.encodeToString(RequestFrame.serializer(), requestFrame)
-            Log.i(TAG, "connect request frame (will send): $frameJson")
+            AppLog.i(TAG, "connect request frame (will send): $frameJson")
             val sent = webSocket?.send(frameJson) ?: false
 
             if (!sent) {
@@ -372,7 +372,7 @@ class GatewayConnection(
                 return
             }
 
-            Log.i(TAG, "connect request sent, waiting for hello-ok res...")
+            AppLog.i(TAG, "connect request sent, waiting for hello-ok res...")
 
             // 4. Await hello-ok response
             val response = withTimeout(GatewayConfig.AUTH_TIMEOUT_MS) { deferred.await() }
@@ -382,13 +382,13 @@ class GatewayConnection(
             } else {
                 val errCode = response.error?.code ?: "UNKNOWN"
                 val errMsg = response.error?.message ?: "Connect failed"
-                Log.e(TAG, "connect rejected: $errCode - $errMsg")
+                AppLog.e(TAG, "connect rejected: $errCode - $errMsg")
                 _connectionState.value = WebSocketConnectionState.Error(
                     IllegalStateException("$errCode: $errMsg")
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "connect.challenge handling failed: ${e.message}", e)
+            AppLog.e(TAG, "connect.challenge handling failed: ${e.message}", e)
             _connectionState.value = WebSocketConnectionState.Error(e)
         }
     }
@@ -452,7 +452,7 @@ class GatewayConnection(
             }
         }
 
-        Log.d(TAG, "Tool stream event: ${event.name} [${event.status}] stream=${streamContent?.take(50)} output=${finalOutput.take(50)}")
+        AppLog.d(TAG, "Tool stream event: ${event.name} [${event.status}] stream=${streamContent?.take(50)} output=${finalOutput.take(50)}")
     }
 
     /** Parse hello-ok response */
@@ -464,7 +464,7 @@ class GatewayConnection(
         val deviceToken = payload?.get("auth")?.jsonObject?.get("deviceToken")?.jsonPrimitive?.content
         if (!deviceToken.isNullOrBlank()) {
             securityModule.completePairing(deviceToken)
-            Log.i(TAG, "deviceToken stored")
+            AppLog.i(TAG, "deviceToken stored")
         }
 
         // Extract default session key
@@ -474,11 +474,11 @@ class GatewayConnection(
             ?.get("mainSessionKey")?.jsonPrimitive?.content
 
         // Log full hello-ok response for debugging
-        Log.i(TAG, "hello-ok response: ${payload}")
+        AppLog.i(TAG, "hello-ok response: ${payload}")
 
         // Extract granted scopes
         val grantedScopes = payload?.get("grantedScopes")?.jsonArray?.map { it.jsonPrimitive.content }
-        Log.i(TAG, "hello-ok: defaultSessionKey=$defaultSessionKey, grantedScopes=$grantedScopes")
+        AppLog.i(TAG, "hello-ok: defaultSessionKey=$defaultSessionKey, grantedScopes=$grantedScopes")
 
         _connectionState.value = WebSocketConnectionState.Connected
         reconnectAttempt = 0
@@ -498,9 +498,9 @@ class GatewayConnection(
 
         val deferred = requestTracker.trackRequest(requestId, method)
         val frameJson = json.encodeToString(RequestFrame.serializer(), frame)
-        AppLog.d("GatewayConnection", "=== call: sending $method, requestId=$requestId, params=$params")
+        AppAppLog.d("GatewayConnection", "=== call: sending $method, requestId=$requestId, params=$params")
         val sent = webSocket?.send(frameJson) ?: false
-        AppLog.d("GatewayConnection", "=== call: sent=$sent, webSocket connected=${webSocket != null}")
+        AppAppLog.d("GatewayConnection", "=== call: sent=$sent, webSocket connected=${webSocket != null}")
 
         if (!sent) {
             requestTracker.failRequest(requestId, IllegalStateException("WebSocket not connected"))
@@ -567,17 +567,17 @@ class GatewayConnection(
 
     /** chat.history */
     suspend fun chatHistory(sessionKey: String, limit: Int? = null): ResponseFrame {
-        AppLog.d("GatewayConnection", "=== chatHistory called: sessionKey='$sessionKey', length=${sessionKey.length}, limit=$limit")
+        AppAppLog.d("GatewayConnection", "=== chatHistory called: sessionKey='$sessionKey', length=${sessionKey.length}, limit=$limit")
         val params = mutableMapOf<String, JsonElement>(
             "sessionKey" to JsonPrimitive(sessionKey)
         )
         if (limit != null) params["limit"] = JsonPrimitive(limit)
-        AppLog.d("GatewayConnection", "=== chatHistory: calling 'chat.history' with params=$params")
+        AppAppLog.d("GatewayConnection", "=== chatHistory: calling 'chat.history' with params=$params")
         val response = call("chat.history", params)
-        AppLog.d("GatewayConnection", "=== chatHistory response: ok=${response.isSuccess()}, error=${response.error}, payload type=${response.payload?.javaClass?.simpleName}")
+        AppAppLog.d("GatewayConnection", "=== chatHistory response: ok=${response.isSuccess()}, error=${response.error}, payload type=${response.payload?.javaClass?.simpleName}")
         if (response.payload is JsonObject) {
             val messagesArray = (response.payload as JsonObject)["messages"]?.jsonArray
-            AppLog.d("GatewayConnection", "=== chatHistory: messages count=${messagesArray?.size ?: 0}")
+            AppAppLog.d("GatewayConnection", "=== chatHistory: messages count=${messagesArray?.size ?: 0}")
         }
         return response
     }
@@ -691,7 +691,7 @@ class GatewayConnection(
         reconnectJob?.cancel()
 
         if (reconnectAttempt >= GatewayConfig.MAX_RECONNECT_ATTEMPTS) {
-            Log.e(TAG, "Max reconnect attempts (${GatewayConfig.MAX_RECONNECT_ATTEMPTS}) reached, giving up")
+            AppLog.e(TAG, "Max reconnect attempts (${GatewayConfig.MAX_RECONNECT_ATTEMPTS}) reached, giving up")
             _connectionState.value = WebSocketConnectionState.Error(
                 IllegalStateException("Max reconnect attempts reached")
             )

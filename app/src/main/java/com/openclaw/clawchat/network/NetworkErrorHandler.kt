@@ -1,6 +1,6 @@
 package com.openclaw.clawchat.network
 
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.delay
 import java.io.IOException
@@ -48,20 +48,20 @@ sealed class NetworkError {
 fun Throwable.toNetworkError(): NetworkError {
     return when (this) {
         is SocketTimeoutException -> {
-            Log.w("NetworkError", "Timeout: ${message}")
+            AppLog.w("NetworkError", "Timeout: ${message}")
             NetworkError.Timeout
         }
         is UnknownHostException -> {
-            Log.w("NetworkError", "No connection: ${message}")
+            AppLog.w("NetworkError", "No connection: ${message}")
             NetworkError.NoConnection
         }
         is IOException -> {
-            Log.w("NetworkError", "IO error: ${message}")
+            AppLog.w("NetworkError", "IO error: ${message}")
             NetworkError.NoConnection
         }
         else -> {
             // 其他错误
-            Log.e("NetworkError", "Unknown error: ${message}", this)
+            AppLog.e("NetworkError", "Unknown error: ${message}", this)
             NetworkError.Unknown(this)
         }
     }
@@ -104,13 +104,13 @@ suspend fun <T> retryWithBackoff(
         // 检查是否应该重试
         val exception = lastException
         if (exception != null && !shouldRetry(exception)) {
-            AppLog.d("RetryWithBackoff", "Not retrying: $exception")
+            AppAppLog.d("RetryWithBackoff", "Not retrying: $exception")
             return Result.failure(exception)
         }
         
         // 如果不是最后一次尝试，则等待后重试
         if (attempt < maxRetries - 1) {
-            AppLog.d("RetryWithBackoff", "Retry attempt ${attempt + 1}/${maxRetries} after ${currentDelay}ms")
+            AppAppLog.d("RetryWithBackoff", "Retry attempt ${attempt + 1}/${maxRetries} after ${currentDelay}ms")
             delay(currentDelay)
             currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)
         }

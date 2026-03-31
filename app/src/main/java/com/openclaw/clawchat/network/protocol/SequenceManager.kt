@@ -1,6 +1,6 @@
 package com.openclaw.clawchat.network.protocol
 
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -90,13 +90,13 @@ class SequenceManager(
         
         // 检查是否重复
         if (acknowledgedSeqs.contains(seq)) {
-            AppLog.d(TAG, "重复的序列号：$seq")
+            AppAppLog.d(TAG, "重复的序列号：$seq")
             return SequenceResult.Duplicate
         }
         
         // 检查是否过时
         if (seq < currentSeq) {
-            AppLog.d(TAG, "过时的序列号：$seq (current: $currentSeq)")
+            AppAppLog.d(TAG, "过时的序列号：$seq (current: $currentSeq)")
             return SequenceResult.Old(seq, currentSeq)
         }
         
@@ -105,7 +105,7 @@ class SequenceManager(
             val missing = (currentSeq + 1 until seq).toList()
             
             if (missing.size <= maxGapSize) {
-                Log.w(TAG, "序列号间隙：期望 ${currentSeq + 1}, 收到 $seq, 丢失 $missing")
+                AppLog.w(TAG, "序列号间隙：期望 ${currentSeq + 1}, 收到 $seq, 丢失 $missing")
                 
                 // 通知监听器
                 listeners.forEach { 
@@ -115,7 +115,7 @@ class SequenceManager(
                 return SequenceResult.Gap(currentSeq + 1, seq, missing)
             } else {
                 // 间隙太大，重置序列号
-                Log.w(TAG, "序列号间隙过大，重置：$currentSeq -> $seq")
+                AppLog.w(TAG, "序列号间隙过大，重置：$currentSeq -> $seq")
                 listeners.forEach { it.onSequenceReset(seq) }
                 currentSeq = seq
                 return SequenceResult.Ok
@@ -148,7 +148,7 @@ class SequenceManager(
             acknowledgedSeqs.removeAll { it < minSeq }
         }
         
-        AppLog.d(TAG, "确认序列号：$seq (current: $currentSeq)")
+        AppAppLog.d(TAG, "确认序列号：$seq (current: $currentSeq)")
     }
     
     /**
@@ -162,7 +162,7 @@ class SequenceManager(
      * 重置序列号
      */
     suspend fun reset(newSeq: Int = 0) = mutex.withLock {
-        AppLog.d(TAG, "重置序列号：$currentSeq -> $newSeq")
+        AppAppLog.d(TAG, "重置序列号：$currentSeq -> $newSeq")
         currentSeq = newSeq
         acknowledgedSeqs.clear()
         listeners.forEach { it.onSequenceReset(newSeq) }

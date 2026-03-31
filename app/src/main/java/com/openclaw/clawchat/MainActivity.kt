@@ -2,7 +2,7 @@ package com.openclaw.clawchat
 
 import android.content.ComponentCallbacks2
 import android.os.Bundle
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -195,17 +195,17 @@ fun ClawChatNavHost(
         when (level) {
             ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
                 // UI 不可见，释放 UI 相关资源
-                Log.d("MainActivity", "TRIM_MEMORY_UI_HIDDEN: Releasing UI resources")
+                AppLog.d("MainActivity", "TRIM_MEMORY_UI_HIDDEN: Releasing UI resources")
                 MessageSpeaker.stop()
             }
             ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
                 // 中等内存压力，释放缓存
-                Log.d("MainActivity", "TRIM_MEMORY_MODERATE: Clearing caches")
+                AppLog.d("MainActivity", "TRIM_MEMORY_MODERATE: Clearing caches")
                 System.gc()
             }
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
                 // 严重内存压力，释放所有可释放资源
-                Log.w("MainActivity", "TRIM_MEMORY_RUNNING_CRITICAL: Releasing all resources")
+                AppLog.w("MainActivity", "TRIM_MEMORY_RUNNING_CRITICAL: Releasing all resources")
                 MessageSpeaker.shutdown()
                 System.gc()
             }

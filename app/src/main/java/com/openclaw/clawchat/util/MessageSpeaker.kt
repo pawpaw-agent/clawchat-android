@@ -2,7 +2,7 @@ package com.openclaw.clawchat.util
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import java.util.Locale
 
 /**
@@ -35,7 +35,7 @@ object MessageSpeaker {
                 }
                 onReady()
             } else {
-                Log.e(TAG, "TTS initialization failed")
+                AppLog.e(TAG, "TTS initialization failed")
             }
         }
     }
@@ -45,7 +45,7 @@ object MessageSpeaker {
      */
     fun speak(text: String) {
         if (!isInitialized) {
-            Log.w(TAG, "TTS not initialized, cannot speak")
+            AppLog.w(TAG, "TTS not initialized, cannot speak")
             return
         }
         

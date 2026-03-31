@@ -3,7 +3,7 @@ package com.openclaw.clawchat.ui.state
 import android.content.Context
 import android.os.Build
 import android.os.Process
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.BuildConfig
@@ -212,7 +212,7 @@ class DebugViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                AppLog.e("DebugViewModel", "Logcat stream error", e)
+                AppAppLog.e("DebugViewModel", "Logcat stream error", e)
             }
         }
     }
@@ -291,7 +291,7 @@ class DebugViewModel @Inject constructor(
                 val report = CrashHandler.getCrashReport(context)
                 _state.update { it.copy(lastCrashReport = report) }
             } catch (e: Exception) {
-                Log.e("DebugViewModel", "Failed to load crash report", e)
+                AppLog.e("DebugViewModel", "Failed to load crash report", e)
             }
         }
     }
@@ -302,7 +302,7 @@ class DebugViewModel @Inject constructor(
                 CrashHandler.clearCrashReport(context)
                 _state.update { it.copy(lastCrashReport = null) }
             } catch (e: Exception) {
-                Log.e("DebugViewModel", "Failed to clear crash report", e)
+                AppLog.e("DebugViewModel", "Failed to clear crash report", e)
             }
         }
     }

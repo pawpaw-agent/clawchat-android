@@ -1,6 +1,6 @@
 package com.openclaw.clawchat.ui.state
 
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
@@ -61,7 +61,7 @@ class SlashCommandExecutor(
      * 执行斜杠命令
      */
     fun execute(command: SlashCommandDef, args: String, sessionId: String?) {
-        AppLog.d(TAG, "=== execute: ${command.name}, args=$args")
+        AppAppLog.d(TAG, "=== execute: ${command.name}, args=$args")
         
         when (command.name) {
             "clear" -> executeClear(sessionId)
@@ -135,7 +135,7 @@ class SlashCommandExecutor(
                 onStateUpdate { clearSession() }
                 showSuccess("会话已重置")
             } catch (e: Exception) {
-                AppLog.e(TAG, "Failed to reset session", e)
+                AppAppLog.e(TAG, "Failed to reset session", e)
                 showError("重置会话失败：${e.message ?: "连接异常"}，请检查网络后重试")
             }
         }
@@ -155,7 +155,7 @@ class SlashCommandExecutor(
                 ))
                 showSuccess("思考级别已设置为: $level")
             } catch (e: Exception) {
-                AppLog.e(TAG, "Failed to set thinking level", e)
+                AppAppLog.e(TAG, "Failed to set thinking level", e)
                 showError("设置思考级别失败：${e.message ?: "连接异常"}，请检查网络后重试")
             }
         }
@@ -178,7 +178,7 @@ class SlashCommandExecutor(
                 val status = if (enabled) "开启" else "关闭"
                 showSuccess("推理模式已$status")
             } catch (e: Exception) {
-                AppLog.e(TAG, "Failed to toggle reasoning", e)
+                AppAppLog.e(TAG, "Failed to toggle reasoning", e)
                 showError("切换推理模式失败：${e.message ?: "连接异常"}，请检查网络后重试")
             }
         }
@@ -198,7 +198,7 @@ class SlashCommandExecutor(
                 ))
                 showSuccess("详细模式已设置: $level")
             } catch (e: Exception) {
-                AppLog.e(TAG, "Failed to set verbose level", e)
+                AppAppLog.e(TAG, "Failed to set verbose level", e)
                 showError("设置详细模式失败：${e.message ?: "连接异常"}，请检查网络后重试")
             }
         }
@@ -229,7 +229,7 @@ class SlashCommandExecutor(
                 gateway.chatSend(sessionId, message)
                 onStateUpdate { copy(inputText = "", isSending = true, isLoading = true) }
             } catch (e: Exception) {
-                AppLog.e(TAG, "Failed to send command", e)
+                AppAppLog.e(TAG, "Failed to send command", e)
                 showError("执行命令失败：${e.message ?: "连接异常"}，请检查网络后重试")
             }
         }

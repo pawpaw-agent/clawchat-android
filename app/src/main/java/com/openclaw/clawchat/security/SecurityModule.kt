@@ -2,7 +2,7 @@ package com.openclaw.clawchat.security
 
 import android.content.Context
 import com.openclaw.clawchat.util.AppLog
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -49,7 +49,7 @@ class SecurityModule(private val context: Context) {
         try {
             // 生成 Ed25519 密钥对
             if (!keystoreManager.hasKeyPair()) {
-                Log.i(TAG, "Generating new Ed25519 device key pair...")
+                AppLog.i(TAG, "Generating new Ed25519 device key pair...")
                 keystoreManager.generateKeyPair()
             }
             
@@ -58,13 +58,13 @@ class SecurityModule(private val context: Context) {
             val storedDeviceId = encryptedStorage.getDeviceId()
             
             if (storedDeviceId != derivedDeviceId) {
-                Log.i(TAG, "Updating device ID from key fingerprint...")
+                AppLog.i(TAG, "Updating device ID from key fingerprint...")
                 encryptedStorage.saveDeviceId(derivedDeviceId)
             }
             
             getSecurityStatus()
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize security module", e)
+            AppLog.e(TAG, "Failed to initialize security module", e)
             SecurityStatus(
                 isInitialized = false,
                 isPaired = false,
@@ -213,7 +213,7 @@ class SecurityModule(private val context: Context) {
         encryptedStorage.saveDeviceToken(deviceToken)
         encryptedStorage.savePairingStatus(EncryptedStorage.PAIRING_STATUS_APPROVED)
         encryptedStorage.saveLastConnectedTimestamp(System.currentTimeMillis())
-        Log.i(TAG, "Pairing completed successfully")
+        AppLog.i(TAG, "Pairing completed successfully")
     }
     
     /**
@@ -274,7 +274,7 @@ class SecurityModule(private val context: Context) {
      */
     fun resetPairing() {
         encryptedStorage.clearPairingData()
-        Log.i(TAG, "Pairing reset")
+        AppLog.i(TAG, "Pairing reset")
     }
     
     /**
@@ -283,7 +283,7 @@ class SecurityModule(private val context: Context) {
     fun factoryReset() {
         encryptedStorage.clearAll()
         keystoreManager.deleteKey()
-        Log.i(TAG, "Factory reset completed")
+        AppLog.i(TAG, "Factory reset completed")
     }
     
     fun getDeviceDescription(): String {
@@ -356,12 +356,12 @@ data class SecurityStatus(
 object SecureLogger {
     private const val TAG = "ClawChat-Security"
     
-    fun d(message: String) = AppLog.d(TAG, message.redactSensitive())
-    fun i(message: String) = android.util.Log.i(TAG, message.redactSensitive())
-    fun w(message: String) = android.util.Log.w(TAG, message.redactSensitive())
+    fun d(message: String) = AppAppLog.d(TAG, message.redactSensitive())
+    fun i(message: String) = android.util.AppLog.i(TAG, message.redactSensitive())
+    fun w(message: String) = android.util.AppLog.w(TAG, message.redactSensitive())
     fun e(message: String, throwable: Throwable? = null) {
-        if (throwable != null) android.util.Log.e(TAG, message.redactSensitive(), throwable)
-        else android.util.Log.e(TAG, message.redactSensitive())
+        if (throwable != null) android.util.AppLog.e(TAG, message.redactSensitive(), throwable)
+        else android.util.AppLog.e(TAG, message.redactSensitive())
     }
     
     private fun String.redactSensitive(): String = this

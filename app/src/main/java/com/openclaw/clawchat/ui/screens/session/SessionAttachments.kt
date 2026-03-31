@@ -1,4 +1,5 @@
 package com.openclaw.clawchat.ui.screens.session
+import com.openclaw.clawchat.util.AppLog
 
 import android.graphics.BitmapFactory
 import android.util.Base64
@@ -94,7 +95,7 @@ fun AttachmentPreview(
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("AttachmentPreview", "Failed to decode image: ${e.message}")
+                AppLog.e("AttachmentPreview", "Failed to decode image: ${e.message}")
                 null
             }
         }

@@ -1,6 +1,6 @@
 package com.openclaw.clawchat.network.protocol
 
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.security.SecurityModule
 import com.openclaw.clawchat.security.SignedPayload
@@ -73,10 +73,10 @@ class ChallengeResponseAuth(
      * { "type": "event", "event": "connect.challenge", "payload": { "nonce": "...", "ts": ... } }
      */
     fun handleChallenge(challenge: ConnectChallengePayload): Result<String> {
-        AppLog.d(TAG, "收到挑战：nonce=${challenge.nonce.take(8)}..., ts=${challenge.timestamp}")
+        AppAppLog.d(TAG, "收到挑战：nonce=${challenge.nonce.take(8)}..., ts=${challenge.timestamp}")
 
         if (challenge.nonce.isBlank()) {
-            Log.e(TAG, "无效的 nonce")
+            AppLog.e(TAG, "无效的 nonce")
             return Result.failure(IllegalStateException("Invalid nonce"))
         }
 
@@ -88,7 +88,7 @@ class ChallengeResponseAuth(
             requestId = requestId
         )
 
-        AppLog.d(TAG, "挑战已存储，requestId=$requestId")
+        AppAppLog.d(TAG, "挑战已存储，requestId=$requestId")
         return Result.success(requestId)
     }
 
@@ -107,7 +107,7 @@ class ChallengeResponseAuth(
 
         // Token 模式：不需要设备签名
         if (!gatewayToken.isNullOrBlank()) {
-            AppLog.d(TAG, "Token 模式：跳过设备签名")
+            AppAppLog.d(TAG, "Token 模式：跳过设备签名")
             pendingChallenge = null
             return ConnectRequest(
                 device = DeviceInfo(
@@ -142,7 +142,7 @@ class ChallengeResponseAuth(
             deviceFamily = "phone"
         )
 
-        AppLog.d(TAG, "v3 签名完成, deviceId=${signed.deviceId.take(16)}...")
+        AppAppLog.d(TAG, "v3 签名完成, deviceId=${signed.deviceId.take(16)}...")
 
         // 清除待处理的挑战
         pendingChallenge = null

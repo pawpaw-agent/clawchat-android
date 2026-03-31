@@ -1,4 +1,5 @@
 package com.openclaw.clawchat.ui.components
+import com.openclaw.clawchat.util.AppLog
 
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -149,7 +150,7 @@ fun ChatInputBar(
                             ))
                         }
                     } catch (e: Exception) {
-                        android.util.Log.e("ChatInputBar", "Failed to paste image: ${e.message}")
+                        AppLog.e("ChatInputBar", "Failed to paste image: ${e.message}")
                     }
                 }
             }
@@ -168,7 +169,7 @@ fun ChatInputBar(
                     mimeType = mimeType
                 ))
             } catch (e: Exception) {
-                android.util.Log.e("ChatInputBar", "Failed to read image: ${e.message}")
+                AppLog.e("ChatInputBar", "Failed to read image: ${e.message}")
             }
         }
     }

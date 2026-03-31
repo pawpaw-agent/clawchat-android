@@ -1,6 +1,6 @@
 package com.openclaw.clawchat.network.protocol
 
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -104,7 +104,7 @@ class RequestTracker(
         }
         
         for ((id, request) in expired) {
-            Log.w(TAG, "请求超时：$id (${request.method})")
+            AppLog.w(TAG, "请求超时：$id (${request.method})")
             request.deferred.cancel(
                 RequestTimeoutException("Request timeout: ${request.method}", request.id)
             )
@@ -112,7 +112,7 @@ class RequestTracker(
         }
         
         if (expired.isNotEmpty()) {
-            AppLog.d(TAG, "清理了 ${expired.size} 个超时请求")
+            AppAppLog.d(TAG, "清理了 ${expired.size} 个超时请求")
         }
     }
     
@@ -134,7 +134,7 @@ class RequestTracker(
         )
         
         pendingRequests[requestId] = pendingRequest
-        AppLog.d(TAG, "追踪请求：$requestId ($method)")
+        AppAppLog.d(TAG, "追踪请求：$requestId ($method)")
         
         pendingRequest.deferred
     }
@@ -151,11 +151,11 @@ class RequestTracker(
         if (pendingRequest != null) {
             if (!pendingRequest.deferred.isCompleted) {
                 pendingRequest.deferred.complete(response)
-                AppLog.d(TAG, "请求完成：${response.id} (ok=${response.ok})")
+                AppAppLog.d(TAG, "请求完成：${response.id} (ok=${response.ok})")
             }
             true
         } else {
-            Log.w(TAG, "未找到对应的请求：${response.id}")
+            AppLog.w(TAG, "未找到对应的请求：${response.id}")
             false
         }
     }
@@ -176,11 +176,11 @@ class RequestTracker(
         if (pendingRequest != null) {
             if (!pendingRequest.deferred.isCompleted) {
                 pendingRequest.deferred.completeExceptionally(error)
-                Log.e(TAG, "请求失败：$requestId - ${error.message}")
+                AppLog.e(TAG, "请求失败：$requestId - ${error.message}")
             }
             true
         } else {
-            Log.w(TAG, "未找到对应的请求：$requestId")
+            AppLog.w(TAG, "未找到对应的请求：$requestId")
             false
         }
     }
@@ -197,7 +197,7 @@ class RequestTracker(
         if (pendingRequest != null) {
             if (!pendingRequest.deferred.isCompleted) {
                 pendingRequest.deferred.cancel(CancellationException("Request cancelled"))
-                AppLog.d(TAG, "请求取消：$requestId")
+                AppAppLog.d(TAG, "请求取消：$requestId")
             }
             true
         } else {
@@ -217,7 +217,7 @@ class RequestTracker(
         
         val count = pendingRequests.size
         pendingRequests.clear()
-        AppLog.d(TAG, "取消了 $count 个请求：$reason")
+        AppAppLog.d(TAG, "取消了 $count 个请求：$reason")
     }
     
     /**

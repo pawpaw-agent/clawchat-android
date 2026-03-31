@@ -1,6 +1,6 @@
 package com.openclaw.clawchat.ui.state
 
-import android.util.Log
+import com.openclaw.clawchat.util.AppLog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.network.GatewayUrlUtil
@@ -103,7 +103,7 @@ class PairingViewModel @Inject constructor(
     private fun observeCertificateEvents() {
         viewModelScope.launch {
             gateway.certificateEvent.collect { event ->
-                Log.i(TAG, "Certificate event received: ${event.hostname}, mismatch=${event.isMismatch}")
+                AppLog.i(TAG, "Certificate event received: ${event.hostname}, mismatch=${event.isMismatch}")
                 _state.value = _state.value.copy(certificateEvent = event)
             }
         }
@@ -126,7 +126,7 @@ class PairingViewModel @Inject constructor(
                         handlePairingEvent(event, obj)
                     }
                 } catch (e: Exception) {
-                    Log.w(TAG, "Failed to parse pairing event: ${e.message}")
+                    AppLog.w(TAG, "Failed to parse pairing event: ${e.message}")
                 }
             }
         }
@@ -138,7 +138,7 @@ class PairingViewModel @Inject constructor(
     private fun handlePairingEvent(event: String, obj: kotlinx.serialization.json.JsonObject) {
         when (event) {
             "device.pairing.approved" -> {
-                Log.i(TAG, "Pairing approved by gateway")
+                AppLog.i(TAG, "Pairing approved by gateway")
                 _state.value = _state.value.copy(
                     isPairing = false,
                     status = PairingStatus.Approved
@@ -150,7 +150,7 @@ class PairingViewModel @Inject constructor(
             "device.pairing.rejected" -> {
                 val payload = obj["payload"]?.jsonObject
                 val reason = payload?.get("reason")?.jsonPrimitive?.content ?: "Unknown reason"
-                Log.w(TAG, "Pairing rejected: $reason")
+                AppLog.w(TAG, "Pairing rejected: $reason")
                 _state.value = _state.value.copy(
                     isPairing = false,
                     status = PairingStatus.Rejected
@@ -207,7 +207,7 @@ class PairingViewModel @Inject constructor(
                 }
 
                 result.onFailure { e ->
-                    Log.e(TAG, "Token 连接失败", e)
+                    AppLog.e(TAG, "Token 连接失败", e)
                     _state.value = _state.value.copy(
                         isPairing = false,
                         status = PairingStatus.Error(e.message ?: "连接失败")
@@ -215,7 +215,7 @@ class PairingViewModel @Inject constructor(
                     _events.emit(PairingEvent.PairingError(e.message ?: "连接失败"))
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Token 连接异常", e)
+                AppLog.e(TAG, "Token 连接异常", e)
                 _state.value = _state.value.copy(
                     isPairing = false,
                     status = PairingStatus.Error(e.message ?: "连接失败")
@@ -307,7 +307,7 @@ class PairingViewModel @Inject constructor(
                     fingerprint = event.fingerprint,
                     userVerified = true
                 )
-                Log.i(TAG, "User confirmed certificate trust for ${event.hostname}")
+                AppLog.i(TAG, "User confirmed certificate trust for ${event.hostname}")
 
                 // 清除证书事件，继续连接
                 _state.value = _state.value.copy(certificateEvent = null)
@@ -318,7 +318,7 @@ class PairingViewModel @Inject constructor(
                     ConnectMode.PAIRING -> startPairing()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to save certificate trust", e)
+                AppLog.e(TAG, "Failed to save certificate trust", e)
                 _state.value = _state.value.copy(
                     certificateEvent = null,
                     status = PairingStatus.Error("保存证书信任失败：${e.message}")
@@ -334,7 +334,7 @@ class PairingViewModel @Inject constructor(
         val event = _state.value.certificateEvent ?: return
 
         viewModelScope.launch {
-            Log.w(TAG, "User rejected certificate for ${event.hostname}")
+            AppLog.w(TAG, "User rejected certificate for ${event.hostname}")
 
             // 清除证书事件
             _state.value = _state.value.copy(certificateEvent = null)
