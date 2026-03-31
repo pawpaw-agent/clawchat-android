@@ -615,6 +615,50 @@ class GatewayConnection(
         return call("sessions.patch", params)
     }
 
+    /** sessions.steer — 向运行中的会话发送引导消息 */
+    suspend fun sessionsSteer(sessionKey: String, text: String): ResponseFrame {
+        val params = mapOf(
+            "sessionKey" to JsonPrimitive(sessionKey),
+            "text" to JsonPrimitive(text)
+        )
+        return call("sessions.steer", params)
+    }
+
+    /** cron.list — 列出定时任务 */
+    suspend fun cronList(): ResponseFrame {
+        return call("cron.list", null)
+    }
+
+    /** cron.add — 创建定时任务 */
+    suspend fun cronAdd(
+        name: String,
+        cron: String,
+        sessionKey: String,
+        prompt: String,
+        enabled: Boolean = true
+    ): ResponseFrame {
+        val params = mapOf(
+            "name" to JsonPrimitive(name),
+            "cron" to JsonPrimitive(cron),
+            "sessionKey" to JsonPrimitive(sessionKey),
+            "prompt" to JsonPrimitive(prompt),
+            "enabled" to JsonPrimitive(enabled)
+        )
+        return call("cron.add", params)
+    }
+
+    /** cron.remove — 删除定时任务 */
+    suspend fun cronRemove(cronId: String): ResponseFrame {
+        val params = mapOf("id" to JsonPrimitive(cronId))
+        return call("cron.remove", params)
+    }
+
+    /** cron.run — 立即执行定时任务 */
+    suspend fun cronRun(cronId: String): ResponseFrame {
+        val params = mapOf("id" to JsonPrimitive(cronId))
+        return call("cron.run", params)
+    }
+
     /** ping */
     suspend fun ping(): Result<Long> {
         return try {
