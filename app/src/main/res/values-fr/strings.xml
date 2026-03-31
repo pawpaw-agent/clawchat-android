@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">ClawChat</string>
+
+    <!-- General -->
+    <string name="ok">OK</string>
+    <string name="cancel">Annuler</string>
+    <string name="confirm">Confirmer</string>
+    <string name="retry">Réessayer</string>
+    <string name="loading">Chargement…</string>
+    <string name="error">Erreur</string>
+    <string name="success">Succès</string>
+    <string name="delete">Supprimer</string>
+    <string name="close">Fermer</string>
+    <string name="confirm_button">Confirmer</string>
+    <string name="cancel_connection">Annuler la connexion</string>
+    <string name="go_to_settings">Aller aux paramètres</string>
+    <string name="reset">Réinitialiser</string>
+    <string name="rename">Renommer</string>
+    <string name="regenerate">Régénérer</string>
+    <string name="undo">Annuler</string>
+    <string name="redo">Rétablir</string>
+    <string name="clear">Effacer</string>
+    <string name="save">Enregistrer</string>
+    <string name="discard">Ignorer</string>
+
+    <!-- Connection Status -->
+    <string name="status_connected">Connecté</string>
+    <string name="status_connecting">Connexion…</string>
+    <string name="status_disconnected">Déconnecté</string>
+    <string name="status_error">Erreur de connexion</string>
+    <string name="status_connect">Connecter</string>
+    <string name="status_connect_success">Connexion réussie !</string>
+    <string name="status_connect_paired">Se connecter au Gateway appairé</string>
+    <string name="status_scan_or_code">Scanner le code QR ou entrer le code d\'appairage</string>
+    <string name="status_retry">Réessayer</string>
+    <string name="status_go_to_settings">Aller aux paramètres</string>
+    <string name="status_latency">Latence : %d ms</string>
+    <string name="status_gateway">Gateway : %s</string>
+
+    <!-- Gateway Configuration -->
+    <string name="gateway_title">Gateway</string>
+    <string name="gateway_add">Ajouter un Gateway</string>
+    <string name="gateway_edit">Modifier le Gateway</string>
+    <string name="gateway_delete">Supprimer le Gateway</string>
+    <string name="gateway_host">Hôte</string>
+    <string name="gateway_port">Port</string>
+    <string name="gateway_tls">Utiliser TLS (WSS)</string>
+    <string name="gateway_test">Tester la connexion</string>
+
+    <!-- Session -->
+    <string name="session_title">Session</string>
+    <string name="session_search">Rechercher des sessions…</string>
+    <string name="session_today">Aujourd\'hui</string>
+    <string name="session_yesterday">Hier</string>
+    <string name="session_this_week">Cette semaine</string>
+    <string name="session_earlier">Plus tôt</string>
+    <string name="session_input_placeholder">Tapez un message…</string>
+    <string name="session_image_reset">Réinitialiser</string>
+    <string name="session_options">Options de session</string>
+    <string name="session_rename">Renommer</string>
+    <string name="session_terminate_button">Terminer la session</string>
+    <string name="session_delete_button">Supprimer la session</string>
+    <string name="session_close">Fermer</string>
+    <string name="session_delete_title">Supprimer la session</string>
+    <string name="session_delete_message">Supprimer la session \"%s\" ? Cette action est irréversible.</string>
+    <string name="session_rename_title">Renommer la session</string>
+    <string name="session_name">Nom de la session</string>
+    <string name="session_confirm">Confirmer</string>
+    <string name="session_search_placeholder">Rechercher des sessions…</string>
+    <string name="session_delete_confirm_title">Supprimer le message</string>
+    <string name="session_delete_confirm_message">Supprimer ce message ?</string>
+    <string name="session_no_messages">Aucun message</string>
+    <string name="session_start_conversation">Commencez à taper</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_appearance">Apparence</string>
+    <string name="settings_theme">Thème</string>
+    <string name="settings_theme_light">Clair</string>
+    <string name="settings_theme_dark">Sombre</string>
+    <string name="settings_theme_system">Suivre le système</string>
+    <string name="settings_font_size">Taille de police</string>
+    <string name="settings_font_small">Petit</string>
+    <string name="settings_font_medium">Moyen</string>
+    <string name="settings_font_large">Grand</string>
+    <string name="settings_about">À propos</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_debug">Débogage</string>
+
+    <!-- Messages -->
+    <string name="message_copy">Copier</string>
+    <string name="message_share">Partager</string>
+    <string name="message_speak">Lire</string>
+    <string name="message_delete">Supprimer</string>
+    <string name="message_retry">Réessayer</string>
+    <string name="message_regenerate">Régénérer</string>
+    <string name="message_copied">Copié</string>
+    <string name="message_copied_to_clipboard">Copié dans le presse-papiers</string>
+    <string name="message_minutes_ago">Il y a %d minutes</string>
+
+    <!-- About -->
+    <string name="about_title">À propos de ClawChat</string>
+    <string name="about_description">Client Android OpenClaw</string>
+    <string name="about_version">Version %s</string>
+    <string name="about_github">GitHub</string>
+    <string name="about_licenses">Licences</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">Notifications de messages</string>
+    <string name="notification_channel_description">Notifications pour les nouveaux messages</string>
+    <string name="notification_new_message_title">Nouveau message de %s</string>
+    <string name="notification_new_message_text">Nouveau message</string>
+</resources>
