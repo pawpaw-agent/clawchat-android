@@ -39,6 +39,8 @@ fun MainScreen(
     var showSettings by remember { mutableStateOf(false) }
     var showSessionOptions by remember { mutableStateOf<SessionUi?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    var showCommandPalette by remember { mutableStateOf(false) }
+    var commandPaletteQuery by remember { mutableStateOf("") }
     val lifecycleOwner = LocalLifecycleOwner.current
     
     // 过滤会话列表
@@ -112,7 +114,8 @@ fun MainScreen(
             ClawTopAppBar(
                 connectionStatus = state.connectionStatus,
                 latency = state.latency,
-                onSettingsClick = { showSettings = true }
+                onSettingsClick = { showSettings = true },
+                onCommandPaletteClick = { showCommandPalette = true }
             )
         },
         floatingActionButton = {}
@@ -164,6 +167,45 @@ fun MainScreen(
             onNavigateToDebug = onNavigateToDebug
         )
     }
+    
+    // 命令面板 (⌘K)
+    if (showCommandPalette) {
+        val sessionItems = state.sessions.map { session ->
+            com.openclaw.clawchat.ui.components.CommandPaletteItem.SessionItem(
+                id = session.id,
+                title = session.getDisplayName(),
+                lastMessage = session.lastMessage,
+                timestamp = session.lastActivityAt
+            )
+        }
+        
+        com.openclaw.clawchat.ui.components.CommandPalette(
+            query = commandPaletteQuery,
+            onQueryChange = { commandPaletteQuery = it },
+            sessions = sessionItems,
+            commands = com.openclaw.clawchat.ui.components.getDefaultCommands(),
+            onSessionSelect = { sessionId ->
+                showCommandPalette = false
+                commandPaletteQuery = ""
+                viewModel.selectSession(sessionId)
+                onNavigateToSession(sessionId)
+            },
+            onCommandExecute = { commandId ->
+                showCommandPalette = false
+                commandPaletteQuery = ""
+                when (commandId) {
+                    "new-session" -> viewModel.createSession()
+                    "settings" -> showSettings = true
+                    "clear-chat" -> { /* TODO: 清除当前会话 */ }
+                    "debug" -> onNavigateToDebug()
+                }
+            },
+            onDismiss = {
+                showCommandPalette = false
+                commandPaletteQuery = ""
+            }
+        )
+    }
 }
 
 /**
@@ -174,7 +216,8 @@ fun MainScreen(
 private fun ClawTopAppBar(
     connectionStatus: ConnectionStatus,
     latency: Long?,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onCommandPaletteClick: () -> Unit = {}
 ) {
     TopAppBar(
         title = {
@@ -190,6 +233,14 @@ private fun ClawTopAppBar(
             }
         },
         actions = {
+            // 搜索按钮（命令面板）
+            IconButton(onClick = onCommandPaletteClick) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "搜索"
+                )
+            }
+            
             // 连接状态指示器
             ConnectionStatusIcon(connectionStatus)
             
