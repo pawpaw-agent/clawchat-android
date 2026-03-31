@@ -4,7 +4,6 @@ import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -329,19 +329,54 @@ private fun MessageStatusIndicator(
     status: MessageStatus,
     modifier: Modifier = Modifier
 ) {
-    val (icon, color, contentDesc) = when (status) {
-        MessageStatus.SENDING -> Triple(Icons.Default.Schedule, MaterialTheme.colorScheme.onSurfaceVariant, "发送中")
-        MessageStatus.SENT -> Triple(Icons.Default.Check, MaterialTheme.colorScheme.primary, "已发送")
-        MessageStatus.DELIVERED -> Triple(Icons.Default.DoneAll, MaterialTheme.colorScheme.primary, "已送达")
-        MessageStatus.FAILED -> Triple(Icons.Default.Error, MaterialTheme.colorScheme.error, "发送失败")
+    when (status) {
+        MessageStatus.SENDING -> {
+            // 发送中 - 旋转动画
+            val infiniteTransition = rememberInfiniteTransition(label = "sending")
+            val rotation by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart
+                ),
+                label = "rotation"
+            )
+            
+            Icon(
+                imageVector = Icons.Default.Sync,
+                contentDescription = "发送中",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = modifier
+                    .size(14.dp)
+                    .graphicsLayer { rotationZ = rotation }
+            )
+        }
+        MessageStatus.SENT -> {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "已发送",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = modifier.size(14.dp)
+            )
+        }
+        MessageStatus.DELIVERED -> {
+            Icon(
+                imageVector = Icons.Default.DoneAll,
+                contentDescription = "已送达",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = modifier.size(14.dp)
+            )
+        }
+        MessageStatus.FAILED -> {
+            Icon(
+                imageVector = Icons.Default.Error,
+                contentDescription = "发送失败",
+                tint = MaterialTheme.colorScheme.error,
+                modifier = modifier.size(14.dp)
+            )
+        }
     }
-    
-    Icon(
-        imageVector = icon,
-        contentDescription = contentDesc,
-        tint = color,
-        modifier = modifier.size(14.dp)
-    )
 }
 
 /**
