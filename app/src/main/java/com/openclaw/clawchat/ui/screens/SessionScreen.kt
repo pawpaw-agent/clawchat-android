@@ -88,12 +88,14 @@ fun SessionScreen(
     // 只在首次进入会话时触发，避免流式响应时循环滚动
     var hasScrolledForSession by remember(sessionId) { mutableStateOf(false) }
     
-    LaunchedEffect(state.chatMessages.size, sessionId) {
+    // 进入会话时滚动到底部
+    LaunchedEffect(sessionId, state.chatMessages.size) {
+        // 条件：有消息 且 还没滚动过
         if (state.chatMessages.isNotEmpty() && !hasScrolledForSession) {
-            // 等待 LazyColumn 完成 layout
-            kotlinx.coroutines.delay(150)
+            // 等待 LazyColumn 完成布局
+            kotlinx.coroutines.delay(100)
             // reverseLayout=true: scrollToItem(0) 滚动到最新消息
-            listState.scrollToItem(0, scrollOffset = -100)
+            listState.scrollToItem(0)
             hasScrolledForSession = true
         }
     }

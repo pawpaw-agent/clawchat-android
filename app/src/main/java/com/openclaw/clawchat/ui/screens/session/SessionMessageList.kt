@@ -126,6 +126,14 @@ fun MessageGroupList(
     onRetryMessage: (String) -> Unit = {},
     onSpeak: (String) -> Unit = {}
 ) {
+    // 确保首次渲染时滚动到底部
+    LaunchedEffect(groups.size) {
+        if (groups.isNotEmpty() && listState.firstVisibleItemIndex != 0) {
+            // reverseLayout=true: index 0 是最新消息（底部）
+            listState.scrollToItem(0)
+        }
+    }
+    
     // 使用 reverseLayout = true 实现最优雅的自动滚动
     // 新消息自动显示在底部，无需手动滚动逻辑
     // 参考：lambiengcode/compose-chatgpt-kotlin-android-chatbot 最佳实践
