@@ -101,7 +101,7 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
             map
         }
         
-        AppLog.d("MessageRepository", "=== saveMessage: saved, total messages for session: ${sessionMessages.size}")
+        AppLog.d("MessageRepository", "=== saveMessage: saved message $messageId to session $sessionId")
         
         return messageId
     }
