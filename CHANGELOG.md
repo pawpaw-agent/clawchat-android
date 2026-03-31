@@ -6,6 +6,77 @@
 
 ---
 
+## [1.2.0] - 2026-04-01
+
+### 新增功能
+
+**核心功能**
+- 二维码生成 (ZXing) - QRCodeUtils 工具类
+- 语音输入 (SpeechRecognizer) - VoiceInputManager 语音识别
+- 提示词存储 (DataStore) - RecentPromptsStore 最近提示词
+- 草稿自动保存 - DraftStore 24小时有效期
+- 消息导出 - ExportUtils JSON/Text/Image 格式
+- 消息统计 - StatsUtils 字数统计（中文=1，英文单词=1）
+
+**UI 组件**
+- AnimatedFloatingActionButton - 弹簧动画 FAB
+- ProgressButton - 发送进度按钮
+- ExpandableCard - 可展开卡片
+- SwipeableMessageCard - 滑动删除消息
+- BatchOperationToolbar - 批量操作工具栏
+- QuotedMessageBar - 引用消息组件
+- UndoSnackbar - 撤销删除 Snackbar
+- ThemeColorSettingItem - 主题色选择器（8 种预设）
+
+**动画系统**
+- AnimationUtils - 统一动画预设
+- pageTransition() - 页面切换动画
+- listItemEnter() - 列表项入场
+- messageSendEnter() - 消息发送动画
+- messageDeleteExit() - 消息删除动画
+
+**响应式布局**
+- LayoutUtils - WindowSizeClass (COMPACT/MEDIUM/EXPANDED)
+- 折叠屏适配 - FoldingFeature 支持
+- 横屏优化 - 双栏布局
+- 大屏幕支持 - 三栏布局
+
+**交互增强**
+- 滑动删除会话 - SwipeToDismiss
+- 键盘快捷键 - Ctrl+N/F/Z/S
+- Slash 命令自动补全 - 已实现
+- 长按弹出菜单 - 复制/分享/删除
+- 消息引用回复 - QuotedMessageBar
+
+**拖拽排序**
+- ReorderableList - 拖拽排序工具类
+- DragState - 拖拽状态管理
+- dragReorderModifier - 手势检测
+
+**撤销功能**
+- UndoQueue - 删除队列管理器
+- UndoSnackbar - 5秒撤销超时
+- DeletedSession/DeletedMessage - 删除数据类
+
+**批量操作**
+- SelectionState - 选择状态管理
+- 批量删除 - 多选删除
+- 批量复制 - 复制多条消息
+- 全选 - 一键全选
+
+### 依赖更新
+- ZXing Core 3.5.2
+- ZXing Android Embedded 4.3.0
+- DataStore Preferences 1.0.0
+
+### 权限新增
+- RECORD_AUDIO - 语音输入权限
+
+### 代码统计
+- 总任务完成: 343
+- 新增文件: 15+
+- 代码行数: 20,000+
+
 ## [1.1.0] - 2026-04-01
 
 ### 新增功能
