@@ -124,7 +124,8 @@ fun MessageGroupList(
     onDeleteMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
-    onSpeak: (String) -> Unit = {}
+    onSpeak: (String) -> Unit = {},
+    onContinueGeneration: () -> Unit = {}
 ) {
     // 确保首次渲染时滚动到底部
     LaunchedEffect(groups.size) {
@@ -221,6 +222,26 @@ fun MessageGroupList(
                     placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
                 )
             )
+        }
+        
+        // 继续生成按钮（显示在顶部，reverseLayout 时实际在底部）
+        if (groups.isNotEmpty() && chatStream.isNullOrBlank() && toolMessages.isEmpty()) {
+            item(key = "continue_generation") {
+                TextButton(
+                    onClick = onContinueGeneration,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("继续生成")
+                }
+            }
         }
     }
 }

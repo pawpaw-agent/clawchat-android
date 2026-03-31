@@ -262,6 +262,24 @@ class SessionViewModel @Inject constructor(
         _state.update { it.copy(inputText = text) }
     }
     
+    /**
+     * 继续生成 - 发送空消息触发助手继续响应
+     */
+    fun continueGeneration() {
+        val sessionId = _state.value.sessionId ?: return
+        
+        viewModelScope.launch {
+            _state.update { it.copy(isSending = true, isLoading = true) }
+            try {
+                // 发送空消息触发继续生成
+                gateway.chatSend(sessionId, "")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to continue generation", e)
+                _state.update { it.copy(error = "继续生成失败：${e.message}", isLoading = false, isSending = false) }
+            }
+        }
+    }
+    
     fun addAttachment(attachment: AttachmentUi) {
         _state.update { currentState ->
             currentState.copy(

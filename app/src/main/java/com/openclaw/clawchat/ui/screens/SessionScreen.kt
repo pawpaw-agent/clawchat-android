@@ -179,7 +179,8 @@ fun SessionScreen(
                             onRetryMessage = { viewModel.retryMessage(it) },
                             onSpeak = { text ->
                                 com.openclaw.clawchat.util.MessageSpeaker.speak(text)
-                            }
+                            },
+                            onContinueGeneration = { viewModel.continueGeneration() }
                         )
                     } else if (isSearchMode && searchQuery.isNotBlank()) {
                         // 搜索无结果
