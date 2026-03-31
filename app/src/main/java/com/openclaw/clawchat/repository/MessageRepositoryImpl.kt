@@ -8,6 +8,7 @@ import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
@@ -82,20 +83,23 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
             toolName = toolName
         )
         
-        val map = messagesBySession.value.toMutableMap()
-        val sessionMessages = map.getOrPut(sessionId) { mutableListOf() }
-        sessionMessages.add(message)
-        
-        // 自动清理超出阈值的消息（保留最新的）
-        if (sessionMessages.size > TRIM_THRESHOLD) {
-            val toRemove = sessionMessages.size - MAX_MESSAGES_PER_SESSION
-            if (toRemove > 0) {
-                repeat(toRemove) { sessionMessages.removeAt(0) }
-                AppLog.d("MessageRepository", "=== saveMessage: trimmed $toRemove old messages, current size: ${sessionMessages.size}")
+        // P0-1: 使用 update {} 原子操作，避免竞态条件
+        messagesBySession.update { currentMap ->
+            val map = currentMap.toMutableMap()
+            val sessionMessages = map.getOrPut(sessionId) { mutableListOf() }
+            sessionMessages.add(message)
+            
+            // 自动清理超出阈值的消息（保留最新的）
+            if (sessionMessages.size > TRIM_THRESHOLD) {
+                val toRemove = sessionMessages.size - MAX_MESSAGES_PER_SESSION
+                if (toRemove > 0) {
+                    repeat(toRemove) { sessionMessages.removeAt(0) }
+                    AppLog.d("MessageRepository", "=== saveMessage: trimmed $toRemove old messages, current size: ${sessionMessages.size}")
+                }
             }
+            
+            map
         }
-        
-        messagesBySession.value = map
         
         AppLog.d("MessageRepository", "=== saveMessage: saved, total messages for session: ${sessionMessages.size}")
         
@@ -106,29 +110,34 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
      * 删除会话消息
      */
     override suspend fun deleteSessionMessages(sessionId: String) {
-        val map = messagesBySession.value.toMutableMap()
-        map.remove(sessionId)
-        messagesBySession.value = map
+        // P0-1: 使用 update {} 原子操作
+        messagesBySession.update { map ->
+            map.toMutableMap().apply { remove(sessionId) }
+        }
     }
     
     /**
      * 删除单条消息
      */
     override suspend fun deleteMessage(sessionId: String, messageId: String) {
-        val map = messagesBySession.value.toMutableMap()
-        val sessionMessages = map[sessionId]?.toMutableList() ?: mutableListOf()
-        sessionMessages.removeAll { it.id == messageId }
-        map[sessionId] = sessionMessages
-        messagesBySession.value = map
+        // P0-1: 使用 update {} 原子操作
+        messagesBySession.update { currentMap ->
+            val map = currentMap.toMutableMap()
+            val sessionMessages = map[sessionId]?.toMutableList() ?: mutableListOf()
+            sessionMessages.removeAll { it.id == messageId }
+            map[sessionId] = sessionMessages
+            map
+        }
     }
 
     /**
      * 清空会话消息（用于 /clear 命令）
      */
     override suspend fun clearMessages(sessionId: String) {
-        val map = messagesBySession.value.toMutableMap()
-        map[sessionId] = mutableListOf()
-        messagesBySession.value = map
+        // P0-1: 使用 update {} 原子操作
+        messagesBySession.update { map ->
+            map.toMutableMap().apply { this[sessionId] = mutableListOf() }
+        }
     }
 
     /**
