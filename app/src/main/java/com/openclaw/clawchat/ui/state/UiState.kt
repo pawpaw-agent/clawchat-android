@@ -20,7 +20,9 @@ data class SessionUi(
     val lastActivityAt: Long,
     val messageCount: Int = 0,
     val lastMessage: String? = null,
-    val thinking: Boolean = false
+    val thinking: Boolean = false,
+    val isPinned: Boolean = false,  // 置顶
+    val isArchived: Boolean = false  // 归档
 ) {
     fun getDisplayName(): String {
         val agentName = agentId?.removePrefix("agent:")?.substringBefore(":") ?: agentId

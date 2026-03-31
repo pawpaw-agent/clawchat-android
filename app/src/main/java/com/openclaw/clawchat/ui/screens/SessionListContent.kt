@@ -251,9 +251,16 @@ private fun SessionList(
 }
 
 /**
- * 按日期分组会话
+ * 按日期分组会话（支持置顶和归档）
  */
 private fun groupSessionsByDate(sessions: List<SessionUi>): List<Pair<String, List<SessionUi>>> {
+    // 先按置顶/归档排序，再按日期分组
+    val sortedSessions = sessions.sortedWith(
+        compareByDescending<SessionUi> { it.isPinned }
+            .thenBy { it.isArchived }
+            .thenByDescending { it.lastActivityAt }
+    )
+    
     val now = System.currentTimeMillis()
     val today = Calendar.getInstance().apply {
         timeInMillis = now
@@ -268,7 +275,7 @@ private fun groupSessionsByDate(sessions: List<SessionUi>): List<Pair<String, Li
     
     val groups = mutableMapOf<String, MutableList<SessionUi>>()
     
-    sessions.forEach { session ->
+    sortedSessions.forEach { session ->
         val label = when {
             session.lastActivityAt >= today -> "今天"
             session.lastActivityAt >= yesterday -> "昨天"
@@ -484,6 +491,21 @@ private fun SessionItem(
             expanded = showMenu,
             onDismissRequest = { showMenu = false }
         ) {
+            // 置顶选项
+            DropdownMenuItem(
+                text = { Text(if (session.isPinned) "取消置顶" else "置顶会话") },
+                leadingIcon = { 
+                    Icon(
+                        if (session.isPinned) Icons.Default.PushPin else Icons.Default.PushPin,
+                        contentDescription = null
+                    ) 
+                },
+                onClick = {
+                    showMenu = false
+                    // TODO: 调用置顶 API
+                }
+            )
+            
             // 引导选项
             if (onSteer != null) {
                 DropdownMenuItem(
@@ -495,6 +517,9 @@ private fun SessionItem(
                     }
                 )
             }
+            
+            Divider()
+            
             // 删除选项
             DropdownMenuItem(
                 text = { Text("删除会话", color = MaterialTheme.colorScheme.error) },
