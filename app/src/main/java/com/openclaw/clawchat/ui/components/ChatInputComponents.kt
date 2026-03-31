@@ -115,7 +115,9 @@ fun ChatInputBar(
     attachments: List<AttachmentUi> = emptyList(),
     onAddAttachment: (AttachmentUi) -> Unit = {},
     onRemoveAttachment: (String) -> Unit = {},
-    onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> }
+    onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> },
+    isSending: Boolean = false,  // 发送状态
+    sendProgress: Float? = null  // 发送进度（可选）
 ) {
     // 使用 derivedStateOf 计算斜杠命令菜单状态
     var slashMenuIndex by remember { mutableStateOf(0) }
@@ -300,24 +302,38 @@ fun ChatInputBar(
                     shape = RoundedCornerShape(DesignTokens.radiusLg)
                 )
                 
-                // 发送按钮
-                IconButton(
-                    onClick = onSend,
-                    enabled = enabled && (value.isNotBlank() || attachments.isNotEmpty())
+                // 发送按钮（带进度）
+                Box(
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = if (value.isNotBlank() || attachments.isNotEmpty()) {
-                            Icons.Default.Send
-                        } else {
-                            Icons.Default.NearMe
-                        },
-                        contentDescription = "发送",
-                        tint = if (enabled && (value.isNotBlank() || attachments.isNotEmpty())) {
-                            DesignTokens.accent
-                        } else {
-                            DesignTokens.muted
-                        }
-                    )
+                    IconButton(
+                        onClick = onSend,
+                        enabled = enabled && !isSending && (value.isNotBlank() || attachments.isNotEmpty())
+                    ) {
+                        Icon(
+                            imageVector = if (value.isNotBlank() || attachments.isNotEmpty()) {
+                                Icons.Default.Send
+                            } else {
+                                Icons.Default.NearMe
+                            },
+                            contentDescription = "发送",
+                            tint = if (enabled && !isSending && (value.isNotBlank() || attachments.isNotEmpty())) {
+                                DesignTokens.accent
+                            } else {
+                                DesignTokens.muted
+                            }
+                        )
+                    }
+                    
+                    // 发送时显示进度
+                    if (isSending) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = DesignTokens.accent,
+                            strokeWidth = 2.dp,
+                            progress = { sendProgress ?: 0.5f }
+                        )
+                    }
                 }
             }
         }

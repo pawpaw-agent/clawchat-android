@@ -168,17 +168,31 @@ fun SessionListContent(
             ConnectionStatusBar(connectionStatus = state.connectionStatus)
         }
         
-        // 批量删除按钮
-        if (isSelectionMode && selectedSessions.isNotEmpty()) {
+        // 批量删除按钮（使用动画 FAB）
+        androidx.compose.animation.AnimatedVisibility(
+            visible = isSelectionMode && selectedSessions.isNotEmpty(),
+            enter = androidx.compose.animation.scaleIn(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            ),
+            exit = androidx.compose.animation.scaleOut(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMedium
+                )
+            ),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
             FloatingActionButton(
                 onClick = {
                     onDeleteSessions?.invoke(selectedSessions.toList())
                     selectedSessions = emptySet()
                     isSelectionMode = false
                 },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
                 containerColor = MaterialTheme.colorScheme.error,
                 contentColor = MaterialTheme.colorScheme.onError
             ) {
@@ -187,6 +201,11 @@ fun SessionListContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("删除 (${selectedSessions.size})")
+                }
+            }
+        }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("删除 (${selectedSessions.size})")
                 }
