@@ -167,9 +167,9 @@ class SessionViewModel @Inject constructor(
 
         AppLog.d(TAG, "=== setSessionId: $currentSessionId -> $sessionId")
         
-        // 切换会话：清除旧状态
+        // 切换会话：清除旧状态，设置新 sessionId
         _state.update { 
-            SessionUiState(sessionId = sessionId) 
+            it.clearSession().copy(sessionId = sessionId) 
         }
         
         // 清除工具流

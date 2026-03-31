@@ -120,7 +120,16 @@ data class SessionUiState(
     
     // 输入
     val inputText: String = ""
-)
+) {
+    /**
+     * 清除会话数据，保留 sessionId 和 connectionStatus
+     * 用于切换会话或清除命令
+     */
+    fun clearSession(): SessionUiState = SessionUiState(
+        connectionStatus = connectionStatus,
+        sessionId = sessionId
+    )
+}
 
 /**
  * 文本段（工具执行前提交的文本）

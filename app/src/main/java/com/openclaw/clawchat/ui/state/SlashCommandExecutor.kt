@@ -83,17 +83,7 @@ class SlashCommandExecutor(
                 return@launch
             }
             messageRepository.clearMessages(sessionId)
-            onStateUpdate {
-                copy(
-                    chatMessages = emptyList(),
-                    chatStream = null,
-                    chatStreamSegments = emptyList(),
-                    chatToolMessages = emptyList(),
-                    toolStreamById = emptyMap(),
-                    toolStreamOrder = emptyList(),
-                    inputText = ""
-                )
-            }
+            onStateUpdate { clearSession() }
         }
     }
 
@@ -142,17 +132,7 @@ class SlashCommandExecutor(
             }
             try {
                 gateway.call("sessions.reset", mapOf("key" to JsonPrimitive(sessionId)))
-                onStateUpdate {
-                    copy(
-                        chatMessages = emptyList(),
-                        chatStream = null,
-                        chatStreamSegments = emptyList(),
-                        chatToolMessages = emptyList(),
-                        toolStreamById = emptyMap(),
-                        toolStreamOrder = emptyList(),
-                        inputText = ""
-                    )
-                }
+                onStateUpdate { clearSession() }
                 showSuccess("会话已重置")
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to reset session", e)
