@@ -7,7 +7,6 @@ import com.openclaw.clawchat.network.CertificateExceptionMismatch
 import com.openclaw.clawchat.network.DynamicTrustManager
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.security.SecurityModule
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -498,9 +497,9 @@ class GatewayConnection(
 
         val deferred = requestTracker.trackRequest(requestId, method)
         val frameJson = json.encodeToString(RequestFrame.serializer(), frame)
-        AppAppLog.d("GatewayConnection", "=== call: sending $method, requestId=$requestId, params=$params")
+        AppLog.d("GatewayConnection", "=== call: sending $method, requestId=$requestId, params=$params")
         val sent = webSocket?.send(frameJson) ?: false
-        AppAppLog.d("GatewayConnection", "=== call: sent=$sent, webSocket connected=${webSocket != null}")
+        AppLog.d("GatewayConnection", "=== call: sent=$sent, webSocket connected=${webSocket != null}")
 
         if (!sent) {
             requestTracker.failRequest(requestId, IllegalStateException("WebSocket not connected"))
@@ -567,17 +566,17 @@ class GatewayConnection(
 
     /** chat.history */
     suspend fun chatHistory(sessionKey: String, limit: Int? = null): ResponseFrame {
-        AppAppLog.d("GatewayConnection", "=== chatHistory called: sessionKey='$sessionKey', length=${sessionKey.length}, limit=$limit")
+        AppLog.d("GatewayConnection", "=== chatHistory called: sessionKey='$sessionKey', length=${sessionKey.length}, limit=$limit")
         val params = mutableMapOf<String, JsonElement>(
             "sessionKey" to JsonPrimitive(sessionKey)
         )
         if (limit != null) params["limit"] = JsonPrimitive(limit)
-        AppAppLog.d("GatewayConnection", "=== chatHistory: calling 'chat.history' with params=$params")
+        AppLog.d("GatewayConnection", "=== chatHistory: calling 'chat.history' with params=$params")
         val response = call("chat.history", params)
-        AppAppLog.d("GatewayConnection", "=== chatHistory response: ok=${response.isSuccess()}, error=${response.error}, payload type=${response.payload?.javaClass?.simpleName}")
+        AppLog.d("GatewayConnection", "=== chatHistory response: ok=${response.isSuccess()}, error=${response.error}, payload type=${response.payload?.javaClass?.simpleName}")
         if (response.payload is JsonObject) {
             val messagesArray = (response.payload as JsonObject)["messages"]?.jsonArray
-            AppAppLog.d("GatewayConnection", "=== chatHistory: messages count=${messagesArray?.size ?: 0}")
+            AppLog.d("GatewayConnection", "=== chatHistory: messages count=${messagesArray?.size ?: 0}")
         }
         return response
     }

@@ -1,7 +1,6 @@
 package com.openclaw.clawchat.network.protocol
 
 import com.openclaw.clawchat.util.AppLog
-import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -112,7 +111,7 @@ class RequestTracker(
         }
         
         if (expired.isNotEmpty()) {
-            AppAppLog.d(TAG, "清理了 ${expired.size} 个超时请求")
+            AppLog.d(TAG, "清理了 ${expired.size} 个超时请求")
         }
     }
     
@@ -134,7 +133,7 @@ class RequestTracker(
         )
         
         pendingRequests[requestId] = pendingRequest
-        AppAppLog.d(TAG, "追踪请求：$requestId ($method)")
+        AppLog.d(TAG, "追踪请求：$requestId ($method)")
         
         pendingRequest.deferred
     }
@@ -151,7 +150,7 @@ class RequestTracker(
         if (pendingRequest != null) {
             if (!pendingRequest.deferred.isCompleted) {
                 pendingRequest.deferred.complete(response)
-                AppAppLog.d(TAG, "请求完成：${response.id} (ok=${response.ok})")
+                AppLog.d(TAG, "请求完成：${response.id} (ok=${response.ok})")
             }
             true
         } else {
@@ -197,7 +196,7 @@ class RequestTracker(
         if (pendingRequest != null) {
             if (!pendingRequest.deferred.isCompleted) {
                 pendingRequest.deferred.cancel(CancellationException("Request cancelled"))
-                AppAppLog.d(TAG, "请求取消：$requestId")
+                AppLog.d(TAG, "请求取消：$requestId")
             }
             true
         } else {
@@ -217,7 +216,7 @@ class RequestTracker(
         
         val count = pendingRequests.size
         pendingRequests.clear()
-        AppAppLog.d(TAG, "取消了 $count 个请求：$reason")
+        AppLog.d(TAG, "取消了 $count 个请求：$reason")
     }
     
     /**

@@ -6,7 +6,6 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import com.openclaw.clawchat.util.AppLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -49,11 +48,11 @@ class TailscaleManager @Inject constructor(
             while (interfaces.hasMoreElements()) {
                 val iface = interfaces.nextElement()
                 if (iface.name in TAILSCALE_INTERFACES && iface.isUp) {
-                    AppAppLog.d(TAG, "Tailscale interface found: ${iface.name}")
+                    AppLog.d(TAG, "Tailscale interface found: ${iface.name}")
                     return true
                 }
             }
-            AppAppLog.d(TAG, "No Tailscale interface found")
+            AppLog.d(TAG, "No Tailscale interface found")
             false
         } catch (e: Exception) {
             AppLog.e(TAG, "Failed to check Tailscale status: ${e.message}", e)
@@ -77,13 +76,13 @@ class TailscaleManager @Inject constructor(
                         val address = addresses.nextElement()
                         if (address is Inet4Address && !address.isLoopbackAddress) {
                             val ip = address.hostAddress
-                            AppAppLog.d(TAG, "Found Tailscale IP: $ip on ${iface.name}")
+                            AppLog.d(TAG, "Found Tailscale IP: $ip on ${iface.name}")
                             return ip
                         }
                     }
                 }
             }
-            AppAppLog.d(TAG, "No Tailscale IP found")
+            AppLog.d(TAG, "No Tailscale IP found")
             null
         } catch (e: Exception) {
             AppLog.e(TAG, "Failed to get Tailscale IP: ${e.message}", e)
@@ -140,7 +139,7 @@ class TailscaleManager @Inject constructor(
             try {
                 val addresses = InetAddress.getAllByName(name)
                 val ip = addresses.firstOrNull { it is Inet4Address }?.hostAddress
-                AppAppLog.d(TAG, "Resolved $name -> $ip")
+                AppLog.d(TAG, "Resolved $name -> $ip")
                 ip
             } catch (e: Exception) {
                 AppLog.w(TAG, "Failed to resolve $name: ${e.message}")

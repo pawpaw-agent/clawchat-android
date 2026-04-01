@@ -96,8 +96,8 @@ class DraftStore(private val context: Context) {
         val now = System.currentTimeMillis()
         context.draftDataStore.edit { preferences ->
             preferences.asMap().forEach { (key, value) ->
-                if (key is longPreferencesKey && key.name.startsWith("draft_time_")) {
-                    val timestamp = value as Long
+                if (key.name.startsWith("draft_time_")) {
+                    val timestamp = value as? Long ?: return
                     if (now - timestamp >= DRAFT_EXPIRY_MS) {
                         val sessionId = key.name.removePrefix("draft_time_")
                         preferences.remove(draftKey(sessionId))
