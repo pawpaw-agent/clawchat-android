@@ -178,5 +178,5 @@ object AnimationUtils {
  */
 sealed class AnimationSpecType {
     data class Tween(val duration: Int = AnimationUtils.DURATION_SHORT) : AnimationSpecType()
-    data class Spring(val dampingRatio: Float = Spring.DampingRatioMediumBouncy) : AnimationSpecType()
+    data class Spring(val dampingRatio: Float = 0.7f) : AnimationSpecType()
 }

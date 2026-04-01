@@ -2,6 +2,8 @@ package com.openclaw.clawchat.ui.components
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
@@ -144,7 +146,7 @@ object ThemeUtils {
     }
     
     private fun createLightColorScheme(preset: ColorPreset): ColorScheme {
-        return ColorScheme(
+        return lightColorScheme(
             primary = preset.primary,
             onPrimary = ColorUtils.getContrastColor(preset.primary),
             primaryContainer = preset.primary.copy(alpha = 0.2f),
@@ -173,7 +175,7 @@ object ThemeUtils {
     }
     
     private fun createDarkColorScheme(preset: ColorPreset): ColorScheme {
-        return ColorScheme(
+        return darkColorScheme(
             primary = preset.primary,
             onPrimary = ColorUtils.getContrastColor(preset.primary),
             primaryContainer = preset.primary.copy(alpha = 0.3f),

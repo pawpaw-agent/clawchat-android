@@ -73,7 +73,7 @@ object LayoutUtils {
         val sizeClass = calculateWindowSizeClass(width)
         val isLandscape = width > height
         
-        val isFolding = foldingFeature?.state == FoldingFeature.State.FLAT
+        val isFolding = foldingFeature?.state == androidx.window.layout.FoldingFeature.State.FLAT
         val foldingOrientation = foldingFeature?.orientation
         
         return LayoutConfig(

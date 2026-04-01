@@ -356,11 +356,11 @@ object SecureLogger {
     private const val TAG = "ClawChat-Security"
     
     fun d(message: String) = AppLog.d(TAG, message.redactSensitive())
-    fun i(message: String) = android.util.AppLog.i(TAG, message.redactSensitive())
-    fun w(message: String) = android.util.AppLog.w(TAG, message.redactSensitive())
+    fun i(message: String) = AppLog.i(TAG, message.redactSensitive())
+    fun w(message: String) = AppLog.w(TAG, message.redactSensitive())
     fun e(message: String, throwable: Throwable? = null) {
-        if (throwable != null) android.util.AppLog.e(TAG, message.redactSensitive(), throwable)
-        else android.util.AppLog.e(TAG, message.redactSensitive())
+        if (throwable != null) AppLog.e(TAG, message.redactSensitive(), throwable)
+        else AppLog.e(TAG, message.redactSensitive())
     }
     
     private fun String.redactSensitive(): String = this

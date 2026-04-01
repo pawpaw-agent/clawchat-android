@@ -1,7 +1,7 @@
 package com.openclaw.clawchat.ui.components
 
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -44,12 +44,13 @@ fun SwipeableMessageCard(
     var offsetX by remember { mutableFloatStateOf(0f) }
     var isDeleting by remember { mutableStateOf(false) }
     
-    val animatedOffset by animateFloat(
+    val animatedOffset by animateFloatAsState(
         targetValue = if (isDeleting) -swipeThreshold * 2 else offsetX,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
-        )
+        ),
+        label = "animatedOffset"
     )
     
     Box(
