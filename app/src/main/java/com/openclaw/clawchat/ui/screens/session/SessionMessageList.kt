@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.*
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
@@ -126,11 +127,28 @@ fun MessageGroupList(
     onRetryMessage: (String) -> Unit = {},
     onContinueGeneration: () -> Unit = {}
 ) {
-    // 确保首次渲染时滚动到底部
-    LaunchedEffect(groups.size) {
+    // 滚动 retry：确保图片加载后滚动位置准确
+    // 参考 webchat: 150ms 延迟后检查距离底部
+    LaunchedEffect(groups.size, chatStream) {
         if (groups.isNotEmpty() && listState.firstVisibleItemIndex != 0) {
             // reverseLayout=true: index 0 是最新消息（底部）
             listState.scrollToItem(0)
+            
+            // 延迟 150ms 后再次检查
+            delay(150)
+            
+            // 检查是否接近底部（距离底部 < 450px，即约 3 个消息项）
+            val layoutInfo = listState.layoutInfo
+            val viewportHeight = layoutInfo.viewportSize.height
+            val lastItem = layoutInfo.visibleItemsInfo.lastOrNull()
+            
+            if (lastItem != null) {
+                val distanceFromBottom = viewportHeight - (lastItem.offset + lastItem.size)
+                // 如果用户在底部附近（< 450px），再次滚动到底部
+                if (distanceFromBottom < 450) {
+                    listState.scrollToItem(0)
+                }
+            }
         }
     }
     
