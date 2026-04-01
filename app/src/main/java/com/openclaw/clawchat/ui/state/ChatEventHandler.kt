@@ -211,8 +211,6 @@ class ChatEventHandler(
         // 触发队列刷新
         onChatComplete?.invoke()
     }
-        }
-    }
 
     /**
      * 处理 error 状态
