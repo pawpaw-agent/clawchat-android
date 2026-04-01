@@ -70,10 +70,7 @@ fun AnimatedExtendedFloatingActionButton(
 ) {
     FloatingActionButton(
         onClick = onClick,
-        modifier = modifier,
-        elevation = FloatingActionButtonDefaults.elevation(
-            defaultElevation = FloatingActionButtonDefaults.elevation().defaultElevation
-        )
+        modifier = modifier
     ) {
         Row(
             modifier = Modifier.padding(horizontal = if (expanded) 16.dp else 0.dp)

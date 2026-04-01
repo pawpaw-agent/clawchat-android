@@ -2,7 +2,7 @@ package com.openclaw.clawchat.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -42,12 +42,13 @@ fun ExpandableCard(
 ) {
     var isExpanded by remember { mutableStateOf(expanded) }
     
-    val rotation by animateFloat(
+    val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 180f else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
-        )
+        ),
+        label = "rotation"
     )
     
     Card(

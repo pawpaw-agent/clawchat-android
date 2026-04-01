@@ -121,7 +121,7 @@ data class ColorPreset(
     val primary: Color,
     val secondary: Color,
     val accent: Color,
-    val id: Int = PRESET_COLORS.indexOf(this)
+    val id: Int = 0
 )
 
 /**

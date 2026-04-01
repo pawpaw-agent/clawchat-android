@@ -4,6 +4,8 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.key
 
 /**
  * 键盘快捷键工具类

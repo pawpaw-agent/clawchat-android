@@ -118,7 +118,8 @@ fun ChatInputBar(
     onRemoveAttachment: (String) -> Unit = {},
     onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> },
     isSending: Boolean = false,  // 发送状态
-    sendProgress: Float? = null  // 发送进度（可选）
+    sendProgress: Float? = null,  // 发送进度（可选）
+    onVoiceInput: () -> Unit = {}  // 语音输入回调
 ) {
     // 使用 derivedStateOf 计算斜杠命令菜单状态
     var slashMenuIndex by remember { mutableStateOf(0) }
