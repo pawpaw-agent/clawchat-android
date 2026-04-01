@@ -157,7 +157,8 @@ fun MessageGroupList(
     
     // 滚动逻辑：参考 webchat scheduleChatScroll
     // 只在用户在底部附近时自动滚动，否则显示"新消息"提示
-    LaunchedEffect(groups.size, chatStream) {
+    // 注意：只用 groups.size 作为 key，避免 chatStream 更新导致重复滚动
+    LaunchedEffect(groups.size) {
         if (groups.isEmpty()) return@LaunchedEffect
         
         // 计算距离底部
