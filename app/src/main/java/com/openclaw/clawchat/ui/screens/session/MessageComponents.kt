@@ -186,6 +186,10 @@ fun MessageContentCard(
                             Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
                             showMenu = false
                         },
+                        onCopyMarkdown = {
+                            clipboardManager.setText(AnnotatedString(messageText))
+                            Toast.makeText(context, "已复制为 Markdown", Toast.LENGTH_SHORT).show()
+                        },
                         onShare = {
                             val shareIntent = ShareCompat.IntentBuilder(context)
                                 .setType("text/plain")
@@ -336,6 +340,7 @@ private fun MessageStatusIndicator(
 fun MessageActionDropdownMenu(
     isUser: Boolean,
     onCopy: () -> Unit,
+    onCopyMarkdown: () -> Unit = {},
     onShare: () -> Unit,
     onDelete: () -> Unit,
     onRegenerate: () -> Unit,
@@ -350,6 +355,14 @@ fun MessageActionDropdownMenu(
             text = { Text("复制") },
             onClick = onCopy,
             leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp)) }
+        )
+        DropdownMenuItem(
+            text = { Text("复制 Markdown") },
+            onClick = {
+                onCopyMarkdown()
+                onDismiss()
+            },
+            leadingIcon = { Icon(Icons.Default.Code, contentDescription = null, modifier = Modifier.size(18.dp)) }
         )
         DropdownMenuItem(
             text = { Text("分享") },
