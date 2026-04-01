@@ -74,9 +74,38 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
         category = SlashCommandCategory.SESSION,
         executeLocal = true
     ),
+    // 停止命令（多个别名）
     SlashCommandDef(
         name = "stop",
         description = "停止当前运行",
+        icon = "stop",
+        category = SlashCommandCategory.SESSION,
+        executeLocal = true
+    ),
+    SlashCommandDef(
+        name = "esc",
+        description = "停止当前运行（stop 别名）",
+        icon = "stop",
+        category = SlashCommandCategory.SESSION,
+        executeLocal = true
+    ),
+    SlashCommandDef(
+        name = "abort",
+        description = "停止当前运行（stop 别名）",
+        icon = "stop",
+        category = SlashCommandCategory.SESSION,
+        executeLocal = true
+    ),
+    SlashCommandDef(
+        name = "wait",
+        description = "停止当前运行（stop 别名）",
+        icon = "stop",
+        category = SlashCommandCategory.SESSION,
+        executeLocal = true
+    ),
+    SlashCommandDef(
+        name = "exit",
+        description = "停止当前运行（stop 别名）",
         icon = "stop",
         category = SlashCommandCategory.SESSION,
         executeLocal = true
