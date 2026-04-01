@@ -269,6 +269,9 @@ dependencies {
     // DataStore for preferences
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     
+    // Window Manager (for foldable support)
+    implementation("androidx.window:window:1.2.0")
+    
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk)
