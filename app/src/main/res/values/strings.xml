@@ -60,6 +60,7 @@
     <string name="message_speak">Speak</string>
     <string name="message_retry">Retry</string>
     <string name="message_copied">Copied to clipboard</string>
+    <string name="message_copied_to_clipboard">Message copied to clipboard</string>
     <string name="message_delete_title">Delete message</string>
     <string name="message_delete_confirm">Delete this message?</string>
     <string name="message_code_copied">Code copied</string>
@@ -174,6 +175,8 @@
     <string name="settings_font_small">Small</string>
     <string name="settings_font_medium">Medium</string>
     <string name="settings_font_large">Large</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_debug">Debug</string>
     <string name="about_app_name">ClawChat</string>
     <string name="about_description">OpenClaw Android Client</string>
     <string name="about_version">Version %s</string>
@@ -187,6 +190,8 @@
     <string name="notification_mark_as_read">Mark as read</string>
     <string name="notification_channel_description">Message notifications</string>
     <string name="notification_new_message_title">New message from %s</string>
+    <string name="notification_channel_name">ClawChat Messages</string>
+    <string name="notification_new_message_text">New message received</string>
 
     <!-- Errors -->
     <string name="error_network">Network error. Please check your connection.</string>
@@ -207,4 +212,6 @@
     <string name="about_documentation">Documentation</string>
     <string name="about_developer">Developer</string>
     <string name="about_openclaw">OpenClaw</string>
+    <string name="about_title">About</string>
+    <string name="about_licenses">Open Source Licenses</string>
 </resources>
