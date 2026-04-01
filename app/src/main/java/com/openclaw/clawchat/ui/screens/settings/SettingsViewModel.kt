@@ -135,13 +135,13 @@ class SettingsViewModel @Inject constructor(
                 )
             )
         }
-        AppAppLog.d(TAG, "Gateway 配置已更新：${config.host}")
+        AppLog.d(TAG, "Gateway 配置已更新：${config.host}")
         
         // 如果已配对，自动连接
         if (encryptedStorage.isPaired()) {
             val token = encryptedStorage.getDeviceToken()
             viewModelScope.launch {
-                AppAppLog.d(TAG, "自动连接到 Gateway: $url")
+                AppLog.d(TAG, "自动连接到 Gateway: $url")
                 gateway.connect(url, token)
             }
         }
@@ -150,7 +150,7 @@ class SettingsViewModel @Inject constructor(
     fun disconnect() {
         viewModelScope.launch {
             gateway.disconnect()
-            AppAppLog.d(TAG, "已断开连接")
+            AppLog.d(TAG, "已断开连接")
         }
     }
 

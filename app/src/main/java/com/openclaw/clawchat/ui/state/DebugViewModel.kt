@@ -212,7 +212,7 @@ class DebugViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                AppAppLog.e("DebugViewModel", "Logcat stream error", e)
+                AppLog.e("DebugViewModel", "Logcat stream error", e)
             }
         }
     }

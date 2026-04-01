@@ -88,7 +88,7 @@ class SessionViewModel @Inject constructor(
     }
 
     init {
-        AppAppLog.d(TAG, "=== SessionViewModel init")
+        AppLog.d(TAG, "=== SessionViewModel init")
         observeConnectionState()
         observeIncomingMessages()
         observeToolStreamEvents()
@@ -99,12 +99,12 @@ class SessionViewModel @Inject constructor(
     private var observeMessagesJob: Job? = null
     
     private fun observeSessionMessages(sessionId: String) {
-        AppAppLog.d(TAG, "=== observeSessionMessages: CALLED for $sessionId")
+        AppLog.d(TAG, "=== observeSessionMessages: CALLED for $sessionId")
         observeMessagesJob?.cancel()
         observeMessagesJob = viewModelScope.launch(exceptionHandler) {
-            AppAppLog.d(TAG, "=== observeSessionMessages: STARTED collecting for $sessionId")
+            AppLog.d(TAG, "=== observeSessionMessages: STARTED collecting for $sessionId")
             messageRepository.observeMessages(sessionId).collect { messages ->
-                AppAppLog.d(TAG, "=== observeSessionMessages: COLLECTED ${messages.size} messages for $sessionId")
+                AppLog.d(TAG, "=== observeSessionMessages: COLLECTED ${messages.size} messages for $sessionId")
                 _state.update { it.copy(chatMessages = messages) }
             }
         }
@@ -165,7 +165,7 @@ class SessionViewModel @Inject constructor(
             return
         }
 
-        AppAppLog.d(TAG, "=== setSessionId: $currentSessionId -> $sessionId")
+        AppLog.d(TAG, "=== setSessionId: $currentSessionId -> $sessionId")
         
         // 切换会话：清除旧状态，设置新 sessionId
         _state.update { 
@@ -325,7 +325,7 @@ class SessionViewModel @Inject constructor(
             
             val lastUserMessage = messages.lastOrNull { it.role == MessageRole.USER }
             if (lastUserMessage == null) {
-                AppAppLog.w(TAG, "No user message to regenerate from")
+                AppLog.w(TAG, "No user message to regenerate from")
                 return@launch
             }
             

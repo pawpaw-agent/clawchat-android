@@ -45,7 +45,7 @@ class ChatEventHandler(
             val json = JsonUtils.json.parseToJsonElement(rawJson) as JsonObject
             val type = json["type"]?.jsonPrimitive?.content ?: return
 
-            AppAppLog.d(TAG, "=== Received frame type=$type")
+            AppLog.d(TAG, "=== Received frame type=$type")
 
             when (type) {
                 "event" -> {
@@ -68,7 +68,7 @@ class ChatEventHandler(
                 }
             }
         } catch (e: Exception) {
-            AppAppLog.e(TAG, "Failed to parse incoming frame: ${e.message}")
+            AppLog.e(TAG, "Failed to parse incoming frame: ${e.message}")
         }
     }
 
@@ -92,7 +92,7 @@ class ChatEventHandler(
         val seq = payload["seq"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
         val chatState = payload["state"]?.jsonPrimitive?.content ?: return
 
-        AppAppLog.d(TAG, "=== Chat event: runId=$runId, seq=$seq, state=$chatState")
+        AppLog.d(TAG, "=== Chat event: runId=$runId, seq=$seq, state=$chatState")
 
         // 提取 message 对象
         val msgObj = payload["message"]?.jsonObject

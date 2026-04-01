@@ -90,13 +90,13 @@ class SequenceManager(
         
         // 检查是否重复
         if (acknowledgedSeqs.contains(seq)) {
-            AppAppLog.d(TAG, "重复的序列号：$seq")
+            AppLog.d(TAG, "重复的序列号：$seq")
             return SequenceResult.Duplicate
         }
         
         // 检查是否过时
         if (seq < currentSeq) {
-            AppAppLog.d(TAG, "过时的序列号：$seq (current: $currentSeq)")
+            AppLog.d(TAG, "过时的序列号：$seq (current: $currentSeq)")
             return SequenceResult.Old(seq, currentSeq)
         }
         
@@ -148,7 +148,7 @@ class SequenceManager(
             acknowledgedSeqs.removeAll { it < minSeq }
         }
         
-        AppAppLog.d(TAG, "确认序列号：$seq (current: $currentSeq)")
+        AppLog.d(TAG, "确认序列号：$seq (current: $currentSeq)")
     }
     
     /**
@@ -162,7 +162,7 @@ class SequenceManager(
      * 重置序列号
      */
     suspend fun reset(newSeq: Int = 0) = mutex.withLock {
-        AppAppLog.d(TAG, "重置序列号：$currentSeq -> $newSeq")
+        AppLog.d(TAG, "重置序列号：$currentSeq -> $newSeq")
         currentSeq = newSeq
         acknowledgedSeqs.clear()
         listeners.forEach { it.onSequenceReset(newSeq) }
