@@ -249,15 +249,6 @@ enum class MessageStatus {
 }
 
 /**
- * 消息反馈类型
- * 注意: 后端 API message.feedback 尚未支持，当前仅本地存储
- */
-enum class MessageFeedback {
-    LIKE,       // 点赞
-    DISLIKE     // 点踩
-}
-
-/**
  * 消息数据模型
  */
 @Stable
@@ -269,8 +260,7 @@ data class MessageUi(
     val isLoading: Boolean = false,
     val toolCallId: String? = null,  // TOOL 消息可能有 toolCallId
     val toolName: String? = null,    // TOOL 消息可能有 toolName
-    val status: MessageStatus = MessageStatus.SENT,  // 消息发送状态
-    val feedback: MessageFeedback? = null  // 用户反馈 (点赞/点踩)
+    val status: MessageStatus = MessageStatus.SENT  // 消息发送状态
 ) {
     fun getTextContent(): String {
         return content

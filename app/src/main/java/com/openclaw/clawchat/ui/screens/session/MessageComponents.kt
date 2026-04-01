@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import com.openclaw.clawchat.ui.components.MarkdownText
-import com.openclaw.clawchat.ui.state.MessageFeedback
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,7 +74,6 @@ fun MessageContentCard(
     onRegenerate: () -> Unit = {},
     onRetry: () -> Unit = {},
     onSpeak: (String) -> Unit = {},
-    onFeedback: ((MessageFeedback) -> Unit)? = null,
     onShare: ((String) -> Unit)? = null,  // 分享回调
     isStreaming: Boolean = false
 ) {
@@ -249,51 +247,6 @@ fun MessageContentCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
-                
-                // 反馈按钮 (点赞/点踩) - 仅助手消息显示
-                if (onFeedback != null && !isStreaming) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        // 点赞按钮
-                        IconButton(
-                            onClick = { onFeedback(MessageFeedback.LIKE) },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (message.feedback == MessageFeedback.LIKE) 
-                                    Icons.Default.ThumbUp 
-                                else 
-                                    Icons.Default.ThumbUpOffAlt,
-                                contentDescription = "点赞",
-                                modifier = Modifier.size(16.dp),
-                                tint = if (message.feedback == MessageFeedback.LIKE)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                        }
-                        
-                        // 点踩按钮
-                        IconButton(
-                            onClick = { onFeedback(MessageFeedback.DISLIKE) },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (message.feedback == MessageFeedback.DISLIKE) 
-                                    Icons.Default.ThumbDown 
-                                else 
-                                    Icons.Default.ThumbDownOffAlt,
-                                contentDescription = "点踩",
-                                modifier = Modifier.size(16.dp),
-                                tint = if (message.feedback == MessageFeedback.DISLIKE)
-                                    MaterialTheme.colorScheme.error
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                        }
-                    }
-                }
             }
         }
         
