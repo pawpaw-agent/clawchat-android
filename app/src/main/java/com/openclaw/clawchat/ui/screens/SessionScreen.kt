@@ -174,6 +174,13 @@ fun SessionScreen(
                             toolMessages = state.chatToolMessages,
                             chatStream = state.chatStream,
                             messageFontSize = messageFontSize,
+                            // 滚动状态（参考 webchat app-scroll.ts）
+                            chatUserNearBottom = state.chatUserNearBottom,
+                            chatHasAutoScrolled = state.chatHasAutoScrolled,
+                            chatNewMessagesBelow = state.chatNewMessagesBelow,
+                            onUpdateUserNearBottom = { viewModel.updateUserNearBottom(it) },
+                            onMarkAutoScrolled = { viewModel.markAutoScrolled() },
+                            onSetNewMessagesBelow = { viewModel.setNewMessagesBelow() },
                             onDeleteMessage = { viewModel.deleteMessage(it) },
                             onRegenerate = { viewModel.regenerateLastMessage() },
                             onRetryMessage = { viewModel.retryMessage(it) },

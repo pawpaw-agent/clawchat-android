@@ -26,6 +26,7 @@ import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.snapshotFlow
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
@@ -122,33 +123,75 @@ fun MessageGroupList(
     toolMessages: List<MessageUi> = emptyList(),
     chatStream: String? = null,
     messageFontSize: FontSize = FontSize.MEDIUM,
+    // 滚动状态（参考 webchat app-scroll.ts）
+    chatUserNearBottom: Boolean = true,
+    chatHasAutoScrolled: Boolean = false,
+    chatNewMessagesBelow: Boolean = false,
+    onUpdateUserNearBottom: (Boolean) -> Unit = {},
+    onMarkAutoScrolled: () -> Unit = {},
+    onSetNewMessagesBelow: () -> Unit = {},
     onDeleteMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
     onContinueGeneration: () -> Unit = {}
 ) {
-    // 滚动 retry：确保图片加载后滚动位置准确
-    // 参考 webchat: 150ms 延迟后检查距离底部
-    LaunchedEffect(groups.size, chatStream) {
-        if (groups.isNotEmpty() && listState.firstVisibleItemIndex != 0) {
-            // reverseLayout=true: index 0 是最新消息（底部）
-            listState.scrollToItem(0)
-            
-            // 延迟 150ms 后再次检查
-            delay(150)
-            
-            // 检查是否接近底部（距离底部 < 450px，即约 3 个消息项）
+    // 监听用户滚动，更新 chatUserNearBottom 状态
+    // 参考 webchat: handleChatScroll
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            // reverseLayout=true 时，firstVisibleItemIndex=0 表示在底部
+            // 计算距离"底部"（视觉上的底部，实际上是列表顶部）
             val layoutInfo = listState.layoutInfo
             val viewportHeight = layoutInfo.viewportSize.height
-            val lastItem = layoutInfo.visibleItemsInfo.lastOrNull()
             
-            if (lastItem != null) {
-                val distanceFromBottom = viewportHeight - (lastItem.offset + lastItem.size)
-                // 如果用户在底部附近（< 450px），再次滚动到底部
-                if (distanceFromBottom < 450) {
-                    listState.scrollToItem(0)
-                }
-            }
+            // 检查是否在底部附近
+            // reverseLayout=true: firstVisibleItemIndex=0 且 firstVisibleItemScrollOffset 小表示在底部
+            val isAtBottom = listState.firstVisibleItemIndex == 0 && 
+                             listState.firstVisibleItemScrollOffset < 450
+            
+            isAtBottom
+        }.collect { isNearBottom ->
+            onUpdateUserNearBottom(isNearBottom)
+        }
+    }
+    
+    // 滚动逻辑：参考 webchat scheduleChatScroll
+    // 只在用户在底部附近时自动滚动，否则显示"新消息"提示
+    LaunchedEffect(groups.size, chatStream) {
+        if (groups.isEmpty()) return@LaunchedEffect
+        
+        // 计算距离底部
+        val layoutInfo = listState.layoutInfo
+        val viewportHeight = layoutInfo.viewportSize.height
+        val distanceFromBottom = listState.firstVisibleItemScrollOffset
+        
+        // 判断是否应该自动滚动
+        // force=true 只在未自动滚动过时生效（初始加载）
+        val effectiveForce = !chatHasAutoScrolled
+        val shouldStick = effectiveForce || chatUserNearBottom || distanceFromBottom < 450
+        
+        if (!shouldStick) {
+            // 用户正在查看历史消息，显示"新消息"提示
+            onSetNewMessagesBelow()
+            return@LaunchedEffect
+        }
+        
+        // 执行滚动
+        if (effectiveForce) {
+            onMarkAutoScrolled()
+        }
+        
+        // 滚动到底部
+        listState.scrollToItem(0)
+        
+        // 延迟 150ms 后再次检查（参考 webchat retry）
+        delay(150)
+        
+        val latestDistance = listState.firstVisibleItemScrollOffset
+        val shouldRetry = effectiveForce || chatUserNearBottom || latestDistance < 450
+        
+        if (shouldRetry) {
+            listState.scrollToItem(0)
         }
     }
     

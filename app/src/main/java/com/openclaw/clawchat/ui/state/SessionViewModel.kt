@@ -418,6 +418,36 @@ class SessionViewModel @Inject constructor(
     fun clearNewMessagesBelow() {
         _state.update { it.copy(chatNewMessagesBelow = false) }
     }
+    
+    /**
+     * 更新用户滚动状态
+     * 参考 webchat: handleChatScroll
+     */
+    fun updateUserNearBottom(nearBottom: Boolean) {
+        _state.update { state ->
+            // 用户回到底部时清除新消息提示
+            if (nearBottom && state.chatNewMessagesBelow) {
+                state.copy(chatUserNearBottom = true, chatNewMessagesBelow = false)
+            } else {
+                state.copy(chatUserNearBottom = nearBottom)
+            }
+        }
+    }
+    
+    /**
+     * 标记已自动滚动
+     * 参考 webchat: chatHasAutoScrolled
+     */
+    fun markAutoScrolled() {
+        _state.update { it.copy(chatHasAutoScrolled = true) }
+    }
+    
+    /**
+     * 设置有新消息在下方
+     */
+    fun setNewMessagesBelow() {
+        _state.update { it.copy(chatNewMessagesBelow = true) }
+    }
 
     fun retryMessage(messageId: String) {
         viewModelScope.launch {

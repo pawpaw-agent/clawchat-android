@@ -125,6 +125,10 @@ data class SessionUiState(
     // 新消息提示（用户滚动后有新消息到达时显示）
     val chatNewMessagesBelow: Boolean = false,
     
+    // 滚动状态（参考 webchat app-scroll.ts）
+    val chatUserNearBottom: Boolean = true,      // 用户是否在底部附近（< 450px）
+    val chatHasAutoScrolled: Boolean = false,    // 是否已经自动滚动过（初始加载后设为 true）
+    
     // 工具流状态（1:1 对应 webchat ToolStreamHost）
     val toolStreamById: Map<String, ToolStreamEntry> = emptyMap(),
     val toolStreamOrder: List<String> = emptyList(),
