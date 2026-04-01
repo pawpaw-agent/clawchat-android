@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.ui.components.SLASH_COMMANDS
 import com.openclaw.clawchat.ui.components.SlashCommandDef
 import com.openclaw.clawchat.ui.components.getSlashCommandCompletions
-import com.openclaw.clawchat.ui.components.QuotedMessageBar
 import com.openclaw.clawchat.ui.state.AttachmentUi
 
 /**
@@ -53,12 +52,7 @@ fun MessageInputBar(
     attachments: List<AttachmentUi> = emptyList(),
     onAddAttachment: (AttachmentUi) -> Unit = {},
     onRemoveAttachment: (String) -> Unit = {},
-    onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> },
-    // 引用消息状态
-    quotedMessageId: String? = null,
-    quotedContent: String? = null,
-    quotedSender: String? = null,
-    onCancelQuote: () -> Unit = {}
+    onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> }
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     
@@ -152,15 +146,6 @@ fun MessageInputBar(
                         slashMenu = SlashMenuState()
                     },
                     onDismiss = { slashMenu = SlashMenuState() }
-                )
-            }
-            
-            // 引用消息栏（显示在输入框上方）
-            if (quotedMessageId != null && quotedContent != null && quotedSender != null) {
-                QuotedMessageBar(
-                    quotedContent = quotedContent,
-                    quotedSender = quotedSender,
-                    onCancel = onCancelQuote
                 )
             }
             
