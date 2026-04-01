@@ -178,7 +178,7 @@ fun SessionScreen(
                             onRegenerate = { viewModel.regenerateLastMessage() },
                             onRetryMessage = { viewModel.retryMessage(it) },
                             onSpeak = { text ->
-                                com.openclaw.clawchat.util.MessageSpeaker.speak(text)
+                                // TTS 功能已移除
                             },
                             onContinueGeneration = { viewModel.continueGeneration() }
                         )

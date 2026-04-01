@@ -34,7 +34,6 @@ import com.openclaw.clawchat.ui.screens.settings.SettingsScreen
 import com.openclaw.clawchat.ui.theme.TerminalFlowTheme
 import com.openclaw.clawchat.ui.state.MainViewModel
 import com.openclaw.clawchat.ui.state.ThemeViewModel
-import com.openclaw.clawchat.util.MessageSpeaker
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -100,7 +99,6 @@ class MainActivity : ComponentActivity() {
             ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
                 // UI 不可见，释放 UI 相关资源
                 AppLog.d("MainActivity", "TRIM_MEMORY_UI_HIDDEN: Releasing UI resources")
-                MessageSpeaker.stop()
             }
             ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
                 // 中等内存压力，释放缓存
@@ -110,7 +108,6 @@ class MainActivity : ComponentActivity() {
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
                 // 严重内存压力，释放所有可释放资源
                 AppLog.w("MainActivity", "TRIM_MEMORY_RUNNING_CRITICAL: Releasing all resources")
-                MessageSpeaker.shutdown()
                 System.gc()
             }
         }

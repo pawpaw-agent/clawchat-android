@@ -2,7 +2,6 @@ package com.openclaw.clawchat
 
 import android.app.Application
 import com.openclaw.clawchat.util.CrashHandler
-import com.openclaw.clawchat.util.MessageSpeaker
 import dagger.hilt.android.HiltAndroidApp
 
 /**
@@ -18,7 +17,5 @@ class ClawChatApplication : Application() {
         super.onCreate()
         // Initialize crash handler
         CrashHandler.init(this)
-        // Initialize TTS
-        MessageSpeaker.init(this)
     }
 }
