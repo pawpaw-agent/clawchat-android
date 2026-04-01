@@ -122,6 +122,9 @@ data class SessionUiState(
     // 消息队列（busy 时排队）
     val chatQueue: List<ChatQueueItem> = emptyList(),
     
+    // 新消息提示（用户滚动后有新消息到达时显示）
+    val chatNewMessagesBelow: Boolean = false,
+    
     // 工具流状态（1:1 对应 webchat ToolStreamHost）
     val toolStreamById: Map<String, ToolStreamEntry> = emptyMap(),
     val toolStreamOrder: List<String> = emptyList(),

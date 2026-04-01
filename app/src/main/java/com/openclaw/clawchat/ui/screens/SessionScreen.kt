@@ -206,7 +206,8 @@ fun SessionScreen(
                     }
                     
                     // "新消息"按钮：点击滚动到最底部（最新消息）
-                    if (showNewMessagesButton) {
+                    // 显示条件：用户向上滚动 OR 有新消息在下方
+                    if (showNewMessagesButton || state.chatNewMessagesBelow) {
                         NewMessagesIndicator(
                             modifier = Modifier.align(Alignment.BottomCenter),
                             onClick = {
@@ -214,6 +215,7 @@ fun SessionScreen(
                                     // reverseLayout 模式下，index 0 是最新消息
                                     listState.animateScrollToItem(0)
                                 }
+                                viewModel.clearNewMessagesBelow()
                             }
                         )
                     }

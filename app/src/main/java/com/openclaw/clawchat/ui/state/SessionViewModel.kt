@@ -415,6 +415,10 @@ class SessionViewModel @Inject constructor(
         _state.update { it.copy(error = null) }
     }
 
+    fun clearNewMessagesBelow() {
+        _state.update { it.copy(chatNewMessagesBelow = false) }
+    }
+
     fun retryMessage(messageId: String) {
         viewModelScope.launch {
             val sessionId = _state.value.sessionId ?: return@launch
