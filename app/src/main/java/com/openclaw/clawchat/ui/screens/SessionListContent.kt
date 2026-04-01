@@ -206,11 +206,6 @@ fun SessionListContent(
                 }
             }
         }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("删除 (${selectedSessions.size})")
-                }
-            }
-        }
     }
 }
 

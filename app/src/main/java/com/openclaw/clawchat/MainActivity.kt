@@ -88,6 +88,33 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    /**
+     * 内存压力回调
+     * 根据系统内存压力级别释放资源
+     */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        
+        when (level) {
+            ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
+                // UI 不可见，释放 UI 相关资源
+                AppLog.d("MainActivity", "TRIM_MEMORY_UI_HIDDEN: Releasing UI resources")
+                MessageSpeaker.stop()
+            }
+            ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
+                // 中等内存压力，释放缓存
+                AppLog.d("MainActivity", "TRIM_MEMORY_MODERATE: Clearing caches")
+                System.gc()
+            }
+            ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
+                // 严重内存压力，释放所有可释放资源
+                AppLog.w("MainActivity", "TRIM_MEMORY_RUNNING_CRITICAL: Releasing all resources")
+                MessageSpeaker.shutdown()
+                System.gc()
+            }
+        }
+    }
 }
 
 /**
@@ -181,34 +208,6 @@ fun ClawChatNavHost(
                     navController.popBackStack()
                 }
             )
-        }
-    }
-}
-    
-    /**
-     * 内存压力回调
-     * 根据系统内存压力级别释放资源
-     */
-    override fun onTrimMemory(level: Int) {
-        super.onTrimMemory(level)
-        
-        when (level) {
-            ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
-                // UI 不可见，释放 UI 相关资源
-                AppLog.d("MainActivity", "TRIM_MEMORY_UI_HIDDEN: Releasing UI resources")
-                MessageSpeaker.stop()
-            }
-            ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
-                // 中等内存压力，释放缓存
-                AppLog.d("MainActivity", "TRIM_MEMORY_MODERATE: Clearing caches")
-                System.gc()
-            }
-            ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
-                // 严重内存压力，释放所有可释放资源
-                AppLog.w("MainActivity", "TRIM_MEMORY_RUNNING_CRITICAL: Releasing all resources")
-                MessageSpeaker.shutdown()
-                System.gc()
-            }
         }
     }
 }
