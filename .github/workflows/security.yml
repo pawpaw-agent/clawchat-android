@@ -32,8 +32,6 @@ jobs:
         path: '.'
         format: 'HTML'
         out: 'reports'
-      env:
-        JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17*
     
     - name: Upload Security Report
       uses: actions/upload-artifact@v4

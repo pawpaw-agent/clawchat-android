@@ -60,12 +60,13 @@ jobs:
           build/reports/
         retention-days: 30
     
-    - name: Create Performance Badge
-      uses: schneegans/dynamic-badges-action@v1.7.0
-      with:
-        auth: ${{ secrets.GIST_SECRET }}
-        gistID: your-gist-id
-        filename: performance-badge.json
-        label: Build Time
-        message: ${{ env.BUILD_TIME }}s
-        color: green
+    # TODO: Configure gistID before enabling badge
+    # - name: Create Performance Badge
+    #   uses: schneegans/dynamic-badges-action@v1.7.0
+    #   with:
+    #     auth: ${{ secrets.GIST_SECRET }}
+    #     gistID: your-gist-id
+    #     filename: performance-badge.json
+    #     label: Build Time
+    #     message: ${{ env.BUILD_TIME }}s
+    #     color: green
