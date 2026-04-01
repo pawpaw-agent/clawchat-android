@@ -30,7 +30,8 @@ class ChatEventHandler(
     private val gateway: GatewayConnection,
     private val messageRepository: MessageRepository,
     private val state: MutableStateFlow<SessionUiState>,
-    private val onToolStreamEvent: (JsonObject) -> Unit
+    private val onToolStreamEvent: (JsonObject) -> Unit,
+    private val onChatComplete: (() -> Unit)? = null
 ) {
     companion object {
         private const val TAG = "ChatEventHandler"
@@ -165,12 +166,18 @@ class ChatEventHandler(
             currentState.copy(
                 chatStream = null,
                 chatStreamSegments = finalSegments,
-                chatStreamStartedAt = null
+                chatStreamStartedAt = null,
+                chatRunId = null,
+                isSending = false,
+                isLoading = false
             )
         }
 
         // 保存消息到数据库
         saveMessageToDb(runId, msgObj, sessionId)
+        
+        // 触发队列刷新
+        onChatComplete?.invoke()
     }
 
     /**
@@ -195,8 +202,15 @@ class ChatEventHandler(
                 chatStream = null,
                 chatStreamSegments = finalSegments,
                 chatStreamStartedAt = null,
-                isSending = false
+                chatRunId = null,
+                isSending = false,
+                isLoading = false
             )
+        }
+        
+        // 触发队列刷新
+        onChatComplete?.invoke()
+    }
         }
     }
 
@@ -214,10 +228,15 @@ class ChatEventHandler(
                 chatStream = null,
                 chatStreamSegments = segments + StreamSegment("(error: $errorMsg)", now),
                 chatStreamStartedAt = null,
+                chatRunId = null,
                 isSending = false,
+                isLoading = false,
                 error = errorMsg
             )
         }
+        
+        // 触发队列刷新
+        onChatComplete?.invoke()
     }
 
     /**

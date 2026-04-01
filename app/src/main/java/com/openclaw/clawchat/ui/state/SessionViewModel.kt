@@ -79,7 +79,8 @@ class SessionViewModel @Inject constructor(
         gateway = gateway,
         messageRepository = messageRepository,
         state = _state,
-        onToolStreamEvent = { payload -> toolStreamManager.handleToolStreamEvent(payload) }
+        onToolStreamEvent = { payload -> toolStreamManager.handleToolStreamEvent(payload) },
+        onChatComplete = { flushChatQueue() }
     )
 
     companion object {
@@ -186,6 +187,66 @@ class SessionViewModel @Inject constructor(
     }
 
     // ── 用户操作 ──
+
+    /**
+     * 检查是否忙碌（正在发送或等待响应）
+     */
+    private fun isChatBusy(): Boolean {
+        val state = _state.value
+        return state.isSending || state.chatRunId != null || !state.chatStream.isNullOrBlank()
+    }
+
+    /**
+     * 消息入队或发送
+     * - 如果不忙，直接发送
+     * - 如果忙，加入队列等待
+     */
+    fun enqueueMessage(message: String) {
+        val trimmedMessage = message.trim()
+        val attachments = _state.value.attachments
+        
+        if (trimmedMessage.isEmpty() && attachments.isEmpty()) return
+        
+        if (isChatBusy()) {
+            // 忙碌时入队
+            AppLog.d(TAG, "Chat busy, enqueuing message")
+            val queueItem = ChatQueueItem(
+                id = UUID.randomUUID().toString(),
+                text = trimmedMessage,
+                timestamp = System.currentTimeMillis(),
+                attachments = attachments
+            )
+            _state.update { it.copy(
+                chatQueue = it.chatQueue + queueItem,
+                inputText = "",
+                attachments = emptyList()
+            )}
+        } else {
+            // 直接发送
+            sendMessage(message)
+        }
+    }
+    
+    /**
+     * 刷新消息队列
+     * 在消息发送完成后检查队列，发送下一条
+     */
+    private fun flushChatQueue() {
+        if (isChatBusy()) return
+        
+        val queue = _state.value.chatQueue
+        if (queue.isEmpty()) return
+        
+        val next = queue.first()
+        AppLog.d(TAG, "Flushing queue item: ${next.id}")
+        
+        // 从队列移除
+        _state.update { it.copy(chatQueue = it.chatQueue.drop(1)) }
+        
+        // 恢复附件并发送
+        _state.update { it.copy(attachments = next.attachments) }
+        sendMessage(next.text)
+    }
 
     fun sendMessage(message: String) {
         val sessionId = _state.value.sessionId ?: return

@@ -87,6 +87,17 @@ data class SlashCommandCompletion(
 )
 
 /**
+ * 消息队列项（busy 时排队等待发送）
+ */
+@Stable
+data class ChatQueueItem(
+    val id: String,
+    val text: String,
+    val timestamp: Long,
+    val attachments: List<AttachmentUi> = emptyList()
+)
+
+/**
  * 会话界面 UI 状态（1:1 对应 webchat ChatState + ToolStreamHost）
  */
 @Stable
@@ -107,6 +118,9 @@ data class SessionUiState(
     val chatStreamStartedAt: Long? = null,                      // 流式开始时间
     val chatRunId: String? = null,                              // 当前 runId
     val chatStreamSegments: List<StreamSegment> = emptyList(),  // 已提交的文本段
+    
+    // 消息队列（busy 时排队）
+    val chatQueue: List<ChatQueueItem> = emptyList(),
     
     // 工具流状态（1:1 对应 webchat ToolStreamHost）
     val toolStreamById: Map<String, ToolStreamEntry> = emptyMap(),
