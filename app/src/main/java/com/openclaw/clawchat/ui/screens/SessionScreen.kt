@@ -177,9 +177,6 @@ fun SessionScreen(
                             onDeleteMessage = { viewModel.deleteMessage(it) },
                             onRegenerate = { viewModel.regenerateLastMessage() },
                             onRetryMessage = { viewModel.retryMessage(it) },
-                            onSpeak = { text ->
-                                // TTS 功能已移除
-                            },
                             onContinueGeneration = { viewModel.continueGeneration() }
                         )
                     } else if (isSearchMode && searchQuery.isNotBlank()) {

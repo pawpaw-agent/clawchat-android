@@ -124,7 +124,6 @@ fun MessageGroupList(
     onDeleteMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
-    onSpeak: (String) -> Unit = {},
     onContinueGeneration: () -> Unit = {}
 ) {
     // 确保首次渲染时滚动到底部
@@ -216,7 +215,6 @@ fun MessageGroupList(
                 messageFontSize = messageFontSize,
                 onDeleteMessage = onDeleteMessage,
                 onRegenerate = onRegenerate,
-                onSpeak = onSpeak,
                 modifier = Modifier.animateItem(
                     fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
                     placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
@@ -302,7 +300,6 @@ fun MessageGroupItem(
     onDeleteMessage: (String) -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {},
-    onSpeak: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isUser = group.role == MessageRole.USER
@@ -430,8 +427,7 @@ fun MessageGroupItem(
                                 messageFontSize = messageFontSize,
                                 onDelete = { onDeleteMessage(message.id) },
                                 onRegenerate = onRegenerate,
-                                onRetry = { onRetryMessage(message.id) },
-                                onSpeak = onSpeak
+                                onRetry = { onRetryMessage(message.id) }
                             )
                         }
                         
