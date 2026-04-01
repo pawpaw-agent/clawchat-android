@@ -208,7 +208,9 @@ data class SettingsUiState(
     // 主题模式设置
     val themeMode: com.openclaw.clawchat.data.ThemeMode = com.openclaw.clawchat.data.ThemeMode.SYSTEM,
     // 动态颜色（Material You）
-    val dynamicColor: Boolean = true
+    val dynamicColor: Boolean = true,
+    // 主题色索引
+    val themeColorIndex: Int = 0
 )
 
 data class PairingUiState(

@@ -1,7 +1,6 @@
 package com.openclaw.clawchat.ui.state
 
 import com.openclaw.clawchat.util.AppLog
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
 import com.openclaw.clawchat.ui.components.SLASH_COMMANDS

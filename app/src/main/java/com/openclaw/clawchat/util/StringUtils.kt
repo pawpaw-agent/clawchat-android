@@ -1,5 +1,7 @@
 package com.openclaw.clawchat.util
 
+import java.util.Locale
+
 /**
  * 字符串工具类
  * 提供字符串处理方法

@@ -1,7 +1,6 @@
 package com.openclaw.clawchat.ui.screens.settings
 
 import com.openclaw.clawchat.util.AppLog
-import com.openclaw.clawchat.util.AppLog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.data.FontSize
@@ -178,5 +177,9 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             userPreferences.setDynamicColor(enabled)
         }
+    }
+    
+    fun setThemeColor(colorIndex: Int) {
+        _uiState.update { it.copy(themeColorIndex = colorIndex) }
     }
 }

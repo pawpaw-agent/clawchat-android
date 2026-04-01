@@ -383,27 +383,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun renameSession(sessionId: String, newName: String) {
-        viewModelScope.launch(exceptionHandler) {
-            try {
-                gateway.call("sessions.patch", mapOf(
-                    "key" to JsonPrimitive(sessionId),
-                    "label" to JsonPrimitive(newName)
-                ))
-                _uiState.update { state ->
-                    val idx = state.sessions.indexOfFirst { it.id == sessionId }
-                    if (idx >= 0) {
-                        val updated = state.sessions.toMutableList()
-                        updated[idx] = updated[idx].copy(label = newName)
-                        state.copy(sessions = updated)
-                    } else state
-                }
-            } catch (e: Exception) {
-                AppLog.w(TAG, "Rename session failed: ${e.message}")
-            }
-        }
-    }
-
     fun pauseSession(sessionId: String) {
         _uiState.update { state ->
             val idx = state.sessions.indexOfFirst { it.id == sessionId }

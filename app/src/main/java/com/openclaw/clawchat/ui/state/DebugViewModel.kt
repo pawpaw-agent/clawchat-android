@@ -9,7 +9,6 @@ import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.BuildConfig
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
-import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.util.CrashHandler
 import com.openclaw.clawchat.util.CrashReport
 import dagger.hilt.android.lifecycle.HiltViewModel

@@ -34,6 +34,7 @@ object ExportUtils {
                     when (item) {
                         is MessageContentItem.Text -> mapOf("type" to "text", "text" to item.text)
                         is MessageContentItem.Image -> mapOf("type" to "image", "base64" to item.base64.take(50) + "...")
+                        else -> mapOf("type" to "unknown")
                     }
                 }
             )
