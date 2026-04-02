@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -152,7 +153,7 @@ fun CompactionIndicator(
                     )
                 } else if (showComplete) {
                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.CheckCircle,
+                        imageVector = Icons.Filled.Check,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
