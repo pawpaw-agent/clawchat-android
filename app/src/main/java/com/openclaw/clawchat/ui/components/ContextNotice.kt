@@ -152,7 +152,7 @@ fun CompactionIndicator(
                     )
                 } else if (showComplete) {
                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.Check,
+                        imageVector = androidx.compose.material.icons.Icons.Default.CheckCircle,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )

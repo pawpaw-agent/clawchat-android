@@ -171,12 +171,14 @@ fun SessionScreen(
                         )
                         
                         // Context 用量警告（>= 85%）
-                        if (state.totalTokens != null && state.contextTokensLimit != null && state.totalTokensFresh) {
-                            val ratio = state.totalTokens.toFloat() / state.contextTokensLimit.toFloat()
+                        val totalTokens = state.totalTokens
+                        val contextTokensLimit = state.contextTokensLimit
+                        if (totalTokens != null && contextTokensLimit != null && state.totalTokensFresh) {
+                            val ratio = totalTokens.toFloat() / contextTokensLimit.toFloat()
                             if (ratio >= 0.85f) {
                                 ContextNotice(
-                                    totalTokens = state.totalTokens,
-                                    contextTokensLimit = state.contextTokensLimit
+                                    totalTokens = totalTokens,
+                                    contextTokensLimit = contextTokensLimit
                                 )
                             }
                         }
