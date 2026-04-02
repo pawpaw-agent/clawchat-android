@@ -4,6 +4,7 @@ import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.*
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.fadeIn
@@ -183,12 +184,12 @@ fun MessageContentCard(
                         isUser = isUser,
                         onCopy = {
                             clipboardManager.setText(AnnotatedString(messageText))
-                            Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
                             showMenu = false
+                            // 不再显示 Toast，使用动画图标切换
                         },
                         onCopyMarkdown = {
                             clipboardManager.setText(AnnotatedString(messageText))
-                            Toast.makeText(context, "已复制为 Markdown", Toast.LENGTH_SHORT).show()
+                            // 不再显示 Toast，使用动画图标切换
                         },
                         onShare = {
                             val shareIntent = ShareCompat.IntentBuilder(context)
@@ -334,6 +335,33 @@ private fun MessageStatusIndicator(
 }
 
 /**
+ * 动画复制图标 - 点击后切换为勾号
+ * 参考 webchat: 150ms 渐变动画
+ */
+@Composable
+fun AnimatedCopyIcon(
+    copied: Boolean,
+    modifier: Modifier = Modifier
+) {
+    // 使用 Crossfade 实现 150ms 图标切换
+    Crossfade(
+        targetState = copied,
+        animationSpec = tween(150, easing = FastOutSlowInEasing),
+        label = "copy_icon"
+    ) { isCopied ->
+        Icon(
+            imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
+            contentDescription = if (isCopied) "已复制" else "复制",
+            modifier = modifier.size(18.dp),
+            tint = if (isCopied) 
+                MaterialTheme.colorScheme.primary 
+            else 
+                MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+/**
  * 消息操作下拉菜单
  */
 @Composable
@@ -347,14 +375,30 @@ fun MessageActionDropdownMenu(
     onRetry: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
+    // 复制成功状态，用于图标切换动画
+    var showCopied by remember { mutableStateOf(false) }
+    
+    // 复制成功后 1.5s 自动恢复图标
+    LaunchedEffect(showCopied) {
+        if (showCopied) {
+            kotlinx.coroutines.delay(1500)
+            showCopied = false
+        }
+    }
+    
     DropdownMenu(
         expanded = true,
         onDismissRequest = onDismiss
     ) {
         DropdownMenuItem(
-            text = { Text("复制") },
-            onClick = onCopy,
-            leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp)) }
+            text = { Text(if (showCopied) "已复制" else "复制") },
+            onClick = {
+                onCopy()
+                showCopied = true
+            },
+            leadingIcon = { 
+                AnimatedCopyIcon(copied = showCopied)
+            }
         )
         DropdownMenuItem(
             text = { Text("复制 Markdown") },
@@ -760,13 +804,14 @@ fun TypingIndicator(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // 参考 webchat: translateY 上跳动画，1.2s ease-out
         repeat(3) { index ->
             val delay = index * 150
-            val scale by infiniteTransition.animateFloat(
-                initialValue = 0.5f,
-                targetValue = 1f,
+            val translateY by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = -3f,  // 上跳 3dp
                 animationSpec = infiniteRepeatable(
-                    animation = tween(400, delayMillis = delay, easing = EaseInOut),
+                    animation = tween(1200, delayMillis = delay, easing = FastOutSlowInEasing),
                     repeatMode = RepeatMode.Reverse
                 ),
                 label = "dot_$index"
@@ -775,7 +820,7 @@ fun TypingIndicator(
             Box(
                 modifier = Modifier
                     .size(8.dp)
-                    .scale(scale)
+                    .offset(y = translateY.dp)  // translateY 动画
                     .background(
                         MaterialTheme.colorScheme.primary,
                         CircleShape
