@@ -20,6 +20,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.LoadingSkeleton
 import com.openclaw.clawchat.ui.components.SkeletonType
+import com.openclaw.clawchat.ui.components.ContextNotice
+import com.openclaw.clawchat.ui.components.CompactionIndicator
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.screens.session.*
 import kotlinx.coroutines.launch
@@ -158,6 +160,28 @@ fun SessionScreen(
                         .weight(1f)
                         .fillMaxWidth()
                 ) {
+                    // Context 用量警告和 Compaction 指示器（顶部）
+                    Column(
+                        modifier = Modifier.align(Alignment.TopCenter)
+                    ) {
+                        // Compaction 指示器
+                        CompactionIndicator(
+                            active = state.compactionActive,
+                            completedAt = state.compactionCompletedAt
+                        )
+                        
+                        // Context 用量警告（>= 85%）
+                        if (state.totalTokens != null && state.contextTokensLimit != null && state.totalTokensFresh) {
+                            val ratio = state.totalTokens.toFloat() / state.contextTokensLimit.toFloat()
+                            if (ratio >= 0.85f) {
+                                ContextNotice(
+                                    totalTokens = state.totalTokens,
+                                    contextTokensLimit = state.contextTokensLimit
+                                )
+                            }
+                        }
+                    }
+                    
                     if (state.isLoading && state.chatMessages.isEmpty()) {
                         // 加载骨架屏
                         LoadingSkeleton(

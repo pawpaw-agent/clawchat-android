@@ -448,6 +448,29 @@ class SessionViewModel @Inject constructor(
     fun setNewMessagesBelow() {
         _state.update { it.copy(chatNewMessagesBelow = true) }
     }
+    
+    /**
+     * 更新 context token 用量
+     * 参考 webchat: renderContextNotice
+     */
+    fun updateContextTokens(totalTokens: Int?, contextTokensLimit: Int?, fresh: Boolean = true) {
+        _state.update { it.copy(
+            totalTokens = totalTokens,
+            contextTokensLimit = contextTokensLimit,
+            totalTokensFresh = fresh
+        ) }
+    }
+    
+    /**
+     * 更新 compaction 状态
+     * 参考 webchat: renderCompactionIndicator
+     */
+    fun updateCompactionState(active: Boolean, completedAt: Long? = null) {
+        _state.update { it.copy(
+            compactionActive = active,
+            compactionCompletedAt = completedAt
+        ) }
+    }
 
     fun retryMessage(messageId: String) {
         viewModelScope.launch {

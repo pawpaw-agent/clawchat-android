@@ -129,6 +129,15 @@ data class SessionUiState(
     val chatUserNearBottom: Boolean = true,      // 用户是否在底部附近（< 450px）
     val chatHasAutoScrolled: Boolean = false,    // 是否已经自动滚动过（初始加载后设为 true）
     
+    // Context 用量警告（参考 webchat renderContextNotice）
+    val totalTokens: Int? = null,                 // 已使用的 token 数
+    val contextTokensLimit: Int? = null,          // token 限制
+    val totalTokensFresh: Boolean = true,         // token 数据是否新鲜
+    
+    // Compaction 指示器（参考 webchat renderCompactionIndicator）
+    val compactionActive: Boolean = false,        // 是否正在进行压缩
+    val compactionCompletedAt: Long? = null,      // 压缩完成时间戳
+    
     // 工具流状态（1:1 对应 webchat ToolStreamHost）
     val toolStreamById: Map<String, ToolStreamEntry> = emptyMap(),
     val toolStreamOrder: List<String> = emptyList(),
