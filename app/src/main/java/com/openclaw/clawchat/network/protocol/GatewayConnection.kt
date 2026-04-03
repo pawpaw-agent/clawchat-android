@@ -289,6 +289,8 @@ class GatewayConnection(
     /** Handle type=event */
     private fun handleEventFrame(obj: JsonObject, rawText: String) {
         val event = obj["event"]?.jsonPrimitive?.content ?: return
+        
+        AppLog.d(TAG, "=== handleEventFrame: event=$event, rawText length=${rawText.length}")
 
         appScope.launch {
             // Sequence check + dedup
