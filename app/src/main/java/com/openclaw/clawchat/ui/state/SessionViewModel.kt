@@ -213,6 +213,7 @@ class SessionViewModel @Inject constructor(
     /**
      * 单个工具完成回调
      * 使用 debounce 合并刷新：500ms 内多工具完成只刷新一次
+     * 刷新后检查历史消息，清除已有结果的 toolStream entries（避免重复显示）
      */
     private fun onToolCompleteRefresh() {
         AppLog.d(TAG, "=== onToolCompleteRefresh: debouncing refresh")
@@ -223,6 +224,17 @@ class SessionViewModel @Inject constructor(
             delay(500) // 等待 500ms 合并多工具完成
             AppLog.d(TAG, "=== onToolCompleteRefresh: executing delayed refresh")
             messageLoader.refreshMessages()
+            // 刷新后检查历史消息中是否有工具结果
+            // 如果有，清除对应的 toolStream entry（避免重复显示）
+            val state = _state.value
+            val chatMessages = state.chatMessages
+            val toolCallIdsWithResult = chatMessages
+                .filter { it.role == MessageRole.TOOL && !it.getTextContent().isBlank() }
+                .mapNotNull { it.toolCallId }
+            if (toolCallIdsWithResult.isNotEmpty()) {
+                AppLog.d(TAG, "=== onToolCompleteRefresh: clearing toolStream for ${toolCallIdsWithResult.size} completed tools")
+                toolStreamManager.clearCompleted(toolCallIdsWithResult)
+            }
         }
     }
 
