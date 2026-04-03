@@ -93,11 +93,14 @@ internal fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
                         if (urlEnd != -1) {
                             val linkText = content.substring(i + 1, textEnd)
                             val url = content.substring(textEnd + 2, urlEnd)
-                            pushStringAnnotation(tag = "URL", annotation = url) {
-                                withStyle(SpanStyle(color = Color(0xFF58A6FF))) {
-                                    append(linkText)
-                                }
+                            // 添加 URL annotation
+                            pushStringAnnotation(tag = "URL", annotation = url)
+                            // 添加蓝色样式
+                            withStyle(SpanStyle(color = Color(0xFF58A6FF))) {
+                                append(linkText)
                             }
+                            // 弹出 annotation
+                            pop()
                             i = urlEnd + 1
                         } else {
                             append(content[i])
@@ -113,11 +116,14 @@ internal fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
                     val urlEnd = content.indexOfAny(charArrayOf(' ', '\n', '\t', ')', '*', '_', '`', '[', ']'), i)
                     val endPos = if (urlEnd == -1) content.length else urlEnd
                     val url = content.substring(i, endPos)
-                    pushStringAnnotation(tag = "URL", annotation = url) {
-                        withStyle(SpanStyle(color = Color(0xFF58A6FF))) {
-                            append(url)
-                        }
+                    // 添加 URL annotation
+                    pushStringAnnotation(tag = "URL", annotation = url)
+                    // 添加蓝色样式
+                    withStyle(SpanStyle(color = Color(0xFF58A6FF))) {
+                        append(url)
                     }
+                    // 弹出 annotation
+                    pop()
                     i = endPos
                 }
                 // 粗体 **text**
