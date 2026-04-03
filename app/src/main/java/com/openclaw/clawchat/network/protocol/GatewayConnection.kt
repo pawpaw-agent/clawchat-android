@@ -417,7 +417,7 @@ class GatewayConnection(
         val phase = data["phase"]?.jsonPrimitive?.content ?: "start"
         val resultContent = data["result"]?.jsonPrimitive?.content
         val partialResultContent = data["partialResult"]?.jsonPrimitive?.content
-        val isError = data["isError"]?.jsonPrimitive?.booleanOrNull ?: false
+        val isError = data["isError"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
         val args = data["args"]?.jsonObject
         
         // 获取当前事件（用于追加流式内容）

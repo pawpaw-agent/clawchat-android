@@ -43,7 +43,7 @@ class ToolStreamManager(
         val phase = data["phase"]?.jsonPrimitive?.content ?: "start"
         val resultContent = data["result"]?.jsonPrimitive?.content
         val partialResultContent = data["partialResult"]?.jsonPrimitive?.content
-        val isError = data["isError"]?.jsonPrimitive?.booleanOrNull ?: false
+        val isError = data["isError"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
         val runId = payload["runId"]?.jsonPrimitive?.content ?: ""
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
         
