@@ -2,15 +2,11 @@ package com.openclaw.clawchat.ui.screens.session
 
 import android.graphics.BitmapFactory
 import android.util.Base64
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.*
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -18,7 +14,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -29,19 +24,14 @@ import com.openclaw.clawchat.ui.components.MarkdownText
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.core.app.ShareCompat
-import android.widget.Toast
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,10 +39,6 @@ import androidx.compose.ui.unit.sp
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
-import com.openclaw.clawchat.ui.theme.TerminalColors
-import com.openclaw.clawchat.ui.theme.LightTerminalColors
-import com.openclaw.clawchat.ui.theme.ChatTokens
-import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * 消息组件常量
@@ -640,237 +626,6 @@ fun ToolDetailCard(toolCard: ToolCard) {
             
             // 不显示 result，只显示工具名+状态，提高 UI 平滑性
         }
-    }
-}
-
-/**
- * 工具标签行
- */
-@Composable
-fun ToolTagsRow(toolCards: List<ToolCard>) {
-    var expandedIndex by remember { mutableStateOf(-1) }
-    
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(3.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            toolCards.forEachIndexed { index, card ->
-                ToolTagExpanding(
-                    name = when (card.kind) {
-                        ToolCardKind.CALL -> card.name
-                        ToolCardKind.RESULT -> "output"
-                    },
-                    isError = card.isError,
-                    isExpanded = expandedIndex == index,
-                    onClick = { 
-                        expandedIndex = if (expandedIndex == index) -1 else index 
-                    }
-                )
-            }
-        }
-        
-        if (expandedIndex >= 0 && expandedIndex < toolCards.size) {
-            val card = toolCards[expandedIndex]
-            ToolDetailCard(toolCard = card)
-        }
-    }
-}
-
-/**
- * 单个工具标签（可展开版本）
- * 对应 WebChat chat-tool-tag
- */
-@Composable
-fun ToolTagExpanding(
-    name: String,
-    isError: Boolean,
-    isExpanded: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(4.dp),
-        color = if (isError) {
-            MaterialTheme.colorScheme.errorContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        },
-        modifier = Modifier.height(18.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(
-                horizontal = 5.dp,
-                vertical = 2.dp
-            ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Icon(
-                imageVector = if (isError) Icons.Default.ErrorOutline else Icons.Default.Terminal,
-                contentDescription = null,
-                modifier = Modifier.size(8.dp),
-                tint = if (isError) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.primary
-                }
-            )
-            Text(
-                text = name,
-                style = MaterialTheme.typography.labelSmall,
-                fontSize = 9.sp,
-                color = if (isError) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.onBackground
-                }
-            )
-            Icon(
-                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = null,
-                modifier = Modifier.size(8.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-/**
- * 消息淡入动画包装器
- * 对应 WebChat rise animation
- */
-@Composable
-fun AnimatedMessageItem(
-    visible: Boolean,
-    content: @Composable AnimatedVisibilityScope.() -> Unit
-) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(
-            animationSpec = tween(
-                durationMillis = DesignTokens.durationNormal,
-                easing = EaseOut
-            )
-        ) + slideInVertically(
-            animationSpec = tween(
-                durationMillis = DesignTokens.durationNormal,
-                easing = EaseOut
-            ),
-            initialOffsetY = { it / 4 }  // 从底部向上滑入
-        ),
-        content = content
-    )
-}
-
-/**
- * 打字指示器（三个跳动的点）
- * 对应 WebChat typing indicator
- */
-@Composable
-fun TypingIndicator(
-    modifier: Modifier = Modifier
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "typing")
-    
-    Row(
-        modifier = modifier
-            .background(
-                MaterialTheme.colorScheme.surface,
-                RoundedCornerShape(DesignTokens.radiusLg)
-            )
-            .padding(horizontal = DesignTokens.space3, vertical = DesignTokens.space2),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // 参考 webchat: translateY 上跳动画，1.2s ease-out
-        repeat(3) { index ->
-            val delay = index * 150
-            val translateY by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = -3f,  // 上跳 3dp
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1200, delayMillis = delay, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "dot_$index"
-            )
-            
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .offset(y = translateY.dp)  // translateY 动画
-                    .background(
-                        MaterialTheme.colorScheme.primary,
-                        CircleShape
-                    )
-            )
-        }
-    }
-}
-
-/**
- * 流式输出加载指示器 - 优化动画效果
- */
-@Composable
-fun StreamingIndicator(
-    text: String = "思考中",
-    modifier: Modifier = Modifier
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "streaming")
-    
-    // 动态跳动的圆点
-    val dotScale by infiniteTransition.animateFloat(
-        initialValue = 0.6f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "dotScale"
-    )
-    
-    Row(
-        modifier = modifier
-            .background(
-                MaterialTheme.colorScheme.surface,
-                RoundedCornerShape(DesignTokens.radiusLg)
-            )
-            .padding(horizontal = DesignTokens.space3, vertical = DesignTokens.space2),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(3.dp)
-    ) {
-        // 动态跳动的圆点
-        repeat(3) { index ->
-            val delay = index * 100
-            val scale by infiniteTransition.animateFloat(
-                initialValue = 0.6f,
-                targetValue = 1.2f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(400, delayMillis = delay, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "dot_$index"
-            )
-            
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .scale(scale)
-                    .background(
-                        MaterialTheme.colorScheme.primary,
-                        CircleShape
-                    )
-            )
-        }
-        
-        Spacer(modifier = Modifier.width(4.dp))
-        
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
