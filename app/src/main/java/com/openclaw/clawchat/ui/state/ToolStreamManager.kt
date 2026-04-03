@@ -46,6 +46,8 @@ class ToolStreamManager(
         val resultContent = data["result"]?.jsonPrimitive?.content
         val partialResultContent = data["partialResult"]?.jsonPrimitive?.content
         val isError = data["isError"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
+        
+        AppLog.d(TAG, "=== result=$resultContent, partialResult=$partialResultContent")
         val runId = payload["runId"]?.jsonPrimitive?.content ?: ""
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
         
