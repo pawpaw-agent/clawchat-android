@@ -4,6 +4,7 @@ import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
@@ -42,7 +43,6 @@ class ToolStreamManager(
         val status = data["status"]?.jsonPrimitive?.content ?: "pending"
         val outputContent = data["output"]?.jsonPrimitive?.content
         val errorContent = data["error"]?.jsonPrimitive?.content
-        val inputObj = data["input"]?.jsonObject
         val runId = payload["runId"]?.jsonPrimitive?.content ?: ""
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
         
