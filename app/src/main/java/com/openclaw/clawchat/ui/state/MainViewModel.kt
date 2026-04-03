@@ -472,6 +472,29 @@ class MainViewModel @Inject constructor(
     }
 
     /**
+     * 切换会话置顶状态
+     */
+    fun toggleSessionPin(sessionId: String, currentPinned: Boolean) {
+        viewModelScope.launch(exceptionHandler) {
+            try {
+                // Gateway 暂不支持 pin API，先本地更新
+                _uiState.update { state ->
+                    state.copy(
+                        sessions = state.sessions.map { session ->
+                            if (session.id == sessionId) {
+                                session.copy(isPinned = !currentPinned)
+                            } else session
+                        }.sortedByDescending { it.isPinned }  // 置顶的排前面
+                    )
+                }
+                _events.trySend(UiEvent.ShowSuccess(if (currentPinned) "已取消置顶" else "已置顶"))
+            } catch (e: Exception) {
+                _events.trySend(UiEvent.ShowError("操作失败：${e.message}"))
+            }
+        }
+    }
+
+    /**
      * 检查连接状态并在需要时重连（从后台返回前台时调用）
      */
     fun checkAndReconnectIfNeeded() {

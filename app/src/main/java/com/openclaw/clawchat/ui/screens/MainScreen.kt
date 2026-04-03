@@ -144,7 +144,9 @@ fun MainScreen(
                         onCreateSession = { viewModel.createSession() },
                         onRefresh = { viewModel.refreshSessions() },
                         onDeleteSession = { viewModel.deleteSession(it) },
-                        onSteerSession = { sessionKey, text -> viewModel.steerSession(sessionKey, text) }
+                        onSteerSession = { sessionKey, text -> viewModel.steerSession(sessionKey, text) },
+                        onRenameSession = { sessionKey, newLabel -> viewModel.renameSession(sessionKey, newLabel) },
+                        onTogglePinSession = { sessionKey, currentPinned -> viewModel.toggleSessionPin(sessionKey, currentPinned) }
                     )
                 }
             }

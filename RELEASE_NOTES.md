@@ -1,3 +1,31 @@
+# ClawChat v1.2.1 Release Notes
+
+## 发布日期：2026-04-03
+
+### 修复与改进
+
+**ClawChat v1.2.1** 是一个维护版本，修复了若干问题并改进了用户体验。
+
+---
+
+## 🔧 修复
+
+- **重命名对话框** - 实现会话重命名功能，支持长按菜单触发
+- **置顶功能** - 实现会话置顶/取消置顶，置顶会话自动排序到顶部
+- **消息删除同步** - deleteMessage 现在同步到 MessageRepository
+- **`/new` 命令导航** - SlashCommandExecutor 支持 onNavigateBack 回调
+
+---
+
+## 📝 改进
+
+- 清理所有 TODO 注释
+- SlashCommandExecutor 支持 onNavigateBack 回调
+- SessionListContent 支持重命名和置顶回调
+- 更新文档版本号
+
+---
+
 # ClawChat v1.2.0 Release Notes
 
 ## 🎉 发布日期：2026-04-01

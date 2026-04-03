@@ -42,6 +42,8 @@ fun SessionListContent(
     onRefresh: () -> Unit,
     onDeleteSession: (String) -> Unit = {},
     onSteerSession: ((String, String) -> Unit)? = null,  // sessionKey, steerText
+    onRenameSession: ((String, String) -> Unit)? = null,  // sessionKey, newLabel
+    onTogglePinSession: ((String, Boolean) -> Unit)? = null,  // sessionKey, currentPinned
     onDeleteSessions: ((List<String>) -> Unit)? = null  // 批量删除回调
 ) {
     // 批量操作状态
@@ -158,7 +160,9 @@ fun SessionListContent(
                     onSelectSession = onSelectSession,
                     onSessionLongPress = onSessionLongPress,
                     onDeleteSession = onDeleteSession,
-                    onSteerSession = onSteerSession
+                    onSteerSession = onSteerSession,
+                    onRenameSession = onRenameSession,
+                    onTogglePinSession = onTogglePinSession
                 )
             }
         }
@@ -219,7 +223,9 @@ private fun SessionList(
     onSelectSession: (String) -> Unit,
     onSessionLongPress: (SessionUi?) -> Unit,
     onDeleteSession: (String) -> Unit = {},
-    onSteerSession: ((String, String) -> Unit)? = null
+    onSteerSession: ((String, String) -> Unit)? = null,
+    onRenameSession: ((String, String) -> Unit)? = null,
+    onTogglePinSession: ((String, Boolean) -> Unit)? = null
 ) {
     // 按日期分组
     val groupedSessions = remember(sessions) {
@@ -254,6 +260,8 @@ private fun SessionList(
                     onSessionLongPress = { onSessionLongPress(session) },
                     onDelete = { id -> onDeleteSession(id) },
                     onSteer = onSteerSession,
+                    onRename = onRenameSession,
+                    onTogglePin = onTogglePinSession,
                     modifier = Modifier.animateItem(
                         fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
                         placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
@@ -334,12 +342,16 @@ private fun SessionItem(
     onSessionLongPress: (() -> Unit)? = null,
     onDelete: (String) -> Unit = {},
     onSteer: ((String, String) -> Unit)? = null,
+    onRename: ((String, String) -> Unit)? = null,
+    onTogglePin: ((String, Boolean) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showSteerDialog by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
     var steerText by remember { mutableStateOf("") }
+    var renameText by remember { mutableStateOf(session.label ?: "") }
     var showMenu by remember { mutableStateOf(false) }
     
     // 引导对话框
@@ -372,6 +384,40 @@ private fun SessionItem(
             },
             dismissButton = {
                 TextButton(onClick = { showSteerDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+    
+    // 重命名对话框
+    if (showRenameDialog) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("重命名会话") },
+            text = {
+                OutlinedTextField(
+                    value = renameText,
+                    onValueChange = { renameText = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("输入新名称...") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (renameText.isNotBlank() && onRename != null) {
+                            onRename(session.id, renameText)
+                        }
+                        showRenameDialog = false
+                    }
+                ) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) {
                     Text("取消")
                 }
             }
@@ -511,7 +557,8 @@ private fun SessionItem(
                 leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                 onClick = {
                     showMenu = false
-                    // TODO: 显示重命名对话框
+                    renameText = session.label ?: ""
+                    showRenameDialog = true
                 }
             )
             
@@ -526,7 +573,7 @@ private fun SessionItem(
                 },
                 onClick = {
                     showMenu = false
-                    // TODO: 调用置顶 API
+                    onTogglePin?.invoke(session.id, session.isPinned)
                 }
             )
             

@@ -150,7 +150,7 @@ private fun CodeBlockContent(
                         androidx.compose.material3.TextButton(
                             onClick = {
                                 clipboardManager.setText(AnnotatedString(code))
-                                android.widget.Toast.makeText(context, "代码已复制", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, context.getString(R.string.message_code_copied), android.widget.Toast.LENGTH_SHORT).show()
                             },
                             contentPadding = PaddingValues(0.dp)
                         ) {

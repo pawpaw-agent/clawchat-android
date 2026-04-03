@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.BuildConfig
 
 /**
  * 关于对话框
@@ -31,7 +32,7 @@ fun AboutDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text("OpenClaw Android 客户端")
-                Text("版本 1.0.0")
+                Text("版本 ${BuildConfig.VERSION_NAME}")
                 Divider()
                 Text(
                     "ClawChat 是 OpenClaw 生态系统的官方 Android 客户端，提供与 OpenClaw Gateway 的实时通信。",

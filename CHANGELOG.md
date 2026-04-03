@@ -6,6 +6,25 @@
 
 ---
 
+## [1.2.1] - 2026-04-03
+
+### 修复
+
+- **重命名对话框** - 实现会话重命名功能，支持长按菜单触发
+- **置顶功能** - 实现会话置顶/取消置顶，置顶会话自动排序到顶部
+- **消息删除同步** - deleteMessage 现在同步到 MessageRepository
+- **`/new` 命令** - 实现导航回主界面功能
+- **关于对话框版本** - 使用 BuildConfig.VERSION_NAME 替代硬编码版本
+- **Toast 国际化** - 代码复制提示使用字符串资源
+
+### 改进
+
+- 清理所有 TODO 注释
+- SlashCommandExecutor 支持 onNavigateBack 回调
+- SessionListContent 支持重命名和置顶回调
+
+---
+
 ## [1.2.0] - 2026-04-01
 
 ### 新增功能
