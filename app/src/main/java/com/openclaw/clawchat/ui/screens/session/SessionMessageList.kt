@@ -1,33 +1,23 @@
 package com.openclaw.clawchat.ui.screens.session
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.background
-import com.openclaw.clawchat.util.AppLog
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.state.*
-import kotlinx.coroutines.delay
-import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * 空会话内容
@@ -135,64 +125,23 @@ fun MessageGroupList(
     onRetryMessage: (String) -> Unit = {},
     onContinueGeneration: () -> Unit = {}
 ) {
-    // 监听用户滚动，更新 chatUserNearBottom 状态
-    // 参考 webchat: handleChatScroll
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            // reverseLayout=true 时，firstVisibleItemIndex=0 表示在底部
-            // 计算距离"底部"（视觉上的底部，实际上是列表顶部）
-            val layoutInfo = listState.layoutInfo
-            val viewportHeight = layoutInfo.viewportSize.height
-            
-            // 检查是否在底部附近
-            // reverseLayout=true: firstVisibleItemIndex=0 且 firstVisibleItemScrollOffset 小表示在底部
-            val isAtBottom = listState.firstVisibleItemIndex == 0 && 
-                             listState.firstVisibleItemScrollOffset < 450
-            
-            isAtBottom
-        }.collect { isNearBottom ->
-            onUpdateUserNearBottom(isNearBottom)
-        }
-    }
-    
-    // 滚动逻辑：参考 webchat scheduleChatScroll
-    // 只在用户在底部附近时自动滚动，否则显示"新消息"提示
-    // 注意：只用 groups.size 作为 key，避免 chatStream 更新导致重复滚动
-    LaunchedEffect(groups.size) {
+    // 滚动优化：合并用户滚动监听 + 自动滚动逻辑
+    // reverseLayout=true 时，firstVisibleItemIndex=0 表示在底部
+    LaunchedEffect(listState, groups.size) {
         if (groups.isEmpty()) return@LaunchedEffect
         
-        // 计算距离底部
-        val layoutInfo = listState.layoutInfo
-        val viewportHeight = layoutInfo.viewportSize.height
-        val distanceFromBottom = listState.firstVisibleItemScrollOffset
+        // 监听滚动位置
+        val isNearBottom = listState.firstVisibleItemIndex == 0 && 
+                           listState.firstVisibleItemScrollOffset < 450
+        onUpdateUserNearBottom(isNearBottom)
         
-        // 判断是否应该自动滚动
-        // force=true 只在未自动滚动过时生效（初始加载）
-        val effectiveForce = !chatHasAutoScrolled
-        val shouldStick = effectiveForce || chatUserNearBottom || distanceFromBottom < 450
-        
-        if (!shouldStick) {
-            // 用户正在查看历史消息，显示"新消息"提示
-            onSetNewMessagesBelow()
-            return@LaunchedEffect
-        }
-        
-        // 执行滚动
-        if (effectiveForce) {
-            onMarkAutoScrolled()
-        }
-        
-        // 滚动到底部
-        listState.scrollToItem(0)
-        
-        // 延迟 150ms 后再次检查（参考 webchat retry）
-        delay(150)
-        
-        val latestDistance = listState.firstVisibleItemScrollOffset
-        val shouldRetry = effectiveForce || chatUserNearBottom || latestDistance < 450
-        
-        if (shouldRetry) {
+        // 自动滚动逻辑
+        if (isNearBottom || !chatHasAutoScrolled) {
+            if (!chatHasAutoScrolled) onMarkAutoScrolled()
             listState.scrollToItem(0)
+        } else if (!isNearBottom && chatStream != null) {
+            // 用户正在查看历史消息，有新消息时显示提示
+            onSetNewMessagesBelow()
         }
     }
     
@@ -235,7 +184,6 @@ fun MessageGroupList(
         
         // 2. 工具消息（与历史消息中的 toolResult 合并）
         if (toolMessages.isNotEmpty()) {
-            AppLog.d("SessionMessageList", "Rendering toolMessages: size=${toolMessages.size}")
             items(
                 items = toolMessages.reversed(),  // 反转以保持正确顺序
                 key = { msg -> msg.toolCallId ?: msg.id },
@@ -307,53 +255,38 @@ fun MessageGroupList(
 }
 
 /**
- * 消息分组函数 - Slack 风格连续同角色消息合并
+ * 消息分组函数 - 简化版
  */
 fun groupMessages(messages: List<MessageUi>): List<MessageGroup> {
     if (messages.isEmpty()) return emptyList()
     
-    val groups = mutableListOf<MessageGroup>()
-    var currentGroup: MutableList<MessageUi>? = null
-    var currentRole: MessageRole? = null
-    
-    for (message in messages) {
-        val shouldMergeWithPrevious = message.role == MessageRole.TOOL && 
-            currentRole == MessageRole.ASSISTANT &&
-            currentGroup?.any { it.hasToolContent() } == true
+    return messages.fold(mutableListOf<MessageGroup>()) { groups, message ->
+        val lastGroup = groups.lastOrNull()
+        val shouldMerge = message.role == MessageRole.TOOL && 
+            lastGroup?.role == MessageRole.ASSISTANT && 
+            lastGroup.messages.any { it.hasToolContent() }
         
-        if (message.role != currentRole && !shouldMergeWithPrevious) {
-            currentGroup?.let { msgs ->
-                groups.add(MessageGroup(
-                    role = currentRole!!,
-                    messages = msgs,
-                    timestamp = msgs.first().timestamp,
-                    isStreaming = msgs.any { it.isLoading }
-                ))
-            }
-            currentGroup = mutableListOf(message)
-            currentRole = message.role
+        if (lastGroup != null && (message.role == lastGroup.role || shouldMerge)) {
+            // 合并到当前分组
+            groups[groups.lastIndex] = lastGroup.copy(
+                messages = lastGroup.messages + message,
+                isStreaming = lastGroup.isStreaming || message.isLoading
+            )
         } else {
-            currentGroup?.add(message)
-            if (!shouldMergeWithPrevious) {
-                currentRole = message.role
-            }
+            // 创建新分组
+            groups.add(MessageGroup(
+                role = message.role,
+                messages = mutableListOf(message),
+                timestamp = message.timestamp,
+                isStreaming = message.isLoading
+            ))
         }
+        groups
     }
-    
-    currentGroup?.let { msgs ->
-        groups.add(MessageGroup(
-            role = currentRole!!,
-            messages = msgs,
-            timestamp = msgs.first().timestamp,
-            isStreaming = msgs.any { it.isLoading }
-        ))
-    }
-    
-    return groups
 }
 
 /**
- * 消息分组项（Slack 风格）
+ * 消息分组项 - 简化版
  */
 @Composable
 fun MessageGroupItem(
@@ -366,122 +299,36 @@ fun MessageGroupItem(
 ) {
     val isUser = group.role == MessageRole.USER
     val isSystem = group.role == MessageRole.SYSTEM
-    val isTool = group.role == MessageRole.TOOL
 
-    Column(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        if (isSystem) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                group.messages.forEach { message ->
-                    SystemMessageItem(message = message)
+    Column(modifier = modifier.fillMaxWidth()) {
+        when (group.role) {
+            MessageRole.SYSTEM -> {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    group.messages.forEach { SystemMessageItem(message = it) }
                 }
             }
-        } else if (isTool) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                horizontalAlignment = Alignment.Start
-            ) {
-                val mergedToolCards = group.messages.flatMap { message ->
-                    val calls = message.getToolCalls()
-                    val results = message.getToolResults()
-                    
-                    if (calls.isEmpty() && results.isEmpty()) {
-                        val textContent = message.getTextContent()
-                        if (textContent.isNotBlank()) {
-                            listOf(ToolCard(
-                                kind = ToolCardKind.RESULT,
-                                name = "output",
-                                args = null,
-                                result = textContent,
-                                isError = false,
-                                callId = null
-                            ))
-                        } else emptyList()
-                    } else {
-                        calls.map { call ->
-                            val matchingResult = results.find { it.toolCallId == call.id }
-                            ToolCard(
-                                kind = if (matchingResult != null) ToolCardKind.RESULT else ToolCardKind.CALL,
-                                name = call.name,
-                                args = call.args?.toString(),
-                                result = matchingResult?.text,
-                                isError = matchingResult?.isError ?: false,
-                                callId = call.id
-                            )
-                        }
-                    }
-                }
-                
-                mergedToolCards.forEach { card ->
-                    ToolDetailCard(toolCard = card)
+            MessageRole.TOOL -> {
+                // 纯 TOOL 分组：显示工具卡片
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    group.messages.forEach { RenderToolCardsFromMessage(it) }
                 }
             }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
-            ) {
-                val allToolResults = group.messages.flatMap { it.getToolResults() }
-                val shownToolCallIds = mutableSetOf<String?>()
-                
-                group.messages.forEachIndexed { index, message ->
-                when (message.role) {
-                    MessageRole.TOOL -> {
-                        val calls = message.getToolCalls()
-                        val results = message.getToolResults()
-                        
-                        if (calls.isEmpty() && results.isEmpty()) {
-                            val textContent = message.getTextContent()
-                            if (textContent.isNotBlank()) {
-                                ToolDetailCard(toolCard = ToolCard(
-                                    kind = ToolCardKind.RESULT,
-                                    name = "output",
-                                    args = null,
-                                    result = textContent,
-                                    isError = false,
-                                    callId = null
-                                ))
-                            }
+            else -> {
+                // USER/ASSISTANT 分组：消息气泡 + 工具卡片
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
+                ) {
+                    group.messages.forEachIndexed { index, message ->
+                        if (message.role == MessageRole.TOOL) {
+                            RenderToolCardsFromMessage(message)
                         } else {
-                            calls.forEach { call ->
-                                if (call.id !in shownToolCallIds) {
-                                    val matchingResult = results.find { it.toolCallId == call.id }
-                                        ?: allToolResults.find { it.toolCallId == call.id }
-                                    
-                                    val displayArgs = if (call.name == "exec" && call.args != null) {
-                                        call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
-                                    } else {
-                                        call.args?.toString()
-                                    }
-                                    
-                                    ToolDetailCard(toolCard = ToolCard(
-                                        kind = if (matchingResult != null && matchingResult.text.isNotBlank()) ToolCardKind.RESULT else ToolCardKind.CALL,
-                                        name = call.name,
-                                        args = displayArgs,
-                                        result = matchingResult?.text,
-                                        isError = matchingResult?.isError ?: false,
-                                        callId = call.id
-                                    ))
-                                    shownToolCallIds.add(call.id)
-                                }
-                            }
-                        }
-                    }
-                    else -> {
-                        // 消息行
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
-                        ) {
-                            // 消息气泡
                             MessageContentCard(
                                 message = message,
                                 isUser = isUser,
@@ -491,56 +338,85 @@ fun MessageGroupItem(
                                 onRegenerate = onRegenerate,
                                 onRetry = { onRetryMessage(message.id) }
                             )
-                        }
-                        
-                        val toolCalls = message.getToolCalls()
-                        if (toolCalls.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            toolCalls.forEach { call ->
-                                val matchingResult = allToolResults.find { it.toolCallId == call.id }
-                                val displayArgs = if (call.name == "exec" && call.args != null) {
-                                    call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
-                                } else {
-                                    call.args?.toString()
-                                }
+                            
+                            // 工具调用显示
+                            message.getToolCalls().forEach { call ->
+                                Spacer(modifier = Modifier.height(4.dp))
                                 ToolDetailCard(toolCard = ToolCard(
-                                    kind = if (matchingResult != null && matchingResult.text.isNotBlank()) ToolCardKind.RESULT else ToolCardKind.CALL,
+                                    kind = ToolCardKind.CALL,
                                     name = call.name,
-                                    args = displayArgs,
-                                    result = matchingResult?.text,
-                                    isError = matchingResult?.isError ?: false,
-                                    callId = call.id
+                                    args = call.args?.toString(),
+                                    result = null,
+                                    isError = false,
+                                    callId = call.id,
+                                    phase = call.phase
                                 ))
-                                shownToolCallIds.add(call.id)
                             }
                         }
+                        
+                        if (index < group.messages.lastIndex) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                    }
+                    
+                    // 时间戳
+                    group.lastMessage?.let { msg ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = formatTimestamp(msg.timestamp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    
+                    // 流式指示器
+                    if (group.isStreaming) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
-                
-                if (index < group.messages.lastIndex) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-            }
-            
-            group.lastMessage?.let { msg ->
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = formatTimestamp(msg.timestamp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            if (group.isStreaming) {
-                Spacer(modifier = Modifier.height(8.dp))
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
             }
         }
     }
+}
+
+/**
+ * 从消息提取并渲染工具卡片
+ */
+@Composable
+private fun RenderToolCardsFromMessage(message: MessageUi) {
+    val calls = message.getToolCalls()
+    val results = message.getToolResults()
+    
+    if (calls.isEmpty() && results.isEmpty()) {
+        val textContent = message.getTextContent()
+        if (textContent.isNotBlank()) {
+            ToolDetailCard(toolCard = ToolCard(
+                kind = ToolCardKind.RESULT,
+                name = "output",
+                args = null,
+                result = textContent,
+                isError = false,
+                callId = null
+            ))
+        }
+    } else {
+        calls.forEach { call ->
+            val matchingResult = results.find { it.toolCallId == call.id }
+            ToolDetailCard(toolCard = ToolCard(
+                kind = if (matchingResult != null) ToolCardKind.RESULT else ToolCardKind.CALL,
+                name = call.name,
+                args = call.args?.toString(),
+                result = matchingResult?.text,
+                isError = matchingResult?.isError ?: false,
+                callId = call.id,
+                phase = call.phase
+            ))
+        }
     }
 }
 
