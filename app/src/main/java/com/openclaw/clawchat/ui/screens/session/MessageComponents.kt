@@ -2,6 +2,7 @@ package com.openclaw.clawchat.ui.screens.session
 
 import android.graphics.BitmapFactory
 import android.util.Base64
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.*
 import androidx.compose.animation.animateColor
