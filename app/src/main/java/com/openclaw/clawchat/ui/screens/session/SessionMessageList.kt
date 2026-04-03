@@ -125,24 +125,32 @@ fun MessageGroupList(
     onRetryMessage: (String) -> Unit = {},
     onContinueGeneration: () -> Unit = {}
 ) {
-    // 滚动优化：合并用户滚动监听 + 自动滚动逻辑
+    // 滚动优化：首次加载时直接定位到最新消息，新消息到达时自动滚动
     // reverseLayout=true 时，firstVisibleItemIndex=0 表示在底部
-    LaunchedEffect(listState, groups.size) {
-        if (groups.isEmpty()) return@LaunchedEffect
-        
-        // 监听滚动位置
-        val isNearBottom = listState.firstVisibleItemIndex == 0 && 
-                           listState.firstVisibleItemScrollOffset < 450
-        onUpdateUserNearBottom(isNearBottom)
-        
-        // 自动滚动逻辑
-        if (isNearBottom || !chatHasAutoScrolled) {
-            if (!chatHasAutoScrolled) onMarkAutoScrolled()
-            listState.scrollToItem(0)
-        } else if (!isNearBottom && chatStream != null) {
-            // 用户正在查看历史消息，有新消息时显示提示
-            onSetNewMessagesBelow()
-        }
+    LaunchedEffect(listState) {
+        // 使用 snapshotFlow 监听 groups 变化，更精确地触发滚动
+        snapshotFlow { groups.size }
+            .collect { size ->
+                if (size == 0) return@collect
+                
+                // 监听滚动位置
+                val isNearBottom = listState.firstVisibleItemIndex == 0 && 
+                                   listState.firstVisibleItemScrollOffset < 450
+                onUpdateUserNearBottom(isNearBottom)
+                
+                // 首次加载或用户在底部时，直接定位到最新消息
+                if (!chatHasAutoScrolled) {
+                    onMarkAutoScrolled()
+                    // 立即定位，无动画，避免视觉跳跃
+                    listState.scrollToItem(0)
+                } else if (isNearBottom) {
+                    // 用户在底部，新消息时自动滚动
+                    listState.scrollToItem(0)
+                } else if (chatStream != null) {
+                    // 用户查看历史，有新消息时显示提示
+                    onSetNewMessagesBelow()
+                }
+            }
     }
     
     // 使用 reverseLayout = true 实现最优雅的自动滚动
