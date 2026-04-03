@@ -527,11 +527,12 @@ fun SystemMessageItem(message: MessageUi) {
 fun ToolDetailCard(toolCard: ToolCard) {
     var expanded by remember { mutableStateOf(false) }
     val hasArgs = toolCard.args?.isNotBlank() == true
-    // 不显示 result，只显示工具名+状态，提高 UI 平滑性
+    val hasResult = toolCard.result?.isNotBlank() == true
     // 使用 phase 判断完成状态：phase=result 表示已完成
     val isComplete = toolCard.phase == "result"
     val isRunning = !isComplete && toolCard.kind == ToolCardKind.CALL
-    val hasContent = hasArgs
+    // 完成时显示 result，运行时不显示（避免闪烁）
+    val hasContent = hasArgs || (hasResult && isComplete)
     
     val backgroundColor = when {
         toolCard.isError -> MaterialTheme.colorScheme.errorContainer
@@ -625,7 +626,31 @@ fun ToolDetailCard(toolCard: ToolCard) {
                 }
             }
             
-            // 不显示 result，只显示工具名+状态，提高 UI 平滑性
+            // 结果（完成时显示）
+            AnimatedVisibility(
+                visible = expanded && hasResult && isComplete,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column {
+                    if (hasArgs) {
+                        Spacer(modifier = Modifier.height(3.dp))
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 2.dp),
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    SelectionContainer {
+                        Text(
+                            text = toolCard.result!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 9.sp,
+                            color = if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                }
+            }
         }
     }
 }
