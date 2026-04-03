@@ -312,9 +312,11 @@ class GatewayConnection(
             when (event) {
                 "connect.challenge" -> handleConnectChallenge(obj)
                 "agent" -> {
+                    AppLog.d(TAG, "=== Agent event received, emitting to incomingMessages")
                     handleAgentEvent(obj)
                     // 也透传给 ChatEventHandler 处理
                     _incomingMessages.emit(rawText)
+                    AppLog.d(TAG, "=== Agent event emitted successfully")
                 }
                 // chat / tick / all other events → forward to upstream
                 else -> _incomingMessages.emit(rawText)

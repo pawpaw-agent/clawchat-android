@@ -141,7 +141,9 @@ class SessionViewModel @Inject constructor(
 
     private fun observeIncomingMessages() {
         viewModelScope.launch(exceptionHandler) {
+            AppLog.d(TAG, "=== observeIncomingMessages: starting collect")
             gateway.incomingMessages.collect { rawJson ->
+                AppLog.d(TAG, "=== observeIncomingMessages: received rawJson length=${rawJson.length}")
                 chatEventHandler.handleIncomingFrame(rawJson)
             }
         }
