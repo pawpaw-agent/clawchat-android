@@ -50,6 +50,9 @@ class ToolStreamManager(
         
         AppLog.d(TAG, "=== Tool stream event: toolCallId=$toolCallId, name=$name, phase=$phase")
         
+        // 用于保存的输出（在 state.update 外部计算）
+        var finalOutputForSave: String? = null
+        
         state.update { currentState ->
             val now = System.currentTimeMillis()
             
@@ -87,6 +90,9 @@ class ToolStreamManager(
                 // 保持当前内容
                 else -> currentOutput
             }
+            
+            // 保存用于后续调用 onSaveToolMessage
+            finalOutputForSave = finalOutput
             
             // 更新或创建 entry
             val newEntry = if (existingEntry != null) {
@@ -141,8 +147,7 @@ class ToolStreamManager(
         
         // phase=result 时保存工具消息到 DB（确保返回后可见）
         if (phase == "result" && onSaveToolMessage != null) {
-            onSaveToolMessage.invoke(sessionKey, toolCallId, name, finalOutput)
-        }
+            onSaveToolMessage.invoke(sessionKey, toolCallId, name, finalOutputForSave)
         }
     }
 
@@ -155,12 +160,6 @@ class ToolStreamManager(
                 toolStreamById = emptyMap(),
                 toolStreamOrder = emptyList(),
                 chatToolMessages = emptyList()
-        }
-        
-        // phase=result 时保存工具消息到 DB（确保返回后可见）
-        if (phase == "result" && onSaveToolMessage != null) {
-            onSaveToolMessage.invoke(sessionKey, toolCallId, name, finalOutput)
-        }
             )
         }
     }
