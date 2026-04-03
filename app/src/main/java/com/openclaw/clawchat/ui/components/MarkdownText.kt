@@ -510,5 +510,3 @@ private fun RenderTable(
         }
     }
 }
-/**
- * 格式化 Markdown 消息
