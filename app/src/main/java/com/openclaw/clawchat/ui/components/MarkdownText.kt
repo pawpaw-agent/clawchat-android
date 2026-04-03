@@ -1,5 +1,6 @@
 package com.openclaw.clawchat.ui.components
 
+import com.openclaw.clawchat.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
