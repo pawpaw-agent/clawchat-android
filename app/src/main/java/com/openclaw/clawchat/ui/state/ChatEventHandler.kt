@@ -78,15 +78,80 @@ class ChatEventHandler(
 
     /**
      * 处理 agent 事件
+     * Gateway agent event stream 类型（源码验证）：
+     *   - lifecycle: { phase: "start"|"end"|"error"|"fallback"|"fallback_cleared", startedAt?, endedAt?, error? }
+     *   - assistant: { text, delta, mediaUrls? } - 通过 chat 事件处理，不需要额外处理
+     *   - tool: { phase, name, toolCallId, args?, result?, partialResult?, isError? }
+     *   - thinking: { text, delta } - 推理流
+     *   - compaction: { phase: "start"|"end" } - 内部事件
+     *   - error: { reason, expected, received } - 网关合成错误
      */
-    private fun handleAgentEvent(payload: JsonObject, kind: String) {
-        AppLog.d(TAG, "=== handleAgentEvent: kind=$kind, calling onToolStreamEvent")
-        when (kind) {
-            "tool" -> {
-                onToolStreamEvent(payload)
+    private fun handleAgentEvent(payload: JsonObject, stream: String) {
+        AppLog.d(TAG, "=== handleAgentEvent: stream=$stream, payload keys=${payload.keys}")
+        when (stream) {
+            "tool" -> onToolStreamEvent(payload)
+            "lifecycle" -> handleLifecycleEvent(payload)
+            "error" -> handleAgentErrorEvent(payload)
+            // assistant 通过 chat 事件处理，thinking/compaction 不需要 UI 处理
+            else -> AppLog.d(TAG, "=== Ignoring agent event with stream=$stream")
+        }
+    }
+
+    /**
+     * 处理 lifecycle 事件
+     * lifecycle:end 到达时 JSONL 已包含本次 run 的全部消息
+     * lifecycle:error 表示 run 出错
+     */
+    private fun handleLifecycleEvent(payload: JsonObject) {
+        val data = payload["data"]?.jsonObject
+        val phase = data?.get("phase")?.jsonPrimitive?.content ?: return
+        val runId = payload["runId"]?.jsonPrimitive?.content ?: return
+        
+        AppLog.d(TAG, "=== Lifecycle event: runId=$runId, phase=$phase")
+        
+        when (phase) {
+            "error" -> {
+                // run 出错，清除状态
+                val errorMsg = data["error"]?.jsonPrimitive?.content ?: "Agent run error"
+                handleError(runId, errorMsg)
             }
-            // 可以添加其他 stream 类型：compaction, fallback, lifecycle
-            else -> AppLog.d(TAG, "=== Ignoring agent event with kind=$kind")
+            "end" -> {
+                // run 结束，如果没有收到 chat final，强制清除状态
+                state.update { currentState ->
+                    if (currentState.chatRunId == runId) {
+                        currentState.copy(
+                            chatRunId = null,
+                            isSending = false,
+                            isLoading = false
+                        )
+                    } else {
+                        currentState
+                    }
+                }
+            }
+            // start/fallback/fallback_cleared 不需要特殊处理
+            else -> AppLog.d(TAG, "=== Lifecycle phase=$phase, no action needed")
+        }
+    }
+
+    /**
+     * 处理 agent error stream 事件（网关合成错误，序列号间隙）
+     */
+    private fun handleAgentErrorEvent(payload: JsonObject) {
+        val data = payload["data"]?.jsonObject
+        val reason = data?.get("reason")?.jsonPrimitive?.content ?: "Agent error"
+        val runId = payload["runId"]?.jsonPrimitive?.content ?: "unknown"
+        
+        AppLog.e(TAG, "=== Agent error event: runId=$runId, reason=$reason")
+        
+        // 清除状态
+        state.update { currentState ->
+            currentState.copy(
+                chatRunId = null,
+                isSending = false,
+                isLoading = false,
+                error = reason
+            )
         }
     }
 
