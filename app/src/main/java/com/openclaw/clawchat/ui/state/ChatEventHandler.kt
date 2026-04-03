@@ -52,10 +52,13 @@ class ChatEventHandler(
                     val event = json["event"]?.jsonPrimitive?.content ?: return
                     val payload = json["payload"]?.jsonObject ?: return
 
+                    AppLog.d(TAG, "=== Event: $event, payload keys: ${payload.keys}")
+
                     when (event) {
                         "agent" -> {
                             // payload.kind 决定事件类型：tool / compaction / lifecycle
                             val kind = payload["kind"]?.jsonPrimitive?.content ?: "unknown"
+                            AppLog.d(TAG, "=== Agent event: kind=$kind, payload=$payload")
                             handleAgentEvent(payload, kind)
                         }
                         "tool.stream" -> {
@@ -76,12 +79,14 @@ class ChatEventHandler(
     /**
      * 处理 agent 事件
      */
-    private fun handleAgentEvent(payload: JsonObject, stream: String) {
-        when (stream) {
+    private fun handleAgentEvent(payload: JsonObject, kind: String) {
+        AppLog.d(TAG, "=== handleAgentEvent: kind=$kind, calling onToolStreamEvent")
+        when (kind) {
             "tool" -> {
                 onToolStreamEvent(payload)
             }
             // 可以添加其他 stream 类型：compaction, fallback, lifecycle
+            else -> AppLog.d(TAG, "=== Ignoring agent event with kind=$kind")
         }
     }
 

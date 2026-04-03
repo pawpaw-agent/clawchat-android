@@ -26,6 +26,8 @@ class ToolStreamManager(
      * 处理工具流事件
      */
     fun handleToolStreamEvent(payload: JsonObject) {
+        AppLog.d(TAG, "=== handleToolStreamEvent called, payload keys: ${payload.keys}")
+        
         // payload 直接包含 toolCallId, name, status, stream 等
         val toolCallId = payload["toolCallId"]?.jsonPrimitive?.content ?: return
         val name = payload["name"]?.jsonPrimitive?.content ?: "tool"
