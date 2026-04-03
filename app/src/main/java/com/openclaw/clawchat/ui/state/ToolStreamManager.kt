@@ -39,6 +39,7 @@ class ToolStreamManager(
             AppLog.w(TAG, "=== handleToolStreamEvent: no data field in payload")
             return
         }
+        AppLog.d(TAG, "=== data keys: ${data.keys}, data=$data")
         
         val toolCallId = data["toolCallId"]?.jsonPrimitive?.content ?: return
         val name = data["name"]?.jsonPrimitive?.content ?: "tool"
