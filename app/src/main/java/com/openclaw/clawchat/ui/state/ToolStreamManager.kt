@@ -14,11 +14,12 @@ import kotlinx.serialization.json.jsonPrimitive
  * - handleToolStreamEvent
  * - toolStreamById / toolStreamOrder 管理
  * - chatToolMessages 构建
+ * 
+ * 与 WebChat 保持一致：不保存到本地 DB，依赖 Gateway reload
  */
 class ToolStreamManager(
     private val state: MutableStateFlow<SessionUiState>,
-    private val limit: Int = 50,
-    private val onSaveToolMessage: ((sessionKey: String?, toolCallId: String, toolName: String, output: String?) -> Unit)? = null
+    private val limit: Int = 50
 ) {
     companion object {
         private const val TAG = "ToolStreamManager"
@@ -49,9 +50,6 @@ class ToolStreamManager(
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
         
         AppLog.d(TAG, "=== Tool stream event: toolCallId=$toolCallId, name=$name, phase=$phase")
-        
-        // 用于保存的输出（在 state.update 外部计算）
-        var finalOutputForSave: String? = null
         
         state.update { currentState ->
             val now = System.currentTimeMillis()
@@ -90,9 +88,6 @@ class ToolStreamManager(
                 // 保持当前内容
                 else -> currentOutput
             }
-            
-            // 保存用于后续调用 onSaveToolMessage
-            finalOutputForSave = finalOutput
             
             // 更新或创建 entry
             val newEntry = if (existingEntry != null) {
@@ -143,11 +138,6 @@ class ToolStreamManager(
                 chatStream = chatStream,
                 chatStreamStartedAt = chatStreamStartedAt
             )
-        }
-        
-        // phase=result 时保存工具消息到 DB（确保返回后可见）
-        if (phase == "result" && onSaveToolMessage != null) {
-            onSaveToolMessage.invoke(sessionKey, toolCallId, name, finalOutputForSave)
         }
     }
 

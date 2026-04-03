@@ -65,10 +65,7 @@ class SessionViewModel @Inject constructor(
     
     // 工具流管理器
     private val toolStreamManager = ToolStreamManager(
-        state = _state,
-        onSaveToolMessage = { sessionKey, toolCallId, toolName, output ->
-            saveToolMessageToDb(sessionKey, toolCallId, toolName, output)
-        }
+        state = _state
     )
     
     // 消息加载器
@@ -501,37 +498,6 @@ class SessionViewModel @Inject constructor(
         }
     }
     
-    /**
-     * 保存工具消息到数据库
-     * phase=result 时由 ToolStreamManager 调用
-     */
-    private fun saveToolMessageToDb(sessionKey: String?, toolCallId: String, toolName: String, output: String?) {
-        if (sessionKey == null || output == null) return
-        
-        viewModelScope.launch {
-            try {
-                // 构建工具消息内容
-                val content = kotlinx.serialization.json.buildJsonObject {
-                    put("role", "tool")
-                    put("toolCallId", toolCallId)
-                    put("toolName", toolName)
-                    put("content", output)
-                }.toString()
-                
-                messageRepository.saveMessage(
-                    sessionId = sessionKey,
-                    role = MessageRole.TOOL,
-                    content = content,
-                    timestamp = System.currentTimeMillis(),
-                    toolCallId = toolCallId,
-                    toolName = toolName
-                )
-                AppLog.d(TAG, "=== Saved tool message to DB: toolCallId=$toolCallId")
-            } catch (e: Exception) {
-                AppLog.w(TAG, "Failed to save tool message: ${e.message}")
-            }
-        }
-    }
 }
 
 // ── 事件定义 ──
