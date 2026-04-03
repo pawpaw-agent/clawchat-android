@@ -13,6 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -68,6 +69,9 @@ class SessionViewModel @Inject constructor(
         state = _state,
         onToolComplete = { onToolCompleteRefresh() }
     )
+    
+    // 工具刷新 debounce Job
+    private var toolRefreshJob: Job? = null
     
     // 消息加载器
     private val messageLoader = SessionMessageLoader(
@@ -208,11 +212,18 @@ class SessionViewModel @Inject constructor(
 
     /**
      * 单个工具完成回调
-     * 刷新消息获取完整 toolResult（实时合并显示）
+     * 使用 debounce 合并刷新：500ms 内多工具完成只刷新一次
      */
     private fun onToolCompleteRefresh() {
-        AppLog.d(TAG, "=== onToolCompleteRefresh: refreshing messages for tool result")
-        messageLoader.refreshMessages()
+        AppLog.d(TAG, "=== onToolCompleteRefresh: debouncing refresh")
+        // 取消之前的刷新任务
+        toolRefreshJob?.cancel()
+        // 启动新的延迟刷新任务
+        toolRefreshJob = viewModelScope.launch {
+            delay(500) // 等待 500ms 合并多工具完成
+            AppLog.d(TAG, "=== onToolCompleteRefresh: executing delayed refresh")
+            messageLoader.refreshMessages()
+        }
     }
 
     // ── 用户操作 ──
