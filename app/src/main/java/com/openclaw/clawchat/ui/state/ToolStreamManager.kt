@@ -24,17 +24,25 @@ class ToolStreamManager(
 
     /**
      * 处理工具流事件
+     * Gateway agent event 结构：
+     *   { runId, seq, stream: "tool", ts, data: { toolCallId, name, status, input, output }, sessionKey }
      */
     fun handleToolStreamEvent(payload: JsonObject) {
         AppLog.d(TAG, "=== handleToolStreamEvent called, payload keys: ${payload.keys}")
         
-        // payload 直接包含 toolCallId, name, status, stream 等
-        val toolCallId = payload["toolCallId"]?.jsonPrimitive?.content ?: return
-        val name = payload["name"]?.jsonPrimitive?.content ?: "tool"
-        val status = payload["status"]?.jsonPrimitive?.content ?: "pending"
-        val streamContent = payload["stream"]?.jsonPrimitive?.content
-        val outputContent = payload["output"]?.jsonPrimitive?.content
-        val errorContent = payload["error"]?.jsonPrimitive?.content
+        // 从 payload.data 提取工具信息
+        val data = payload["data"]?.jsonObject
+        if (data == null) {
+            AppLog.w(TAG, "=== handleToolStreamEvent: no data field in payload")
+            return
+        }
+        
+        val toolCallId = data["toolCallId"]?.jsonPrimitive?.content ?: return
+        val name = data["name"]?.jsonPrimitive?.content ?: "tool"
+        val status = data["status"]?.jsonPrimitive?.content ?: "pending"
+        val outputContent = data["output"]?.jsonPrimitive?.content
+        val errorContent = data["error"]?.jsonPrimitive?.content
+        val inputObj = data["input"]?.jsonObject
         val runId = payload["runId"]?.jsonPrimitive?.content ?: ""
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
         
@@ -65,10 +73,10 @@ class ToolStreamManager(
             val currentOutput = existingEntry?.output ?: ""
             
             // 处理流式内容：追加而非替换
+            // Gateway 可能发送部分 output (streaming) 或完整 output (complete)
             val finalOutput = when {
                 status == "complete" || status == "done" -> outputContent ?: currentOutput
-                streamContent != null -> currentOutput + streamContent
-                outputContent != null -> outputContent
+                outputContent != null -> outputContent  // 可能是部分或完整
                 errorContent != null -> errorContent
                 else -> currentOutput
             }

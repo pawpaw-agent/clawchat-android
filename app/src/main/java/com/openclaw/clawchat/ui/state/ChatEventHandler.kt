@@ -56,10 +56,10 @@ class ChatEventHandler(
 
                     when (event) {
                         "agent" -> {
-                            // payload.kind 决定事件类型：tool / compaction / lifecycle
-                            val kind = payload["kind"]?.jsonPrimitive?.content ?: "unknown"
-                            AppLog.d(TAG, "=== Agent event: kind=$kind, payload=$payload")
-                            handleAgentEvent(payload, kind)
+                            // payload.stream 决定事件类型：tool / assistant / lifecycle / error
+                            val stream = payload["stream"]?.jsonPrimitive?.content ?: "unknown"
+                            AppLog.d(TAG, "=== Agent event: stream=$stream, payload keys=${payload.keys}")
+                            handleAgentEvent(payload, stream)
                         }
                         "tool.stream" -> {
                             onToolStreamEvent(payload)
