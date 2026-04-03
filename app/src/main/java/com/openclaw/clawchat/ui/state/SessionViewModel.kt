@@ -65,7 +65,8 @@ class SessionViewModel @Inject constructor(
     
     // 工具流管理器
     private val toolStreamManager = ToolStreamManager(
-        state = _state
+        state = _state,
+        onToolComplete = { onToolCompleteRefresh() }
     )
     
     // 消息加载器
@@ -202,6 +203,15 @@ class SessionViewModel @Inject constructor(
         // 清除工具流状态（历史消息中的 toolResult 会显示完整内容）
         toolStreamManager.clear()
         // 刷新消息，获取完整的 toolResult
+        messageLoader.refreshMessages()
+    }
+
+    /**
+     * 单个工具完成回调
+     * 刷新消息获取完整 toolResult（实时合并显示）
+     */
+    private fun onToolCompleteRefresh() {
+        AppLog.d(TAG, "=== onToolCompleteRefresh: refreshing messages for tool result")
         messageLoader.refreshMessages()
     }
 
