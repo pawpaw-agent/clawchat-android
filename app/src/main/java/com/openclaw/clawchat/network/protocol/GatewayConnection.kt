@@ -73,7 +73,7 @@ class GatewayConnection(
     val connectionState: StateFlow<WebSocketConnectionState> = _connectionState.asStateFlow()
 
     /** All non-auth frames forwarded as raw JSON */
-    private val _incomingMessages = MutableSharedFlow<String>(replay = 0)
+    private val _incomingMessages = MutableSharedFlow<String>(replay = 1)
     val incomingMessages: SharedFlow<String> = _incomingMessages.asSharedFlow()
 
     /** Certificate events for TOFU flow */
