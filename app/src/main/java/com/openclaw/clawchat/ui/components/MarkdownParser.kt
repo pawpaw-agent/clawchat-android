@@ -85,6 +85,41 @@ internal fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
         var i = 0
         while (i < content.length) {
             when {
+                // Markdown 链接 [text](url)
+                content.startsWith("[", i) -> {
+                    val textEnd = content.indexOf("]", i)
+                    if (textEnd != -1 && textEnd + 1 < content.length && content[textEnd + 1] == '(') {
+                        val urlEnd = content.indexOf(")", textEnd + 2)
+                        if (urlEnd != -1) {
+                            val linkText = content.substring(i + 1, textEnd)
+                            val url = content.substring(textEnd + 2, urlEnd)
+                            pushStringAnnotation(tag = "URL", annotation = url) {
+                                withStyle(SpanStyle(color = Color(0xFF58A6FF))) {
+                                    append(linkText)
+                                }
+                            }
+                            i = urlEnd + 1
+                        } else {
+                            append(content[i])
+                            i++
+                        }
+                    } else {
+                        append(content[i])
+                        i++
+                    }
+                }
+                // 自动链接 http:// 或 https://
+                content.startsWith("http://", i) || content.startsWith("https://", i) -> {
+                    val urlEnd = content.indexOfAny(charArrayOf(' ', '\n', '\t', ')', '*', '_', '`', '[', ']'), i)
+                    val endPos = if (urlEnd == -1) content.length else urlEnd
+                    val url = content.substring(i, endPos)
+                    pushStringAnnotation(tag = "URL", annotation = url) {
+                        withStyle(SpanStyle(color = Color(0xFF58A6FF))) {
+                            append(url)
+                        }
+                    }
+                    i = endPos
+                }
                 // 粗体 **text**
                 content.startsWith("**", i) -> {
                     val end = content.indexOf("**", i + 2)
