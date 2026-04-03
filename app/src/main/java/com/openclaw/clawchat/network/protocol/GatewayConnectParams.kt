@@ -30,7 +30,7 @@ fun buildConnectParams(req: ConnectRequest): Map<String, JsonElement> {
         },
         "role" to JsonPrimitive(req.role),
         "scopes" to JsonArray(req.scopes.map { JsonPrimitive(it) }),
-        "caps" to JsonArray(listOf(JsonPrimitive("tool_events"))),
+        "caps" to JsonArray(listOf(JsonPrimitive("tool-events"))),
         "commands" to JsonArray(emptyList()),
         "permissions" to JsonObject(emptyMap()),
         "locale" to JsonPrimitive("zh-CN"),
