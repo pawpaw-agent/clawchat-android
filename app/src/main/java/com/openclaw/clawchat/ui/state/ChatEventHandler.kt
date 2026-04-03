@@ -54,8 +54,9 @@ class ChatEventHandler(
 
                     when (event) {
                         "agent" -> {
-                            val stream = json["stream"]?.jsonPrimitive?.content ?: return
-                            handleAgentEvent(payload, stream)
+                            // payload.kind 决定事件类型：tool / compaction / lifecycle
+                            val kind = payload["kind"]?.jsonPrimitive?.content ?: "unknown"
+                            handleAgentEvent(payload, kind)
                         }
                         "tool.stream" -> {
                             onToolStreamEvent(payload)
