@@ -546,42 +546,15 @@ fun MessageGroupItem(
 
 /**
  * 工具消息卡片
- * @param message 工具消息（来自 toolStream，可能缺少 result）
- * @param historyGroups 历史消息分组（包含完整的 toolResult）
+ * @param message 工具消息（来自 toolStream，只显示工具名+状态）
+ * @param historyGroups 历史消息分组（不再合并 toolResult）
  */
 @Composable
 fun ToolMessageCard(message: MessageUi, historyGroups: List<MessageGroup> = emptyList()) {
     val toolCards = pairToolCards(message)
     
-    // 从历史消息中提取 toolResult 并合并
-    val mergedToolCards = toolCards.map { card ->
-        if (card.result.isNullOrBlank() && card.callId != null) {
-            // 尝试从历史消息中找到匹配的 toolResult
-            val historyResult = findToolResultFromHistory(historyGroups, card.callId)
-            if (historyResult != null) {
-                card.copy(result = historyResult.text, isError = historyResult.isError)
-            } else {
-                card
-            }
-        } else {
-            card
-        }
-    }
-    
-    val finalToolCards = if (mergedToolCards.isEmpty() && message.role == MessageRole.TOOL) {
-        val textContent = message.getTextContent()
-        if (textContent.isNotBlank()) {
-            listOf(ToolCard(
-                kind = ToolCardKind.RESULT,
-                name = "output",
-                args = null,
-                result = textContent,
-                isError = false,
-                callId = null,
-                phase = "result"
-            ))
-        } else emptyList()
-    } else mergedToolCards
+    // 不从历史消息合并 toolResult，只显示工具名+状态，提高 UI 平滑性
+    val finalToolCards = toolCards
     
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -617,29 +590,4 @@ fun ToolMessageCard(message: MessageUi, historyGroups: List<MessageGroup> = empt
     }
 }
 
-/**
- * 从历史消息分组中查找 toolResult
- * @param historyGroups 历史消息分组
- * @param toolCallId 工具调用 ID
- * @return 匹配的 toolResult，或 null
- */
-private fun findToolResultFromHistory(historyGroups: List<MessageGroup>, toolCallId: String): ToolResultInfo? {
-    for (group in historyGroups) {
-        for (message in group.messages) {
-            val results = message.getToolResults()
-            val matchingResult = results.find { it.toolCallId == toolCallId }
-            if (matchingResult != null) {
-                return ToolResultInfo(text = matchingResult.text, isError = matchingResult.isError)
-            }
-        }
-    }
-    return null
-}
 
-/**
- * 工具结果信息
- */
-private data class ToolResultInfo(
-    val text: String?,
-    val isError: Boolean
-)

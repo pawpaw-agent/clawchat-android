@@ -19,8 +19,8 @@ import kotlinx.serialization.json.jsonPrimitive
  */
 class ToolStreamManager(
     private val state: MutableStateFlow<SessionUiState>,
-    private val limit: Int = 50,
-    private val onToolComplete: (() -> Unit)? = null
+    private val limit: Int = 50
+    // 不再需要 onToolComplete 回调，不显示工具结果，提高 UI 平滑性
 ) {
     companion object {
         private const val TAG = "ToolStreamManager"
@@ -152,12 +152,7 @@ class ToolStreamManager(
                 chatStreamStartedAt = chatStreamStartedAt
             )
         }
-        
-        // 工具完成时触发消息刷新（从历史消息获取完整 toolResult）
-        if (phase == "result") {
-            AppLog.d(TAG, "=== Tool complete, triggering refresh")
-            onToolComplete?.invoke()
-        }
+        // 不触发刷新，不显示工具结果，提高 UI 平滑性
     }
 
     /**
@@ -173,35 +168,4 @@ class ToolStreamManager(
         }
     }
 
-    /**
-     * 清除已完成且有历史结果的工具流 entries
-     * 避免与历史消息中的 toolResult 重复显示
-     */
-    fun clearCompleted(toolCallIds: List<String>) {
-        state.update { currentState ->
-            val toolStreamById = currentState.toolStreamById.toMutableMap()
-            val toolStreamOrder = currentState.toolStreamOrder.toMutableList()
-            
-            // 只清除 phase=result 且有历史结果的 entries
-            toolCallIds.forEach { toolCallId ->
-                val entry = toolStreamById[toolCallId]
-                if (entry != null && entry.phase == "result") {
-                    toolStreamById.remove(toolCallId)
-                    toolStreamOrder.remove(toolCallId)
-                    AppLog.d(TAG, "=== clearCompleted: removed $toolCallId")
-                }
-            }
-            
-            // 重新构建 chatToolMessages
-            val chatToolMessages = toolStreamOrder.mapNotNull { id ->
-                toolStreamById[id]?.buildMessage()
-            }
-            
-            currentState.copy(
-                toolStreamById = toolStreamById.toMap(),
-                toolStreamOrder = toolStreamOrder,
-                chatToolMessages = chatToolMessages
-            )
-        }
-    }
 }

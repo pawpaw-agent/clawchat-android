@@ -64,14 +64,8 @@ class SessionViewModel @Inject constructor(
         onStateUpdate = { _state.update(it) }
     )
     
-    // 工具流管理器
-    private val toolStreamManager = ToolStreamManager(
-        state = _state,
-        onToolComplete = { onToolCompleteRefresh() }
-    )
-    
-    // 工具刷新 debounce Job
-    private var toolRefreshJob: Job? = null
+    // 工具流管理器（不刷新消息，提高 UI 平滑性）
+    private val toolStreamManager = ToolStreamManager(state = _state)
     
     // 消息加载器
     private val messageLoader = SessionMessageLoader(
@@ -208,34 +202,6 @@ class SessionViewModel @Inject constructor(
         toolStreamManager.clear()
         // 刷新消息，获取完整的 toolResult
         messageLoader.refreshMessages()
-    }
-
-    /**
-     * 单个工具完成回调
-     * 使用 debounce 合并刷新：500ms 内多工具完成只刷新一次
-     * 刷新后检查历史消息，清除已有结果的 toolStream entries（避免重复显示）
-     */
-    private fun onToolCompleteRefresh() {
-        AppLog.d(TAG, "=== onToolCompleteRefresh: debouncing refresh")
-        // 取消之前的刷新任务
-        toolRefreshJob?.cancel()
-        // 启动新的延迟刷新任务
-        toolRefreshJob = viewModelScope.launch {
-            delay(500) // 等待 500ms 合并多工具完成
-            AppLog.d(TAG, "=== onToolCompleteRefresh: executing delayed refresh")
-            messageLoader.refreshMessages()
-            // 刷新后检查历史消息中是否有工具结果
-            // 如果有，清除对应的 toolStream entry（避免重复显示）
-            val state = _state.value
-            val chatMessages = state.chatMessages
-            val toolCallIdsWithResult = chatMessages
-                .filter { it.role == MessageRole.TOOL && !it.getTextContent().isBlank() }
-                .mapNotNull { it.toolCallId }
-            if (toolCallIdsWithResult.isNotEmpty()) {
-                AppLog.d(TAG, "=== onToolCompleteRefresh: clearing toolStream for ${toolCallIdsWithResult.size} completed tools")
-                toolStreamManager.clearCompleted(toolCallIdsWithResult)
-            }
-        }
     }
 
     // ── 用户操作 ──
