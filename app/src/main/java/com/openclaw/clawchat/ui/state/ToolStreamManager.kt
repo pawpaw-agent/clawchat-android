@@ -97,17 +97,25 @@ class ToolStreamManager(
                 existingEntry.copy(
                     name = name,
                     output = finalOutput,
+                    phase = phase,
+                    isError = isError,
                     updatedAt = now
                 )
             } else {
                 val ts = payload["ts"]?.jsonPrimitive?.content?.toLongOrNull() ?: now
+                // 从 data 提取 args（phase=start 时有 args）
+                val args = if (phase == "start") {
+                    data["args"]?.jsonObject
+                } else null
                 ToolStreamEntry(
                     toolCallId = toolCallId,
                     runId = runId,
                     sessionKey = sessionKey,
                     name = name,
-                    args = null,
+                    args = args,
                     output = finalOutput,
+                    phase = phase,
+                    isError = isError,
                     startedAt = ts,
                     updatedAt = now
                 )

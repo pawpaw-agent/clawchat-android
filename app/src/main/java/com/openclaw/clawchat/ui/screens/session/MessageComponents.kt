@@ -540,13 +540,15 @@ fun ToolDetailCard(toolCard: ToolCard) {
     var expanded by remember { mutableStateOf(false) }
     val hasArgs = toolCard.args?.isNotBlank() == true
     val hasResult = toolCard.result?.isNotBlank() == true
-    val isRunning = toolCard.kind == ToolCardKind.CALL && !hasResult
+    // 使用 phase 判断完成状态：phase=result 表示已完成
+    val isComplete = toolCard.phase == "result"
+    val isRunning = !isComplete && toolCard.kind == ToolCardKind.CALL
     val hasContent = hasArgs || hasResult
     
     val backgroundColor = when {
         toolCard.isError -> MaterialTheme.colorScheme.errorContainer
-        toolCard.kind == ToolCardKind.CALL && !hasResult -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-        toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+        isRunning -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)  // 执行中
+        toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)  // 已完成
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
     

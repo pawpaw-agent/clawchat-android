@@ -183,6 +183,8 @@ data class ToolStreamEntry(
     val name: String = "tool",
     val args: JsonObject? = null,
     val output: String? = null,
+    val phase: String = "start",  // start, update, result
+    val isError: Boolean = false,
     val startedAt: Long,
     val updatedAt: Long
 ) {
@@ -192,20 +194,23 @@ data class ToolStreamEntry(
     fun buildMessage(): MessageUi {
         val content = mutableListOf<MessageContentItem>()
         
-        // 添加 toolcall
+        // 添加 toolcall（包含 phase 信息）
         content.add(MessageContentItem.ToolCall(
             id = toolCallId,
             name = name,
-            args = args
+            args = args,
+            phase = phase  // 传递 phase 用于判断完成状态
         ))
         
-        // 添加 toolresult（如果有输出）
-        if (!output.isNullOrBlank()) {
+        // 添加 toolresult（如果有输出或已完成）
+        // phase == "result" 时即使 output 为空也添加，表示完成
+        if (!output.isNullOrBlank() || phase == "result") {
             content.add(MessageContentItem.ToolResult(
                 toolCallId = toolCallId,
                 name = name,
                 args = args,
-                text = output
+                text = output ?: "",  // 已完成但没有输出时使用空字符串
+                isError = isError
             ))
         }
         
@@ -338,7 +343,8 @@ sealed class MessageContentItem {
     data class ToolCall(
         val id: String? = null,
         val name: String,
-        val args: JsonObject? = null
+        val args: JsonObject? = null,
+        val phase: String = "start"  // start, update, result
     ) : MessageContentItem()
     @Stable
     data class ToolResult(
@@ -403,7 +409,8 @@ data class ToolCard(
     val args: String? = null,
     val result: String? = null,
     val isError: Boolean = false,
-    val callId: String? = null
+    val callId: String? = null,
+    val phase: String = "start"  // start, update, result - 用于判断完成状态
 )
 
 enum class ToolCardKind {

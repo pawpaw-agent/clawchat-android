@@ -42,7 +42,8 @@ fun pairToolCards(message: MessageUi): List<ToolCard> {
                 args = null,
                 result = textContent,
                 isError = false,
-                callId = null
+                callId = null,
+                phase = "result"  // 纯文本输出视为完成
             ))
         } else {
             emptyList()
@@ -57,13 +58,22 @@ fun pairToolCards(message: MessageUi): List<ToolCard> {
             call.args?.toString()
         }
         
+        // 使用 call.phase 判断完成状态
+        val phase = call.phase
+        val kind = when {
+            matchingResult != null -> ToolCardKind.RESULT  // 有匹配结果
+            phase == "result" -> ToolCardKind.RESULT       // phase=result 表示完成
+            else -> ToolCardKind.CALL                       // 执行中
+        }
+        
         ToolCard(
-            kind = if (matchingResult != null) ToolCardKind.RESULT else ToolCardKind.CALL,
+            kind = kind,
             name = call.name,
             args = displayArgs,
             result = matchingResult?.text,
             isError = matchingResult?.isError ?: false,
-            callId = call.id
+            callId = call.id,
+            phase = phase
         )
     }
 }
