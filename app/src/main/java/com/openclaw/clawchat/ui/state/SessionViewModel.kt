@@ -84,7 +84,8 @@ class SessionViewModel @Inject constructor(
         messageRepository = messageRepository,
         state = _state,
         onToolStreamEvent = { payload -> toolStreamManager.handleToolStreamEvent(payload) },
-        onChatComplete = { flushChatQueue() }
+        onChatComplete = { flushChatQueue() },
+        onLifecycleEnd = { onLifecycleEnd() }
     )
 
     companion object {
@@ -189,6 +190,18 @@ class SessionViewModel @Inject constructor(
     }
 
     fun refreshMessages() {
+        messageLoader.refreshMessages()
+    }
+
+    /**
+     * lifecycle:end 回调
+     * 清除已完成的工具流 + 刷新消息获取完整 toolResult
+     */
+    private fun onLifecycleEnd() {
+        AppLog.d(TAG, "=== onLifecycleEnd: clearing tool messages and refreshing")
+        // 清除工具流状态（历史消息中的 toolResult 会显示完整内容）
+        toolStreamManager.clear()
+        // 刷新消息，获取完整的 toolResult
         messageLoader.refreshMessages()
     }
 

@@ -31,7 +31,8 @@ class ChatEventHandler(
     private val messageRepository: MessageRepository,
     private val state: MutableStateFlow<SessionUiState>,
     private val onToolStreamEvent: (JsonObject) -> Unit,
-    private val onChatComplete: (() -> Unit)? = null
+    private val onChatComplete: (() -> Unit)? = null,
+    private val onLifecycleEnd: (() -> Unit)? = null
 ) {
     companion object {
         private const val TAG = "ChatEventHandler"
@@ -128,6 +129,8 @@ class ChatEventHandler(
                         currentState
                     }
                 }
+                // 触发 lifecycle:end 回调：清除工具流 + 刷新消息
+                onLifecycleEnd?.invoke()
             }
             // start/fallback/fallback_cleared 不需要特殊处理
             else -> AppLog.d(TAG, "=== Lifecycle phase=$phase, no action needed")
