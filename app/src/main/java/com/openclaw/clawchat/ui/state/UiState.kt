@@ -219,7 +219,7 @@ data class ToolStreamEntry(
             content = content,
             role = MessageRole.ASSISTANT,
             timestamp = startedAt,
-            isLoading = output.isNullOrBlank()
+            isLoading = phase != "result"  // phase=result 表示已完成
         )
     }
 }

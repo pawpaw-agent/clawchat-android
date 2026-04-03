@@ -33,6 +33,11 @@ fun pairToolCards(message: MessageUi): List<ToolCard> {
     val calls = message.getToolCalls()
     val results = message.getToolResults()
     
+    // Debug: 打印 phase 信息
+    calls.forEach { call ->
+        android.util.Log.d("pairToolCards", "call: id=${call.id}, name=${call.name}, phase=${call.phase}")
+    }
+    
     if (calls.isEmpty() && results.isEmpty()) {
         val textContent = message.getTextContent()
         return if (textContent.isNotBlank()) {

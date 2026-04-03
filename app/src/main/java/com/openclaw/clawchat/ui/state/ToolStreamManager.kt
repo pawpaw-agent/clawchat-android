@@ -122,6 +122,7 @@ class ToolStreamManager(
             }
             
             toolStreamById[toolCallId] = newEntry
+            AppLog.d(TAG, "=== Entry created/updated: toolCallId=$toolCallId, phase=${newEntry.phase}, output=${newEntry.output?.take(50)}")
             if (toolCallId !in toolStreamOrder) {
                 toolStreamOrder.add(toolCallId)
             }
