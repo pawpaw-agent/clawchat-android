@@ -160,7 +160,8 @@ fun MessageContentCard(
                     content = if (isUser) "$ " + textContent else textContent,
                     modifier = Modifier.fillMaxWidth(),
                     fontSize = textSize,
-                    textColor = MaterialTheme.colorScheme.onBackground
+                    textColor = MaterialTheme.colorScheme.onBackground,
+                    isStreaming = isStreaming  // 流式优化：传入流式状态
                 )
                 
                 if (showCopiedToast) {

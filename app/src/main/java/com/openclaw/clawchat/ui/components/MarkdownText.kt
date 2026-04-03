@@ -48,20 +48,30 @@ fun MarkdownText(
     content: String,
     modifier: Modifier = Modifier,
     fontSize: androidx.compose.ui.unit.TextUnit = 13.sp,
-    textColor: Color = Color.Unspecified
+    textColor: Color = Color.Unspecified,
+    isStreaming: Boolean = false  // 流式优化：标记是否在流式输出
 ) {
-    // 检测是否有代码块或表格
-    val hasCodeBlock = content.contains("```")
-    val hasTable = remember(content) {
+    // 流式优化：减少检测频率
+    // 非流式：每次检测
+    // 流式：内容变化超过 50 字符才重新检测
+    val lastCheckedLength = remember { mutableStateOf(0) }
+    val shouldRecheck = !isStreaming || content.length - lastCheckedLength.value > 50
+    
+    if (shouldRecheck) {
+        lastCheckedLength.value = content.length
+    }
+    
+    val hasCodeBlock = if (shouldRecheck) content.contains("```") else remember { false }
+    val hasTable = if (shouldRecheck) {
         val lines = content.lines()
         val pipeLines = lines.count { it.trim().startsWith("|") && it.trim().endsWith("|") }
         pipeLines >= 2
-    }
+    } else remember { false }
     
     when {
-        hasCodeBlock -> MarkdownWithCodeBlocks(content, fontSize, textColor, modifier)
+        hasCodeBlock -> MarkdownWithCodeBlocks(content, fontSize, textColor, modifier, isStreaming)
         hasTable -> MarkdownTableContent(content, fontSize, textColor, modifier)
-        else -> MarkdownRegularContent(content, fontSize, textColor, modifier)
+        else -> MarkdownRegularContent(content, fontSize, textColor, modifier, isStreaming)
     }
 }
 
@@ -73,7 +83,8 @@ private fun MarkdownWithCodeBlocks(
     content: String,
     fontSize: androidx.compose.ui.unit.TextUnit,
     textColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isStreaming: Boolean = false
 ) {
     val segments = remember(content) { parseMarkdownSegments(content) }
     
@@ -95,7 +106,7 @@ private fun MarkdownWithCodeBlocks(
                         if (hasTable) {
                             MarkdownTableContent(segment.text, fontSize, textColor, Modifier)
                         } else {
-                            MarkdownRegularContent(segment.text, fontSize, textColor, Modifier)
+                            MarkdownRegularContent(segment.text, fontSize, textColor, Modifier, isStreaming)
                         }
                     }
                 }
@@ -191,11 +202,32 @@ private fun MarkdownRegularContent(
     content: String,
     fontSize: androidx.compose.ui.unit.TextUnit,
     textColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isStreaming: Boolean = false
 ) {
     val uriHandler = LocalUriHandler.current
-    val annotatedString = remember(content) {
-        parseMarkdownToAnnotatedString(content)
+    // 流式优化：减少解析频率
+    // 非流式：每次解析
+    // 流式：内容变化超过 50 字符才重新解析
+    val lastParsedLength = remember { mutableStateOf(0) }
+    val shouldParse = !isStreaming || content.length - lastParsedLength.value > 50
+    
+    if (shouldParse) {
+        lastParsedLength.value = content.length
+    }
+    
+    val cachedAnnotatedString = remember(lastParsedLength.value) {
+        if (shouldParse) parseMarkdownToAnnotatedString(content) else null
+    }
+    
+    // 流式时使用缓存的解析结果，最后 50 字符用原始文本显示
+    val annotatedString = if (isStreaming && cachedAnnotatedString != null && !shouldParse) {
+        buildAnnotatedString {
+            append(cachedAnnotatedString)
+            append(content.substring(lastParsedLength.value))
+        }
+    } else {
+        cachedAnnotatedString ?: parseMarkdownToAnnotatedString(content)
     }
     
     // 检查是否有链接

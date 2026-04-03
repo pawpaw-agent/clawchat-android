@@ -184,47 +184,68 @@ class ChatEventHandler(
 
     /**
      * 处理 delta 状态（流式内容）
+     * 流式优化：debounce 更新，减少 UI 重组频率
      */
+    // 流式缓冲区（减少更新频率）
+    private var streamBuffer = ""
+    private var lastStreamUpdate = 0L
+    private val STREAM_UPDATE_INTERVAL = 50L  // 50ms 更新一次 UI
+    
     private fun handleDelta(runId: String, msgObj: JsonObject?, sessionId: String) {
         // 提取文本
         val textContent = msgObj?.let { extractTextContent(it) }
         
         if (textContent != null && textContent.isNotBlank()) {
-            // webchat: if (!current || next.length >= current.length)
-            // 流式追加逻辑
-            state.update { currentState ->
-                val now = System.currentTimeMillis()
-                val currentStream = currentState.chatStream
-                val segments = currentState.chatStreamSegments
+            // 流式优化：缓冲追加，减少 state.update 调用
+            streamBuffer = textContent
+            
+            val now = System.currentTimeMillis()
+            val shouldUpdate = now - lastStreamUpdate >= STREAM_UPDATE_INTERVAL
+            
+            if (shouldUpdate) {
+                lastStreamUpdate = now
                 
-                // 检查是否应该追加（内容长度递增）
-                val shouldAppend = currentStream == null || textContent.length >= currentStream.length
-                
-                val newStream = if (shouldAppend) {
-                    textContent
-                } else {
-                    currentStream // 保持旧内容
+                state.update { currentState ->
+                    val currentStream = currentState.chatStream
+                    val segments = currentState.chatStreamSegments
+                    
+                    // 检查是否应该追加（内容长度递增）
+                    val shouldAppend = currentStream == null || streamBuffer.length >= currentStream.length
+                    
+                    val newStream = if (shouldAppend) streamBuffer else currentStream
+                    
+                    val newSegments = if (currentState.chatStreamStartedAt == null) {
+                        segments + StreamSegment(newStream ?: "", now)
+                    } else {
+                        segments
+                    }
+                    
+                    currentState.copy(
+                        chatStream = newStream,
+                        chatStreamSegments = newSegments,
+                        chatStreamStartedAt = currentState.chatStreamStartedAt ?: now
+                    )
                 }
-                
-                val newSegments = if (currentState.chatStreamStartedAt == null) {
-                    segments + StreamSegment(newStream ?: "", now)
-                } else {
-                    segments
-                }
-                
-                currentState.copy(
-                    chatStream = newStream,
-                    chatStreamSegments = newSegments,
-                    chatStreamStartedAt = currentState.chatStreamStartedAt ?: now
-                )
             }
         }
     }
 
     /**
      * 处理 final 状态（消息完成）
+     * 流式优化：强制刷新缓冲区
      */
     private fun handleFinal(runId: String, msgObj: JsonObject?, sessionId: String) {
+        // 流式优化：final 时强制刷新缓冲区
+        if (streamBuffer.isNotBlank()) {
+            state.update { currentState ->
+                currentState.copy(
+                    chatStream = streamBuffer  // 确保最终内容完整
+                )
+            }
+            streamBuffer = ""
+            lastStreamUpdate = 0L
+        }
+        
         // 提交流式文本到 segments
         state.update { currentState ->
             val now = System.currentTimeMillis()
