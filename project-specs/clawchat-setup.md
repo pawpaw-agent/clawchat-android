@@ -600,7 +600,7 @@ clawchat-android/
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/openclaw/clawchat-android.git
+git clone https://github.com/pawpaw-agent/clawchat-android.git
 cd clawchat-android
 
 # 2. 配置本地属性

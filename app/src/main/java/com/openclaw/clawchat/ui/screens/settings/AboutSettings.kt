@@ -31,11 +31,11 @@ fun AboutDialog(
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("OpenClaw Android 客户端")
+                Text("OpenClaw 第三方 Android 客户端（非官方）")
                 Text("版本 ${BuildConfig.VERSION_NAME}")
                 Divider()
                 Text(
-                    "ClawChat 是 OpenClaw 生态系统的官方 Android 客户端，提供与 OpenClaw Gateway 的实时通信。",
+                    "ClawChat 是 OpenClaw 生态系统的第三方 Android 客户端（非官方项目），提供与 OpenClaw Gateway 的实时通信。",
                     style = MaterialTheme.typography.bodySmall
                 )
             }

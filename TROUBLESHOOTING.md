@@ -251,7 +251,7 @@ sqlite3 databases/clawchat.db
 
 ### 联系支持
 
-- GitHub Issues: https://github.com/openclaw/clawchat/issues
+- GitHub Issues: https://github.com/pawpaw-agent/clawchat-android/issues
 - Email: support@openclaw.com
 - Discord: https://discord.gg/clawd
 

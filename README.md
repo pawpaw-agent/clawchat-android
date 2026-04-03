@@ -636,7 +636,7 @@ hotfix/*      - 紧急修复
 
 ### 报告问题
 
-在 [GitHub Issues](https://github.com/openclaw/clawchat-android/issues) 报告：
+在 [GitHub Issues](https://github.com/pawpaw-agent/clawchat-android/issues) 报告：
 - 🐛 Bug 报告
 - 💡 功能建议
 - 📖 文档问题
@@ -707,7 +707,7 @@ Apache License 2.0 - 详见 [LICENSE](LICENSE) 文件。
 - [OpenClaw 官方文档](https://docs.openclaw.ai)
 - [ClawHub 技能市场](https://clawhub.com)
 - [Discord 社区](https://discord.com/invite/clawd)
-- [GitHub 仓库](https://github.com/openclaw/clawchat-android)
+- [GitHub 仓库](https://github.com/pawpaw-agent/clawchat-android)
 
 ---
 
