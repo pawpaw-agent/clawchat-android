@@ -142,7 +142,7 @@ fun SessionScreen(
                 }
             )
         },
-        contentWindowInsets = WindowInsets.systemBars
+        contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.ime)
     ) { paddingValues ->
         Box(
             modifier = Modifier
