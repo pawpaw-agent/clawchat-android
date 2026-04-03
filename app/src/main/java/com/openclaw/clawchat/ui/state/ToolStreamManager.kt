@@ -25,8 +25,8 @@ class ToolStreamManager(
 
     /**
      * 处理工具流事件
-     * Gateway agent event 结构：
-     *   { runId, seq, stream: "tool", ts, data: { toolCallId, name, status, input, output }, sessionKey }
+     * Gateway agent event 结构 (源码验证):
+     *   { runId, seq, stream: "tool", ts, data: { phase, name, toolCallId, args?, result?, partialResult?, isError? }, sessionKey }
      */
     fun handleToolStreamEvent(payload: JsonObject) {
         AppLog.d(TAG, "=== handleToolStreamEvent called, payload keys: ${payload.keys}")
@@ -40,13 +40,14 @@ class ToolStreamManager(
         
         val toolCallId = data["toolCallId"]?.jsonPrimitive?.content ?: return
         val name = data["name"]?.jsonPrimitive?.content ?: "tool"
-        val status = data["status"]?.jsonPrimitive?.content ?: "pending"
-        val outputContent = data["output"]?.jsonPrimitive?.content
-        val errorContent = data["error"]?.jsonPrimitive?.content
+        val phase = data["phase"]?.jsonPrimitive?.content ?: "start"
+        val resultContent = data["result"]?.jsonPrimitive?.content
+        val partialResultContent = data["partialResult"]?.jsonPrimitive?.content
+        val isError = data["isError"]?.jsonPrimitive?.booleanOrNull ?: false
         val runId = payload["runId"]?.jsonPrimitive?.content ?: ""
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
         
-        AppLog.d(TAG, "=== Tool stream event: toolCallId=$toolCallId, name=$name, status=$status")
+        AppLog.d(TAG, "=== Tool stream event: toolCallId=$toolCallId, name=$name, phase=$phase")
         
         state.update { currentState ->
             val now = System.currentTimeMillis()
@@ -72,12 +73,17 @@ class ToolStreamManager(
             val existingEntry = toolStreamById[toolCallId]
             val currentOutput = existingEntry?.output ?: ""
             
-            // 处理流式内容：追加而非替换
-            // Gateway 可能发送部分 output (streaming) 或完整 output (complete)
+            // 处理流式内容：partialResult 是增量，result 是最终结果
             val finalOutput = when {
-                status == "complete" || status == "done" -> outputContent ?: currentOutput
-                outputContent != null -> outputContent  // 可能是部分或完整
-                errorContent != null -> errorContent
+                // phase=result 表示完成：使用最终 result
+                phase == "result" -> resultContent ?: partialResultContent ?: currentOutput
+                // partialResult 是增量：追加到现有内容
+                partialResultContent != null -> currentOutput + partialResultContent
+                // result 直接输出：替换
+                resultContent != null -> resultContent
+                // 错误情况
+                isError -> currentOutput
+                // 保持当前内容
                 else -> currentOutput
             }
             

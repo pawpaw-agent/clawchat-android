@@ -398,35 +398,40 @@ class GatewayConnection(
 
     /**
      * Handle agent.event for tool stream updates
+     * Gateway agent event 结构 (源码验证):
+     *   { type: "event", event: "agent", payload: { runId, seq, stream: "tool", ts, data: {...}, sessionKey } }
+     *   data: { phase, name, toolCallId, args?, result?, partialResult?, isError? }
      */
     private suspend fun handleAgentEvent(obj: JsonObject) {
         val payload = obj["payload"]?.jsonObject ?: return
-        val kind = payload["kind"]?.jsonPrimitive?.content
+        val stream = payload["stream"]?.jsonPrimitive?.content
         
-        if (kind != "tool") return
-
-        val toolCallId = payload["toolCallId"]?.jsonPrimitive?.content ?: return
-        val name = payload["name"]?.jsonPrimitive?.content ?: "unknown"
-        val status = payload["status"]?.jsonPrimitive?.content ?: "pending"
-        val streamContent = payload["stream"]?.jsonPrimitive?.content
-        val outputContent = payload["output"]?.jsonPrimitive?.content
-        val errorContent = payload["error"]?.jsonPrimitive?.content
-        val titleContent = payload["title"]?.jsonPrimitive?.content
+        // 只处理 tool stream 事件
+        if (stream != "tool") return
+        
+        // 工具信息在 payload.data 里
+        val data = payload["data"]?.jsonObject ?: return
+        
+        val toolCallId = data["toolCallId"]?.jsonPrimitive?.content ?: return
+        val name = data["name"]?.jsonPrimitive?.content ?: "unknown"
+        val phase = data["phase"]?.jsonPrimitive?.content ?: "start"
+        val resultContent = data["result"]?.jsonPrimitive?.content
+        val partialResultContent = data["partialResult"]?.jsonPrimitive?.content
+        val isError = data["isError"]?.jsonPrimitive?.booleanOrNull ?: false
+        val args = data["args"]?.jsonObject
         
         // 获取当前事件（用于追加流式内容）
         val currentEvent = _toolStreamEvents.value[toolCallId]
         val currentOutput = currentEvent?.output ?: ""
         
-        // 处理流式内容：追加而非替换
+        // 处理流式内容：partialResult 是增量，result 是最终结果
         val finalOutput = when {
-            // 完成状态：使用最终输出
-            status == "complete" || status == "done" -> outputContent ?: currentOutput
-            // 流式内容：追加到现有内容
-            streamContent != null -> currentOutput + streamContent
-            // 直接输出：替换
-            outputContent != null -> outputContent
-            // 错误：显示错误
-            errorContent != null -> errorContent
+            // phase=result 表示完成：使用最终 result
+            phase == "result" -> resultContent ?: partialResultContent ?: currentOutput
+            // partialResult 是增量：追加到现有内容
+            partialResultContent != null -> currentOutput + partialResultContent
+            // result 直接输出：替换
+            resultContent != null -> resultContent
             // 保持当前内容
             else -> currentOutput
         }
@@ -434,11 +439,11 @@ class GatewayConnection(
         val event = ToolStreamEvent(
             toolCallId = toolCallId,
             name = name,
-            status = status,
-            title = titleContent ?: currentEvent?.title,
+            status = phase,  // 用 phase 替代 status
+            title = null,
             output = finalOutput,
-            error = errorContent,
-            stream = streamContent,
+            error = if (isError) "Error" else null,
+            stream = partialResultContent,
             timestamp = System.currentTimeMillis()
         )
 
@@ -455,7 +460,7 @@ class GatewayConnection(
             }
         }
 
-        AppLog.d(TAG, "Tool stream event: ${event.name} [${event.status}] stream=${streamContent?.take(50)} output=${finalOutput.take(50)}")
+        AppLog.d(TAG, "Tool stream event: ${event.name} [${event.status}] partialResult=${partialResultContent?.take(50)} output=${finalOutput.take(50)}")
     }
 
     /** Parse hello-ok response */
