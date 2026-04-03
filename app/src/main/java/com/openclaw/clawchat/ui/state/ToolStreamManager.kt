@@ -17,7 +17,8 @@ import kotlinx.serialization.json.jsonPrimitive
  */
 class ToolStreamManager(
     private val state: MutableStateFlow<SessionUiState>,
-    private val limit: Int = 50
+    private val limit: Int = 50,
+    private val onSaveToolMessage: ((sessionKey: String?, toolCallId: String, toolName: String, output: String?) -> Unit)? = null
 ) {
     companion object {
         private const val TAG = "ToolStreamManager"
@@ -137,6 +138,12 @@ class ToolStreamManager(
                 chatStreamStartedAt = chatStreamStartedAt
             )
         }
+        
+        // phase=result 时保存工具消息到 DB（确保返回后可见）
+        if (phase == "result" && onSaveToolMessage != null) {
+            onSaveToolMessage.invoke(sessionKey, toolCallId, name, finalOutput)
+        }
+        }
     }
 
     /**
@@ -148,6 +155,12 @@ class ToolStreamManager(
                 toolStreamById = emptyMap(),
                 toolStreamOrder = emptyList(),
                 chatToolMessages = emptyList()
+        }
+        
+        // phase=result 时保存工具消息到 DB（确保返回后可见）
+        if (phase == "result" && onSaveToolMessage != null) {
+            onSaveToolMessage.invoke(sessionKey, toolCallId, name, finalOutput)
+        }
             )
         }
     }
