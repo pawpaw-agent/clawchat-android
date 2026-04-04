@@ -169,7 +169,7 @@ fun CircularPulseIndicator(
         label = "circle_alpha"
     )
 
-    }
+    )
 
     Box(
         modifier = modifier.size(size),
