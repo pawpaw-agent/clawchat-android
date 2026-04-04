@@ -88,22 +88,14 @@ fun SessionScreen(
 
     // 进入会话时直接显示最新消息
     // 使用 scrollToItem 不带动画，瞬间定位避免视觉跳跃
-    // 注意：MessageGroupList 也有滚动逻辑，这里只处理初始加载
-    var hasInitializedScroll by remember(sessionId) { mutableStateOf(false) }
-    
-    // 当消息加载完成时，立即滚动到底部
-    LaunchedEffect(sessionId) {
-        // 等待消息加载完成（isLoading=false 且有消息）
-        snapshotFlow { state.isLoading to state.chatMessages.size }
-            .collect { (loading, size) ->
-                if (!loading && size > 0 && !hasInitializedScroll) {
-                    // 直接定位，不等待布局完成，避免视觉跳跃
-                    // reverseLayout=true: scrollToItem(0) 滚动到最新消息
-                    listState.scrollToItem(0)
-                    hasInitializedScroll = true
-                    return@collect  // 只执行一次
-                }
-            }
+    // 每次 sessionId 变化或消息加载完成时都滚动
+    LaunchedEffect(sessionId, state.chatMessages.size) {
+        if (state.chatMessages.isNotEmpty()) {
+            // 等待一帧让布局完成，然后立即滚动
+            kotlinx.coroutines.delay(50) // 最小延迟，等待布局
+            // reverseLayout=true: scrollToItem(0) 滚动到最新消息
+            listState.scrollToItem(0)
+        }
     }
 
     // P1-3: 使用 derivedStateOf 优化消息分组计算，避免不必要的重组

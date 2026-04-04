@@ -142,7 +142,11 @@ fun MessageGroupList(
                            listState.firstVisibleItemScrollOffset < 450
         if (isNearBottom || !chatHasAutoScrolled) {
             if (!chatHasAutoScrolled) onMarkAutoScrolled()
-            listState.scrollToItem(0)
+            // 不重复滚动，SessionScreen 已经处理初始滚动
+            // 只有在用户在底部且有新消息时才滚动
+            if (isNearBottom && chatHasAutoScrolled) {
+                listState.scrollToItem(0)
+            }
         } else if (chatStream != null) {
             onSetNewMessagesBelow()
         }
