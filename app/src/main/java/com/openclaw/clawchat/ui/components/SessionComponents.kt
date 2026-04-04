@@ -32,7 +32,7 @@ fun SessionList(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
-        items(sessions) { session ->
+        items(sessions, key = { it.id }) { session ->
             SessionListItem(
                 session = session,
                 onClick = { onSessionClick(session) },

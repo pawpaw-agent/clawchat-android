@@ -26,6 +26,8 @@ import com.openclaw.clawchat.ui.components.SLASH_COMMANDS
 import com.openclaw.clawchat.ui.components.SlashCommandDef
 import com.openclaw.clawchat.ui.components.SlashMenuState
 import com.openclaw.clawchat.ui.components.getSlashCommandCompletions
+import com.openclaw.clawchat.ui.components.SlashCommandMenuItem
+import com.openclaw.clawchat.ui.components.SlashCommandArgItem
 import com.openclaw.clawchat.ui.state.AttachmentUi
 import com.openclaw.clawchat.util.FileUtils
 import java.util.*
@@ -278,102 +280,6 @@ private fun SlashCommandMenu(
                     )
                 }
             }
-        }
-    }
-}
-
-/**
- * 斜杠命令菜单项
- */
-@Composable
-private fun SlashCommandMenuItem(
-    command: SlashCommandDef,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val categoryLabel = when (command.category) {
-        com.openclaw.clawchat.ui.components.SlashCommandCategory.SESSION -> "会话"
-        com.openclaw.clawchat.ui.components.SlashCommandCategory.MODEL -> "模型"
-        com.openclaw.clawchat.ui.components.SlashCommandCategory.AGENTS -> "Agents"
-        com.openclaw.clawchat.ui.components.SlashCommandCategory.TOOLS -> "工具"
-    }
-
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        color = if (isSelected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-        } else {
-            Color.Transparent
-        }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "/${command.name}",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.width(80.dp)
-            )
-
-            Text(
-                text = command.description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f)
-            )
-
-            Text(
-                text = categoryLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-/**
- * 斜杠命令参数项
- */
-@Composable
-private fun SlashCommandArgItem(
-    arg: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        color = if (isSelected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-        } else {
-            Color.Transparent
-        }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = arg,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
         }
     }
 }
