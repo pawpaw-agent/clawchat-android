@@ -24,6 +24,7 @@ import com.openclaw.clawchat.ui.components.ContextNotice
 import com.openclaw.clawchat.ui.components.CompactionIndicator
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.screens.session.*
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
