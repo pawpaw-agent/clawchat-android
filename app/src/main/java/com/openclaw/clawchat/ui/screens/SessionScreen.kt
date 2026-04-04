@@ -114,11 +114,13 @@ fun SessionScreen(
     // 使用 scrollToItem 不带动画，瞬间定位避免视觉跳跃
     LaunchedEffect(sessionId, filteredGroups.size) {
         if (filteredGroups.isEmpty()) return@LaunchedEffect
-        // 等待布局完成
+        // 等待布局有内容
         snapshotFlow { listState.layoutInfo.totalItemsCount }
             .first { it > 0 }
-        // reverseLayout=true: scrollToItem(0) 滚动到最新消息
-        listState.scrollToItem(0)
+        // 等待下一帧确保布局完成
+        kotlinx.coroutines.withFrameNanos { }
+        // reverseLayout=true: scrollToItem(0) 滚动到最新消息（在底部）
+        listState.scrollToItem(0, 0)
         // 标记已滚动
         viewModel.markAutoScrolled()
     }
