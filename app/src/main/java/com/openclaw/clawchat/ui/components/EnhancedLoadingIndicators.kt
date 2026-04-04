@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.geometry.CornerRadius
@@ -54,7 +55,7 @@ fun WaveLoadingIndicator(
 
         for (i in 0 until waveCount) {
             val offsetX = (width / waveCount) * i
-            val path = androidx.compose.ui.graphics.Path()
+            val path = Path()
             path.moveTo(0f, centerY)
             for (x in 0..width.toInt() step 10) {
                 val waveY = centerY + amplitude.toPx() * kotlin.math.sin(

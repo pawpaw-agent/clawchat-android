@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -454,7 +455,7 @@ fun ToolMessageCard(message: MessageUi, historyGroups: List<MessageGroup> = empt
                     )
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        androidx.compose.foundation.text.selection.SelectionContainer {
+                        SelectionContainer {
                             Text(
                                 text = textContent,
                                 style = MaterialTheme.typography.bodySmall,
