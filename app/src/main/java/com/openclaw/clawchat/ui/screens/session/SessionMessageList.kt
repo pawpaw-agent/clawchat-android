@@ -125,32 +125,27 @@ fun MessageGroupList(
     onRetryMessage: (String) -> Unit = {},
     onContinueGeneration: () -> Unit = {}
 ) {
-    // 滚动优化：首次加载时直接定位到最新消息，新消息到达时自动滚动
+    // 滚动优化：只监听用户滚动位置，SessionScreen 处理初始滚动
     // reverseLayout=true 时，firstVisibleItemIndex=0 表示在底部
     LaunchedEffect(listState) {
-        // 使用 snapshotFlow 监听 groups 变化，更精确地触发滚动
-        snapshotFlow { groups.size }
-            .collect { size ->
-                if (size == 0) return@collect
-                
-                // 监听滚动位置
-                val isNearBottom = listState.firstVisibleItemIndex == 0 && 
-                                   listState.firstVisibleItemScrollOffset < 450
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                val isNearBottom = index == 0 && offset < 450
                 onUpdateUserNearBottom(isNearBottom)
-                
-                // 首次加载或用户在底部时，直接定位到最新消息
-                if (!chatHasAutoScrolled) {
-                    onMarkAutoScrolled()
-                    // 立即定位，无动画，避免视觉跳跃
-                    listState.scrollToItem(0)
-                } else if (isNearBottom) {
-                    // 用户在底部，新消息时自动滚动
-                    listState.scrollToItem(0)
-                } else if (chatStream != null) {
-                    // 用户查看历史，有新消息时显示提示
-                    onSetNewMessagesBelow()
-                }
             }
+    }
+    
+    // 新消息到达时自动滚动（用户在底部时）
+    LaunchedEffect(groups.size, chatStream) {
+        if (groups.isEmpty()) return@LaunchedEffect
+        val isNearBottom = listState.firstVisibleItemIndex == 0 && 
+                           listState.firstVisibleItemScrollOffset < 450
+        if (isNearBottom || !chatHasAutoScrolled) {
+            if (!chatHasAutoScrolled) onMarkAutoScrolled()
+            listState.scrollToItem(0)
+        } else if (chatStream != null) {
+            onSetNewMessagesBelow()
+        }
     }
     
     // 使用 reverseLayout = true 实现最优雅的自动滚动
@@ -347,18 +342,10 @@ fun MessageGroupItem(
                                 onRetry = { onRetryMessage(message.id) }
                             )
                             
-                            // 工具调用显示
-                            message.getToolCalls().forEach { call ->
+                            // 工具调用显示（使用 pairToolCards 正确配对结果）
+                            pairToolCards(message).forEach { toolCard ->
                                 Spacer(modifier = Modifier.height(4.dp))
-                                ToolDetailCard(toolCard = ToolCard(
-                                    kind = ToolCardKind.CALL,
-                                    name = call.name,
-                                    args = call.args?.toString(),
-                                    result = null,
-                                    isError = false,
-                                    callId = call.id,
-                                    phase = call.phase
-                                ))
+                                ToolDetailCard(toolCard = toolCard)
                             }
                         }
                         

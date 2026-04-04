@@ -183,7 +183,8 @@ class MessageRepositoryImpl @Inject constructor() : MessageRepository {
                     "tool_call", "tool_use", "toolCall", "toolUse" -> MessageContentItem.ToolCall(
                         id = obj["id"]?.jsonPrimitive?.content,
                         name = obj["name"]?.jsonPrimitive?.content ?: "unknown",
-                        args = obj["arguments"]?.jsonObject ?: obj["args"]?.jsonObject
+                        args = obj["arguments"]?.jsonObject ?: obj["args"]?.jsonObject,
+                        phase = obj["phase"]?.jsonPrimitive?.content ?: "result"  // 历史消息默认已完成
                     )
                     "tool_result", "toolResult" -> MessageContentItem.ToolResult(
                         toolCallId = obj["toolCallId"]?.jsonPrimitive?.content ?: obj["tool_call_id"]?.jsonPrimitive?.content,
