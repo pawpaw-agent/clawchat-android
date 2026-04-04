@@ -169,21 +169,14 @@ fun CircularPulseIndicator(
         label = "circle_alpha"
     )
 
+    androidx.compose.foundation.layout.Box(
+        modifier = Modifier
+            .size(size)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .alpha(alpha)
+            .background(color, shape = CircleShape)
     )
-
-    Box(
-        modifier = modifier.size(size),
-        contentAlignment = Alignment.Center
-    ) {
-        androidx.compose.foundation.layout.Box(
-            modifier = Modifier
-                .size(size)
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale
-                )
-                .alpha(alpha)
-                .background(color, shape = CircleShape)
-        )
-    }
 }
