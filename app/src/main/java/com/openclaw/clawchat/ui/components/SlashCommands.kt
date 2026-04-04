@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
  * 斜杠菜单状态
  */
 @Immutable
-internal data class SlashMenuState(
+data class SlashMenuState(
     val isOpen: Boolean = false,
     val mode: String = "command",  // "command" or "args"
     val items: List<SlashCommandDef> = emptyList(),
