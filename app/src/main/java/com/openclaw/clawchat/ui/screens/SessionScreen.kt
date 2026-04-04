@@ -87,22 +87,6 @@ fun SessionScreen(
         }
     }
 
-    // 进入会话时直接显示最新消息
-    // 使用 scrollToItem 不带动画，瞬间定位避免视觉跳跃
-    // 只在 sessionId 变化时滚动，不监听消息数量变化
-    LaunchedEffect(sessionId) {
-        // 等待消息加载完成
-        snapshotFlow { state.chatMessages.size }
-            .first { it > 0 }
-        // 等待布局完成（确保 LazyList 已测量）
-        snapshotFlow { listState.layoutInfo.totalItemsCount }
-            .first { it > 0 }
-        // reverseLayout=true: scrollToItem(0) 滚动到最新消息
-        listState.scrollToItem(0)
-        // 标记已滚动（避免 SessionMessageList 重复滚动）
-        viewModel.markAutoScrolled()
-    }
-
     // P1-3: 使用 derivedStateOf 优化消息分组计算，避免不必要的重组
     val messageGroups by remember { derivedStateOf { groupMessages(state.chatMessages) } }
 
@@ -125,6 +109,22 @@ fun SessionScreen(
         }
     }
     val filteredGroups by remember { derivedStateOf { groupMessages(filteredMessages) } }
+
+    // 进入会话时直接显示最新消息
+    // 使用 scrollToItem 不带动画，瞬间定位避免视觉跳跃
+    // 只在 sessionId 变化时滚动
+    LaunchedEffect(sessionId) {
+        // 等待分组加载完成
+        snapshotFlow { filteredGroups.size }
+            .first { it > 0 }
+        // 等待布局完成
+        snapshotFlow { listState.layoutInfo.totalItemsCount }
+            .first { it > 0 }
+        // reverseLayout=true: scrollToItem(0) 滚动到最新消息
+        listState.scrollToItem(0)
+        // 标记已滚动
+        viewModel.markAutoScrolled()
+    }
 
     Scaffold(
         modifier = Modifier.background(MaterialTheme.colorScheme.background),
