@@ -73,7 +73,7 @@ fun KeyEvent.isDevToolsShortcut(): Boolean {
 fun KeyEvent.isHistoryBackwardShortcut(): Boolean {
     return type == KeyEventType.KeyDown &&
             ((key == Key.DirectionLeft && isAltPressed) ||
-            (key == Key.Backquote && isCtrlPressed)) // Using backquote as common alternative for [
+            (key == Key.Tab && isCtrlPressed)) // Using Ctrl+Tab as alternative
 }
 
 /**
@@ -82,5 +82,5 @@ fun KeyEvent.isHistoryBackwardShortcut(): Boolean {
 fun KeyEvent.isHistoryForwardShortcut(): Boolean {
     return type == KeyEventType.KeyDown &&
             ((key == Key.DirectionRight && isAltPressed) ||
-            (key == Key.Minus && isCtrlPressed)) // Using minus as common alternative for ]
+            (key == Key.Tab && isCtrlPressed && isShiftPressed)) // Using Ctrl+Shift+Tab as alternative
 }

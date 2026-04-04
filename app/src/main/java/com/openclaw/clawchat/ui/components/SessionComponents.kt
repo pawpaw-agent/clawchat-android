@@ -87,7 +87,7 @@ fun SessionListItem(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = session.title,
+                        text = session.getDisplayName(),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1
@@ -154,7 +154,7 @@ fun SessionRenameDialog(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var newName by remember { mutableStateOf<String>(session.title) }
+    var newName by remember { mutableStateOf<String>(session.getDisplayName()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
