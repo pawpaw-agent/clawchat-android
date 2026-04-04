@@ -32,6 +32,18 @@ import androidx.activity.result.contract.ActivityResultContracts
 import java.util.*
 
 /**
+ * 斜杠菜单状态
+ */
+internal data class SlashMenuState(
+    val isOpen: Boolean = false,
+    val mode: String = "command",  // "command" or "args"
+    val items: List<SlashCommandDef> = emptyList(),
+    val argItems: List<String> = emptyList(),
+    val selectedIndex: Int = 0,
+    val command: SlashCommandDef? = null
+)
+
+/**
  * 增强型消息输入栏 - 实现完整的 webchat 功能对等
  */
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
@@ -550,14 +562,3 @@ private fun SlashCommandArgItem(
     }
 }
 
-/**
- * 斜杠菜单状态
- */
-internal data class SlashMenuState(
-    val isOpen: Boolean = false,
-    val mode: String = "command",  // "command" or "args"
-    val items: List<SlashCommandDef> = emptyList(),
-    val argItems: List<String> = emptyList(),
-    val selectedIndex: Int = 0,
-    val command: SlashCommandDef? = null
-)

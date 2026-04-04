@@ -27,18 +27,6 @@ import com.openclaw.clawchat.ui.components.getSlashCommandCompletions
 import com.openclaw.clawchat.ui.state.AttachmentUi
 
 /**
- * 斜杠菜单状态
- */
-internal data class SlashMenuState(
-    val isOpen: Boolean = false,
-    val mode: String = "command",  // "command" or "args"
-    val items: List<SlashCommandDef> = emptyList(),
-    val argItems: List<String> = emptyList(),
-    val selectedIndex: Int = 0,
-    val command: SlashCommandDef? = null
-)
-
-/**
  * 消息输入框（支持附件和斜杠命令）
  */
 @OptIn(ExperimentalLayoutApi::class)

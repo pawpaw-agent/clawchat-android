@@ -9,6 +9,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.graphicsLayer
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -78,10 +80,10 @@ fun WaveLoadingIndicator(
 }
 
 /**
- * 脉冲圆点加载动画
+ * 脉冲圆点加载动画 - 为了避免函数名冲突
  */
 @Composable
-fun PulseDotLoading(
+fun PulseDotLoadingIndicator(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
     dotCount: Int = 3
@@ -167,6 +169,33 @@ fun CircularPulseIndicator(
         label = "circle_alpha"
     )
 
+@Composable
+fun CircularPulseIndicator(
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary,
+    size: Dp = 40.dp
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse_circle_transition")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "circle_scale"
+    )
+
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 0.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "circle_alpha"
+    )
+
     Box(
         modifier = modifier.size(size),
         contentAlignment = Alignment.Center
@@ -174,11 +203,11 @@ fun CircularPulseIndicator(
         androidx.compose.foundation.layout.Box(
             modifier = Modifier
                 .size(size)
-                .graphicsLayer {
-                    scaleX = scale
+                .graphicsLayer(
+                    scaleX = scale,
                     scaleY = scale
-                    alpha = alpha
-                }
+                )
+                .alpha(alpha)
                 .background(color, shape = CircleShape)
         )
     }

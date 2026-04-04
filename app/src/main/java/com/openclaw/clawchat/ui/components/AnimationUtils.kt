@@ -26,7 +26,7 @@ object AnimationUtils {
     /**
      * 快速动画参数
      */
-    val QuickDecay = exponentialDecay(
+    val QuickDecay = exponentialDecay<Float>(
         frictionMultiplier = 0.8f,
         absVelocityThreshold = 0.5f
     )
