@@ -62,6 +62,7 @@ fun MessageContentCard(
     onRegenerate: () -> Unit = {},
     onRetry: () -> Unit = {},
     onShare: ((String) -> Unit)? = null,  // 分享回调
+    onContinueGeneration: () -> Unit = {}, // 继续生成回调
     isStreaming: Boolean = false
 ) {
     val textContent = message.getTextContent()
