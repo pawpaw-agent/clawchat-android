@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
+import com.openclaw.clawchat.ui.components.ToolDetailCard
 import com.openclaw.clawchat.ui.state.*
 
 /**
@@ -134,15 +135,15 @@ fun MessageGroupList(
                 onUpdateUserNearBottom(isNearBottom)
             }
     }
-    
+
     // 新消息/流式输出到达时自动滚动
     // 用户在底部时，自动跟随到最新
     LaunchedEffect(groups.size, chatStream, toolMessages.size, streamSegments.size) {
         if (groups.isEmpty()) return@LaunchedEffect
         // 只有用户在底部且已经完成初始滚动时才自动滚动
         if (!chatHasAutoScrolled) return@LaunchedEffect
-        
-        val isNearBottom = listState.firstVisibleItemIndex == 0 && 
+
+        val isNearBottom = listState.firstVisibleItemIndex == 0 &&
                            listState.firstVisibleItemScrollOffset < 450
         if (isNearBottom) {
             listState.scrollToItem(0)
@@ -150,7 +151,7 @@ fun MessageGroupList(
             onSetNewMessagesBelow()
         }
     }
-    
+
     // 使用 reverseLayout = true 实现最优雅的自动滚动
     // 新消息自动显示在底部，无需手动滚动逻辑
     // 参考：lambiengcode/compose-chatgpt-kotlin-android-chatbot 最佳实践
@@ -168,7 +169,7 @@ fun MessageGroupList(
     ) {
         // 注意：reverseLayout = true 时，items 顺序也需要反转
         // 显示顺序（从下到上）：流式文本 → 工具消息 → 文本段 → 历史消息
-        
+
         // 1. 当前流式文本（显示在最底部）
         if (!chatStream.isNullOrBlank()) {
             item(key = "stream_current") {
@@ -187,7 +188,7 @@ fun MessageGroupList(
                 )
             }
         }
-        
+
         // 2. 工具消息（与历史消息中的 toolResult 合并）
         if (toolMessages.isNotEmpty()) {
             items(
@@ -198,11 +199,11 @@ fun MessageGroupList(
                 ToolMessageCard(message = toolMessage, historyGroups = groups)
             }
         }
-        
+
         // 3. 文本段（工具执行前提交的文本）
         if (streamSegments.isNotEmpty()) {
             items(
-                items = streamSegments.reversed(), 
+                items = streamSegments.reversed(),
                 key = { "segment_${it.ts}" },
                 contentType = { "stream_segment" }
             ) { segment ->
@@ -219,25 +220,27 @@ fun MessageGroupList(
                 )
             }
         }
-        
+
         // 4. 历史消息（显示在最上方）
         items(
-            items = groups.reversed(), 
+            items = groups.reversed(),
             key = { it.messages.first().id },
             contentType = { "message_group" }
         ) { group ->
             MessageGroupItem(
-                group = group, 
+                group = group,
                 messageFontSize = messageFontSize,
                 onDeleteMessage = onDeleteMessage,
                 onRegenerate = onRegenerate,
+                onRetryMessage = onRetryMessage,
+                onContinueGeneration = onContinueGeneration,
                 modifier = Modifier.animateItem(
                     fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
                     placementSpec = spring(stiffness = Spring.StiffnessMediumLow)
                 )
             )
         }
-        
+
         // 继续生成按钮（显示在顶部，reverseLayout 时实际在底部）
         if (groups.isNotEmpty() && chatStream.isNullOrBlank() && toolMessages.isEmpty()) {
             item(key = "continue_generation") {
@@ -265,13 +268,13 @@ fun MessageGroupList(
  */
 fun groupMessages(messages: List<MessageUi>): List<MessageGroup> {
     if (messages.isEmpty()) return emptyList()
-    
+
     return messages.fold(mutableListOf<MessageGroup>()) { groups, message ->
         val lastGroup = groups.lastOrNull()
-        val shouldMerge = message.role == MessageRole.TOOL && 
-            lastGroup?.role == MessageRole.ASSISTANT && 
+        val shouldMerge = message.role == MessageRole.TOOL &&
+            lastGroup?.role == MessageRole.ASSISTANT &&
             lastGroup.messages.any { it.hasToolContent() }
-        
+
         if (lastGroup != null && (message.role == lastGroup.role || shouldMerge)) {
             // 合并到当前分组
             groups[groups.lastIndex] = lastGroup.copy(
@@ -296,11 +299,12 @@ fun groupMessages(messages: List<MessageUi>): List<MessageGroup> {
  */
 @Composable
 fun MessageGroupItem(
-    group: MessageGroup, 
+    group: MessageGroup,
     messageFontSize: FontSize = FontSize.MEDIUM,
     onDeleteMessage: (String) -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {},
+    onContinueGeneration: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isUser = group.role == MessageRole.USER
@@ -342,21 +346,22 @@ fun MessageGroupItem(
                                 messageFontSize = messageFontSize,
                                 onDelete = { onDeleteMessage(message.id) },
                                 onRegenerate = onRegenerate,
-                                onRetry = { onRetryMessage(message.id) }
+                                onRetry = { onRetryMessage(message.id) },
+                                onContinueGeneration = onContinueGeneration
                             )
-                            
+
                             // 工具调用显示（使用 pairToolCards 正确配对结果）
                             pairToolCards(message).forEach { toolCard ->
                                 Spacer(modifier = Modifier.height(4.dp))
                                 ToolDetailCard(toolCard = toolCard)
                             }
                         }
-                        
+
                         if (index < group.messages.lastIndex) {
                             Spacer(modifier = Modifier.height(4.dp))
                         }
                     }
-                    
+
                     // 时间戳
                     group.lastMessage?.let { msg ->
                         Spacer(modifier = Modifier.height(4.dp))
@@ -366,7 +371,7 @@ fun MessageGroupItem(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    
+
                     // 流式指示器
                     if (group.isStreaming) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -389,7 +394,7 @@ fun MessageGroupItem(
 private fun RenderToolCardsFromMessage(message: MessageUi) {
     val calls = message.getToolCalls()
     val results = message.getToolResults()
-    
+
     if (calls.isEmpty() && results.isEmpty()) {
         val textContent = message.getTextContent()
         if (textContent.isNotBlank()) {
@@ -426,10 +431,10 @@ private fun RenderToolCardsFromMessage(message: MessageUi) {
 @Composable
 fun ToolMessageCard(message: MessageUi, historyGroups: List<MessageGroup> = emptyList()) {
     val toolCards = pairToolCards(message)
-    
+
     // 不从历史消息合并 toolResult，只显示工具名+状态，提高 UI 平滑性
     val finalToolCards = toolCards
-    
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -437,7 +442,7 @@ fun ToolMessageCard(message: MessageUi, historyGroups: List<MessageGroup> = empt
         finalToolCards.forEach { toolCard ->
             ToolDetailCard(toolCard = toolCard)
         }
-        
+
         if (finalToolCards.isEmpty()) {
             val textContent = message.getTextContent()
             if (textContent.isNotBlank()) {

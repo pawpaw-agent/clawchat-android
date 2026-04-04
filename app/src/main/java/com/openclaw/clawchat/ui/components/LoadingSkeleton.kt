@@ -18,7 +18,13 @@ import androidx.compose.ui.unit.dp
 enum class SkeletonType {
     MESSAGE,    // 消息骨架
     SESSION,    // 会话项骨架
-    TOOL        // 工具卡片骨架
+    TOOL,       // 工具卡片骨架
+    AVATAR,
+    TITLE,
+    TEXT_LINE,
+    THUMBNAIL,
+    BUTTON,
+    LIST_ITEM
 }
 
 /**
@@ -34,7 +40,7 @@ fun LoadingSkeleton(
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
     )
-    
+
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnim = transition.animateFloat(
         initialValue = 0f,
@@ -45,13 +51,13 @@ fun LoadingSkeleton(
         ),
         label = "shimmer"
     )
-    
+
     val brush = Brush.linearGradient(
         colors = shimmerColors,
         start = Offset(translateAnim.value - 1000f, 0f),
         end = Offset(translateAnim.value, 0f)
     )
-    
+
     when (type) {
         SkeletonType.MESSAGE -> {
             Column(
@@ -163,6 +169,88 @@ fun LoadingSkeleton(
                         .clip(RoundedCornerShape(4.dp))
                         .background(brush)
                 )
+            }
+        }
+        SkeletonType.AVATAR -> {
+            Box(
+                modifier = modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(brush)
+            )
+        }
+
+        SkeletonType.TITLE -> {
+            Box(
+                modifier = modifier
+                    .fillMaxWidth(0.6f)
+                    .height(24.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(brush)
+            )
+        }
+
+        SkeletonType.TEXT_LINE -> {
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(16.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(brush)
+            )
+        }
+
+        SkeletonType.THUMBNAIL -> {
+            Box(
+                modifier = modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(brush)
+            )
+        }
+
+        SkeletonType.BUTTON -> {
+            Box(
+                modifier = modifier
+                    .width(80.dp)
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(brush)
+            )
+        }
+
+        SkeletonType.LIST_ITEM -> {
+            Row(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(brush)
+                )
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.7f)
+                            .height(16.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(brush)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.5f)
+                            .height(14.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(brush)
+                    )
+                }
             }
         }
     }
