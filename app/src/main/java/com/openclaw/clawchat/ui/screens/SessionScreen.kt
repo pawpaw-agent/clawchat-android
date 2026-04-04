@@ -26,6 +26,7 @@ import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.screens.session.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 /**
  * 会话界面屏幕
@@ -117,8 +118,8 @@ fun SessionScreen(
         // 等待布局有内容
         snapshotFlow { listState.layoutInfo.totalItemsCount }
             .first { it > 0 }
-        // 等待下一帧确保布局完成
-        kotlinx.coroutines.withFrameNanos { }
+        // 等待一帧确保布局完成（60fps ≈ 16ms）
+        delay(16)
         // reverseLayout=true: scrollToItem(0) 滚动到最新消息（在底部）
         listState.scrollToItem(0, 0)
         // 标记已滚动
