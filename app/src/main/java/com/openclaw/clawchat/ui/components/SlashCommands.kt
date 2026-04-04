@@ -1,16 +1,30 @@
 package com.openclaw.clawchat.ui.components
 
+import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
 
 /**
  * 斜杠命令 - 1:1 复刻 webchat slash-commands.ts
- * 
+ *
  * 支持的命令：
  * - Session: /new, /reset, /compact, /stop, /clear, /focus
  * - Model: /model, /think, /verbose, /fast
  * - Tools: /help, /status, /export, /usage
  * - Agents: /agents, /kill, /skill, /steer
  */
+
+/**
+ * 斜杠菜单状态
+ */
+@Immutable
+internal data class SlashMenuState(
+    val isOpen: Boolean = false,
+    val mode: String = "command",  // "command" or "args"
+    val items: List<SlashCommandDef> = emptyList(),
+    val argItems: List<String> = emptyList(),
+    val selectedIndex: Int = 0,
+    val command: SlashCommandDef? = null
+)
 
 /**
  * 命令类别

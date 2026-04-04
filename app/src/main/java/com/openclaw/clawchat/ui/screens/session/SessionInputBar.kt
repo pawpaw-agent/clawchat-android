@@ -17,14 +17,18 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.ui.components.SLASH_COMMANDS
 import com.openclaw.clawchat.ui.components.SlashCommandDef
+import com.openclaw.clawchat.ui.components.SlashMenuState
 import com.openclaw.clawchat.ui.components.getSlashCommandCompletions
 import com.openclaw.clawchat.ui.state.AttachmentUi
+import com.openclaw.clawchat.util.FileUtils
+import java.util.*
 
 /**
  * 消息输入框（支持附件和斜杠命令）
@@ -42,16 +46,16 @@ fun MessageInputBar(
     onRemoveAttachment: (String) -> Unit = {},
     onExecuteCommand: (SlashCommandDef, String) -> Unit = { _, _ -> }
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    
+    val context = LocalContext.current
+
     // 封装的斜杠菜单状态
     var slashMenu by remember { mutableStateOf(SlashMenuState()) }
     val haptic = LocalHapticFeedback.current
-    
+
     // 根据输入更新菜单状态
     LaunchedEffect(value) {
         val trimmed = value.trim()
-        
+
         // 匹配参数模式: /cmd arg...
         val argMatch = Regex("^/(\\S+)\\s+(.*)$").find(trimmed)
         if (argMatch != null) {
@@ -59,7 +63,7 @@ fun MessageInputBar(
             val argFilter = argMatch.groupValues[2].lowercase()
             val cmd = SLASH_COMMANDS.find { it.name == cmdName }
             val argOpts = cmd?.argOptions ?: emptyList()
-            
+
             if (cmd != null && argOpts.isNotEmpty()) {
                 val filtered = if (argFilter.isNotEmpty()) {
                     argOpts.filter { it.lowercase().startsWith(argFilter) }
@@ -79,7 +83,7 @@ fun MessageInputBar(
             slashMenu = SlashMenuState()
             return@LaunchedEffect
         }
-        
+
         // 匹配命令模式: /cmd
         val commandMatch = Regex("^/(\\S*)$").find(trimmed)
         if (commandMatch != null) {
@@ -94,7 +98,7 @@ fun MessageInputBar(
             slashMenu = SlashMenuState()
         }
     }
-    
+
     val imagePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
     ) { uri: android.net.Uri? ->
@@ -102,7 +106,7 @@ fun MessageInputBar(
             onAddAttachment(createAttachmentFromUri(context, uri))
         }
     }
-    
+
     Surface(
         shadowElevation = 8.dp,
         color = MaterialTheme.colorScheme.background
@@ -136,7 +140,7 @@ fun MessageInputBar(
                     onDismiss = { slashMenu = SlashMenuState() }
                 )
             }
-            
+
             if (attachments.isNotEmpty()) {
                 FlowRow(
                     modifier = Modifier
@@ -153,7 +157,7 @@ fun MessageInputBar(
                     }
                 }
             }
-            
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -176,7 +180,7 @@ fun MessageInputBar(
                         }
                     )
                 }
-                
+
                 OutlinedTextField(
                     value = value,
                     onValueChange = onValueChange,
@@ -218,6 +222,35 @@ fun MessageInputBar(
                 }
             }
         }
+    }
+}
+
+/**
+ * 创建附件对象从URI
+ */
+private fun createAttachmentFromUri(context: android.content.Context, uri: android.net.Uri): AttachmentUi {
+    val fileName = FileUtils.getFileNameFromUri(context, uri) ?: "attachment_${System.currentTimeMillis()}"
+    val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+
+    // 将 URI 转换为 base64
+    val base64String = FileUtils.uriToBase64(context, uri)
+
+    return if (base64String != null) {
+        AttachmentUi(
+            id = UUID.randomUUID().toString(),
+            uri = uri,
+            mimeType = mimeType,
+            fileName = fileName,
+            dataUrl = "data:$mimeType;base64,$base64String"
+        )
+    } else {
+        AttachmentUi(
+            id = UUID.randomUUID().toString(),
+            uri = uri,
+            mimeType = mimeType,
+            fileName = fileName,
+            dataUrl = null
+        )
     }
 }
 
