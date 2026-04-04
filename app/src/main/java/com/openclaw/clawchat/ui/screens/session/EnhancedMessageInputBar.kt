@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.ExperimentalLayoutApi
 import com.openclaw.clawchat.ui.components.*
 import com.openclaw.clawchat.ui.state.AttachmentUi
 import com.openclaw.clawchat.util.FileUtils
@@ -312,7 +313,6 @@ fun EnhancedMessageInputBar(
  * 附件预览组件
  */
 @Composable
-@OptIn(ExperimentalLayoutApi::class)
 private fun AttachmentPreviews(
     attachments: List<AttachmentUi>,
     onRemove: (String) -> Unit,
