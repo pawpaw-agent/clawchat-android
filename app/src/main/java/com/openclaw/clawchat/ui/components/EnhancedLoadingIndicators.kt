@@ -169,32 +169,7 @@ fun CircularPulseIndicator(
         label = "circle_alpha"
     )
 
-@Composable
-fun CircularPulseIndicator(
-    modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.primary,
-    size: Dp = 40.dp
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse_circle_transition")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.5f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "circle_scale"
-    )
-
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 0.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "circle_alpha"
-    )
+    }
 
     Box(
         modifier = modifier.size(size),
