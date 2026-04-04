@@ -2,6 +2,7 @@ package com.openclaw.clawchat.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -11,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
@@ -23,14 +23,6 @@ import androidx.compose.ui.graphics.Color
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
-
-/**
- * 增强的加载指示器组件集合
- */
-@Composable
-fun EnhancedLoadingIndicators() {
-    // 用于组合所有增强加载指示器的容器
-}
 
 /**
  * 波浪加载动画 - 类似 webchat 风格的加载效果
@@ -83,7 +75,7 @@ fun WaveLoadingIndicator(
 }
 
 /**
- * 脉冲圆点加载动画 - 为了避免函数名冲突
+ * 脉冲圆点加载动画
  */
 @Composable
 fun PulseDotLoadingIndicator(
@@ -172,7 +164,7 @@ fun CircularPulseIndicator(
         label = "circle_alpha"
     )
 
-    androidx.compose.foundation.layout.Box(
+    Box(
         modifier = Modifier
             .size(size)
             .graphicsLayer {

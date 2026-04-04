@@ -34,8 +34,6 @@ import com.openclaw.clawchat.util.isSaveDraftShortcut
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import java.util.*
-
 
 /**
  * 增强型消息输入栏 - 实现完整的 webchat 功能对等
