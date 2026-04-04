@@ -209,7 +209,7 @@ fun CodeBlock(
                 .fillMaxWidth()
                 .padding(12.dp)
         ) {
-            androidx.compose.foundation.text.selection.SelectionContainer {
+            SelectionContainer {
                 Text(
                     text = text,
                     style = MaterialTheme.typography.bodySmall,
