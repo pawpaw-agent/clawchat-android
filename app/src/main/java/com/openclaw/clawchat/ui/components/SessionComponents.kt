@@ -32,7 +32,8 @@ fun SessionList(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
-        items(sessions, key = { it.id }) { session ->
+        items(sessions.size) { index ->
+            val session = sessions[index]
             SessionListItem(
                 session = session,
                 onClick = { onSessionClick(session) },
@@ -153,7 +154,7 @@ fun SessionRenameDialog(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var newName by remember { mutableStateOf(session.title) }
+    var newName by remember { mutableStateOf<String>(session.title) }
 
     AlertDialog(
         onDismissRequest = onDismiss,

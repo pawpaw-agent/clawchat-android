@@ -360,7 +360,8 @@ private fun SlashCommandMenu(
             contentPadding = PaddingValues(vertical = 4.dp)
         ) {
             if (items.isNotEmpty()) {
-                items(items, key = { it.name }) { cmd ->
+                items(items.size) { index ->
+                    val cmd = items[index]
                     SlashCommandMenuItem(
                         command = cmd,
                         isSelected = items.indexOf(cmd) == selectedIndex,
@@ -378,7 +379,8 @@ private fun SlashCommandMenu(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     )
                 }
-                items(argItems, key = { it }) { arg ->
+                items(argItems.size) { index ->
+                    val arg = argItems[index]
                     SlashCommandArgItem(
                         arg = arg,
                         isSelected = argItems.indexOf(arg) == selectedIndex,
