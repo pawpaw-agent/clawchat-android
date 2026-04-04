@@ -135,19 +135,18 @@ fun MessageGroupList(
             }
     }
     
-    // 新消息到达时自动滚动（用户在底部时）
-    LaunchedEffect(groups.size, chatStream) {
+    // 新消息/流式输出到达时自动滚动
+    // 用户在底部时，自动跟随到最新
+    LaunchedEffect(groups.size, chatStream, toolMessages.size, streamSegments.size) {
         if (groups.isEmpty()) return@LaunchedEffect
+        // 只有用户在底部且已经完成初始滚动时才自动滚动
+        if (!chatHasAutoScrolled) return@LaunchedEffect
+        
         val isNearBottom = listState.firstVisibleItemIndex == 0 && 
                            listState.firstVisibleItemScrollOffset < 450
-        if (isNearBottom || !chatHasAutoScrolled) {
-            if (!chatHasAutoScrolled) onMarkAutoScrolled()
-            // 不重复滚动，SessionScreen 已经处理初始滚动
-            // 只有在用户在底部且有新消息时才滚动
-            if (isNearBottom && chatHasAutoScrolled) {
-                listState.scrollToItem(0)
-            }
-        } else if (chatStream != null) {
+        if (isNearBottom) {
+            listState.scrollToItem(0)
+        } else {
             onSetNewMessagesBelow()
         }
     }
