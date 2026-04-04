@@ -163,7 +163,7 @@ fun ClawChatNavHost(
         composable("main") {
             MainScreen(
                 viewModel = mainViewModel,
-                onNavigateToSession = { sessionId ->
+                onNavigateToSession = { sessionId: String ->
                     navController.navigate("session/$sessionId")
                 },
                 onNavigateToDebug = {

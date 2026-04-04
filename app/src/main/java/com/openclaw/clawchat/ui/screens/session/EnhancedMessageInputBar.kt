@@ -118,9 +118,9 @@ fun EnhancedMessageInputBar(
                 if (base64String != null) {
                     val attachment = AttachmentUi(
                         id = UUID.randomUUID().toString(),
-                        fileName = fileName,
+                        uri = selectedUri,  // 传入 Uri 而不是 size
                         mimeType = mimeType,
-                        size = FileUtils.getFileSize(context, selectedUri) ?: 0,
+                        fileName = fileName,
                         dataUrl = "data:$mimeType;base64,$base64String"
                     )
                     onAddAttachment(attachment)
@@ -553,7 +553,7 @@ private fun SlashCommandArgItem(
 /**
  * 斜杠菜单状态
  */
-private data class SlashMenuState(
+internal data class SlashMenuState(
     val isOpen: Boolean = false,
     val mode: String = "command",  // "command" or "args"
     val items: List<SlashCommandDef> = emptyList(),

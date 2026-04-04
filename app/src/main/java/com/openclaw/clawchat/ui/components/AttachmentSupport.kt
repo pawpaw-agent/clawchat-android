@@ -48,9 +48,9 @@ fun AttachmentSupport(
                 if (base64String != null) {
                     val attachment = AttachmentUi(
                         id = UUID.randomUUID().toString(),
-                        fileName = fileName,
+                        uri = selectedUri,  // 传入 Uri 而不是 size
                         mimeType = mimeType,
-                        size = 0, // 由于是 URI，大小未知
+                        fileName = fileName,
                         dataUrl = "data:$mimeType;base64,$base64String"
                     )
                     onAddAttachment(attachment)

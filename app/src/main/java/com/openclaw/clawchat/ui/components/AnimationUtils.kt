@@ -26,11 +26,9 @@ object AnimationUtils {
     /**
      * 快速动画参数
      */
-    val QuickDecay = DecayAnimationSpec.FloatDecaySpec(
-        decayAnimationSpec = exponentialDecay(
-            frictionMultiplier = 0.8f,
-            absVelocityThreshold = 0.5f
-        )
+    val QuickDecay = exponentialDecay(
+        frictionMultiplier = 0.8f,
+        absVelocityThreshold = 0.5f
     )
 }
 

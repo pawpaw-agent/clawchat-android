@@ -57,19 +57,20 @@ fun WaveLoadingIndicator(
 
         for (i in 0 until waveCount) {
             val offsetX = (width / waveCount) * i
+            val path = androidx.compose.ui.graphics.Path()
+            path.moveTo(0f, centerY)
+            for (x in 0..width.toInt() step 10) {
+                val waveY = centerY + amplitude.toPx() * kotlin.math.sin(
+                    frequency * x + progress + (i * PI / waveCount)
+                ).toFloat()
+                path.lineTo(x.toFloat(), waveY)
+            }
+            path.lineTo(width, height)
+            path.lineTo(0f, height)
+            path.close()
+
             drawPath(
-                path = android.graphics.Path().asComposePath().apply {
-                    moveTo(0f, centerY)
-                    for (x in 0..width.toInt() step 10) {
-                        val waveY = centerY + amplitude.toPx() * kotlin.math.sin(
-                            frequency * x + progress + (i * PI / waveCount)
-                        ).toFloat()
-                        lineTo(x.toFloat(), waveY)
-                    }
-                    lineTo(width, height)
-                    lineTo(0f, height)
-                    close()
-                },
+                path = path,
                 color = color.copy(alpha = 0.6f)
             )
         }
@@ -176,9 +177,9 @@ fun CircularPulseIndicator(
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
-                    this.alpha = alpha
+                    alpha = alpha
                 }
-                .background(color, CircleShape)
+                .background(color, shape = CircleShape)
         )
     }
 }
