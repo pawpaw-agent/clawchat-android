@@ -32,12 +32,12 @@ fun SessionList(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
-        items(sessions.size) { index ->
+        items(sessions) { session ->
             SessionListItem(
-                session = sessions[index],
-                onClick = { onSessionClick(sessions[index]) },
-                onRename = { onSessionRename(sessions[index]) },
-                onDelete = { onSessionDelete(sessions[index]) }
+                session = session,
+                onClick = { onSessionClick(session) },
+                onRename = { onSessionRename(session) },
+                onDelete = { onSessionDelete(session) }
             )
         }
     }

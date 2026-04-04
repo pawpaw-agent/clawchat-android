@@ -29,7 +29,10 @@ import com.openclaw.clawchat.util.FileUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import java.util.*
+import com.openclaw.clawchat.util.isNewSessionShortcut
+import com.openclaw.clawchat.util.isSearchShortcut
+import com.openclaw.clawchat.util.isUndoShortcut
+import com.openclaw.clawchat.util.isSaveDraftShortcut
 
 
 /**
@@ -319,7 +322,8 @@ private fun AttachmentPreviews(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         attachments.forEach { attachment ->
-            AttachmentPreview(
+            // 使用共享的 AttachmentPreview 组件
+            com.openclaw.clawchat.ui.screens.session.AttachmentPreview(
                 attachment = attachment,
                 onRemove = { onRemove(attachment.id) }
             )
@@ -327,76 +331,6 @@ private fun AttachmentPreviews(
     }
 }
 
-/**
- * 单个附件预览
- */
-@Composable
-private fun AttachmentPreview(
-    attachment: AttachmentUi,
-    onRemove: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .size(60.dp)
-            .clickable { onRemove() },
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            // 显示附件类型图标
-            when {
-                attachment.mimeType?.startsWith("image/") == true -> {
-                    Icon(
-                        imageVector = Icons.Default.Image,
-                        contentDescription = "图片附件",
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                attachment.mimeType?.startsWith("video/") == true -> {
-                    Icon(
-                        imageVector = Icons.Default.VideoFile,
-                        contentDescription = "视频附件",
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                else -> {
-                    Icon(
-                        imageVector = Icons.Default.InsertDriveFile,
-                        contentDescription = "文件附件",
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // 删除按钮
-            IconButton(
-                onClick = onRemove,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .size(20.dp)
-                    .background(
-                        MaterialTheme.colorScheme.error,
-                        RoundedCornerShape(bottomStart = 4.dp)
-                    )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "删除附件",
-                    modifier = Modifier.size(12.dp),
-                    tint = MaterialTheme.colorScheme.onError
-                )
-            }
-        }
-    }
-}
 
 /**
  * 斜杠命令菜单

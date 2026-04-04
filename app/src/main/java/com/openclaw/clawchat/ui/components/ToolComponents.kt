@@ -3,6 +3,7 @@ package com.openclaw.clawchat.ui.components
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -34,8 +35,7 @@ fun ToolDetailCard(
         colors = CardDefaults.cardColors(
             containerColor = when (toolCard.kind) {
                 ToolCardKind.CALL -> MaterialTheme.colorScheme.secondaryContainer
-                ToolCardKind.RESULT -> MaterialTheme.colorScheme.tertiaryContainer
-                ToolCardKind.ERROR -> MaterialTheme.colorScheme.errorContainer
+                ToolCardKind.RESULT -> if (toolCard.isError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.tertiaryContainer
             }
         )
     ) {
@@ -57,14 +57,12 @@ fun ToolDetailCard(
                     Icon(
                         imageVector = when (toolCard.kind) {
                             ToolCardKind.CALL -> Icons.Default.SettingsApplications
-                            ToolCardKind.RESULT -> Icons.Default.Done
-                            ToolCardKind.ERROR -> Icons.Default.Warning
+                            ToolCardKind.RESULT -> if (toolCard.isError) Icons.Default.Warning else Icons.Default.Done
                         },
                         contentDescription = null,
                         tint = when (toolCard.kind) {
                             ToolCardKind.CALL -> MaterialTheme.colorScheme.secondary
-                            ToolCardKind.RESULT -> MaterialTheme.colorScheme.tertiary
-                            ToolCardKind.ERROR -> MaterialTheme.colorScheme.error
+                            ToolCardKind.RESULT -> if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
                         }
                     )
                     Text(
@@ -73,8 +71,7 @@ fun ToolDetailCard(
                         fontWeight = FontWeight.Medium,
                         color = when (toolCard.kind) {
                             ToolCardKind.CALL -> MaterialTheme.colorScheme.onSecondaryContainer
-                            ToolCardKind.RESULT -> MaterialTheme.colorScheme.onTertiaryContainer
-                            ToolCardKind.ERROR -> MaterialTheme.colorScheme.onErrorContainer
+                            ToolCardKind.RESULT -> if (toolCard.isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onTertiaryContainer
                         }
                     )
                 }
@@ -85,8 +82,7 @@ fun ToolDetailCard(
                         style = MaterialTheme.typography.labelSmall,
                         color = when (toolCard.kind) {
                             ToolCardKind.CALL -> MaterialTheme.colorScheme.onSecondaryContainer
-                            ToolCardKind.RESULT -> MaterialTheme.colorScheme.onTertiaryContainer
-                            ToolCardKind.ERROR -> MaterialTheme.colorScheme.onErrorContainer
+                            ToolCardKind.RESULT -> if (toolCard.isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onTertiaryContainer
                         }
                     )
                 }
@@ -107,23 +103,23 @@ fun ToolDetailCard(
             // 工具结果
             if (toolCard.result != null) {
                 ExpansionPanel(
-                    title = "结果",
+                    title = if (toolCard.isError) "错误" else "结果",
                     content = {
-                        when (toolCard.kind) {
-                            ToolCardKind.ERROR -> {
+                        when {
+                            toolCard.isError -> {
                                 Text(
-                                    text = toolCard.result,
+                                    text = toolCard.result!!,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error,
                                     fontFamily = FontFamily.Monospace
                                 )
                             }
                             else -> {
-                                if (isJsonString(toolCard.result)) {
-                                    CodeBlock(text = toolCard.result)
+                                if (isJsonString(toolCard.result!!)) {
+                                    CodeBlock(text = toolCard.result!!)
                                 } else {
                                     Text(
-                                        text = toolCard.result,
+                                        text = toolCard.result!!,
                                         style = MaterialTheme.typography.bodySmall,
                                         fontFamily = FontFamily.Monospace
                                     )
@@ -246,12 +242,12 @@ fun StreamingToolResult(
     toolCard: ToolCard,
     modifier: Modifier = Modifier
 ) {
-    var resultText by remember { mutableStateOf("") }
+    var resultText by remember { mutableStateOf(toolCard.result ?: "") }
 
     // 模拟流式更新（在真实场景中，这会来自流数据）
-    LaunchedEffect(toolCard.stream) {
-        if (!toolCard.stream.isNullOrBlank()) {
-            resultText += toolCard.stream
+    LaunchedEffect(toolCard.result) {
+        if (!toolCard.result.isNullOrBlank()) {
+            resultText += toolCard.result
         }
     }
 

@@ -103,7 +103,7 @@ fun MessageInputBar(
         contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
     ) { uri: android.net.Uri? ->
         uri?.let {
-            onAddAttachment(createAttachmentFromUri(context, uri))
+            onAddAttachment(com.openclaw.clawchat.ui.screens.session.createAttachmentFromUri(context, uri))
         }
     }
 
@@ -226,35 +226,6 @@ fun MessageInputBar(
 }
 
 /**
- * 创建附件对象从URI
- */
-private fun createAttachmentFromUri(context: android.content.Context, uri: android.net.Uri): AttachmentUi {
-    val fileName = FileUtils.getFileNameFromUri(context, uri) ?: "attachment_${System.currentTimeMillis()}"
-    val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
-
-    // 将 URI 转换为 base64
-    val base64String = FileUtils.uriToBase64(context, uri)
-
-    return if (base64String != null) {
-        AttachmentUi(
-            id = UUID.randomUUID().toString(),
-            uri = uri,
-            mimeType = mimeType,
-            fileName = fileName,
-            dataUrl = "data:$mimeType;base64,$base64String"
-        )
-    } else {
-        AttachmentUi(
-            id = UUID.randomUUID().toString(),
-            uri = uri,
-            mimeType = mimeType,
-            fileName = fileName,
-            dataUrl = null
-        )
-    }
-}
-
-/**
  * 斜杠命令菜单
  */
 @Composable
@@ -289,7 +260,7 @@ private fun SlashCommandMenu(
                     )
                 }
             }
-            
+
             if (argItems.isNotEmpty() && command != null) {
                 item {
                     Text(
@@ -326,7 +297,7 @@ private fun SlashCommandMenuItem(
         com.openclaw.clawchat.ui.components.SlashCommandCategory.AGENTS -> "Agents"
         com.openclaw.clawchat.ui.components.SlashCommandCategory.TOOLS -> "工具"
     }
-    
+
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -350,14 +321,14 @@ private fun SlashCommandMenuItem(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.width(80.dp)
             )
-            
+
             Text(
                 text = command.description,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f)
             )
-            
+
             Text(
                 text = categoryLabel,
                 style = MaterialTheme.typography.labelSmall,
