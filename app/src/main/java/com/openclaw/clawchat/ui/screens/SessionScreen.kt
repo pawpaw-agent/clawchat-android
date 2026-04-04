@@ -112,11 +112,8 @@ fun SessionScreen(
 
     // 进入会话时直接显示最新消息
     // 使用 scrollToItem 不带动画，瞬间定位避免视觉跳跃
-    // 只在 sessionId 变化时滚动
-    LaunchedEffect(sessionId) {
-        // 等待分组加载完成
-        snapshotFlow { filteredGroups.size }
-            .first { it > 0 }
+    LaunchedEffect(sessionId, filteredGroups.size) {
+        if (filteredGroups.isEmpty()) return@LaunchedEffect
         // 等待布局完成
         snapshotFlow { listState.layoutInfo.totalItemsCount }
             .first { it > 0 }
