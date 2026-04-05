@@ -1,5 +1,6 @@
 package com.openclaw.clawchat.ui.screens.settings
 
+import android.content.Context
 import com.openclaw.clawchat.util.AppLog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,11 +11,13 @@ import com.openclaw.clawchat.network.GatewayUrlUtil
 import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.security.EncryptedStorage
+import com.openclaw.clawchat.security.RootDetector
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.GatewayConfigInput
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
 import com.openclaw.clawchat.ui.state.SettingsUiState
 import com.openclaw.clawchat.ui.state.toUiStatus
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +30,8 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val gateway: GatewayConnection,
     private val userPreferences: UserPreferences,
-    private val encryptedStorage: EncryptedStorage
+    private val encryptedStorage: EncryptedStorage,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -43,6 +47,22 @@ class SettingsViewModel @Inject constructor(
         observeFontSettings()
         observeThemeSettings()
         checkPairedState()
+        checkRootStatus()
+    }
+
+    private fun checkRootStatus() {
+        viewModelScope.launch {
+            val rootResult = RootDetector.checkRoot(context)
+            _uiState.update {
+                it.copy(
+                    isRooted = rootResult.isRooted,
+                    rootRiskLevel = rootResult.riskLevel
+                )
+            }
+            if (rootResult.isRooted) {
+                AppLog.w(TAG, "Root detected: ${rootResult.rootIndicators}")
+            }
+        }
     }
 
     private fun loadCurrentConfig() {

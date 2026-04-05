@@ -245,7 +245,11 @@ data class SettingsUiState(
     // 动态颜色（Material You）
     val dynamicColor: Boolean = true,
     // 主题色索引
-    val themeColorIndex: Int = 0
+    val themeColorIndex: Int = 0,
+    // 安全状态
+    val isRooted: Boolean = false,
+    val rootRiskLevel: com.openclaw.clawchat.security.RootDetector.RootCheckResult.RiskLevel =
+        com.openclaw.clawchat.security.RootDetector.RootCheckResult.RiskLevel.NONE
 )
 
 data class PairingUiState(

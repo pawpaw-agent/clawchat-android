@@ -1,5 +1,6 @@
 package com.openclaw.clawchat.ui.screens.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -13,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.data.ThemeMode
+import com.openclaw.clawchat.security.RootDetector
 import com.openclaw.clawchat.ui.components.ColorUtils
 
 /**
@@ -32,16 +34,82 @@ fun SettingsSection(
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-        
+
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ) {
             Column(content = content)
         }
-        
-        Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
     }
+}
+
+/**
+ * 安全状态项
+ */
+@Composable
+fun SecurityStatusItem(
+    isRooted: Boolean,
+    rootRiskLevel: RootDetector.RootCheckResult.RiskLevel
+) {
+    ListItem(
+        headlineContent = { Text("设备安全状态") },
+        supportingContent = {
+            Text(
+                when {
+                    isRooted && rootRiskLevel == RootDetector.RootCheckResult.RiskLevel.HIGH ->
+                        "检测到 Root，建议在高安全场景下谨慎使用"
+                    isRooted && rootRiskLevel == RootDetector.RootCheckResult.RiskLevel.MEDIUM ->
+                        "检测到可能的 Root 迹象"
+                    isRooted -> "设备可能有 Root 权限"
+                    else -> "设备安全"
+                }
+            )
+        },
+        leadingContent = {
+            Icon(
+                imageVector = if (isRooted) Icons.Outlined.Warning else Icons.Outlined.VerifiedUser,
+                contentDescription = null,
+                tint = when (rootRiskLevel) {
+                    RootDetector.RootCheckResult.RiskLevel.HIGH -> MaterialTheme.colorScheme.error
+                    RootDetector.RootCheckResult.RiskLevel.MEDIUM -> MaterialTheme.colorScheme.tertiary
+                    RootDetector.RootCheckResult.RiskLevel.LOW -> MaterialTheme.colorScheme.secondary
+                    RootDetector.RootCheckResult.RiskLevel.NONE -> MaterialTheme.colorScheme.primary
+                }
+            )
+        },
+        trailingContent = {
+            Surface(
+                color = when (rootRiskLevel) {
+                    RootDetector.RootCheckResult.RiskLevel.HIGH -> MaterialTheme.colorScheme.errorContainer
+                    RootDetector.RootCheckResult.RiskLevel.MEDIUM -> MaterialTheme.colorScheme.tertiaryContainer
+                    RootDetector.RootCheckResult.RiskLevel.LOW -> MaterialTheme.colorScheme.secondaryContainer
+                    RootDetector.RootCheckResult.RiskLevel.NONE -> MaterialTheme.colorScheme.primaryContainer
+                },
+                shape = MaterialTheme.shapes.small
+            ) {
+                Text(
+                    text = when (rootRiskLevel) {
+                        RootDetector.RootCheckResult.RiskLevel.HIGH -> "高风险"
+                        RootDetector.RootCheckResult.RiskLevel.MEDIUM -> "中风险"
+                        RootDetector.RootCheckResult.RiskLevel.LOW -> "低风险"
+                        RootDetector.RootCheckResult.RiskLevel.NONE -> "安全"
+                    },
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = when (rootRiskLevel) {
+                        RootDetector.RootCheckResult.RiskLevel.HIGH -> MaterialTheme.colorScheme.onErrorContainer
+                        RootDetector.RootCheckResult.RiskLevel.MEDIUM -> MaterialTheme.colorScheme.onTertiaryContainer
+                        RootDetector.RootCheckResult.RiskLevel.LOW -> MaterialTheme.colorScheme.onSecondaryContainer
+                        RootDetector.RootCheckResult.RiskLevel.NONE -> MaterialTheme.colorScheme.onPrimaryContainer
+                    }
+                )
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 /**

@@ -147,6 +147,14 @@ fun SettingsScreen(
             }
 
             // 关于区域
+            SettingsSection(title = "安全") {
+                SecurityStatusItem(
+                    isRooted = state.isRooted,
+                    rootRiskLevel = state.rootRiskLevel
+                )
+            }
+
+            // 关于区域
             SettingsSection(title = "关于") {
                 ClickableSettingItem(
                     icon = Icons.Outlined.Info,
