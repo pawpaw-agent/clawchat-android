@@ -33,6 +33,7 @@ annotation class ApplicationScope
  *
  * OkHttpClient 配置：
  * - 信任系统证书 + Gateway 自签名证书
+ * - Certificate Pinning 防止中间人攻击
  * - 30 秒超时
  * - 30 秒 WebSocket 心跳
  * - 自动重试
@@ -50,9 +51,18 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideCertificatePinningManager(
+        @ApplicationContext context: Context
+    ): CertificatePinningManager {
+        return CertificatePinningManager(context)
+    }
+
+    @Provides
+    @Singleton
     fun provideOkHttpClient(
         @ApplicationContext context: Context,
-        gatewayTrustManager: GatewayTrustManager
+        gatewayTrustManager: GatewayTrustManager,
+        certificatePinningManager: CertificatePinningManager
     ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor { message ->
             SecureLogger.d(message.redactSensitive())
