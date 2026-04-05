@@ -2,7 +2,6 @@ package com.openclaw.clawchat.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -12,10 +11,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.geometry.CornerRadius
@@ -24,6 +24,14 @@ import androidx.compose.ui.graphics.Color
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+
+/**
+ * 增强的加载指示器组件集合
+ */
+@Composable
+fun EnhancedLoadingIndicators() {
+    // 用于组合所有增强加载指示器的容器
+}
 
 /**
  * 波浪加载动画 - 类似 webchat 风格的加载效果
@@ -55,7 +63,7 @@ fun WaveLoadingIndicator(
 
         for (i in 0 until waveCount) {
             val offsetX = (width / waveCount) * i
-            val path = Path()
+            val path = androidx.compose.ui.graphics.Path()
             path.moveTo(0f, centerY)
             for (x in 0..width.toInt() step 10) {
                 val waveY = centerY + amplitude.toPx() * kotlin.math.sin(
@@ -76,7 +84,7 @@ fun WaveLoadingIndicator(
 }
 
 /**
- * 脉冲圆点加载动画
+ * 脉冲圆点加载动画 - 为了避免函数名冲突
  */
 @Composable
 fun PulseDotLoadingIndicator(
@@ -165,7 +173,7 @@ fun CircularPulseIndicator(
         label = "circle_alpha"
     )
 
-    Box(
+    androidx.compose.foundation.layout.Box(
         modifier = Modifier
             .size(size)
             .graphicsLayer {
