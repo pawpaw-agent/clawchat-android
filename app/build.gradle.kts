@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     id("jacoco")
+    // Firebase - uncomment when google-services.json is available
+    // id("com.google.gms.google-services")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -285,6 +287,13 @@ dependencies {
 
     // Memory leak detection (debug only)
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+
+    // Firebase (optional - requires google-services.json)
+    // Uncomment the following when google-services.json is configured:
+    // implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    // implementation("com.google.firebase:firebase-analytics")
+    // implementation("com.google.firebase:firebase-crashlytics")
+    // implementation("com.google.firebase:firebase-perf")
 
     // Testing
     // QR Code generation
