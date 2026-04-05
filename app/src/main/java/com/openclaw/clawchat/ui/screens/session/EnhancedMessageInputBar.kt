@@ -2,7 +2,6 @@ package com.openclaw.clawchat.ui.screens.session
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,7 +23,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import com.openclaw.clawchat.ui.components.*
 import com.openclaw.clawchat.ui.state.AttachmentUi
 import com.openclaw.clawchat.util.FileUtils
@@ -35,7 +33,8 @@ import com.openclaw.clawchat.util.isSaveDraftShortcut
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import java.util.UUID
+import java.util.*
+
 
 /**
  * 增强型消息输入栏 - 实现完整的 webchat 功能对等
@@ -312,8 +311,8 @@ fun EnhancedMessageInputBar(
 /**
  * 附件预览组件
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 private fun AttachmentPreviews(
     attachments: List<AttachmentUi>,
     onRemove: (String) -> Unit,
@@ -357,7 +356,7 @@ private fun SlashCommandMenu(
         ),
         shape = RoundedCornerShape(8.dp)
     ) {
-        LazyColumn(
+        androidx.compose.foundation.lazy.LazyColumn(
             modifier = Modifier.heightIn(max = 240.dp),
             contentPadding = PaddingValues(vertical = 4.dp)
         ) {
