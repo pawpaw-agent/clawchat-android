@@ -6,6 +6,50 @@
 
 ---
 
+## [1.3.0] - 2026-04-06
+
+### 新增功能
+
+**安全功能**
+- **Certificate Pinning** - 防止中间人攻击，支持 TOFU 模式
+- **Root 检测** - 检测设备 Root 状态，支持风险等级评估
+
+**日志系统**
+- **日志级别控制** - 支持 VERBOSE/DEBUG/INFO/WARNING/ERROR/NONE 级别
+- **日志文件持久化** - 自动写入文件，支持轮转和清理
+
+**国际化**
+- **西班牙语支持** - 完整翻译所有 UI 字符串
+- **葡萄牙语支持** - 完整翻译所有 UI 字符串
+
+**开发者功能**
+- **Firebase 集成准备** - 支持 Crashlytics、Analytics、Performance（需配置 google-services.json）
+- **Baseline Profile** - 添加预编译类配置，优化启动速度
+
+### 改进
+
+**构建优化**
+- 启用 Gradle 配置缓存
+- 启用并行构建和增量编译
+- 优化 JVM 参数（4GB 内存、ParallelGC）
+- 优化 APK 打包，排除不必要的 META-INF 文件
+
+**测试**
+- 添加 JsonUtils 单元测试
+- 添加 FileUtils 单元测试
+- 添加 AppConstants 单元测试
+
+**依赖更新**
+- 添加 LeakCanary 内存泄漏检测（仅 Debug 构建）
+
+### 技术细节
+
+- 现已支持 8 种语言：中文、英文、德语、法语、日语、韩语、西班牙语、葡萄牙语
+- 日志系统支持运行时切换级别
+- Root 检测覆盖常见 Root 工具（Magisk、SuperSU 等）
+
+---
+
 ## [1.2.1] - 2026-04-03
 
 ### 修复
