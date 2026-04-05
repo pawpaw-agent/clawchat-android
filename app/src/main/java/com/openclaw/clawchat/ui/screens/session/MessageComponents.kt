@@ -69,22 +69,22 @@ fun MessageContentCard(
 ) {
     val textContent = message.getTextContent()
     val images = message.content.filterIsInstance<MessageContentItem.Image>()
-    
+
     if (textContent.isBlank() && images.isEmpty()) return
-    
+
     val textSize = when (messageFontSize) {
         FontSize.SMALL -> 10.sp
         FontSize.MEDIUM -> 13.sp
         FontSize.LARGE -> 16.sp
     }
-    
+
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     var showCopiedToast by remember { mutableStateOf(false) }
-    
+
     // 双击复制提示
     if (showCopiedToast) {
         LaunchedEffect(Unit) {
@@ -92,7 +92,7 @@ fun MessageContentCard(
             showCopiedToast = false
         }
     }
-    
+
     // 流式输出脉冲动画
     val infiniteTransition = rememberInfiniteTransition(label = "streaming")
     val borderColor by infiniteTransition.animateColor(
@@ -104,7 +104,7 @@ fun MessageContentCard(
         ),
         label = "borderColor"
     )
-    
+
     Column(
         verticalArrangement = Arrangement.spacedBy(DesignTokens.space2)
     ) {
@@ -112,7 +112,7 @@ fun MessageContentCard(
         images.forEach { image ->
             MessageImageContent(image = image)
         }
-        
+
         // 渲染文本
         if (textContent.isNotBlank()) {
             Box(
@@ -153,7 +153,7 @@ fun MessageContentCard(
                     textColor = MaterialTheme.colorScheme.onBackground,
                     isStreaming = isStreaming  // 流式优化：传入流式状态
                 )
-                
+
                 if (showCopiedToast) {
             Surface(
                 modifier = Modifier.align(Alignment.BottomCenter),
@@ -168,7 +168,7 @@ fun MessageContentCard(
                 )
             }
         }
-        
+
         if (showMenu) {
                     val messageText = formatMessageAsMarkdown(message)
                     MessageActionDropdownMenu(
@@ -207,7 +207,7 @@ fun MessageContentCard(
                 }
             }
         }
-        
+
         // 用户消息发送状态图标和时间
         if (isUser && isLastInGroup) {
             Row(
@@ -240,7 +240,7 @@ fun MessageContentCard(
                 )
             }
         }
-        
+
         // 删除确认对话框
         if (showDeleteConfirm) {
             AlertDialog(
@@ -288,7 +288,7 @@ private fun MessageStatusIndicator(
                 ),
                 label = "rotation"
             )
-            
+
             Icon(
                 imageVector = Icons.Default.Sync,
                 contentDescription = "发送中",
@@ -344,9 +344,9 @@ fun AnimatedCopyIcon(
             imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
             contentDescription = if (isCopied) "已复制" else "复制",
             modifier = modifier.size(18.dp),
-            tint = if (isCopied) 
-                MaterialTheme.colorScheme.primary 
-            else 
+            tint = if (isCopied)
+                MaterialTheme.colorScheme.primary
+            else
                 MaterialTheme.colorScheme.onSurface
         )
     }
@@ -368,7 +368,7 @@ fun MessageActionDropdownMenu(
 ) {
     // 复制成功状态，用于图标切换动画
     var showCopied by remember { mutableStateOf(false) }
-    
+
     // 复制成功后 1.5s 自动恢复图标
     LaunchedEffect(showCopied) {
         if (showCopied) {
@@ -376,7 +376,7 @@ fun MessageActionDropdownMenu(
             showCopied = false
         }
     }
-    
+
     DropdownMenu(
         expanded = true,
         onDismissRequest = onDismiss
@@ -387,7 +387,7 @@ fun MessageActionDropdownMenu(
                 onCopy()
                 showCopied = true
             },
-            leadingIcon = { 
+            leadingIcon = {
                 AnimatedCopyIcon(copied = showCopied)
             }
         )
@@ -436,17 +436,17 @@ fun MessageImageContent(image: MessageContentItem.Image) {
         try {
             val base64Data = image.base64 ?: return@remember null
             val bytes = Base64.decode(base64Data, Base64.DEFAULT)
-            
+
             // 先解码尺寸
             val options = android.graphics.BitmapFactory.Options().apply {
                 inJustDecodeBounds = true
             }
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-            
+
             // 计算采样率，限制最大尺寸
             val maxSize = MAX_IMAGE_SIZE
             val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxSize)
-            
+
             // 用采样率解码
             val loadOptions = android.graphics.BitmapFactory.Options().apply {
                 inSampleSize = sampleSize
@@ -456,7 +456,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
             null
         }
     }
-    
+
     Box(
         modifier = Modifier
             .widthIn(max = 280.dp)
@@ -481,11 +481,11 @@ private fun calculateSampleSize(width: Int, height: Int, maxSize: Int): Int {
     var sampleSize = 1
     val halfWidth = width / 2
     val halfHeight = height / 2
-    
+
     while (halfWidth / sampleSize >= maxSize || halfHeight / sampleSize >= maxSize) {
         sampleSize *= 2
     }
-    
+
     return sampleSize
 }
 
@@ -524,6 +524,7 @@ fun SystemMessageItem(message: MessageUi) {
 
 /**
  * 工具详情卡片
+ * 支持流式脉冲边框动画效果
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -536,17 +537,41 @@ fun ToolDetailCard(toolCard: ToolCard) {
     val isRunning = !isComplete && toolCard.kind == ToolCardKind.CALL
     // 完成时显示 result，运行时不显示（避免闪烁）
     val hasContent = hasArgs || (hasResult && isComplete)
-    
+
     val backgroundColor = when {
         toolCard.isError -> MaterialTheme.colorScheme.errorContainer
         isRunning -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)  // 执行中
         toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)  // 已完成
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
-    
+
+    // 流式脉冲边框动画（与 MessageContentCard 保持一致）
+    val infiniteTransition = rememberInfiniteTransition(label = "tool_streaming")
+    val borderColor by infiniteTransition.animateColor(
+        initialValue = MaterialTheme.colorScheme.outline,
+        targetValue = MaterialTheme.colorScheme.primary,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "toolBorderColor"
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                // 执行中时添加脉冲边框动画
+                if (isRunning) {
+                    Modifier.border(
+                        width = 1.dp,
+                        color = borderColor,
+                        shape = RoundedCornerShape(6.dp)
+                    )
+                } else {
+                    Modifier
+                }
+            )
             .combinedClickable(
                 enabled = hasContent,
                 onClick = { expanded = !expanded }
@@ -608,7 +633,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                     )
                 }
             }
-            
+
             // 运行中时默认展开显示参数
             AnimatedVisibility(
                 visible = (expanded || isRunning) && hasArgs,
@@ -628,7 +653,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                     }
                 }
             }
-            
+
             // 结果（完成时显示）
             AnimatedVisibility(
                 visible = expanded && hasResult && isComplete,
@@ -657,4 +682,3 @@ fun ToolDetailCard(toolCard: ToolCard) {
         }
     }
 }
-
