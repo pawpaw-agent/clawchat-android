@@ -312,6 +312,7 @@ fun EnhancedMessageInputBar(
 /**
  * 附件预览组件
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AttachmentPreviews(
     attachments: List<AttachmentUi>,
