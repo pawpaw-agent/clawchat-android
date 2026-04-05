@@ -1,0 +1,15 @@
+# Baseline Profile for ClawChat
+# This file contains precompiled classes and methods for faster app startup
+# Generated automatically by benchmark module
+
+Lcom/openclaw/clawchat/ClawChatApplication;
+Lcom/openclaw/clawchat/MainActivity;
+Lcom/openclaw/clawchat/ui/theme/Theme;
+Lcom/openclaw/clawchat/ui/theme/Color;
+Lcom/openclaw/clawchat/ui/theme/Type;
+Lcom/openclaw/clawchat/ui/theme/DesignSystem;
+Lcom/openclaw/clawchat/ui/state/MainViewModel;
+Lcom/openclaw/clawchat/ui/state/SessionViewModel;
+Lcom/openclaw/clawchat/network/protocol/GatewayConnection;
+Lcom/openclaw/clawchat/security/SecurityModule;
+Lcom/openclaw/clawchat/di/AppModule;

@@ -87,12 +87,20 @@ android {
             if (hasReleaseSigningConfig) {
                 signingConfig = signingConfigs.getByName("release")
             }
+            // Optimize APK size
+            isCrunchPngs = true
+            // Enable R8 full mode for better optimization
+            isMinifyEnabled = true
         }
         debug {
             isDebuggable = true
             applicationIdSuffix = ".debug"
             enableUnitTestCoverage = true
             signingConfig = signingConfigs.getByName("debug")
+            // Faster debug builds
+            isCrunchPngs = false
+            // Disable minification for debug builds
+            isMinifyEnabled = false
         }
     }
 
@@ -122,6 +130,20 @@ android {
             excludes += "/META-INF/INDEX.LIST"
             excludes += "/META-INF/io.netty.versions.properties"
             excludes += "/META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+            // Exclude unnecessary files to reduce APK size
+            excludes += "/META-INF/{ASL2.0,LGPL2.1,LGPL3.0}"
+            excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/LICENSE"
+            excludes += "/META-INF/LICENSE.txt"
+            excludes += "/META-INF/NOTICE"
+            excludes += "/META-INF/NOTICE.txt"
+            excludes += "/META-INF/*.kotlin_module"
+            excludes += "/kotlin/**"
+            excludes += "/kotlinx/**"
+        }
+        // Optimize native libraries
+        jniLibs {
+            useLegacyPackaging = false
         }
     }
 
@@ -242,11 +264,11 @@ dependencies {
 
     // Security
     implementation(libs.androidx.security.crypto)
-    
+
     // BouncyCastle Ed25519 (software fallback for API < 33)
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
     implementation("org.bouncycastle:bcpkix-jdk18on:1.78.1")
-    
+
     // JSON (用于协议解析)
     implementation("org.json:json:20231013")
 
@@ -260,6 +282,9 @@ dependencies {
     implementation(libs.markdown.renderer)
     implementation(libs.markdown.renderer.m3)
     implementation(libs.markdown.renderer.code)
+
+    // Memory leak detection (debug only)
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 
     // Testing
     // QR Code generation
