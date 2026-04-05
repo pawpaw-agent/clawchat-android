@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.selection.SelectionContainer
 import com.openclaw.clawchat.ui.state.ToolCard
 import com.openclaw.clawchat.ui.state.ToolCardKind
 
