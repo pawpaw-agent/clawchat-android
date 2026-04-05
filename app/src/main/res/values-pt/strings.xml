@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">ClawChat</string>
+
+    <!-- General -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancelar</string>
+    <string name="confirm">Confirmar</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="loading">Carregando…</string>
+    <string name="error">Erro</string>
+    <string name="success">Sucesso</string>
+    <string name="delete">Excluir</string>
+    <string name="close">Fechar</string>
+    <string name="confirm_button">Confirmar</string>
+    <string name="cancel_connection">Cancelar conexão</string>
+    <string name="go_to_settings">Ir para configurações</string>
+    <string name="reset">Redefinir</string>
+    <string name="rename">Renomear</string>
+    <string name="regenerate">Regenerar</string>
+    <string name="undo">Desfazer</string>
+    <string name="redo">Refazer</string>
+    <string name="clear">Limpar</string>
+    <string name="save">Salvar</string>
+    <string name="discard">Descartar</string>
+
+    <!-- Connection Status -->
+    <string name="status_connected">Conectado</string>
+    <string name="status_connecting">Conectando…</string>
+    <string name="status_disconnected">Desconectado</string>
+    <string name="status_error">Erro de conexão</string>
+    <string name="status_connect">Conectar</string>
+    <string name="status_connect_success">Conexão bem-sucedida!</string>
+    <string name="status_connect_paired">Conectar ao Gateway pareado</string>
+    <string name="status_scan_or_code">Escanear QR code ou inserir código</string>
+    <string name="status_retry">Tentar novamente</string>
+    <string name="status_go_to_settings">Ir para configurações</string>
+    <string name="status_latency">Latência: %d ms</string>
+    <string name="status_gateway">Gateway: %s</string>
+
+    <!-- Gateway Configuration -->
+    <string name="gateway_title">Gateway</string>
+    <string name="gateway_add">Adicionar Gateway</string>
+    <string name="gateway_edit">Editar Gateway</string>
+    <string name="gateway_delete">Excluir Gateway</string>
+    <string name="gateway_host">Host</string>
+    <string name="gateway_port">Porta</string>
+    <string name="gateway_tls">Usar TLS (WSS)</string>
+    <string name="gateway_test">Testar conexão</string>
+
+    <!-- Messages -->
+    <string name="message_hint">Digite uma mensagem…</string>
+    <string name="message_send">Enviar</string>
+    <string name="message_attach">Anexar arquivo</string>
+    <string name="message_copy">Copiar</string>
+    <string name="message_delete">Excluir</string>
+    <string name="message_share">Compartilhar</string>
+    <string name="message_regenerate">Regenerar</string>
+    <string name="message_speak">Falar</string>
+    <string name="message_retry">Tentar novamente</string>
+    <string name="message_copied">Copiado para a área de transferência</string>
+    <string name="message_copied_to_clipboard">Mensagem copiada para a área de transferência</string>
+    <string name="message_delete_title">Excluir mensagem</string>
+    <string name="message_delete_confirm">Excluir esta mensagem?</string>
+    <string name="message_code_copied">Código copiado</string>
+    <string name="message_just_now">Agora mesmo</string>
+    <string name="message_minutes_ago">%d minutos atrás</string>
+    <string name="message_input_placeholder">Digite uma mensagem…</string>
+    <string name="message_image_reset">Redefinir</string>
+    <string name="message_delete_button">Excluir</string>
+    <string name="message_cancel">Cancelar</string>
+    <string name="message_delete_confirm_title">Excluir mensagem</string>
+    <string name="message_delete_confirm_message">Tem certeza de que deseja excluir esta mensagem?</string>
+    <string name="message_speaking">Falando…</string>
+    <string name="message_stop_speaking">Parar fala</string>
+    <string name="message_copy_code">Copiar código</string>
+
+    <!-- Empty States -->
+    <string name="empty_sessions">Nenhuma sessão ativa</string>
+    <string name="empty_sessions_hint">Toque no botão abaixo para criar uma nova sessão</string>
+    <string name="empty_session">Nenhuma mensagem ainda</string>
+    <string name="empty_session_hint">Comece a digitar para iniciar a conversa</string>
+    <string name="empty_search">Nenhum resultado encontrado</string>
+    <string name="empty_search_hint">Tente um termo de busca diferente</string>
+    <string name="search_sessions">Buscar sessões…</string>
+    <string name="input_message">Digite uma mensagem…</string>
+    <string name="new_messages">Novas mensagens</string>
+    <string name="scroll_to_bottom">Rolar para baixo</string>
+    <string name="no_internet">Sem conexão com a internet</string>
+    <string name="retrying">Tentando novamente…</string>
+
+    <!-- Sessions -->
+    <string name="sessions_title">Sessões</string>
+    <string name="session_new">Nova sessão</string>
+    <string name="session_delete">Excluir sessão</string>
+    <string name="session_terminate">Encerrar</string>
+    <string name="session_empty">Nenhuma sessão ativa</string>
+    <string name="session_model">Modelo</string>
+    <string name="session_delete_confirm">Excluir sessão \"%s\"? Isso não pode ser desfeito.</string>
+    <string name="session_search">Buscar sessões…</string>
+    <string name="session_today">Hoje</string>
+    <string name="session_yesterday">Ontem</string>
+    <string name="session_this_week">Esta semana</string>
+    <string name="session_earlier">Anterior</string>
+    <string name="session_title">Sessão</string>
+    <string name="session_input_placeholder">Digite uma mensagem…</string>
+    <string name="session_image_reset">Redefinir</string>
+    <string name="session_options">Opções da sessão</string>
+    <string name="session_rename">Renomear</string>
+    <string name="session_terminate_button">Encerrar sessão</string>
+    <string name="session_delete_button">Excluir sessão</string>
+    <string name="session_close">Fechar</string>
+    <string name="session_delete_title">Excluir sessão</string>
+    <string name="session_delete_message">Excluir sessão \"%s\"? Esta ação não pode ser desfeita.</string>
+    <string name="session_rename_title">Renomear sessão</string>
+    <string name="session_name">Nome da sessão</string>
+    <string name="session_confirm">Confirmar</string>
+    <string name="session_search_placeholder">Buscar sessões…</string>
+    <string name="session_delete_confirm_title">Excluir mensagem</string>
+    <string name="session_delete_confirm_message">Excluir esta mensagem?</string>
+    <string name="session_no_messages">Nenhuma mensagem ainda</string>
+    <string name="session_start_conversation">Comece a digitar para iniciar</string>
+
+    <!-- Pairing -->
+    <string name="pairing_title">Pareamento do dispositivo</string>
+    <string name="pairing_request">Solicitar pareamento</string>
+    <string name="pairing_pending">Aguardando aprovação…</string>
+    <string name="pairing_approved">Dispositivo aprovado</string>
+    <string name="pairing_rejected">Pareamento rejeitado</string>
+    <string name="pairing_timeout">Tempo esgotado</string>
+    <string name="pairing_connect_gateway">Conectar Gateway</string>
+    <string name="pairing_gateway_address">Endereço do Gateway</string>
+    <string name="pairing_gateway_address_hint">192.168.0.213:18789</string>
+    <string name="pairing_gateway_token">Token do Gateway</string>
+    <string name="pairing_gateway_token_hint">Cole OPENCLAW_GATEWAY_TOKEN</string>
+    <string name="pairing_connect">Conectar</string>
+    <string name="pairing_start">Iniciar pareamento</string>
+    <string name="pairing_generating_key">Gerando chave de dispositivo Ed25519…</string>
+    <string name="pairing_device_id">ID do dispositivo</string>
+    <string name="pairing_public_key">Chave pública (Ed25519)</string>
+    <string name="pairing_invalid_address">Por favor insira um endereço válido</string>
+    <string name="pairing_waiting_approval">Aguardando aprovação do administrador</string>
+    <string name="pairing_run_command">Execute no terminal: openclaw devices approve</string>
+    <string name="pairing_connecting">Conectando…</string>
+    <string name="pairing_back">Voltar</string>
+    <string name="pairing_please_run">Por favor execute no terminal: openclaw devices approve</string>
+    <string name="pairing_enter_gateway">Insira URL do Gateway</string>
+    <string name="pairing_paste_token">Colar token</string>
+    <string name="pairing_scan_qr">Escanear QR Code</string>
+    <string name="pairing_or_enter_code">Ou insira código de pareamento</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Configurações</string>
+    <string name="settings_notifications">Notificações</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_about">Sobre</string>
+    <string name="settings_version">Versão</string>
+    <string name="settings_device_info">Informações do dispositivo</string>
+    <string name="settings_pairing_status">Status do pareamento</string>
+    <string name="settings_close">Fechar</string>
+    <string name="settings_confirm">Confirmar</string>
+    <string name="settings_cancel">Cancelar</string>
+    <string name="settings_disconnect">Desconectar</string>
+    <string name="settings_disconnect_description">Desconectar do Gateway atual</string>
+    <string name="settings_configure_gateway">Configurar Gateway</string>
+    <string name="settings_gateway_url">URL do Gateway</string>
+    <string name="settings_gateway_url_hint">ex.: http://192.168.1.100:18789</string>
+    <string name="settings_connecting">Conectando…</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Escuro</string>
+    <string name="settings_theme_system">Sistema</string>
+    <string name="settings_font_size">Tamanho da fonte</string>
+    <string name="settings_font_small">Pequeno</string>
+    <string name="settings_font_medium">Médio</string>
+    <string name="settings_font_large">Grande</string>
+    <string name="settings_appearance">Aparência</string>
+    <string name="settings_debug">Depuração</string>
+    <string name="about_app_name">ClawChat</string>
+    <string name="about_description">Cliente Android OpenClaw</string>
+    <string name="about_version">Versão %s</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_messages">Mensagens</string>
+    <string name="notification_channel_system">Sistema</string>
+    <string name="notification_new_message">Nova mensagem</string>
+    <string name="notification_tap_to_open">Toque para abrir</string>
+    <string name="notification_reply">Responder</string>
+    <string name="notification_mark_as_read">Marcar como lido</string>
+    <string name="notification_channel_description">Notificações de mensagens</string>
+    <string name="notification_new_message_title">Nova mensagem de %s</string>
+    <string name="notification_channel_name">Mensagens ClawChat</string>
+    <string name="notification_new_message_text">Nova mensagem recebida</string>
+
+    <!-- Errors -->
+    <string name="error_network">Erro de rede. Por favor verifique sua conexão.</string>
+    <string name="error_gateway">Não é possível conectar ao Gateway</string>
+    <string name="error_pairing">Falha no pareamento</string>
+    <string name="error_unknown">Ocorreu um erro inesperado</string>
+    <string name="error_connection_lost">Conexão perdida</string>
+    <string name="error_timeout">Tempo esgotado</string>
+    <string name="error_unauthorized">Não autorizado. Por favor pareie novamente.</string>
+    <string name="error_send_failed">Falha ao enviar mensagem</string>
+    <string name="error_load_failed">Falha ao carregar mensagens</string>
+
+    <!-- About -->
+    <string name="about_website">Site</string>
+    <string name="about_source">Código-fonte</string>
+    <string name="about_license">Licença</string>
+    <string name="about_github">GitHub</string>
+    <string name="about_documentation">Documentação</string>
+    <string name="about_developer">Desenvolvedor</string>
+    <string name="about_openclaw">OpenClaw</string>
+    <string name="about_title">Sobre</string>
+    <string name="about_licenses">Licenças de código aberto</string>
+</resources>
