@@ -28,11 +28,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
 import androidx.core.app.ShareCompat
 import androidx.compose.ui.text.font.FontFamily
@@ -69,22 +67,22 @@ fun MessageContentCard(
 ) {
     val textContent = message.getTextContent()
     val images = message.content.filterIsInstance<MessageContentItem.Image>()
-
+    
     if (textContent.isBlank() && images.isEmpty()) return
-
+    
     val textSize = when (messageFontSize) {
         FontSize.SMALL -> 10.sp
         FontSize.MEDIUM -> 13.sp
         FontSize.LARGE -> 16.sp
     }
-
+    
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     var showCopiedToast by remember { mutableStateOf(false) }
-
+    
     // 双击复制提示
     if (showCopiedToast) {
         LaunchedEffect(Unit) {
@@ -92,7 +90,7 @@ fun MessageContentCard(
             showCopiedToast = false
         }
     }
-
+    
     // 流式输出脉冲动画
     val infiniteTransition = rememberInfiniteTransition(label = "streaming")
     val borderColor by infiniteTransition.animateColor(
@@ -104,7 +102,7 @@ fun MessageContentCard(
         ),
         label = "borderColor"
     )
-
+    
     Column(
         verticalArrangement = Arrangement.spacedBy(DesignTokens.space2)
     ) {
@@ -112,7 +110,7 @@ fun MessageContentCard(
         images.forEach { image ->
             MessageImageContent(image = image)
         }
-
+        
         // 渲染文本
         if (textContent.isNotBlank()) {
             Box(
@@ -137,7 +135,7 @@ fun MessageContentCard(
                     .combinedClickable(
                         onClick = {},
                         onLongClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                             showMenu = true
                         }
                     )
@@ -153,7 +151,7 @@ fun MessageContentCard(
                     textColor = MaterialTheme.colorScheme.onBackground,
                     isStreaming = isStreaming  // 流式优化：传入流式状态
                 )
-
+                
                 if (showCopiedToast) {
             Surface(
                 modifier = Modifier.align(Alignment.BottomCenter),
@@ -168,7 +166,7 @@ fun MessageContentCard(
                 )
             }
         }
-
+        
         if (showMenu) {
                     val messageText = formatMessageAsMarkdown(message)
                     MessageActionDropdownMenu(
@@ -207,7 +205,7 @@ fun MessageContentCard(
                 }
             }
         }
-
+        
         // 用户消息发送状态图标和时间
         if (isUser && isLastInGroup) {
             Row(
@@ -240,7 +238,7 @@ fun MessageContentCard(
                 )
             }
         }
-
+        
         // 删除确认对话框
         if (showDeleteConfirm) {
             AlertDialog(
@@ -288,7 +286,7 @@ private fun MessageStatusIndicator(
                 ),
                 label = "rotation"
             )
-
+            
             Icon(
                 imageVector = Icons.Default.Sync,
                 contentDescription = "发送中",
@@ -344,9 +342,9 @@ fun AnimatedCopyIcon(
             imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
             contentDescription = if (isCopied) "已复制" else "复制",
             modifier = modifier.size(18.dp),
-            tint = if (isCopied)
-                MaterialTheme.colorScheme.primary
-            else
+            tint = if (isCopied) 
+                MaterialTheme.colorScheme.primary 
+            else 
                 MaterialTheme.colorScheme.onSurface
         )
     }
@@ -368,7 +366,7 @@ fun MessageActionDropdownMenu(
 ) {
     // 复制成功状态，用于图标切换动画
     var showCopied by remember { mutableStateOf(false) }
-
+    
     // 复制成功后 1.5s 自动恢复图标
     LaunchedEffect(showCopied) {
         if (showCopied) {
@@ -376,7 +374,7 @@ fun MessageActionDropdownMenu(
             showCopied = false
         }
     }
-
+    
     DropdownMenu(
         expanded = true,
         onDismissRequest = onDismiss
@@ -387,7 +385,7 @@ fun MessageActionDropdownMenu(
                 onCopy()
                 showCopied = true
             },
-            leadingIcon = {
+            leadingIcon = { 
                 AnimatedCopyIcon(copied = showCopied)
             }
         )
@@ -436,17 +434,17 @@ fun MessageImageContent(image: MessageContentItem.Image) {
         try {
             val base64Data = image.base64 ?: return@remember null
             val bytes = Base64.decode(base64Data, Base64.DEFAULT)
-
+            
             // 先解码尺寸
             val options = android.graphics.BitmapFactory.Options().apply {
                 inJustDecodeBounds = true
             }
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-
+            
             // 计算采样率，限制最大尺寸
             val maxSize = MAX_IMAGE_SIZE
             val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxSize)
-
+            
             // 用采样率解码
             val loadOptions = android.graphics.BitmapFactory.Options().apply {
                 inSampleSize = sampleSize
@@ -456,7 +454,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
             null
         }
     }
-
+    
     Box(
         modifier = Modifier
             .widthIn(max = 280.dp)
@@ -481,11 +479,11 @@ private fun calculateSampleSize(width: Int, height: Int, maxSize: Int): Int {
     var sampleSize = 1
     val halfWidth = width / 2
     val halfHeight = height / 2
-
+    
     while (halfWidth / sampleSize >= maxSize || halfHeight / sampleSize >= maxSize) {
         sampleSize *= 2
     }
-
+    
     return sampleSize
 }
 
@@ -518,6 +516,142 @@ fun SystemMessageItem(message: MessageUi) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+/**
+ * 工具详情卡片
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ToolDetailCard(toolCard: ToolCard) {
+    var expanded by remember { mutableStateOf(false) }
+    val hasArgs = toolCard.args?.isNotBlank() == true
+    val hasResult = toolCard.result?.isNotBlank() == true
+    // 使用 phase 判断完成状态：phase=result 表示已完成
+    val isComplete = toolCard.phase == "result"
+    val isRunning = !isComplete && toolCard.kind == ToolCardKind.CALL
+    // 完成时显示 result，运行时不显示（避免闪烁）
+    val hasContent = hasArgs || (hasResult && isComplete)
+    
+    val backgroundColor = when {
+        toolCard.isError -> MaterialTheme.colorScheme.errorContainer
+        isRunning -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)  // 执行中
+        toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)  // 已完成
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                enabled = hasContent,
+                onClick = { expanded = !expanded }
+            ),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        shape = RoundedCornerShape(6.dp)
+    ) {
+        Column(modifier = Modifier.padding(6.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 运行中显示加载指示器
+                if (isRunning) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(10.dp),
+                        strokeWidth = 1.5.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Icon(
+                        imageVector = when {
+                            toolCard.isError -> Icons.Default.ErrorOutline
+                            toolCard.kind == ToolCardKind.CALL -> Icons.Default.Bolt
+                            else -> Icons.Default.CheckCircle
+                        },
+                        contentDescription = null,
+                        modifier = Modifier.size(10.dp),
+                        tint = when {
+                            toolCard.isError -> MaterialTheme.colorScheme.error
+                            toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.primary
+                            else -> MaterialTheme.colorScheme.tertiary
+                        }
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = toolCard.name.replaceFirstChar { it.uppercase() },
+                    modifier = Modifier.weight(1f),
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                // 运行中显示状态标签
+                if (isRunning) {
+                    Text(
+                        text = "执行中...",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                if (hasContent) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(10.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            
+            // 运行中时默认展开显示参数
+            AnimatedVisibility(
+                visible = (expanded || isRunning) && hasArgs,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    SelectionContainer {
+                        Text(
+                            text = toolCard.args!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 9.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            
+            // 结果（完成时显示）
+            AnimatedVisibility(
+                visible = expanded && hasResult && isComplete,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column {
+                    if (hasArgs) {
+                        Spacer(modifier = Modifier.height(3.dp))
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 2.dp),
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    SelectionContainer {
+                        Text(
+                            text = toolCard.result!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 9.sp,
+                            color = if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                }
+            }
         }
     }
 }
