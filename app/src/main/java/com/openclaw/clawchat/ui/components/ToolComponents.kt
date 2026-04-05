@@ -1,6 +1,7 @@
 package com.openclaw.clawchat.ui.components
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,16 +23,44 @@ import com.openclaw.clawchat.ui.state.ToolCardKind
 
 /**
  * 工具卡片组件 - 实现 webchat 风格的工具调用显示
+ * 支持流式脉冲边框动画效果
  */
 @Composable
 fun ToolDetailCard(
     toolCard: ToolCard,
     modifier: Modifier = Modifier
 ) {
+    // 判断是否正在执行：phase 不是 result 且是 CALL 类型
+    val isRunning = toolCard.phase != "result" && toolCard.kind == ToolCardKind.CALL
+
+    // 流式脉冲边框动画
+    val infiniteTransition = rememberInfiniteTransition(label = "tool_streaming")
+    val borderColor by infiniteTransition.animateColor(
+        initialValue = MaterialTheme.colorScheme.outline,
+        targetValue = MaterialTheme.colorScheme.primary,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "toolBorderColor"
+    )
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .then(
+                // 执行中时添加脉冲边框动画
+                if (isRunning) {
+                    Modifier.border(
+                        width = 1.dp,
+                        color = borderColor,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                } else {
+                    Modifier
+                }
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = when (toolCard.kind) {
@@ -55,17 +84,26 @@ fun ToolDetailCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(
-                        imageVector = when (toolCard.kind) {
-                            ToolCardKind.CALL -> Icons.Default.SettingsApplications
-                            ToolCardKind.RESULT -> if (toolCard.isError) Icons.Default.Warning else Icons.Default.Done
-                        },
-                        contentDescription = null,
-                        tint = when (toolCard.kind) {
-                            ToolCardKind.CALL -> MaterialTheme.colorScheme.secondary
-                            ToolCardKind.RESULT -> if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
-                        }
-                    )
+                    // 运行中显示加载指示器
+                    if (isRunning) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    } else {
+                        Icon(
+                            imageVector = when (toolCard.kind) {
+                                ToolCardKind.CALL -> Icons.Default.SettingsApplications
+                                ToolCardKind.RESULT -> if (toolCard.isError) Icons.Default.Warning else Icons.Default.Done
+                            },
+                            contentDescription = null,
+                            tint = when (toolCard.kind) {
+                                ToolCardKind.CALL -> MaterialTheme.colorScheme.secondary
+                                ToolCardKind.RESULT -> if (toolCard.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                            }
+                        )
+                    }
                     Text(
                         text = toolCard.name,
                         style = MaterialTheme.typography.titleSmall,
@@ -77,7 +115,14 @@ fun ToolDetailCard(
                     )
                 }
 
-                if (toolCard.phase != null) {
+                // 运行中显示状态标签
+                if (isRunning) {
+                    Text(
+                        text = "执行中...",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                } else if (toolCard.phase != null) {
                     Text(
                         text = toolCard.phase,
                         style = MaterialTheme.typography.labelSmall,
@@ -91,18 +136,19 @@ fun ToolDetailCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 工具参数
+            // 工具参数（运行中默认展开）
             if (toolCard.args != null) {
                 ExpansionPanel(
                     title = "参数",
+                    defaultExpanded = isRunning,
                     content = {
                         CodeBlock(text = toolCard.args)
                     }
                 )
             }
 
-            // 工具结果
-            if (toolCard.result != null) {
+            // 工具结果（完成时显示）
+            if (toolCard.result != null && !isRunning) {
                 ExpansionPanel(
                     title = if (toolCard.isError) "错误" else "结果",
                     content = {
@@ -140,9 +186,10 @@ fun ToolDetailCard(
 @Composable
 fun ExpansionPanel(
     title: String,
+    defaultExpanded: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(defaultExpanded) }
 
     Column {
         Row(
