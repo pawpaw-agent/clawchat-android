@@ -151,6 +151,13 @@ fun MessageContentCard(
                     textColor = MaterialTheme.colorScheme.onBackground,
                     isStreaming = isStreaming  // 流式优化：传入流式状态
                 )
+
+                // 流式输出光标动画
+                if (isStreaming) {
+                    StreamingCursor(
+                        modifier = Modifier.align(Alignment.BottomEnd)
+                    )
+                }
                 
                 if (showCopiedToast) {
             Surface(
@@ -725,6 +732,33 @@ private fun getToolColor(toolName: String): Color {
         // 其他 - 默认
         else -> MaterialTheme.colorScheme.primary
     }
+}
+
+/**
+ * 流式输出光标动画
+ * 参考 gpt_mobile: text + "●"
+ */
+@Composable
+private fun StreamingCursor(
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "cursor")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+
+    Text(
+        text = "●",
+        modifier = modifier.padding(start = 2.dp),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = alpha),
+        style = MaterialTheme.typography.bodyMedium
+    )
 }
 
 

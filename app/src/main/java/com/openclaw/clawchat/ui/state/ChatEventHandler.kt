@@ -185,41 +185,51 @@ class ChatEventHandler(
     /**
      * 处理 delta 状态（流式内容）
      * 流式优化：debounce 更新，减少 UI 重组频率
+     * 参考 Stream SDK: 使用 snapshotFlow 进行批量更新
      */
     // 流式缓冲区（减少更新频率）
     private var streamBuffer = ""
     private var lastStreamUpdate = 0L
-    private val STREAM_UPDATE_INTERVAL = 50L  // 50ms 更新一次 UI
-    
+    private val STREAM_UPDATE_INTERVAL = 33L  // ~30fps，平衡流畅性和性能
+    private var totalReceivedChars = 0  // 追踪总接收字符数
+
     private fun handleDelta(runId: String, msgObj: JsonObject?, sessionId: String) {
         // 提取文本
         val textContent = msgObj?.let { extractTextContent(it) }
-        
+
         if (textContent != null && textContent.isNotBlank()) {
             // 流式优化：缓冲追加，减少 state.update 调用
             streamBuffer = textContent
-            
+            totalReceivedChars = textContent.length
+
             val now = System.currentTimeMillis()
-            val shouldUpdate = now - lastStreamUpdate >= STREAM_UPDATE_INTERVAL
-            
+            // 动态调整更新频率：
+            // - 内容变化小时降低更新频率
+            // - 内容变化大时立即更新
+            val currentStream = state.value.chatStream
+            val currentLength = currentStream?.length ?: 0
+            val contentGrowth = totalReceivedChars - currentLength
+
+            // 内容增长超过 50 字符 或 时间间隔超过阈值时更新
+            val shouldUpdate = contentGrowth >= 50 || now - lastStreamUpdate >= STREAM_UPDATE_INTERVAL
+
             if (shouldUpdate) {
                 lastStreamUpdate = now
-                
+
                 state.update { currentState ->
-                    val currentStream = currentState.chatStream
                     val segments = currentState.chatStreamSegments
-                    
+
                     // 检查是否应该追加（内容长度递增）
-                    val shouldAppend = currentStream == null || streamBuffer.length >= currentStream.length
-                    
-                    val newStream = if (shouldAppend) streamBuffer else currentStream
-                    
+                    val shouldAppend = currentState.chatStream == null || streamBuffer.length >= (currentState.chatStream?.length ?: 0)
+
+                    val newStream = if (shouldAppend) streamBuffer else currentState.chatStream
+
                     val newSegments = if (currentState.chatStreamStartedAt == null) {
                         segments + StreamSegment(newStream ?: "", now)
                     } else {
                         segments
                     }
-                    
+
                     currentState.copy(
                         chatStream = newStream,
                         chatStreamSegments = newSegments,
@@ -244,6 +254,7 @@ class ChatEventHandler(
             }
             streamBuffer = ""
             lastStreamUpdate = 0L
+            totalReceivedChars = 0
         }
         
         // 提交流式文本到 segments
