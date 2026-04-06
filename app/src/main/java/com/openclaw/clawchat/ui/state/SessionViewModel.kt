@@ -177,16 +177,21 @@ class SessionViewModel @Inject constructor(
 
     fun setSessionId(sessionId: String) {
         val currentSessionId = _state.value.sessionId
-        
+
         if (currentSessionId == sessionId) {
-            // sessionId 未变化，可能需要强制刷新
+            // sessionId 未变化，检查消息是否为空
             if (_state.value.chatMessages.isEmpty()) {
+                // 消息为空，可能需要重新加载
+                isLoadingHistory = true
                 messageLoader.loadMessageHistory(sessionId)
             }
             return
         }
 
         AppLog.d(TAG, "=== setSessionId: $currentSessionId -> $sessionId")
+
+        // 取消之前的加载任务
+        messageLoader.cancel()
 
         // 先设置加载状态，阻止 Flow 更新
         isLoadingHistory = true

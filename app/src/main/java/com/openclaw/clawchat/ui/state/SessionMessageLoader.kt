@@ -144,5 +144,7 @@ class SessionMessageLoader(
     fun cancel() {
         loadMessagesJob?.cancel()
         loadMessagesJob = null
+        // 取消时重置加载状态
+        onLoadingStateChanged?.invoke(false)
     }
 }
