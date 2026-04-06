@@ -28,21 +28,29 @@ fun formatTimestamp(timestamp: Long): String {
 /**
  * 配对工具卡片
  * 只处理真正的工具调用，不处理纯文本
+ *
+ * @param message 当前消息
+ * @param allMessagesInGroup 分组中的所有消息（用于查找 ToolResult）
  */
-fun pairToolCards(message: MessageUi): List<ToolCard> {
+fun pairToolCards(message: MessageUi, allMessagesInGroup: List<MessageUi> = emptyList()): List<ToolCard> {
     // 用户消息和系统消息不应该显示为工具卡片
     if (message.role == MessageRole.USER || message.role == MessageRole.SYSTEM) {
         return emptyList()
     }
 
     val calls = message.getToolCalls()
-    val results = message.getToolResults()
+
+    // 从当前消息和分组中其他 TOOL 消息获取结果
+    val results = message.getToolResults() +
+        allMessagesInGroup
+            .filter { it.role == MessageRole.TOOL && it.id != message.id }
+            .flatMap { it.getToolResults() }
 
     // 没有工具调用则返回空（纯文本在消息气泡中显示）
     if (calls.isEmpty()) {
         return emptyList()
     }
-    
+
     return calls.map { call ->
         val matchingResult = results.find { it.toolCallId == call.id }
         val displayArgs = if (call.name == "exec" && call.args != null) {
@@ -50,7 +58,7 @@ fun pairToolCards(message: MessageUi): List<ToolCard> {
         } else {
             call.args?.toString()
         }
-        
+
         // 使用 call.phase 判断完成状态
         val phase = call.phase
         val kind = when {
@@ -58,7 +66,7 @@ fun pairToolCards(message: MessageUi): List<ToolCard> {
             phase == "result" -> ToolCardKind.RESULT       // phase=result 表示完成
             else -> ToolCardKind.CALL                       // 执行中
         }
-        
+
         ToolCard(
             kind = kind,
             name = call.name,

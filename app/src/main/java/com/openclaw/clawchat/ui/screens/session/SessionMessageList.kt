@@ -335,7 +335,7 @@ fun MessageGroupItem(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = DesignTokens.space2),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    group.messages.forEach { RenderToolCardsFromMessage(it) }
+                    group.messages.forEach { RenderToolCardsFromMessage(it, group.messages) }
                 }
             }
             else -> {
@@ -346,7 +346,7 @@ fun MessageGroupItem(
                 ) {
                     group.messages.forEachIndexed { index, message ->
                         if (message.role == MessageRole.TOOL) {
-                            RenderToolCardsFromMessage(message)
+                            RenderToolCardsFromMessage(message, group.messages)
                         } else {
                             MessageContentCard(
                                 message = message,
@@ -361,7 +361,10 @@ fun MessageGroupItem(
                             )
 
                             // 工具调用显示（一行显示多个可折叠卡片）
-                            val toolCards = remember(message) { pairToolCards(message) }
+                            // 传递分组中所有消息，以便查找 ToolResult
+                            val toolCards = remember(message, group.messages) {
+                                pairToolCards(message, group.messages)
+                            }
                             if (toolCards.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(DesignTokens.space1))
                                 ToolCardRow(toolCards = toolCards)
@@ -402,14 +405,14 @@ fun MessageGroupItem(
  * 从消息提取并渲染工具卡片（一行显示）
  */
 @Composable
-private fun RenderToolCardsFromMessage(message: MessageUi) {
+private fun RenderToolCardsFromMessage(message: MessageUi, allMessagesInGroup: List<MessageUi> = emptyList()) {
     // 用户消息不应该显示为工具卡片
     if (message.role == MessageRole.USER) {
         return
     }
 
     // 使用 remember 缓存计算结果
-    val toolCards = remember(message) { pairToolCards(message) }
+    val toolCards = remember(message, allMessagesInGroup) { pairToolCards(message, allMessagesInGroup) }
     ToolCardRow(toolCards = toolCards)
 }
 
