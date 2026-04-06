@@ -290,4 +290,17 @@
 
     <!-- Connection Status (Chinese) -->
     <string name="connection_status">连接状态</string>
+
+    <!-- Selector (Chinese) -->
+    <string name="selector_select_agent">选择 Agent</string>
+    <string name="selector_default_chat">默认对话</string>
+    <string name="selector_default_model">默认模型</string>
+    <string name="selector_default">默认</string>
+    <string name="selector_supports_vision">支持视觉</string>
+
+    <!-- Command Palette (Chinese) -->
+    <string name="command_palette_search_placeholder">搜索会话或命令…</string>
+    <string name="command_palette_sessions">会话</string>
+    <string name="command_palette_commands">命令</string>
+    <string name="command_palette_no_results">未找到结果</string>
 </resources>

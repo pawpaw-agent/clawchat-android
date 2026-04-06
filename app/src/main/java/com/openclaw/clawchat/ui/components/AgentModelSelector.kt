@@ -21,9 +21,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 
 /**
  * Agent 信息（UI 用）
@@ -95,7 +97,7 @@ fun AgentSelector(
 
                     Column {
                         Text(
-                            text = selectedAgent?.name ?: "选择 Agent",
+                            text = selectedAgent?.name ?: stringResource(R.string.selector_select_agent),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             maxLines = 1,
@@ -226,7 +228,7 @@ private fun AgentOption(
 
         Column {
             Text(
-                text = agent?.name ?: "默认对话",
+                text = agent?.name ?: stringResource(R.string.selector_default_chat),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 maxLines = 1,
@@ -294,7 +296,7 @@ fun ModelSelector(
 
                     Column {
                         Text(
-                            text = selectedModel?.name ?: selectedModel?.id ?: "默认模型",
+                            text = selectedModel?.name ?: selectedModel?.id ?: stringResource(R.string.selector_default_model),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             maxLines = 1,
@@ -401,7 +403,7 @@ private fun ModelOption(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = model?.name ?: model?.id ?: "默认",
+                text = model?.name ?: model?.id ?: stringResource(R.string.selector_default),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 maxLines = 1,
@@ -420,7 +422,7 @@ private fun ModelOption(
                     if (model.supportsVision) {
                         Icon(
                             imageVector = Icons.Default.Image,
-                            contentDescription = "支持视觉",
+                            contentDescription = stringResource(R.string.selector_supports_vision),
                             modifier = Modifier.size(14.dp),
                             tint = MaterialTheme.colorScheme.tertiary
                         )

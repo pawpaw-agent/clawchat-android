@@ -17,10 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.openclaw.clawchat.R
 
 /**
  * 命令面板 - 类似 ⌘K 快速搜索
@@ -77,12 +79,12 @@ fun CommandPalette(
                         .fillMaxWidth()
                         .padding(16.dp)
                         .focusRequester(focusRequester),
-                    placeholder = { Text("搜索会话或命令...") },
+                    placeholder = { Text(stringResource(R.string.command_palette_search_placeholder)) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
                         if (query.isNotBlank()) {
                             IconButton(onClick = { onQueryChange("") }) {
-                                Icon(Icons.Default.Clear, contentDescription = "清除")
+                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear))
                             }
                         }
                     },
@@ -113,7 +115,7 @@ fun CommandPalette(
                     if (filteredSessions.isNotEmpty()) {
                         item {
                             Text(
-                                text = "会话",
+                                text = stringResource(R.string.command_palette_sessions),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -131,7 +133,7 @@ fun CommandPalette(
                     if (filteredCommands.isNotEmpty()) {
                         item {
                             Text(
-                                text = "命令",
+                                text = stringResource(R.string.command_palette_commands),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -165,7 +167,7 @@ fun CommandPalette(
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "未找到结果",
+                                        text = stringResource(R.string.command_palette_no_results),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
