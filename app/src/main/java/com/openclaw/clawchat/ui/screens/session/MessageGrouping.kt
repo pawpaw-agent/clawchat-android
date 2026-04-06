@@ -54,13 +54,10 @@ fun pairToolCards(message: MessageUi, allMessagesInGroup: List<MessageUi> = empt
         return emptyList()
     }
 
-    // 调试日志
-    AppLog.d(TAG, "=== pairToolCards: calls=${calls.size}, results=${results.size}")
-    calls.forEach { call ->
-        AppLog.d(TAG, "=== ToolCall: id=${call.id}, name=${call.name}, phase=${call.phase}")
-    }
-    results.forEach { result ->
-        AppLog.d(TAG, "=== ToolResult: toolCallId=${result.toolCallId}, name=${result.name}")
+    // 调试日志（减少输出）
+    AppLog.d(TAG, "=== pairToolCards: msgId=${message.id.take(8)}, role=${message.role}, calls=${calls.size}, results=${results.size}")
+    if (results.isNotEmpty()) {
+        AppLog.d(TAG, "=== ToolResult found: toolCallId=${results.first().toolCallId?.take(8)}, textPreview=${results.first().text.take(50)}")
     }
 
     return calls.map { call ->

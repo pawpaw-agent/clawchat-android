@@ -96,8 +96,16 @@ class SessionMessageLoader(
                 val messagesArray = payload["messages"]?.jsonArray
                 AppLog.d(TAG, "=== loadMessageHistory: Gateway returned ${messagesArray?.size ?: 0} messages")
 
-                // 收集所有消息，批量处理
-                val messagesToSave = mutableListOf<Triple<String, String, Long>>() // (content, role, timestamp)
+                // 收集所有消息，批量处理（包含 toolCallId 和 toolName）
+                val messagesToSave = mutableListOf<MessageSaveData>()
+
+                data class MessageSaveData(
+                    val content: String,
+                    val role: String,
+                    val timestamp: Long,
+                    val toolCallId: String? = null,
+                    val toolName: String? = null
+                )
 
                 messagesArray?.forEach { msgElement ->
                     try {
@@ -106,28 +114,28 @@ class SessionMessageLoader(
                         val content = msgObj["content"]?.let { JsonUtils.json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
                         val timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
 
-                        // 调试：打印消息结构
-                        AppLog.d(TAG, "=== Message: role=$role, content preview=${content.take(200)}")
-
-                        // 检查是否有 toolCallId（TOOL 消息）
+                        // 提取 toolCallId 和 toolName（TOOL 消息特有）
                         val toolCallId = msgObj["toolCallId"]?.jsonPrimitive?.content
-                        if (toolCallId != null) {
-                            AppLog.d(TAG, "=== TOOL message: toolCallId=$toolCallId")
-                        }
+                        val toolName = msgObj["name"]?.jsonPrimitive?.content ?: msgObj["toolName"]?.jsonPrimitive?.content
 
-                        messagesToSave.add(Triple(content, role, timestamp))
+                        // 调试：打印消息结构
+                        AppLog.d(TAG, "=== Message: role=$role, toolCallId=$toolCallId, toolName=$toolName, content preview=${content.take(200)}")
+
+                        messagesToSave.add(MessageSaveData(content, role, timestamp, toolCallId, toolName))
                     } catch (e: Exception) {
                         AppLog.w(TAG, "Failed to parse history message: ${e.message}")
                     }
                 }
 
-                // 批量保存消息
-                messagesToSave.forEach { (content, role, timestamp) ->
+                // 批量保存消息（传递 toolCallId 和 toolName）
+                messagesToSave.forEach { data ->
                     messageRepository.saveMessage(
                         sessionId = sessionId,
-                        role = MessageRole.fromString(role),
-                        content = content,
-                        timestamp = timestamp
+                        role = MessageRole.fromString(data.role),
+                        content = data.content,
+                        timestamp = data.timestamp,
+                        toolCallId = data.toolCallId,
+                        toolName = data.toolName
                     )
                 }
 

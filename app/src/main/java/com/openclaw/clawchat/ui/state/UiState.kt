@@ -388,11 +388,11 @@ enum class MessageRole {
 
     companion object {
         fun fromString(role: String): MessageRole {
-            return when (role.lowercase().replace("_", "")) {
+            return when (role.lowercase().replace("_", "").replace("-", "")) {
                 "user" -> USER
                 "assistant" -> ASSISTANT
                 "system" -> SYSTEM
-                "toolresult", "tool" -> TOOL
+                "toolresult", "tool", "toolresultmessage" -> TOOL
                 else -> ASSISTANT
             }
         }

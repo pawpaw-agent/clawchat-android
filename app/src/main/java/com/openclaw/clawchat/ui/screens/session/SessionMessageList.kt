@@ -22,6 +22,7 @@ import com.openclaw.clawchat.ui.components.ToolDetailCard
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import com.openclaw.clawchat.ui.theme.ChatTokens
+import com.openclaw.clawchat.util.AppLog
 
 /**
  * 空会话内容
@@ -287,6 +288,11 @@ fun MessageGroupList(
  */
 fun groupMessages(messages: List<MessageUi>): List<MessageGroup> {
     if (messages.isEmpty()) return emptyList()
+
+    AppLog.d("MessageGroup", "=== groupMessages: input=${messages.size} messages")
+    messages.forEach { msg ->
+        AppLog.d("MessageGroup", "=== msg: id=${msg.id.take(8)}, role=${msg.role}, hasTool=${msg.hasToolContent()}, textPreview=${msg.getTextContent().take(30)}")
+    }
 
     return messages.fold(mutableListOf<MessageGroup>()) { groups, message ->
         val lastGroup = groups.lastOrNull()
