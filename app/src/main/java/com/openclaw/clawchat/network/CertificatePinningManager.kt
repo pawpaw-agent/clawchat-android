@@ -29,7 +29,7 @@ class CertificatePinningManager(private val context: Context) {
          * 预配置的 OpenClaw Gateway 证书 pins
          * 这些是已知的 OpenClaw Gateway 证书公钥 SHA-256 哈希
          */
-        val PRECONFIGURED_PINS = setOf(
+        val PRECONFIGURED_PINS: Set<String> = setOf(
             // 示例 pins，实际使用时需要替换为真实证书的 pin
             // 可以通过 openssl s_client -connect host:port | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64 获取
         )
