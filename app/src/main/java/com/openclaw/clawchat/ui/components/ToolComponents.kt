@@ -89,17 +89,18 @@ fun CompactToolCard(
     }
 
     // 状态颜色：运行中红色，完成蓝色，错误保持红色
+    // 使用主题感知颜色
     val statusColor = when {
         hasError -> MaterialTheme.colorScheme.error
-        isRunning -> Color(0xFFE53935) // 红色
-        else -> Color(0xFF1E88E5) // 蓝色
+        isRunning -> MaterialTheme.colorScheme.error // 运行中用错误色调的红色
+        else -> MaterialTheme.colorScheme.primary // 完成用主题主色
     }
 
-    // 背景
+    // 背景：使用主题感知颜色，深色/浅色模式自动适配
     val bgColor = when {
-        hasError -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-        isRunning -> Color(0xFFFFEBEE) // 红色背景
-        else -> Color(0xFFE3F2FD) // 蓝色背景
+        hasError -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+        isRunning -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f) // 运行中用淡红色背景
+        else -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) // 完成用淡主色背景
     }
 
     Surface(

@@ -6,10 +6,12 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 
 /**
  * Markdown 解析器
- * 
+ *
  * 提取自 MarkdownText.kt 的解析相关函数：
  * - MarkdownSegment 数据类
  * - parseMarkdownSegments
@@ -17,6 +19,22 @@ import androidx.compose.ui.text.font.FontWeight
  * - highlightSyntax
  * - parseTableRow
  */
+
+/**
+ * 获取主题感知的链接颜色
+ */
+@Composable
+internal fun getLinkColor(): Color = MaterialTheme.colorScheme.primary
+
+/**
+ * 获取主题感知的行内代码颜色
+ */
+@Composable
+internal fun getInlineCodeColors(): Pair<Color, Color> {
+    val textColor = MaterialTheme.colorScheme.tertiary
+    val bgColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+    return Pair(textColor, bgColor)
+}
 
 /**
  * 解析 Markdown 段落
@@ -79,8 +97,16 @@ internal fun parseMarkdownSegments(content: String): List<MarkdownSegment> {
 
 /**
  * 解析 Markdown 为 AnnotatedString
+ * @param linkColor 链接颜色（主题感知）
+ * @param codeColor 行内代码颜色（主题感知）
+ * @param codeBgColor 行内代码背景色（主题感知）
  */
-internal fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
+internal fun parseMarkdownToAnnotatedString(
+    content: String,
+    linkColor: Color = Color(0xFF58A6FF),
+    codeColor: Color = Color(0xFFCE9178),
+    codeBgColor: Color = Color(0xFF2D2D2D)
+): AnnotatedString {
     return buildAnnotatedString {
         var i = 0
         while (i < content.length) {
@@ -95,8 +121,8 @@ internal fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
                             val url = content.substring(textEnd + 2, urlEnd)
                             // 添加 URL annotation
                             pushStringAnnotation(tag = "URL", annotation = url)
-                            // 添加蓝色样式
-                            withStyle(SpanStyle(color = Color(0xFF58A6FF))) {
+                            // 添加链接样式（使用传入的颜色）
+                            withStyle(SpanStyle(color = linkColor)) {
                                 append(linkText)
                             }
                             // 弹出 annotation
@@ -118,8 +144,8 @@ internal fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
                     val url = content.substring(i, endPos)
                     // 添加 URL annotation
                     pushStringAnnotation(tag = "URL", annotation = url)
-                    // 添加蓝色样式
-                    withStyle(SpanStyle(color = Color(0xFF58A6FF))) {
+                    // 添加链接样式（使用传入的颜色）
+                    withStyle(SpanStyle(color = linkColor)) {
                         append(url)
                     }
                     // 弹出 annotation
@@ -159,8 +185,8 @@ internal fun parseMarkdownToAnnotatedString(content: String): AnnotatedString {
                     if (end != -1) {
                         withStyle(SpanStyle(
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            background = Color(0xFF2D2D2D),
-                            color = Color(0xFFCE9178)
+                            background = codeBgColor,
+                            color = codeColor
                         )) {
                             append(content.substring(i + 1, end))
                         }
