@@ -124,7 +124,7 @@ fun SessionTopAppBar(
                 var showSessionInfo by remember { mutableStateOf(false) }
                 IconButton(onClick = { showSessionInfo = true }) {
                     Icon(
-                        imageVector = Icons.Default.InfoOutline,
+                        imageVector = Icons.Outlined.Info,
                         contentDescription = "会话信息"
                     )
                 }
