@@ -636,6 +636,76 @@ class GatewayConnection(
         return call("sessions.steer", params)
     }
 
+    /** sessions.create — 创建新会话 */
+    suspend fun sessionsCreate(
+        key: String? = null,
+        agentId: String? = null,
+        label: String? = null,
+        model: String? = null,
+        message: String? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>()
+        if (key != null) params["key"] = JsonPrimitive(key)
+        if (agentId != null) params["agentId"] = JsonPrimitive(agentId)
+        if (label != null) params["label"] = JsonPrimitive(label)
+        if (model != null) params["model"] = JsonPrimitive(model)
+        if (message != null) params["message"] = JsonPrimitive(message)
+        return call("sessions.create", params.ifEmpty { null })
+    }
+
+    /** sessions.delete — 删除会话 */
+    suspend fun sessionsDelete(
+        sessionKey: String,
+        deleteTranscript: Boolean = true
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "key" to JsonPrimitive(sessionKey)
+        )
+        if (deleteTranscript) params["deleteTranscript"] = JsonPrimitive(true)
+        return call("sessions.delete", params)
+    }
+
+    /** sessions.reset — 重置会话 */
+    suspend fun sessionsReset(
+        sessionKey: String,
+        reason: String = "reset"
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "key" to JsonPrimitive(sessionKey),
+            "reason" to JsonPrimitive(reason)
+        )
+        return call("sessions.reset", params)
+    }
+
+    /** sessions.preview — 获取会话预览 */
+    suspend fun sessionsPreview(
+        keys: List<String>,
+        limit: Int? = null,
+        maxChars: Int? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "keys" to JsonArray(keys.map { JsonPrimitive(it) })
+        )
+        if (limit != null) params["limit"] = JsonPrimitive(limit)
+        if (maxChars != null) params["maxChars"] = JsonPrimitive(maxChars)
+        return call("sessions.preview", params)
+    }
+
+    /** sessions.usage — 获取会话用量统计 */
+    suspend fun sessionsUsage(
+        sessionKey: String? = null,
+        startDate: String? = null,
+        endDate: String? = null,
+        limit: Int? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>()
+        if (sessionKey != null) params["key"] = JsonPrimitive(sessionKey)
+        if (startDate != null) params["startDate"] = JsonPrimitive(startDate)
+        if (endDate != null) params["endDate"] = JsonPrimitive(endDate)
+        if (limit != null) params["limit"] = JsonPrimitive(limit)
+        return call("sessions.usage", params.ifEmpty { null })
+    }
+
     /** cron.list — 列出定时任务 */
     suspend fun cronList(): ResponseFrame {
         return call("cron.list", null)

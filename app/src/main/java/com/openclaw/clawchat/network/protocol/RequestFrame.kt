@@ -67,9 +67,13 @@ enum class GatewayMethod(val value: String) {
 
     // 会话（sessions.* 命名空间）
     SESSIONS_LIST("sessions.list"),
-    SESSIONS_RESET("sessions.reset"),
+    SESSIONS_CREATE("sessions.create"),
     SESSIONS_DELETE("sessions.delete"),
+    SESSIONS_RESET("sessions.reset"),
     SESSIONS_PATCH("sessions.patch"),
+    SESSIONS_PREVIEW("sessions.preview"),
+    SESSIONS_USAGE("sessions.usage"),
+    SESSIONS_STEER("sessions.steer"),
 
     // 设备
     DEVICE_TOKEN_ROTATE("device.token.rotate"),
@@ -154,6 +158,51 @@ fun chatSendRequest(
  */
 fun sessionsListRequest(): RequestFrame {
     return requestFrame(GatewayMethod.SESSIONS_LIST)
+}
+
+/**
+ * 构建 sessions.create 请求
+ */
+fun sessionsCreateRequest(
+    key: String? = null,
+    agentId: String? = null,
+    label: String? = null,
+    model: String? = null,
+    message: String? = null
+): RequestFrame {
+    return requestFrame(GatewayMethod.SESSIONS_CREATE) {
+        if (key != null) putString("key", key)
+        if (agentId != null) putString("agentId", agentId)
+        if (label != null) putString("label", label)
+        if (model != null) putString("model", model)
+        if (message != null) putString("message", message)
+    }
+}
+
+/**
+ * 构建 sessions.delete 请求
+ */
+fun sessionsDeleteRequest(
+    sessionKey: String,
+    deleteTranscript: Boolean = true
+): RequestFrame {
+    return requestFrame(GatewayMethod.SESSIONS_DELETE) {
+        putString("key", sessionKey)
+        if (deleteTranscript) putBoolean("deleteTranscript", true)
+    }
+}
+
+/**
+ * 构建 sessions.reset 请求
+ */
+fun sessionsResetRequest(
+    sessionKey: String,
+    reason: String = "reset"
+): RequestFrame {
+    return requestFrame(GatewayMethod.SESSIONS_RESET) {
+        putString("key", sessionKey)
+        putString("reason", reason)
+    }
 }
 
 /**

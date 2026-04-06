@@ -333,10 +333,21 @@ class MainViewModel @Inject constructor(
     fun deleteSession(sessionId: String) {
         viewModelScope.launch(exceptionHandler) {
             try {
-                gateway.call("sessions.delete", mapOf("key" to JsonPrimitive(sessionId)))
-            } catch (_: Exception) {}
-            // 从 Room 删除
+                // 使用 Gateway API 删除会话
+                val response = gateway.sessionsDelete(sessionId, deleteTranscript = true)
+                if (response.isSuccess()) {
+                    AppLog.i(TAG, "Session deleted on gateway: $sessionId")
+                } else {
+                    AppLog.w(TAG, "Gateway delete failed: ${response.error?.message}")
+                }
+            } catch (e: Exception) {
+                AppLog.w(TAG, "Gateway delete exception: ${e.message}")
+            }
+
+            // 从本地 Room 删除
             sessionRepository.deleteSession(sessionId)
+
+            // 更新 UI 状态
             _uiState.update {
                 it.copy(
                     sessions = it.sessions.filter { s -> s.id != sessionId },
@@ -354,8 +365,12 @@ class MainViewModel @Inject constructor(
         val sessionId = _uiState.value.currentSession?.id ?: return
         viewModelScope.launch(exceptionHandler) {
             try {
-                gateway.call("sessions.reset", mapOf("key" to JsonPrimitive(sessionId)))
-                _events.trySend(UiEvent.ShowSuccess("会话已清除"))
+                val response = gateway.sessionsReset(sessionId, "reset")
+                if (response.isSuccess()) {
+                    _events.trySend(UiEvent.ShowSuccess("会话已清除"))
+                } else {
+                    _events.trySend(UiEvent.ShowError("清除失败：${response.error?.message}"))
+                }
             } catch (e: Exception) {
                 _events.trySend(UiEvent.ShowError("清除失败：${e.message}"))
             }
@@ -365,20 +380,35 @@ class MainViewModel @Inject constructor(
     fun createSession(model: String = "default", thinking: Boolean = false) {
         viewModelScope.launch(exceptionHandler) {
             try {
-                // 使用 sessions.reset 创建新会话（如果默认会话存在则重置）
-                val sessionKey = gateway.defaultSessionKey
-                if (sessionKey != null) {
-                    gateway.call("sessions.reset", mapOf(
-                        "key" to JsonPrimitive(sessionKey),
-                        "reason" to JsonPrimitive("new")
-                    ))
+                // 优先使用 sessions.create API
+                val response = gateway.sessionsCreate(
+                    label = "New Chat",
+                    model = model.takeIf { it != "default" }
+                )
+
+                if (response.isSuccess()) {
+                    // 解析响应获取新会话信息
+                    response.payload?.let { payload ->
+                        val sessionObj = payload.jsonObject["session"]?.jsonObject
+                        val sessionKey = sessionObj?.get("key")?.jsonPrimitive?.content
+
+                        if (!sessionKey.isNullOrBlank()) {
+                            refreshSessions()
+                            _events.trySend(UiEvent.NavigateToSession(sessionKey))
+                            _events.trySend(UiEvent.ShowSuccess("会话已创建"))
+                        }
+                    }
                 } else {
-                    // 如果没有默认会话，创建新会话需要通过 chat.send 触发
-                    AppLog.w(TAG, "No default session key, sessions will be created on first message")
+                    // 如果 sessions.create 不可用，尝试使用 sessions.reset
+                    val sessionKey = gateway.defaultSessionKey
+                    if (sessionKey != null) {
+                        gateway.sessionsReset(sessionKey, "new")
+                        refreshSessions()
+                    }
                 }
-                refreshSessions()
             } catch (e: Exception) {
                 AppLog.w(TAG, "Create session failed: ${e.message}")
+                _events.trySend(UiEvent.ShowError("创建会话失败：${e.message}"))
             }
         }
     }
