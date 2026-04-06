@@ -121,8 +121,9 @@ fun CompactToolCard(
             Column(modifier = Modifier
                 .weight(1f)
                 .padding(8.dp)) {
-            // 头部：图标 + 名称 + 状态
+            // 头部：图标 + 名称 + 状态（箭头在最右边）
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
@@ -158,10 +159,10 @@ fun CompactToolCard(
                     style = MaterialTheme.typography.labelMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
+                    modifier = Modifier.weight(1f)
                 )
 
-                // 状态/展开图标
+                // 状态/展开图标（最右边）
                 if (hasContent) {
                     Icon(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
