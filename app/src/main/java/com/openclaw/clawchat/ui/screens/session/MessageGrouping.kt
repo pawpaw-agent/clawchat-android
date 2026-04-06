@@ -30,8 +30,8 @@ fun formatTimestamp(timestamp: Long): String {
  * 将消息中的工具调用和结果配对
  */
 fun pairToolCards(message: MessageUi): List<ToolCard> {
-    // 用户消息不应该显示为工具卡片
-    if (message.role == MessageRole.USER) {
+    // 用户消息和系统消息不应该显示为工具卡片
+    if (message.role == MessageRole.USER || message.role == MessageRole.SYSTEM) {
         return emptyList()
     }
 
