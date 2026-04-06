@@ -146,29 +146,16 @@ fun MessageGroupList(
             }
     }
 
-    // 新消息/流式输出到达时自动滚动
-    // 参考 Stream SDK: 区分自己发的消息和 AI 响应
-    // - 用户消息：始终滚动
-    // - AI 响应：用户在底部时才滚动
+    // 流式输出到达时自动滚动（仅处理流式，不处理初始加载）
     val streamKey = chatStream?.hashCode() ?: 0
-    LaunchedEffect(groups.size, streamKey, toolMessages.size, streamSegments.size) {
-        if (groups.isEmpty()) return@LaunchedEffect
-        // 只有已经完成初始滚动时才处理
+    LaunchedEffect(streamKey, toolMessages.size, streamSegments.size) {
+        // 仅处理流式更新，不处理初始加载
         if (!chatHasAutoScrolled) return@LaunchedEffect
+        if (chatStream.isNullOrBlank() && toolMessages.isEmpty() && streamSegments.isEmpty()) return@LaunchedEffect
 
-        // 检查最新消息是否是用户消息
-        val lastGroup = groups.lastOrNull()
-        val isUserMessage = lastGroup?.role == MessageRole.USER
-
-        if (isUserMessage) {
-            // 用户消息：始终滚动到底部
+        // 用户在底部时自动跟随流式输出
+        if (chatUserNearBottom) {
             listState.scrollToItem(0)
-        } else if (chatUserNearBottom) {
-            // AI 响应 + 用户在底部：自动跟随
-            listState.scrollToItem(0)
-        } else {
-            // AI 响应 + 用户不在底部：增加未读计数
-            onSetNewMessagesBelow()
         }
     }
 

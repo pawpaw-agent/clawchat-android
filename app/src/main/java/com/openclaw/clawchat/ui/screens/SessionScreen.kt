@@ -58,16 +58,8 @@ fun SessionScreen(
     // 当前会话 ID
     var currentSessionId by remember { mutableStateOf<String?>(null) }
 
-    // 检测键盘是否可见
+    // 检测键盘是否可见（用于其他用途）
     val imeVisible = WindowInsets.ime.getBottom(density) > 0
-
-    // 键盘弹出时自动滚动到底部
-    LaunchedEffect(imeVisible) {
-        if (imeVisible && state.chatHasAutoScrolled) {
-            delay(100) // 等待键盘动画开始
-            listState.animateScrollToItem(0)
-        }
-    }
 
     // 监听生命周期
     DisposableEffect(lifecycleOwner) {
@@ -123,15 +115,9 @@ fun SessionScreen(
     }
     val filteredGroups by remember { derivedStateOf { groupMessages(filteredMessages) } }
 
-    // 进入会话时直接显示最新消息（无动画）
-    LaunchedEffect(sessionId, filteredGroups.size) {
-        if (filteredGroups.isEmpty()) return@LaunchedEffect
-        // 等待布局完成
-        snapshotFlow { listState.layoutInfo.totalItemsCount }
-            .first { it > 0 }
-        // reverseLayout=true: scrollToItem(0) 直接跳转到最新消息（在底部）
-        listState.scrollToItem(0, 0)
-        // 标记已滚动
+    // 进入会话时标记已滚动（reverseLayout=true 默认就在底部）
+    LaunchedEffect(sessionId) {
+        // 切换会话时立即标记，避免触发滚动动画
         viewModel.markAutoScrolled()
     }
 
