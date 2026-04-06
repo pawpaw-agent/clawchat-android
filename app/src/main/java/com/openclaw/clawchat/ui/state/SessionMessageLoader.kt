@@ -19,6 +19,17 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
+ * 消息保存数据（用于批量处理历史消息）
+ */
+private data class MessageSaveData(
+    val content: String,
+    val role: String,
+    val timestamp: Long,
+    val toolCallId: String? = null,
+    val toolName: String? = null
+)
+
+/**
  * 会话消息加载器
  *
  * 负责加载历史消息：
@@ -98,14 +109,6 @@ class SessionMessageLoader(
 
                 // 收集所有消息，批量处理（包含 toolCallId 和 toolName）
                 val messagesToSave = mutableListOf<MessageSaveData>()
-
-                data class MessageSaveData(
-                    val content: String,
-                    val role: String,
-                    val timestamp: Long,
-                    val toolCallId: String? = null,
-                    val toolName: String? = null
-                )
 
                 messagesArray?.forEach { msgElement ->
                     try {
