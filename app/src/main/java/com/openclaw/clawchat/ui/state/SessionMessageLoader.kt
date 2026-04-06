@@ -63,8 +63,6 @@ class SessionMessageLoader(
      * 加载消息历史
      */
     fun loadMessageHistory(sessionId: String) {
-        AppLog.d(TAG, "=== loadMessageHistory: sessionId=$sessionId")
-
         // 取消之前的加载任务
         loadMessagesJob?.cancel()
 
@@ -77,27 +75,23 @@ class SessionMessageLoader(
             try {
                 // 检查连接状态
                 if (gateway.connectionState.value !is WebSocketConnectionState.Connected) {
-                    AppLog.w(TAG, "=== loadMessageHistory: Gateway not connected, skipping")
+                    AppLog.w(TAG, "Gateway not connected, skipping loadMessageHistory")
                     state.update { it.copy(isLoading = false) }
                     onLoadingStateChanged?.invoke(false)
                     return@launch
                 }
 
-                AppLog.d(TAG, "=== loadMessageHistory: fetching from Gateway...")
-                AppLog.d(TAG, "=== loadMessageHistory: sessionId='$sessionId', length=${sessionId.length}")
-                AppLog.d(TAG, "=== loadMessageHistory: connectionState=${gateway.connectionState.value}")
                 val response = gateway.chatHistory(sessionId, limit = 100)
-                AppLog.d(TAG, "=== loadMessageHistory: response ok=${response.isSuccess()}, error=${response.error}")
 
                 if (!response.isSuccess()) {
-                    AppLog.w(TAG, "=== loadMessageHistory: Gateway request failed: ${response.error?.message}")
+                    AppLog.w(TAG, "Gateway request failed: ${response.error?.message}")
                     state.update { it.copy(isLoading = false) }
                     onLoadingStateChanged?.invoke(false)
                     return@launch
                 }
 
                 if (response.payload !is JsonObject) {
-                    AppLog.w(TAG, "=== loadMessageHistory: Invalid response payload type: ${response.payload?.javaClass?.simpleName}")
+                    AppLog.w(TAG, "Invalid response payload type")
                     state.update { it.copy(isLoading = false) }
                     onLoadingStateChanged?.invoke(false)
                     return@launch
@@ -105,14 +99,12 @@ class SessionMessageLoader(
 
                 val payload = response.payload as JsonObject
                 val messagesArray = payload["messages"]?.jsonArray
-                AppLog.d(TAG, "=== loadMessageHistory: Gateway returned ${messagesArray?.size ?: 0} messages")
 
                 // 收集所有消息，批量处理（包含 toolCallId 和 toolName）
                 val messagesToSave = mutableListOf<MessageSaveData>()
 
                 // 先清除该会话的旧消息，避免重复
                 messageRepository.clearMessages(sessionId)
-                AppLog.d(TAG, "=== loadMessageHistory: cleared old messages for session $sessionId")
 
                 messagesArray?.forEach { msgElement ->
                     try {
@@ -124,9 +116,6 @@ class SessionMessageLoader(
                         // 提取 toolCallId 和 toolName（TOOL 消息特有）
                         val toolCallId = msgObj["toolCallId"]?.jsonPrimitive?.content
                         val toolName = msgObj["name"]?.jsonPrimitive?.content ?: msgObj["toolName"]?.jsonPrimitive?.content
-
-                        // 调试：打印消息结构
-                        AppLog.d(TAG, "=== Message: role=$role, toolCallId=$toolCallId, toolName=$toolName, content preview=${content.take(200)}")
 
                         messagesToSave.add(MessageSaveData(content, role, timestamp, toolCallId, toolName))
                     } catch (e: Exception) {
@@ -146,14 +135,13 @@ class SessionMessageLoader(
                     )
                 }
 
-                AppLog.d(TAG, "=== loadMessageHistory: saved ${messagesToSave.size} messages")
+                AppLog.d(TAG, "Loaded ${messagesToSave.size} messages for session $sessionId")
             } catch (e: Exception) {
                 AppLog.w(TAG, "Failed to load chat history: ${e.message}")
             }
 
             // 加载完成，一次性更新状态
             val loadedMessages = messageRepository.observeMessages(sessionId).first()
-            AppLog.d(TAG, "=== loadMessageHistory: loaded ${loadedMessages.size} messages from repository")
             state.update { it.copy(
                 isLoading = false,
                 chatMessages = loadedMessages

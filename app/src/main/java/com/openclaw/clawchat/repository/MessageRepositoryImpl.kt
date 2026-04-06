@@ -72,8 +72,6 @@ class MessageRepositoryImpl @Inject constructor(
     ): String {
         val messageId = java.util.UUID.randomUUID().toString()
 
-        AppLog.d(TAG, "=== saveMessage: sessionId=$sessionId, role=$role, id=$messageId")
-
         val entity = MessageEntity(
             id = messageId,
             sessionId = sessionId,
@@ -91,14 +89,12 @@ class MessageRepositoryImpl @Inject constructor(
         val count = messageDao.getMessageCount(sessionId)
         if (count > TRIM_THRESHOLD) {
             messageDao.trimOldMessages(sessionId, MAX_MESSAGES_PER_SESSION)
-            AppLog.d(TAG, "=== saveMessage: trimmed old messages, count was $count")
+            AppLog.d(TAG, "Trimmed old messages, count was $count")
         }
 
         // 更新会话消息计数
         val sessionDao = database.sessionDao()
         sessionDao.updateMessageCount(sessionId, count, System.currentTimeMillis())
-
-        AppLog.d(TAG, "=== saveMessage: saved message $messageId to session $sessionId")
 
         return messageId
     }

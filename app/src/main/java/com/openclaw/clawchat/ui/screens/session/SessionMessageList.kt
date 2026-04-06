@@ -289,11 +289,6 @@ fun MessageGroupList(
 fun groupMessages(messages: List<MessageUi>): List<MessageGroup> {
     if (messages.isEmpty()) return emptyList()
 
-    AppLog.d("MessageGroup", "=== groupMessages: input=${messages.size} messages")
-    messages.forEach { msg ->
-        AppLog.d("MessageGroup", "=== msg: id=${msg.id.take(8)}, role=${msg.role}, hasTool=${msg.hasToolContent()}, textPreview=${msg.getTextContent().take(30)}")
-    }
-
     return messages.fold(mutableListOf<MessageGroup>()) { groups, message ->
         val lastGroup = groups.lastOrNull()
         val shouldMerge = message.role == MessageRole.TOOL &&

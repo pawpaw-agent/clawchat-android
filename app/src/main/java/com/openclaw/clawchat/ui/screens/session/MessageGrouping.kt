@@ -54,12 +54,6 @@ fun pairToolCards(message: MessageUi, allMessagesInGroup: List<MessageUi> = empt
         return emptyList()
     }
 
-    // 调试日志（减少输出）
-    AppLog.d(TAG, "=== pairToolCards: msgId=${message.id.take(8)}, role=${message.role}, calls=${calls.size}, results=${results.size}")
-    results.forEach { result ->
-        AppLog.d(TAG, "=== Available result: toolCallId=${result.toolCallId}, name=${result.name}")
-    }
-
     return calls.map { call ->
         // 匹配 ToolResult（精确匹配 toolCallId）
         val matchingResult = results.find { result ->
@@ -71,8 +65,6 @@ fun pairToolCards(message: MessageUi, allMessagesInGroup: List<MessageUi> = empt
         } else {
             call.args?.toString()
         }
-
-        AppLog.d(TAG, "=== ToolCard: name=${call.name}, argsPreview=${displayArgs?.take(80)}, resultPreview=${matchingResult?.text?.take(80)}")
 
         // 使用 call.phase 判断完成状态
         val phase = call.phase
