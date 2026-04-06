@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
+import com.openclaw.clawchat.ui.components.ToolCardRow
 import com.openclaw.clawchat.ui.components.ToolDetailCard
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
@@ -372,11 +373,11 @@ fun MessageGroupItem(
                                 onContinueGeneration = onContinueGeneration
                             )
 
-                            // 工具调用显示（使用 remember 缓存计算结果）
+                            // 工具调用显示（一行显示多个可折叠卡片）
                             val toolCards = remember(message) { pairToolCards(message) }
-                            toolCards.forEach { toolCard ->
+                            if (toolCards.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(DesignTokens.space1))
-                                ToolDetailCard(toolCard = toolCard)
+                                ToolCardRow(toolCards = toolCards)
                             }
                         }
 
@@ -411,7 +412,7 @@ fun MessageGroupItem(
 }
 
 /**
- * 从消息提取并渲染工具卡片（已优化：使用 remember 缓存）
+ * 从消息提取并渲染工具卡片（一行显示）
  */
 @Composable
 private fun RenderToolCardsFromMessage(message: MessageUi) {
@@ -422,51 +423,41 @@ private fun RenderToolCardsFromMessage(message: MessageUi) {
 
     // 使用 remember 缓存计算结果
     val toolCards = remember(message) { pairToolCards(message) }
-
-    toolCards.forEach { toolCard ->
-        ToolDetailCard(toolCard = toolCard)
-    }
+    ToolCardRow(toolCards = toolCards)
 }
 
 /**
- * 工具消息卡片（已优化：使用 remember 缓存）
- * @param message 工具消息（来自 toolStream，只显示工具名+状态）
- * @param historyGroups 历史消息分组（不再合并 toolResult）
+ * 工具消息卡片（一行显示多个工具）
  */
 @Composable
 fun ToolMessageCard(message: MessageUi, historyGroups: List<MessageGroup> = emptyList()) {
     // 使用 remember 缓存计算结果
     val toolCards = remember(message) { pairToolCards(message) }
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(DesignTokens.space2)
-    ) {
-        toolCards.forEach { toolCard ->
-            ToolDetailCard(toolCard = toolCard)
-        }
-
-        if (toolCards.isEmpty()) {
-            val textContent = message.getTextContent()
-            if (textContent.isNotBlank()) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(ChatTokens.toolCardRadius),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                ) {
-                    Column(modifier = Modifier.padding(ChatTokens.toolCardPadding)) {
-                        androidx.compose.foundation.text.selection.SelectionContainer {
-                            Text(
-                                text = textContent,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+    if (toolCards.isNotEmpty()) {
+        ToolCardRow(toolCards = toolCards)
+    } else {
+        val textContent = message.getTextContent()
+        if (textContent.isNotBlank()) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(ChatTokens.toolCardRadius),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ) {
+                Column(modifier = Modifier.padding(ChatTokens.toolCardPadding)) {
+                    androidx.compose.foundation.text.selection.SelectionContainer {
+                        Text(
+                            text = textContent,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
         }
+    }
+}
     }
 }
 

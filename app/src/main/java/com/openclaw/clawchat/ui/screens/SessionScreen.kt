@@ -123,16 +123,14 @@ fun SessionScreen(
     }
     val filteredGroups by remember { derivedStateOf { groupMessages(filteredMessages) } }
 
-    // 进入会话时直接显示最新消息
-    // 使用更可靠的滚动逻辑，避免不必要的延迟
+    // 进入会话时直接显示最新消息（无动画）
     LaunchedEffect(sessionId, filteredGroups.size) {
         if (filteredGroups.isEmpty()) return@LaunchedEffect
-        // 使用 snapshotFlow 等待布局完成，而不是固定延迟
+        // 等待布局完成
         snapshotFlow { listState.layoutInfo.totalItemsCount }
             .first { it > 0 }
-        // reverseLayout=true: scrollToItem(0) 滚动到最新消息（在底部）
-        // 使用 animateScrollToItem 以获得更平滑的体验
-        listState.animateScrollToItem(0, 0)
+        // reverseLayout=true: scrollToItem(0) 直接跳转到最新消息（在底部）
+        listState.scrollToItem(0, 0)
         // 标记已滚动
         viewModel.markAutoScrolled()
     }
