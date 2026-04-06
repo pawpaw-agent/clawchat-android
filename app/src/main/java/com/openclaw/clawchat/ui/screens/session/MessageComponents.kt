@@ -59,6 +59,7 @@ fun MessageContentCard(
     messageFontSize: FontSize = FontSize.MEDIUM,
     onCopy: (String) -> Unit = {},
     onDelete: () -> Unit = {},
+    onEdit: () -> Unit = {},           // 编辑回调
     onRegenerate: () -> Unit = {},
     onRetry: () -> Unit = {},
     onShare: ((String) -> Unit)? = null,  // 分享回调
@@ -198,6 +199,10 @@ fun MessageContentCard(
                         onDelete = {
                             showMenu = false
                             showDeleteConfirm = true
+                        },
+                        onEdit = {
+                            onEdit()
+                            showMenu = false
                         },
                         onRegenerate = {
                             onRegenerate()
@@ -367,13 +372,14 @@ fun MessageActionDropdownMenu(
     onCopyMarkdown: () -> Unit = {},
     onShare: () -> Unit,
     onDelete: () -> Unit,
+    onEdit: () -> Unit = {},  // 编辑回调
     onRegenerate: () -> Unit,
     onRetry: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     // 复制成功状态，用于图标切换动画
     var showCopied by remember { mutableStateOf(false) }
-    
+
     // 复制成功后 1.5s 自动恢复图标
     LaunchedEffect(showCopied) {
         if (showCopied) {
@@ -381,7 +387,7 @@ fun MessageActionDropdownMenu(
             showCopied = false
         }
     }
-    
+
     DropdownMenu(
         expanded = true,
         onDismissRequest = onDismiss
@@ -392,7 +398,7 @@ fun MessageActionDropdownMenu(
                 onCopy()
                 showCopied = true
             },
-            leadingIcon = { 
+            leadingIcon = {
                 AnimatedCopyIcon(copied = showCopied)
             }
         )
@@ -410,10 +416,21 @@ fun MessageActionDropdownMenu(
             leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp)) }
         )
         HorizontalDivider()
+        // 用户消息显示编辑选项
+        if (isUser) {
+            DropdownMenuItem(
+                text = { Text("编辑") },
+                onClick = {
+                    onEdit()
+                    onDismiss()
+                },
+                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp)) }
+            )
+        }
         DropdownMenuItem(
             text = { Text("删除", color = MaterialTheme.colorScheme.error) },
             onClick = onDelete,
-            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp)) }
+            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error) }
         )
         if (isUser) {
             DropdownMenuItem(

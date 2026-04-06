@@ -135,6 +135,34 @@ fun EnhancedMessageInputBar(
         }
     )
 
+    // 文件选择器（支持所有文件类型）
+    val filePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri: android.net.Uri? ->
+            uri?.let { selectedUri ->
+                val fileName = FileUtils.getFileNameFromUri(context, selectedUri) ?: "file_${System.currentTimeMillis()}"
+                val mimeType = context.contentResolver.getType(selectedUri) ?: "application/octet-stream"
+
+                // 将 URI 转换为 base64
+                val base64String = FileUtils.uriToBase64(context, selectedUri)
+
+                if (base64String != null) {
+                    val attachment = AttachmentUi(
+                        id = UUID.randomUUID().toString(),
+                        uri = selectedUri,
+                        mimeType = mimeType,
+                        fileName = fileName,
+                        dataUrl = "data:$mimeType;base64,$base64String"
+                    )
+                    onAddAttachment(attachment)
+                }
+            }
+        }
+    )
+
+    // 附件菜单状态
+    var showAttachmentMenu by remember { mutableStateOf(false) }
+
     // 处理键盘快捷键
     LaunchedEffect(currentKeyEvent) {
         currentKeyEvent?.let { event ->
@@ -229,23 +257,50 @@ fun EnhancedMessageInputBar(
                 horizontalArrangement = Arrangement.spacedBy(DesignTokens.space1),
                 verticalAlignment = Alignment.Bottom
             ) {
-                // 附加功能按钮
-                IconButton(
-                    onClick = {
-                        imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    },
-                    enabled = enabled
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AttachFile,
-                        contentDescription = "添加附件",
-                        tint = if (enabled) {
-                            if (attachments.isNotEmpty()) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        }
-                    )
+                // 附加功能按钮（显示菜单）
+                Box {
+                    IconButton(
+                        onClick = { showAttachmentMenu = true },
+                        enabled = enabled
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AttachFile,
+                            contentDescription = "添加附件",
+                            tint = if (enabled) {
+                                if (attachments.isNotEmpty()) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            }
+                        )
+                    }
+
+                    // 附件类型菜单
+                    DropdownMenu(
+                        expanded = showAttachmentMenu,
+                        onDismissRequest = { showAttachmentMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("图片") },
+                            onClick = {
+                                showAttachmentMenu = false
+                                imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("文件") },
+                            onClick = {
+                                showAttachmentMenu = false
+                                filePicker.launch(arrayOf("*/*"))
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(18.dp))
+                            }
+                        )
+                    }
                 }
 
                 // 输入框

@@ -64,7 +64,8 @@ class SessionViewModel @Inject constructor(
         scope = viewModelScope,
         gateway = gateway,
         messageRepository = messageRepository,
-        onStateUpdate = { _state.update(it) }
+        onStateUpdate = { _state.update(it) },
+        onUndo = { undoLastConversation() }
     )
     
     // 工具流管理器（不刷新消息，提高 UI 平滑性）
@@ -380,9 +381,58 @@ class SessionViewModel @Inject constructor(
     fun clearAttachments() {
         _state.update { it.copy(attachments = emptyList()) }
     }
-    
+
     fun executeSlashCommand(command: SlashCommandDef, args: String) {
         slashCommandExecutor.execute(command, args, _state.value.sessionId)
+    }
+
+    /**
+     * 编辑消息
+     * 编辑后删除原消息，发送新消息
+     */
+    fun editMessage(messageId: String, newText: String) {
+        val sessionId = _state.value.sessionId ?: return
+        val trimmedText = newText.trim()
+
+        if (trimmedText.isEmpty()) return
+
+        viewModelScope.launch {
+            // 取消编辑状态
+            _state.update { it.copy(editingMessageId = null, editingMessageText = null) }
+
+            // 删除原消息
+            deleteMessage(messageId)
+
+            // 发送编辑后的消息
+            _state.update { it.copy(inputText = trimmedText) }
+            sendMessage(trimmedText)
+        }
+    }
+
+    /**
+     * 开始编辑消息
+     */
+    fun startEditMessage(messageId: String) {
+        val message = _state.value.chatMessages.find { it.id == messageId } ?: return
+        val text = message.getTextContent()
+        _state.update { it.copy(
+            editingMessageId = messageId,
+            editingMessageText = text
+        )}
+    }
+
+    /**
+     * 取消编辑
+     */
+    fun cancelEdit() {
+        _state.update { it.copy(editingMessageId = null, editingMessageText = null) }
+    }
+
+    /**
+     * 更新编辑文本
+     */
+    fun updateEditingText(text: String) {
+        _state.update { it.copy(editingMessageText = text) }
     }
 
     fun deleteMessage(messageId: String) {
@@ -429,6 +479,51 @@ class SessionViewModel @Inject constructor(
                 AppLog.e(TAG, "Failed to regenerate message", e)
                 _state.update { it.copy(error = "重发失败：${e.message}，请检查网络连接后重试", isLoading = false, isSending = false) }
             }
+        }
+    }
+
+    /**
+     * 撤销上一轮对话
+     * 删除最后的用户消息和助手消息（包括工具消息）
+     */
+    fun undoLastConversation() {
+        val sessionId = _state.value.sessionId ?: return
+        val messages = _state.value.chatMessages
+
+        // 找到最后一条用户消息
+        val lastUserIndex = messages.indexOfLast { it.role == MessageRole.USER }
+        if (lastUserIndex < 0) {
+            AppLog.w(TAG, "No user message to undo")
+            return
+        }
+
+        // 找到最后一条用户消息之后的第一条助手消息
+        val lastAssistantIndex = messages.indexOfFirst {
+            it.role == MessageRole.ASSISTANT && messages.indexOf(it) > lastUserIndex
+        }
+
+        viewModelScope.launch {
+            // 删除用户消息
+            val userMessageId = messages[lastUserIndex].id
+            messageRepository.deleteMessage(sessionId, userMessageId)
+
+            // 删除助手消息（如果有）
+            if (lastAssistantIndex >= 0) {
+                val assistantMessageId = messages[lastAssistantIndex].id
+                messageRepository.deleteMessage(sessionId, assistantMessageId)
+            }
+
+            // 更新状态
+            _state.update { state ->
+                val newMessages = messages.toMutableList()
+                if (lastAssistantIndex >= 0) {
+                    newMessages.removeAt(lastAssistantIndex)
+                }
+                newMessages.removeAt(lastUserIndex)
+                state.copy(chatMessages = newMessages)
+            }
+
+            AppLog.d(TAG, "Undid last conversation: userMessage=$userMessageId")
         }
     }
 

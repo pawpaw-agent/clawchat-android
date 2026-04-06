@@ -10,6 +10,7 @@ import com.openclaw.clawchat.repository.MessageRepository
 import com.openclaw.clawchat.repository.MessageRepositoryImpl
 import com.openclaw.clawchat.repository.SessionRepository
 import com.openclaw.clawchat.repository.SessionRepositoryImpl
+import com.openclaw.clawchat.repository.PendingMessageRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -60,5 +61,11 @@ object AppModule {
     @Singleton
     fun provideMessageRepository(database: ClawChatDatabase): MessageRepository {
         return MessageRepositoryImpl(database)
+    }
+
+    @Provides
+    @Singleton
+    fun providePendingMessageRepository(database: ClawChatDatabase): PendingMessageRepository {
+        return PendingMessageRepository(database)
     }
 }

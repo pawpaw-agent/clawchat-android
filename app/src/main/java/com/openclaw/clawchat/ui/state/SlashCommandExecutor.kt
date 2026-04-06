@@ -18,7 +18,8 @@ class SlashCommandExecutor(
     private val scope: CoroutineScope,
     private val gateway: GatewayConnection,
     private val messageRepository: MessageRepository,
-    private val onStateUpdate: (SessionUiState.() -> SessionUiState) -> Unit
+    private val onStateUpdate: (SessionUiState.() -> SessionUiState) -> Unit,
+    private val onUndo: () -> Unit = {}  // 撤销回调
 ) {
     companion object {
         private const val TAG = "SlashCommandExecutor"
@@ -67,6 +68,7 @@ class SlashCommandExecutor(
             "help" -> executeHelp()
             "new" -> executeNew()
             "reset" -> executeReset(sessionId)
+            "undo" -> executeUndo(sessionId)
             "think", "thinking" -> executeThink(sessionId, args)
             "reasoning" -> executeReasoning(sessionId, args)
             "verbose" -> executeVerbose(sessionId, args)
@@ -138,6 +140,15 @@ class SlashCommandExecutor(
                 showError("重置会话失败：${e.message ?: "连接异常"}，请检查网络后重试")
             }
         }
+    }
+
+    /**
+     * 撤销上一轮对话
+     * 删除最后的用户消息和助手消息
+     */
+    private fun executeUndo(sessionId: String?) {
+        onUndo()
+        onStateUpdate { copy(inputText = "") }
     }
 
     private fun executeThink(sessionId: String?, args: String) {

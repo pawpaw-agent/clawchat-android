@@ -229,6 +229,7 @@ fun SessionScreen(
                             onSetNewMessagesBelow = { viewModel.setNewMessagesBelow() },
                             onUserScrolledAway = { viewModel.setUserScrolledAway() },
                             onDeleteMessage = { viewModel.deleteMessage(it) },
+                            onEditMessage = { viewModel.startEditMessage(it) },
                             onRegenerate = { viewModel.regenerateLastMessage() },
                             onRetryMessage = { viewModel.retryMessage(it) },
                             onContinueGeneration = { viewModel.continueGeneration() }
@@ -306,6 +307,17 @@ fun SessionScreen(
                 ErrorSnackbar(
                     message = error,
                     onDismiss = { viewModel.clearError() }
+                )
+            }
+
+            // 编辑消息对话框
+            state.editingMessageId?.let { messageId ->
+                EditMessageDialog(
+                    initialText = state.editingMessageText ?: "",
+                    onDismiss = { viewModel.cancelEdit() },
+                    onConfirm = { newText ->
+                        viewModel.editMessage(messageId, newText)
+                    }
                 )
             }
         }
@@ -405,4 +417,48 @@ private fun ErrorSnackbar(
             }
         }
     }
+}
+
+/**
+ * 编辑消息对话框
+ */
+@Composable
+private fun EditMessageDialog(
+    initialText: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var text by remember { mutableStateOf(initialText) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("编辑消息") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 100.dp),
+                placeholder = { Text("输入消息内容...") },
+                maxLines = 10
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (text.isNotBlank()) {
+                        onConfirm(text)
+                    }
+                }
+            ) {
+                Text("发送")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }

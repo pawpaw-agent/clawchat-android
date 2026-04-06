@@ -138,6 +138,13 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
         category = SlashCommandCategory.SESSION,
         executeLocal = true
     ),
+    SlashCommandDef(
+        name = "undo",
+        description = "撤销上一轮对话",
+        icon = "undo",
+        category = SlashCommandCategory.SESSION,
+        executeLocal = true
+    ),
 
     // ── Model ──
     SlashCommandDef(

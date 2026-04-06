@@ -45,81 +45,82 @@ fun AttachmentPreview(
     onRemove: () -> Unit
 ) {
     val context = LocalContext.current
-    
+
+    // 判断是否是图片
+    val isImage = attachment.mimeType.startsWith("image/")
+
     Box(
         modifier = Modifier
             .size(64.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        val bitmap = remember(attachment.dataUrl, attachment.uri) {
-            try {
-                if (!attachment.dataUrl.isNullOrBlank()) {
-                    val base64Match = Regex("base64,(.+)").find(attachment.dataUrl)
-                    val base64 = base64Match?.groupValues?.get(1) ?: attachment.dataUrl
-                    val bytes = Base64.decode(base64, Base64.DEFAULT)
-                    
-                    // 采样解码
-                    val options = BitmapFactory.Options().apply {
-                        inJustDecodeBounds = true
-                    }
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-                    
-                    val maxSize = 256
-                    val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxSize)
-                    
-                    val loadOptions = BitmapFactory.Options().apply {
-                        inSampleSize = sampleSize
-                    }
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, loadOptions)
-                } else {
-                    val inputStream = context.contentResolver.openInputStream(attachment.uri)
-                    val bytes = inputStream?.readBytes()
-                    inputStream?.close()
-                    if (bytes != null) {
+        if (isImage) {
+            // 图片预览
+            val bitmap = remember(attachment.dataUrl, attachment.uri) {
+                try {
+                    if (!attachment.dataUrl.isNullOrBlank()) {
+                        val base64Match = Regex("base64,(.+)").find(attachment.dataUrl)
+                        val base64 = base64Match?.groupValues?.get(1) ?: attachment.dataUrl
+                        val bytes = Base64.decode(base64, Base64.DEFAULT)
+
                         // 采样解码
                         val options = BitmapFactory.Options().apply {
                             inJustDecodeBounds = true
                         }
                         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-                        
+
                         val maxSize = 256
                         val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxSize)
-                        
+
                         val loadOptions = BitmapFactory.Options().apply {
                             inSampleSize = sampleSize
                         }
                         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, loadOptions)
                     } else {
-                        null
+                        val inputStream = context.contentResolver.openInputStream(attachment.uri)
+                        val bytes = inputStream?.readBytes()
+                        inputStream?.close()
+                        if (bytes != null) {
+                            // 采样解码
+                            val options = BitmapFactory.Options().apply {
+                                inJustDecodeBounds = true
+                            }
+                            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+
+                            val maxSize = 256
+                            val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxSize)
+
+                            val loadOptions = BitmapFactory.Options().apply {
+                                inSampleSize = sampleSize
+                            }
+                            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, loadOptions)
+                        } else {
+                            null
+                        }
                     }
+                } catch (e: Exception) {
+                    AppLog.e("AttachmentPreview", "Failed to decode image: ${e.message}")
+                    null
                 }
-            } catch (e: Exception) {
-                AppLog.e("AttachmentPreview", "Failed to decode image: ${e.message}")
-                null
             }
-        }
-        
-        if (bitmap != null) {
-            androidx.compose.foundation.Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = "附件预览",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Image,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+
+            if (bitmap != null) {
+                androidx.compose.foundation.Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = "附件预览",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
+            } else {
+                // 图片加载失败
+                FilePreviewPlaceholder(attachment)
             }
+        } else {
+            // 非图片文件显示文件图标和名称
+            FilePreviewPlaceholder(attachment)
         }
-        
+
         IconButton(
             onClick = onRemove,
             modifier = Modifier
@@ -137,6 +138,52 @@ fun AttachmentPreview(
                 tint = MaterialTheme.colorScheme.error
             )
         }
+    }
+}
+
+/**
+ * 文件预览占位符
+ */
+@Composable
+private fun FilePreviewPlaceholder(attachment: AttachmentUi) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // 文件图标
+        Icon(
+            imageVector = getFileIcon(attachment.mimeType),
+            contentDescription = null,
+            modifier = Modifier.size(28.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        // 文件名（截断显示）
+        Text(
+            text = attachment.fileName?.take(10)?.plus("...") ?: "文件",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
+        )
+    }
+}
+
+/**
+ * 根据文件类型获取图标
+ */
+private fun getFileIcon(mimeType: String): androidx.compose.ui.graphics.vector.ImageVector {
+    return when {
+        mimeType.startsWith("image/") -> Icons.Default.Image
+        mimeType.startsWith("video/") -> Icons.Default.VideoFile
+        mimeType.startsWith("audio/") -> Icons.Default.AudioFile
+        mimeType == "application/pdf" -> Icons.Default.PictureAsPdf
+        mimeType.contains("word") || mimeType.contains("document") -> Icons.Default.Description
+        mimeType.contains("excel") || mimeType.contains("spreadsheet") -> Icons.Default.TableChart
+        mimeType.contains("powerpoint") || mimeType.contains("presentation") -> Icons.Default.Slideshow
+        mimeType.startsWith("text/") -> Icons.Default.TextSnippet
+        mimeType.contains("zip") || mimeType.contains("rar") || mimeType.contains("archive") -> Icons.Default.FolderZip
+        else -> Icons.Default.InsertDriveFile
     }
 }
 

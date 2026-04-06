@@ -159,6 +159,10 @@ data class SessionUiState(
     // 输入
     val inputText: String = "",
 
+    // 编辑状态
+    val editingMessageId: String? = null,      // 正在编辑的消息 ID
+    val editingMessageText: String? = null,    // 编辑中的文本
+
     // Model 切换支持
     val models: List<com.openclaw.clawchat.ui.components.ModelItem> = emptyList(),
     val isLoadingModels: Boolean = false

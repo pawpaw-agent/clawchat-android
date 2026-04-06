@@ -125,6 +125,7 @@ fun MessageGroupList(
     onSetNewMessagesBelow: () -> Unit = {},      // 新消息到达，增加未读计数
     onUserScrolledAway: () -> Unit = {},          // 用户滚动离开底部，不增加计数
     onDeleteMessage: (String) -> Unit = {},
+    onEditMessage: (String) -> Unit = {},         // 编辑消息
     onRegenerate: () -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
     onContinueGeneration: () -> Unit = {}
@@ -249,6 +250,7 @@ fun MessageGroupList(
                 group = group,
                 messageFontSize = messageFontSize,
                 onDeleteMessage = onDeleteMessage,
+                onEditMessage = onEditMessage,
                 onRegenerate = onRegenerate,
                 onRetryMessage = onRetryMessage,
                 onContinueGeneration = onContinueGeneration,
@@ -320,6 +322,7 @@ fun MessageGroupItem(
     group: MessageGroup,
     messageFontSize: FontSize = FontSize.MEDIUM,
     onDeleteMessage: (String) -> Unit = {},
+    onEditMessage: (String) -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {},
     onContinueGeneration: () -> Unit = {},
@@ -363,6 +366,7 @@ fun MessageGroupItem(
                                 isLastInGroup = index == group.messages.lastIndex,
                                 messageFontSize = messageFontSize,
                                 onDelete = { onDeleteMessage(message.id) },
+                                onEdit = { onEditMessage(message.id) },
                                 onRegenerate = onRegenerate,
                                 onRetry = { onRetryMessage(message.id) },
                                 onContinueGeneration = onContinueGeneration
