@@ -77,7 +77,8 @@ class SessionViewModel @Inject constructor(
         gateway = gateway,
         messageRepository = messageRepository,
         state = _state,
-        exceptionHandler = exceptionHandler
+        exceptionHandler = exceptionHandler,
+        onLoadingStateChanged = { loading -> isLoadingHistory = loading }
     )
     
     // 聊天事件处理器
@@ -103,19 +104,29 @@ class SessionViewModel @Inject constructor(
     }
     
     // ── 消息观察 ──
-    
+
     private var observeMessagesJob: Job? = null
-    
+    private var isLoadingHistory = false  // 加载历史时暂停 Flow 更新
+
     private fun observeSessionMessages(sessionId: String) {
         AppLog.d(TAG, "=== observeSessionMessages: CALLED for $sessionId")
         observeMessagesJob?.cancel()
         observeMessagesJob = viewModelScope.launch(exceptionHandler) {
             AppLog.d(TAG, "=== observeSessionMessages: STARTED collecting for $sessionId")
             messageRepository.observeMessages(sessionId).collect { messages ->
+                // 加载历史时不更新，避免 UI 闪烁
+                if (isLoadingHistory) {
+                    AppLog.d(TAG, "=== observeSessionMessages: SKIPPED during history loading")
+                    return@collect
+                }
                 AppLog.d(TAG, "=== observeSessionMessages: COLLECTED ${messages.size} messages for $sessionId")
                 _state.update { it.copy(chatMessages = messages) }
             }
         }
+    }
+
+    fun setLoadingHistory(loading: Boolean) {
+        isLoadingHistory = loading
     }
 
     override fun onCleared() {
