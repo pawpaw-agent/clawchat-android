@@ -9,9 +9,11 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.data.ThemeMode
 
@@ -42,10 +44,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("设置") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "返回")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.settings_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -62,7 +64,7 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             // Gateway 配置区域
-            SettingsSection(title = "连接") {
+            SettingsSection(title = stringResource(R.string.settings_section_connection)) {
                 GatewayConfigItem(
                     gateway = state.currentGateway,
                     connectionStatus = state.connectionStatus,
@@ -83,71 +85,71 @@ fun SettingsScreen(
             }
 
             // 显示设置区域
-            SettingsSection(title = "显示") {
+            SettingsSection(title = stringResource(R.string.settings_section_display)) {
                 // 动态颜色（Android 12+）
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                     ToggleSettingItem(
                         icon = Icons.Outlined.Palette,
-                        title = "动态颜色",
-                        subtitle = "使用系统壁纸颜色（Material You）",
+                        title = stringResource(R.string.settings_dynamic_color),
+                        subtitle = stringResource(R.string.settings_dynamic_color_desc),
                         checked = state.dynamicColor,
                         onCheckedChange = { viewModel.setDynamicColor(it) }
                     )
                 }
-                
+
                 ThemeModeSettingItem(
-                    title = "主题模式",
-                    subtitle = "选择应用主题外观",
+                    title = stringResource(R.string.settings_theme_mode),
+                    subtitle = stringResource(R.string.settings_theme_mode_desc),
                     currentMode = state.themeMode,
                     onModeChange = { viewModel.setThemeMode(it) }
                 )
 
                 FontSizeSettingItem(
-                    title = "消息字体大小",
-                    subtitle = "调整所有消息的字体大小",
+                    title = stringResource(R.string.settings_font_size),
+                    subtitle = stringResource(R.string.settings_font_size_desc),
                     currentSize = state.messageFontSize,
                     onSizeChange = { viewModel.setMessageFontSize(it) }
                 )
-                
+
                 ThemeColorSettingItem(
-                    title = "主题色",
-                    subtitle = "选择应用主题颜色",
+                    title = stringResource(R.string.settings_theme_color),
+                    subtitle = stringResource(R.string.settings_theme_color_desc),
                     currentColorIndex = state.themeColorIndex,
                     onColorChange = { viewModel.setThemeColor(it) }
                 )
             }
 
             // 通知设置区域
-            SettingsSection(title = "通知") {
+            SettingsSection(title = stringResource(R.string.settings_section_notifications)) {
                 ToggleSettingItem(
                     icon = Icons.Outlined.Notifications,
-                    title = "推送通知",
-                    subtitle = "接收新消息通知",
+                    title = stringResource(R.string.settings_push_notifications),
+                    subtitle = stringResource(R.string.settings_push_notifications_desc),
                     checked = state.notificationsEnabled,
                     onCheckedChange = { viewModel.toggleNotifications(it) }
                 )
-                
+
                 ToggleSettingItem(
                     icon = Icons.Outlined.DoNotDisturb,
-                    title = "勿扰模式",
-                    subtitle = "定时静音通知",
+                    title = stringResource(R.string.settings_dnd_mode),
+                    subtitle = stringResource(R.string.settings_dnd_mode_desc),
                     checked = state.dndEnabled,
                     onCheckedChange = { viewModel.toggleDnd(it) }
                 )
             }
 
             // 自动化区域
-            SettingsSection(title = "自动化") {
+            SettingsSection(title = stringResource(R.string.settings_section_automation)) {
                 ClickableSettingItem(
                     icon = Icons.Outlined.Schedule,
-                    title = "定时任务",
-                    subtitle = "管理定时执行的任务",
+                    title = stringResource(R.string.settings_scheduled_tasks),
+                    subtitle = stringResource(R.string.settings_scheduled_tasks_desc),
                     onClick = onNavigateToCron
                 )
             }
 
             // 关于区域
-            SettingsSection(title = "安全") {
+            SettingsSection(title = stringResource(R.string.settings_section_security)) {
                 SecurityStatusItem(
                     isRooted = state.isRooted,
                     rootRiskLevel = state.rootRiskLevel
@@ -155,12 +157,12 @@ fun SettingsScreen(
             }
 
             // 关于区域
-            SettingsSection(title = "关于") {
+            SettingsSection(title = stringResource(R.string.settings_section_about)) {
                 ClickableSettingItem(
                     icon = Icons.Outlined.Info,
                     title = "ClawChat",
-                    subtitle = "版本 ${state.appVersion}",
-                    onClick = { 
+                    subtitle = stringResource(R.string.settings_version, state.appVersion),
+                    onClick = {
                         showAboutDialog = true
                         // 连续点击 7 次进入 Debug
                         debugClickCount++
@@ -170,20 +172,20 @@ fun SettingsScreen(
                         }
                     }
                 )
-                
+
                 ClickableSettingItem(
                     icon = Icons.Outlined.Description,
-                    title = "开源许可",
-                    subtitle = "查看第三方库许可",
+                    title = stringResource(R.string.settings_open_source_licenses),
+                    subtitle = stringResource(R.string.settings_open_source_licenses_desc),
                     onClick = { /* 尚未实现 */ }
                 )
-                
+
                 // Debug 入口（开发版显示）
                 if (com.openclaw.clawchat.BuildConfig.DEBUG) {
                     ClickableSettingItem(
                         icon = Icons.Outlined.BugReport,
                         title = "Debug",
-                        subtitle = "调试和诊断工具",
+                        subtitle = stringResource(R.string.settings_debug_subtitle),
                         onClick = onNavigateToDebug
                     )
                 }

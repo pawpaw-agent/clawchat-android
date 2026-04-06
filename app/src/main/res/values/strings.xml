@@ -294,6 +294,33 @@
     <string name="debug_back">Back</string>
     <string name="debug_not_configured">Not configured</string>
 
+    <!-- Settings Screen -->
+    <string name="settings_back">Back</string>
+    <string name="settings_section_connection">Connection</string>
+    <string name="settings_section_display">Display</string>
+    <string name="settings_section_notifications">Notifications</string>
+    <string name="settings_section_automation">Automation</string>
+    <string name="settings_section_security">Security</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_dynamic_color">Dynamic color</string>
+    <string name="settings_dynamic_color_desc">Use system wallpaper colors (Material You)</string>
+    <string name="settings_theme_mode">Theme mode</string>
+    <string name="settings_theme_mode_desc">Choose app theme appearance</string>
+    <string name="settings_font_size">Message font size</string>
+    <string name="settings_font_size_desc">Adjust font size for all messages</string>
+    <string name="settings_theme_color">Theme color</string>
+    <string name="settings_theme_color_desc">Choose app theme color</string>
+    <string name="settings_push_notifications">Push notifications</string>
+    <string name="settings_push_notifications_desc">Receive new message notifications</string>
+    <string name="settings_dnd_mode">Do not disturb</string>
+    <string name="settings_dnd_mode_desc">Scheduled notification silencing</string>
+    <string name="settings_scheduled_tasks">Scheduled tasks</string>
+    <string name="settings_scheduled_tasks_desc">Manage scheduled tasks</string>
+    <string name="settings_version">Version %s</string>
+    <string name="settings_open_source_licenses">Open source licenses</string>
+    <string name="settings_open_source_licenses_desc">View third-party library licenses</string>
+    <string name="settings_debug_subtitle">Debug and diagnostic tools</string>
+
     <!-- Message Status -->
     <string name="status_sending">Sending</string>
     <string name="status_sent">Sent</string>
