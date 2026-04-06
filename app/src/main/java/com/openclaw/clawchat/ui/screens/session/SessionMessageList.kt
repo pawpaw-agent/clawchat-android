@@ -146,6 +146,17 @@ fun MessageGroupList(
             }
     }
 
+    // 新消息到达时自动滚动到底部
+    // reverseLayout=true 时，新消息会出现在 index=0，只需要确保滚动到 0
+    LaunchedEffect(groups.size, chatUserNearBottom, chatHasAutoScrolled) {
+        // 初始加载未完成时不处理
+        if (!chatHasAutoScrolled) return@LaunchedEffect
+        // 用户在底部时自动滚动到最新消息
+        if (chatUserNearBottom && groups.isNotEmpty()) {
+            listState.scrollToItem(0)
+        }
+    }
+
     // 流式输出到达时自动滚动（仅处理流式，不处理初始加载）
     val streamKey = chatStream?.hashCode() ?: 0
     LaunchedEffect(streamKey, toolMessages.size, streamSegments.size) {
