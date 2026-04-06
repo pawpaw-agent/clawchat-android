@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -30,10 +31,11 @@ import kotlinx.coroutines.delay
 
 /**
  * 会话界面屏幕
- * 
+ *
  * 滚动逻辑：
  * 1. 新消息按钮点击 → 滚动到最底部
- * 2. 键盘弹出 → 系统自动调整布局（adjustResize）
+ * 2. 键盘弹出 → 自动滚动到底部
+ * 3. 系统布局调整（adjustResize）
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -47,11 +49,23 @@ fun SessionScreen(
     val focusRequester = remember { FocusRequester() }
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
-    
+    val density = LocalDensity.current
+
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
     // 当前会话 ID
     var currentSessionId by remember { mutableStateOf<String?>(null) }
+
+    // 检测键盘是否可见
+    val imeVisible = WindowInsets.ime.getBottom(density) > 0
+
+    // 键盘弹出时自动滚动到底部
+    LaunchedEffect(imeVisible) {
+        if (imeVisible && state.chatHasAutoScrolled) {
+            delay(100) // 等待键盘动画开始
+            listState.animateScrollToItem(0)
+        }
+    }
 
     // 监听生命周期
     DisposableEffect(lifecycleOwner) {
