@@ -574,7 +574,7 @@ private fun SessionItem(
                             color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
                         ) {
                             Text(
-                                text = "Agent",
+                                text = stringResource(R.string.selector_agent_label),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)

@@ -134,7 +134,7 @@ private fun ConnectionDiagnosticsTab(state: DebugUiState) {
 
         item {
             Text(
-                text = "Gateway",
+                text = stringResource(R.string.debug_gateway),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )

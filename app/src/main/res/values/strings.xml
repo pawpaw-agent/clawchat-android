@@ -390,6 +390,7 @@
     <string name="debug_error_history">Error history</string>
     <string name="debug_back">Back</string>
     <string name="debug_not_configured">Not configured</string>
+    <string name="debug_gateway">Gateway</string>
 
     <!-- Settings Screen -->
     <string name="settings_back">Back</string>
@@ -460,6 +461,7 @@
     <string name="selector_default_model">Default Model</string>
     <string name="selector_default">Default</string>
     <string name="selector_supports_vision">Supports Vision</string>
+    <string name="selector_agent_label">Agent</string>
 
     <!-- Create Session Dialog -->
     <string name="create_session_title">New Session</string>

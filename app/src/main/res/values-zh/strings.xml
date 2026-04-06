@@ -383,6 +383,7 @@
     <string name="debug_error_history">错误历史</string>
     <string name="debug_back">返回</string>
     <string name="debug_not_configured">未配置</string>
+    <string name="debug_gateway">网关</string>
 
     <!-- Settings Screen -->
     <string name="settings_back">返回</string>
@@ -453,6 +454,7 @@
     <string name="selector_default_model">默认模型</string>
     <string name="selector_default">默认</string>
     <string name="selector_supports_vision">支持视觉</string>
+    <string name="selector_agent_label">Agent</string>
 
     <!-- Create Session Dialog -->
     <string name="create_session_title">新建会话</string>
