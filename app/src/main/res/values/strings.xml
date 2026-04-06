@@ -180,6 +180,14 @@
     <string name="about_app_name">ClawChat</string>
     <string name="about_description">OpenClaw Android Client</string>
     <string name="about_version">Version %s</string>
+    <string name="about_build">Build %d</string>
+    <string name="about_full_description">ClawChat is a third-party Android client for the OpenClaw ecosystem, providing real-time communication with OpenClaw Gateway for developers and administrators to monitor and manage AI Agent sessions anywhere, anytime.</string>
+    <string name="about_features">Key Features</string>
+    <string name="about_feature_security">Ed25519 key + encrypted storage security design</string>
+    <string name="about_feature_compose">Jetpack Compose + Material Design 3</string>
+    <string name="about_feature_websocket">WebSocket real-time communication, Gateway protocol v3</string>
+    <string name="about_feature_network">Supports LAN and Tailscale remote access</string>
+    <string name="about_open_source_licenses">Open Source Licenses</string>
 
     <!-- Notifications -->
     <string name="notification_channel_messages">Messages</string>
