@@ -116,7 +116,7 @@ private fun MarkdownWithCodeBlocks(
 }
 
 /**
- * 代码块内容
+ * 代码块内容（带行号）
  */
 @Composable
 private fun CodeBlockContent(
@@ -130,7 +130,9 @@ private fun CodeBlockContent(
     }
     val context = androidx.compose.ui.platform.LocalContext.current
     val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
-    
+    val lines = remember(code) { code.lines() }
+    val lineCount = lines.size
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -174,20 +176,41 @@ private fun CodeBlockContent(
                     }
                 }
             }
-            
-            // 代码内容
+
+            // 代码内容（带行号）
             SelectionContainer {
-                Text(
-                    text = annotatedCode,
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(scrollState)
-                        .padding(12.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = (fontSize.value - 2).sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                        .padding(12.dp)
+                ) {
+                    // 行号列
+                    if (lineCount > 1) {
+                        Column(
+                            modifier = Modifier.padding(end = 12.dp)
+                        ) {
+                            repeat(lineCount) { index ->
+                                Text(
+                                    text = "${index + 1}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = (fontSize.value - 2).sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                )
+                            }
+                        }
+                    }
+
+                    // 代码内容
+                    Text(
+                        text = annotatedCode,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = (fontSize.value - 2).sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
