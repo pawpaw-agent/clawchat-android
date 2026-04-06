@@ -272,6 +272,11 @@
     <string name="action_image">Image</string>
     <string name="action_load_failed">Load failed</string>
 
+    <!-- Tool Components -->
+    <string name="tool_args">Args</string>
+    <string name="tool_result">Result</string>
+    <string name="tool_error">Error</string>
+
     <!-- Message Status -->
     <string name="status_sending">Sending</string>
     <string name="status_sent">Sent</string>

@@ -15,12 +15,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.state.ToolCard
 
 /**
@@ -79,6 +81,7 @@ fun CompactToolCard(
     toolCard: ToolCard,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val isRunning = toolCard.phase != "result"
     val hasError = toolCard.isError
     val hasContent = !toolCard.args.isNullOrBlank() || !toolCard.result.isNullOrBlank()
@@ -211,7 +214,7 @@ fun CompactToolCard(
                     // 参数
                     if (!toolCard.args.isNullOrBlank()) {
                         Text(
-                            text = "参数",
+                            text = context.getString(R.string.tool_args),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -236,7 +239,7 @@ fun CompactToolCard(
                     // 结果
                     if (!toolCard.result.isNullOrBlank()) {
                         Text(
-                            text = if (hasError) "错误" else "结果",
+                            text = if (hasError) context.getString(R.string.tool_error) else context.getString(R.string.tool_result),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                         )

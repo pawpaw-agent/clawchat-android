@@ -265,6 +265,11 @@
     <string name="action_image">图片</string>
     <string name="action_load_failed">加载失败</string>
 
+    <!-- Tool Components -->
+    <string name="tool_args">参数</string>
+    <string name="tool_result">结果</string>
+    <string name="tool_error">错误</string>
+
     <!-- Message Status -->
     <string name="status_sending">发送中</string>
     <string name="status_sent">已发送</string>
