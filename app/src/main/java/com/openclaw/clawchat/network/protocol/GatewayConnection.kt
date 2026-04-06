@@ -894,6 +894,47 @@ class GatewayConnection(
         return ping().getOrNull()
     }
 
+    // ==================== Chat Extensions ====================
+
+    /** chat.inject — 注入消息到会话历史（不触发 AI 回复） */
+    suspend fun chatInject(
+        sessionKey: String,
+        role: String,
+        content: String,
+        attachments: List<ChatAttachmentData>? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "sessionKey" to JsonPrimitive(sessionKey),
+            "role" to JsonPrimitive(role),
+            "content" to JsonPrimitive(content)
+        )
+        if (!attachments.isNullOrEmpty()) {
+            params["attachments"] = JsonArray(
+                attachments.map { att ->
+                    buildJsonObject {
+                        put("type", "image")
+                        put("mimeType", att.mimeType)
+                        put("content", att.content)
+                    }
+                }
+            )
+        }
+        return call("chat.inject", params)
+    }
+
+    // ==================== Device Token API ====================
+
+    /** device.token.rotate — 新设备 Token */
+    suspend fun deviceTokenRotate(): ResponseFrame {
+        return call("device.token.rotate", null)
+    }
+
+    /** device.token.revoke — 撤销设备 Token */
+    suspend fun deviceTokenRevoke(token: String? = null): ResponseFrame {
+        val params = if (token != null) mapOf("token" to JsonPrimitive(token)) else null
+        return call("device.token.revoke", params)
+    }
+
     // ── Heartbeat / Reconnect ──
 
     private fun startHeartbeat() {

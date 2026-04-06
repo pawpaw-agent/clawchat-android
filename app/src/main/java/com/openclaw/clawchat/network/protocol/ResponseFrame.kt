@@ -674,3 +674,70 @@ fun ResponseFrame.parseSessionsSubscribeResponse(): SessionsSubscribeResponse? {
 fun ResponseFrame.parseSessionsResolveResponse(): SessionsResolveResponse? {
     return parsePayload(SessionsResolveResponse.serializer())
 }
+
+// ==================== Chat Extensions 响应 ====================
+
+/**
+ * 消息注入响应载荷
+ */
+@Serializable
+data class ChatInjectResponse(
+    @SerialName("messageId")
+    val messageId: String,
+
+    @SerialName("sessionId")
+    val sessionId: String,
+
+    @SerialName("timestamp")
+    val timestamp: Long
+)
+
+/**
+ * 解析为 ChatInjectResponse
+ */
+fun ResponseFrame.parseChatInjectResponse(): ChatInjectResponse? {
+    return parsePayload(ChatInjectResponse.serializer())
+}
+
+// ==================== Device Token API 响应 ====================
+
+/**
+ * 设备 Token 旋转响应载荷
+ */
+@Serializable
+data class DeviceTokenRotateResponse(
+    @SerialName("token")
+    val token: String,
+
+    @SerialName("createdAt")
+    val createdAt: Long,
+
+    @SerialName("expiresAt")
+    val expiresAt: Long? = null
+)
+
+/**
+ * 设备 Token 撤销响应载荷
+ */
+@Serializable
+data class DeviceTokenRevokeResponse(
+    @SerialName("revoked")
+    val revoked: Boolean,
+
+    @SerialName("revokedAt")
+    val revokedAt: Long? = null
+)
+
+/**
+ * 解析为 DeviceTokenRotateResponse
+ */
+fun ResponseFrame.parseDeviceTokenRotateResponse(): DeviceTokenRotateResponse? {
+    return parsePayload(DeviceTokenRotateResponse.serializer())
+}
+
+/**
+ * 解析为 DeviceTokenRevokeResponse
+ */
+fun ResponseFrame.parseDeviceTokenRevokeResponse(): DeviceTokenRevokeResponse? {
+    return parsePayload(DeviceTokenRevokeResponse.serializer())
+}
