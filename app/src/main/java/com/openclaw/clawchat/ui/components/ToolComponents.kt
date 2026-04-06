@@ -1,6 +1,7 @@
 package com.openclaw.clawchat.ui.components
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -193,6 +194,12 @@ fun CompactToolCard(
                 }
             }
 
+            // 运行中的进度条动画
+            if (isRunning && !hasError) {
+                Spacer(modifier = Modifier.height(4.dp))
+                RunningProgressBar(color = statusColor)
+            }
+
             // 展开内容
             AnimatedVisibility(
                 visible = expanded && hasContent,
@@ -320,4 +327,39 @@ private fun formatToolName(name: String): String {
         .joinToString(" ") { word ->
             word.lowercase().replaceFirstChar { it.uppercase() }
         }
+}
+
+/**
+ * 运行中的进度条动画
+ */
+@Composable
+private fun RunningProgressBar(
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "progress")
+    val progress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "progressAnim"
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(2.dp)
+            .clip(RoundedCornerShape(1.dp))
+            .background(color.copy(alpha = 0.2f))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress.coerceIn(0.1f, 0.9f))
+                .fillMaxHeight()
+                .background(color)
+        )
+    }
 }
