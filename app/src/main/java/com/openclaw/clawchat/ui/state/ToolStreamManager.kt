@@ -9,18 +9,17 @@ import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * 工具流管理器
- * 
+ *
  * 负责管理工具流状态：
  * - handleToolStreamEvent
  * - toolStreamById / toolStreamOrder 管理
  * - chatToolMessages 构建
- * 
+ *
  * 与 WebChat 保持一致：不保存到本地 DB，依赖 Gateway reload
  */
 class ToolStreamManager(
     private val state: MutableStateFlow<SessionUiState>,
     private val limit: Int = 50
-    // 不再需要 onToolComplete 回调，不显示工具结果，提高 UI 平滑性
 ) {
     companion object {
         private const val TAG = "ToolStreamManager"
@@ -32,28 +31,18 @@ class ToolStreamManager(
      *   { runId, seq, stream: "tool", ts, data: { phase, name, toolCallId, args?, result?, partialResult?, isError? }, sessionKey }
      */
     fun handleToolStreamEvent(payload: JsonObject) {
-        AppLog.d(TAG, "=== handleToolStreamEvent called, payload keys: ${payload.keys}")
-        
         // 从 payload.data 提取工具信息
-        val data = payload["data"]?.jsonObject
-        if (data == null) {
-            AppLog.w(TAG, "=== handleToolStreamEvent: no data field in payload")
-            return
-        }
-        AppLog.d(TAG, "=== data keys: ${data.keys}, data=$data")
-        
+        val data = payload["data"]?.jsonObject ?: return
+
         val toolCallId = data["toolCallId"]?.jsonPrimitive?.content ?: return
         val name = data["name"]?.jsonPrimitive?.content ?: "tool"
         val phase = data["phase"]?.jsonPrimitive?.content ?: "start"
         val resultContent = data["result"]?.jsonPrimitive?.content
         val partialResultContent = data["partialResult"]?.jsonPrimitive?.content
         val isError = data["isError"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
-        
-        AppLog.d(TAG, "=== result=$resultContent, partialResult=$partialResultContent")
+
         val runId = payload["runId"]?.jsonPrimitive?.content ?: ""
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
-        
-        AppLog.d(TAG, "=== Tool stream event: toolCallId=$toolCallId, name=$name, phase=$phase")
         
         state.update { currentState ->
             val now = System.currentTimeMillis()
@@ -71,7 +60,6 @@ class ToolStreamManager(
                     chatStreamSegments = chatStreamSegments + StreamSegment(chatStream.trim(), now)
                     chatStream = null
                     chatStreamStartedAt = null
-                    AppLog.d(TAG, "=== Committed stream text to segment")
                 }
             }
             
@@ -123,7 +111,6 @@ class ToolStreamManager(
             }
             
             toolStreamById[toolCallId] = newEntry
-            AppLog.d(TAG, "=== Entry created/updated: toolCallId=$toolCallId, phase=${newEntry.phase}, output=${newEntry.output?.take(50)}")
             if (toolCallId !in toolStreamOrder) {
                 toolStreamOrder.add(toolCallId)
             }
@@ -140,9 +127,7 @@ class ToolStreamManager(
             val chatToolMessages = toolStreamOrder.mapNotNull { id ->
                 toolStreamById[id]?.buildMessage()
             }
-            
-            AppLog.d(TAG, "=== handleToolStreamEvent: chatToolMessages.size=${chatToolMessages.size}, toolStreamOrder=${toolStreamOrder.size}")
-            
+
             currentState.copy(
                 toolStreamById = toolStreamById.toMap(),
                 toolStreamOrder = toolStreamOrder,

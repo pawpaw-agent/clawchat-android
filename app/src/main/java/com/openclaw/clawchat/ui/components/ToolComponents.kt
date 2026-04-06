@@ -228,7 +228,7 @@ fun ToolDetailCard(
 }
 
 /**
- * 工具图标（带状态动画）
+ * 工具图标（简化版，移除无限动画以提高性能）
  */
 @Composable
 private fun ToolIconWithStatus(
@@ -239,56 +239,21 @@ private fun ToolIconWithStatus(
 ) {
     val icon = getToolIcon(toolName)
 
-    // 运行中旋转动画
-    val infiniteTransition = rememberInfiniteTransition(label = "tool-icon")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rotation"
-    )
-
-    // 脉冲动画（运行中）
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
-
     Box(
         modifier = Modifier
             .size(36.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(
-                statusColor.copy(alpha = 0.15f)
-            ),
+            .background(statusColor.copy(alpha = 0.15f)),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = statusColor,
-            modifier = Modifier
-                .size(20.dp)
-                .then(
-                    if (isRunning && !hasError) {
-                        Modifier
-                            .rotate(rotation)
-                            .graphicsLayer { scaleX = scale; scaleY = scale }
-                    } else {
-                        Modifier
-                    }
-                )
+            modifier = Modifier.size(20.dp)
         )
 
-        // 运行中指示点
+        // 运行中指示点（静态，不用动画）
         if (isRunning && !hasError) {
             Box(
                 modifier = Modifier

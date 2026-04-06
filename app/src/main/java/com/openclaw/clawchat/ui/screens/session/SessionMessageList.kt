@@ -372,8 +372,9 @@ fun MessageGroupItem(
                                 onContinueGeneration = onContinueGeneration
                             )
 
-                            // 工具调用显示（使用 pairToolCards 正确配对结果）
-                            pairToolCards(message).forEach { toolCard ->
+                            // 工具调用显示（使用 remember 缓存计算结果）
+                            val toolCards = remember(message) { pairToolCards(message) }
+                            toolCards.forEach { toolCard ->
                                 Spacer(modifier = Modifier.height(DesignTokens.space1))
                                 ToolDetailCard(toolCard = toolCard)
                             }
@@ -410,7 +411,7 @@ fun MessageGroupItem(
 }
 
 /**
- * 从消息提取并渲染工具卡片
+ * 从消息提取并渲染工具卡片（已优化：使用 remember 缓存）
  */
 @Composable
 private fun RenderToolCardsFromMessage(message: MessageUi) {
@@ -419,58 +420,33 @@ private fun RenderToolCardsFromMessage(message: MessageUi) {
         return
     }
 
-    val calls = message.getToolCalls()
-    val results = message.getToolResults()
+    // 使用 remember 缓存计算结果
+    val toolCards = remember(message) { pairToolCards(message) }
 
-    if (calls.isEmpty() && results.isEmpty()) {
-        val textContent = message.getTextContent()
-        if (textContent.isNotBlank()) {
-            ToolDetailCard(toolCard = ToolCard(
-                kind = ToolCardKind.RESULT,
-                name = "output",
-                args = null,
-                result = textContent,
-                isError = false,
-                callId = null
-            ))
-        }
-    } else {
-        calls.forEach { call ->
-            val matchingResult = results.find { it.toolCallId == call.id }
-            ToolDetailCard(toolCard = ToolCard(
-                kind = if (matchingResult != null) ToolCardKind.RESULT else ToolCardKind.CALL,
-                name = call.name,
-                args = call.args?.toString(),
-                result = matchingResult?.text,
-                isError = matchingResult?.isError ?: false,
-                callId = call.id,
-                phase = call.phase
-            ))
-        }
+    toolCards.forEach { toolCard ->
+        ToolDetailCard(toolCard = toolCard)
     }
 }
 
 /**
- * 工具消息卡片
+ * 工具消息卡片（已优化：使用 remember 缓存）
  * @param message 工具消息（来自 toolStream，只显示工具名+状态）
  * @param historyGroups 历史消息分组（不再合并 toolResult）
  */
 @Composable
 fun ToolMessageCard(message: MessageUi, historyGroups: List<MessageGroup> = emptyList()) {
-    val toolCards = pairToolCards(message)
-
-    // 不从历史消息合并 toolResult，只显示工具名+状态，提高 UI 平滑性
-    val finalToolCards = toolCards
+    // 使用 remember 缓存计算结果
+    val toolCards = remember(message) { pairToolCards(message) }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(DesignTokens.space2)
     ) {
-        finalToolCards.forEach { toolCard ->
+        toolCards.forEach { toolCard ->
             ToolDetailCard(toolCard = toolCard)
         }
 
-        if (finalToolCards.isEmpty()) {
+        if (toolCards.isEmpty()) {
             val textContent = message.getTextContent()
             if (textContent.isNotBlank()) {
                 Surface(
