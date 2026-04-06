@@ -308,6 +308,49 @@
     <string name="slash_category_agents">Agents</string>
     <string name="slash_category_tools">Tools</string>
 
+    <!-- Slash Command Descriptions -->
+    <string name="slash_new_desc">Start a new session</string>
+    <string name="slash_reset_desc">Reset current session</string>
+    <string name="slash_compact_desc">Compact session context</string>
+    <string name="slash_stop_desc">Stop current run</string>
+    <string name="slash_stop_alias_desc">Stop current run (stop alias)</string>
+    <string name="slash_clear_desc">Clear chat history</string>
+    <string name="slash_focus_desc">Toggle focus mode</string>
+    <string name="slash_undo_desc">Undo last conversation</string>
+    <string name="slash_model_desc">Show or set model</string>
+    <string name="slash_think_desc">Set thinking level</string>
+    <string name="slash_verbose_desc">Toggle verbose mode</string>
+    <string name="slash_fast_desc">Toggle fast mode</string>
+    <string name="slash_help_desc">Show available commands</string>
+    <string name="slash_status_desc">Show session status</string>
+    <string name="slash_export_desc">Export session to Markdown</string>
+    <string name="slash_usage_desc">Show token usage</string>
+    <string name="slash_agents_desc">List agents</string>
+    <string name="slash_kill_desc">Terminate child agents</string>
+    <string name="slash_skill_desc">Run a skill</string>
+    <string name="slash_steer_desc">Steer child agent</string>
+
+    <!-- Slash Command Execution Messages -->
+    <string name="slash_error_no_session">Cannot execute command: Please select a session first</string>
+    <string name="slash_error_clear_no_session">Cannot clear messages: Please select a session first</string>
+    <string name="slash_error_reset_no_session">Cannot reset session: Please select a session first</string>
+    <string name="slash_error_think_no_session">Cannot set thinking level: Please select a session first</string>
+    <string name="slash_error_reasoning_no_session">Cannot toggle reasoning: Please select a session first</string>
+    <string name="slash_error_verbose_no_session">Cannot set verbose mode: Please select a session first</string>
+    <string name="slash_error_export_no_session">Cannot export: Please select a session first</string>
+    <string name="slash_error_exec_no_session">Cannot execute command: Please select a session first</string>
+    <string name="slash_success_reset">Session reset successfully</string>
+    <string name="slash_success_think_set">Thinking level set to: %s</string>
+    <string name="slash_success_reasoning_on">Reasoning mode enabled</string>
+    <string name="slash_success_reasoning_off">Reasoning mode disabled</string>
+    <string name="slash_success_verbose_set">Verbose mode set to: %s</string>
+    <string name="slash_success_export_triggered">Export triggered. Check message content.</string>
+    <string name="slash_error_reset_failed">Failed to reset session: %s. Please check network and retry.</string>
+    <string name="slash_error_think_failed">Failed to set thinking level: %s. Please check network and retry.</string>
+    <string name="slash_error_reasoning_failed">Failed to toggle reasoning: %s. Please check network and retry.</string>
+    <string name="slash_error_verbose_failed">Failed to set verbose mode: %s. Please check network and retry.</string>
+    <string name="slash_error_exec_failed">Failed to execute command: %s. Please check network and retry.</string>
+
     <!-- Debug Screen -->
     <string name="debug_tab_connection">Connection</string>
     <string name="debug_tab_logs">Logs</string>

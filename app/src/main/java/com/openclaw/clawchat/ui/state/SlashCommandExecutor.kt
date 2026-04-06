@@ -1,6 +1,8 @@
 package com.openclaw.clawchat.ui.state
 
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.util.AppLog
+import com.openclaw.clawchat.util.StringResourceProvider
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
 import com.openclaw.clawchat.ui.components.SLASH_COMMANDS
@@ -18,6 +20,7 @@ class SlashCommandExecutor(
     private val scope: CoroutineScope,
     private val gateway: GatewayConnection,
     private val messageRepository: MessageRepository,
+    private val strings: StringResourceProvider,
     private val onStateUpdate: (SessionUiState.() -> SessionUiState) -> Unit,
     private val onUndo: () -> Unit = {}  // 撤销回调
 ) {
@@ -80,7 +83,7 @@ class SlashCommandExecutor(
     private fun executeClear(sessionId: String?) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法清除消息：请先在左侧选择一个会话")
+                showError(strings.getString(R.string.slash_error_clear_no_session))
                 return@launch
             }
             messageRepository.clearMessages(sessionId)
@@ -90,19 +93,21 @@ class SlashCommandExecutor(
 
     private fun executeHelp() {
         val helpText = buildString {
-            appendLine("## 可用命令")
+            appendLine("## ${strings.getString(R.string.slash_help_desc)}")
             appendLine()
             SLASH_COMMANDS.groupBy { it.category }.forEach { (category, commands) ->
                 val categoryLabel = when (category) {
-                    SlashCommandCategory.SESSION -> "会话"
-                    SlashCommandCategory.MODEL -> "模型"
-                    SlashCommandCategory.AGENTS -> "Agents"
-                    SlashCommandCategory.TOOLS -> "工具"
+                    SlashCommandCategory.SESSION -> strings.getString(R.string.slash_category_session)
+                    SlashCommandCategory.MODEL -> strings.getString(R.string.slash_category_model)
+                    SlashCommandCategory.AGENTS -> strings.getString(R.string.slash_category_agents)
+                    SlashCommandCategory.TOOLS -> strings.getString(R.string.slash_category_tools)
                 }
                 appendLine("### $categoryLabel")
                 commands.forEach { cmd ->
                     val argsHint = if (cmd.args != null) " ${cmd.args}" else ""
-                    appendLine("- `/${cmd.name}$argsHint` - ${cmd.description}")
+                    // Use localized description for known commands
+                    val desc = getLocalizedCommandDescription(cmd.name)
+                    appendLine("- `/${cmd.name}$argsHint` - $desc")
                 }
                 appendLine()
             }
@@ -120,6 +125,34 @@ class SlashCommandExecutor(
         }
     }
 
+    /**
+     * Get localized description for a command
+     */
+    private fun getLocalizedCommandDescription(name: String): String {
+        return when (name) {
+            "new" -> strings.getString(R.string.slash_new_desc)
+            "reset" -> strings.getString(R.string.slash_reset_desc)
+            "compact" -> strings.getString(R.string.slash_compact_desc)
+            "stop", "esc", "abort", "wait", "exit" -> strings.getString(R.string.slash_stop_desc)
+            "clear" -> strings.getString(R.string.slash_clear_desc)
+            "focus" -> strings.getString(R.string.slash_focus_desc)
+            "undo" -> strings.getString(R.string.slash_undo_desc)
+            "model" -> strings.getString(R.string.slash_model_desc)
+            "think", "thinking" -> strings.getString(R.string.slash_think_desc)
+            "verbose" -> strings.getString(R.string.slash_verbose_desc)
+            "fast" -> strings.getString(R.string.slash_fast_desc)
+            "help" -> strings.getString(R.string.slash_help_desc)
+            "status" -> strings.getString(R.string.slash_status_desc)
+            "export" -> strings.getString(R.string.slash_export_desc)
+            "usage" -> strings.getString(R.string.slash_usage_desc)
+            "agents" -> strings.getString(R.string.slash_agents_desc)
+            "kill" -> strings.getString(R.string.slash_kill_desc)
+            "skill" -> strings.getString(R.string.slash_skill_desc)
+            "steer" -> strings.getString(R.string.slash_steer_desc)
+            else -> "Unknown command"  // fallback
+        }
+    }
+
     private fun executeNew() {
         onStateUpdate { copy(inputText = "") }
         // 新会话将在首次消息时自动创建
@@ -128,16 +161,16 @@ class SlashCommandExecutor(
     private fun executeReset(sessionId: String?) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法重置会话：请先在左侧选择一个会话")
+                showError(strings.getString(R.string.slash_error_reset_no_session))
                 return@launch
             }
             try {
                 gateway.call("sessions.reset", mapOf("key" to JsonPrimitive(sessionId)))
                 onStateUpdate { clearSession() }
-                showSuccess("会话已重置")
+                showSuccess(strings.getString(R.string.slash_success_reset))
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to reset session", e)
-                showError("重置会话失败：${e.message ?: "连接异常"}，请检查网络后重试")
+                showError(strings.getString(R.string.slash_error_reset_failed, e.message ?: strings.getString(R.string.error_connection_exception, "")))
             }
         }
     }
@@ -154,7 +187,7 @@ class SlashCommandExecutor(
     private fun executeThink(sessionId: String?, args: String) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法设置思考级别：请先在左侧选择一个会话")
+                showError(strings.getString(R.string.slash_error_think_no_session))
                 return@launch
             }
             val level = args.trim().lowercase().ifEmpty { "medium" }
@@ -163,10 +196,10 @@ class SlashCommandExecutor(
                     "key" to JsonPrimitive(sessionId),
                     "thinkingLevel" to JsonPrimitive(level)
                 ))
-                showSuccess("思考级别已设置为: $level")
+                showSuccess(strings.getString(R.string.slash_success_think_set, level))
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to set thinking level", e)
-                showError("设置思考级别失败：${e.message ?: "连接异常"}，请检查网络后重试")
+                showError(strings.getString(R.string.slash_error_think_failed, e.message ?: ""))
             }
         }
     }
@@ -174,22 +207,23 @@ class SlashCommandExecutor(
     private fun executeReasoning(sessionId: String?, args: String) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法切换推理模式：请先在左侧选择一个会话")
+                showError(strings.getString(R.string.slash_error_reasoning_no_session))
                 return@launch
             }
-            val enabled = args.trim().lowercase().let { 
-                it == "on" || it == "true" || it == "1" 
+            val enabled = args.trim().lowercase().let {
+                it == "on" || it == "true" || it == "1"
             }
             try {
                 gateway.call("sessions.patch", mapOf(
                     "key" to JsonPrimitive(sessionId),
                     "reasoning" to JsonPrimitive(enabled)
                 ))
-                val status = if (enabled) "开启" else "关闭"
-                showSuccess("推理模式已$status")
+                val status = if (enabled) strings.getString(R.string.slash_success_reasoning_on)
+                             else strings.getString(R.string.slash_success_reasoning_off)
+                showSuccess(status)
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to toggle reasoning", e)
-                showError("切换推理模式失败：${e.message ?: "连接异常"}，请检查网络后重试")
+                showError(strings.getString(R.string.slash_error_reasoning_failed, e.message ?: ""))
             }
         }
     }
@@ -197,7 +231,7 @@ class SlashCommandExecutor(
     private fun executeVerbose(sessionId: String?, args: String) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法设置详细模式：请先在左侧选择一个会话")
+                showError(strings.getString(R.string.slash_error_verbose_no_session))
                 return@launch
             }
             val level = args.trim().lowercase().ifEmpty { "on" }
@@ -206,10 +240,10 @@ class SlashCommandExecutor(
                     "key" to JsonPrimitive(sessionId),
                     "verboseLevel" to JsonPrimitive(level)
                 ))
-                showSuccess("详细模式已设置: $level")
+                showSuccess(strings.getString(R.string.slash_success_verbose_set, level))
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to set verbose level", e)
-                showError("设置详细模式失败：${e.message ?: "连接异常"}，请检查网络后重试")
+                showError(strings.getString(R.string.slash_error_verbose_failed, e.message ?: ""))
             }
         }
     }
@@ -220,18 +254,18 @@ class SlashCommandExecutor(
     private fun executeExport(sessionId: String?) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法导出：请先在左侧选择一个会话")
+                showError(strings.getString(R.string.slash_error_export_no_session))
                 return@launch
             }
-            
-            showSuccess("导出功能已触发。请查看消息内容。")
+
+            showSuccess(strings.getString(R.string.slash_success_export_triggered))
         }
     }
 
     private fun executeDefault(command: SlashCommandDef, args: String, sessionId: String?) {
         scope.launch {
             if (sessionId == null) {
-                showError("无法执行命令：请先在左侧选择一个会话")
+                showError(strings.getString(R.string.slash_error_exec_no_session))
                 return@launch
             }
             val message = "/${command.name}${if (args.isNotBlank()) " $args" else ""}"
@@ -240,7 +274,7 @@ class SlashCommandExecutor(
                 onStateUpdate { copy(inputText = "", isSending = true, isLoading = true) }
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to send command", e)
-                showError("执行命令失败：${e.message ?: "连接异常"}，请检查网络后重试")
+                showError(strings.getString(R.string.slash_error_exec_failed, e.message ?: ""))
             }
         }
     }

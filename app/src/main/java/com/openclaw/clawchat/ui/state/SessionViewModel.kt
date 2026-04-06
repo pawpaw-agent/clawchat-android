@@ -1,6 +1,7 @@
 package com.openclaw.clawchat.ui.state
 
 import com.openclaw.clawchat.util.AppLog
+import com.openclaw.clawchat.util.StringResourceProvider
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -31,7 +32,7 @@ import com.openclaw.clawchat.ui.components.SlashCommandDef
 
 /**
  * 会话界面 ViewModel（重构版）
- * 
+ *
  * 职责：
  * - 状态管理
  * - 用户操作
@@ -42,12 +43,13 @@ class SessionViewModel @Inject constructor(
     private val gateway: GatewayConnection,
     private val messageRepository: MessageRepository,
     private val savedStateHandle: SavedStateHandle,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val strings: StringResourceProvider
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SessionUiState())
     val state: StateFlow<SessionUiState> = _state.asStateFlow()
-    
+
     // 暴露字体大小设置
     val messageFontSize = userPreferences.messageFontSize
 
@@ -56,14 +58,15 @@ class SessionViewModel @Inject constructor(
 
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
         AppLog.e(TAG, "Uncaught coroutine exception", throwable)
-        _state.update { it.copy(error = throwable.message ?: "未知错误", isLoading = false, isSending = false) }
+        _state.update { it.copy(error = throwable.message ?: strings.getString(com.openclaw.clawchat.R.string.error_unknown), isLoading = false, isSending = false) }
     }
-    
+
     // 斜杠命令执行器
     private val slashCommandExecutor = SlashCommandExecutor(
         scope = viewModelScope,
         gateway = gateway,
         messageRepository = messageRepository,
+        strings = strings,
         onStateUpdate = { _state.update(it) },
         onUndo = { undoLastConversation() }
     )

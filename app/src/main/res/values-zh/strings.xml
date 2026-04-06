@@ -301,6 +301,49 @@
     <string name="slash_category_agents">Agents</string>
     <string name="slash_category_tools">工具</string>
 
+    <!-- Slash Command Descriptions -->
+    <string name="slash_new_desc">开始新会话</string>
+    <string name="slash_reset_desc">重置当前会话</string>
+    <string name="slash_compact_desc">压缩会话上下文</string>
+    <string name="slash_stop_desc">停止当前运行</string>
+    <string name="slash_stop_alias_desc">停止当前运行（stop 别名）</string>
+    <string name="slash_clear_desc">清空聊天历史</string>
+    <string name="slash_focus_desc">切换专注模式</string>
+    <string name="slash_undo_desc">撤销上一轮对话</string>
+    <string name="slash_model_desc">显示或设置模型</string>
+    <string name="slash_think_desc">设置思考级别</string>
+    <string name="slash_verbose_desc">切换详细模式</string>
+    <string name="slash_fast_desc">切换快速模式</string>
+    <string name="slash_help_desc">显示可用命令</string>
+    <string name="slash_status_desc">显示会话状态</string>
+    <string name="slash_export_desc">导出会话到 Markdown</string>
+    <string name="slash_usage_desc">显示 token 使用量</string>
+    <string name="slash_agents_desc">列出 agents</string>
+    <string name="slash_kill_desc">终止子 agents</string>
+    <string name="slash_skill_desc">运行一个 skill</string>
+    <string name="slash_steer_desc">引导子 agent</string>
+
+    <!-- Slash Command Execution Messages -->
+    <string name="slash_error_no_session">无法执行命令：请先在左侧选择一个会话</string>
+    <string name="slash_error_clear_no_session">无法清除消息：请先在左侧选择一个会话</string>
+    <string name="slash_error_reset_no_session">无法重置会话：请先在左侧选择一个会话</string>
+    <string name="slash_error_think_no_session">无法设置思考级别：请先在左侧选择一个会话</string>
+    <string name="slash_error_reasoning_no_session">无法切换推理模式：请先在左侧选择一个会话</string>
+    <string name="slash_error_verbose_no_session">无法设置详细模式：请先在左侧选择一个会话</string>
+    <string name="slash_error_export_no_session">无法导出：请先在左侧选择一个会话</string>
+    <string name="slash_error_exec_no_session">无法执行命令：请先在左侧选择一个会话</string>
+    <string name="slash_success_reset">会话已重置</string>
+    <string name="slash_success_think_set">思考级别已设置为: %s</string>
+    <string name="slash_success_reasoning_on">推理模式已开启</string>
+    <string name="slash_success_reasoning_off">推理模式已关闭</string>
+    <string name="slash_success_verbose_set">详细模式已设置: %s</string>
+    <string name="slash_success_export_triggered">导出功能已触发。请查看消息内容。</string>
+    <string name="slash_error_reset_failed">重置会话失败：%s。请检查网络后重试。</string>
+    <string name="slash_error_think_failed">设置思考级别失败：%s。请检查网络后重试。</string>
+    <string name="slash_error_reasoning_failed">切换推理模式失败：%s。请检查网络后重试。</string>
+    <string name="slash_error_verbose_failed">设置详细模式失败：%s。请检查网络后重试。</string>
+    <string name="slash_error_exec_failed">执行命令失败：%s。请检查网络后重试。</string>
+
     <!-- Debug Screen -->
     <string name="debug_tab_connection">连接</string>
     <string name="debug_tab_logs">日志</string>
