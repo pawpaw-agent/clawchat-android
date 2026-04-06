@@ -27,7 +27,7 @@ fun formatTimestamp(timestamp: Long): String {
 
 /**
  * 配对工具卡片
- * 将消息中的工具调用和结果配对
+ * 只处理真正的工具调用，不处理纯文本
  */
 fun pairToolCards(message: MessageUi): List<ToolCard> {
     // 用户消息和系统消息不应该显示为工具卡片
@@ -38,21 +38,9 @@ fun pairToolCards(message: MessageUi): List<ToolCard> {
     val calls = message.getToolCalls()
     val results = message.getToolResults()
 
-    if (calls.isEmpty() && results.isEmpty()) {
-        val textContent = message.getTextContent()
-        return if (textContent.isNotBlank()) {
-            listOf(ToolCard(
-                kind = ToolCardKind.RESULT,
-                name = "output",
-                args = null,
-                result = textContent,
-                isError = false,
-                callId = null,
-                phase = "result"  // 纯文本输出视为完成
-            ))
-        } else {
-            emptyList()
-        }
+    // 没有工具调用则返回空（纯文本在消息气泡中显示）
+    if (calls.isEmpty()) {
+        return emptyList()
     }
     
     return calls.map { call ->

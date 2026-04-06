@@ -29,10 +29,11 @@ class MessageGroupingTest {
     }
 
     /**
-     * 测试：助手纯文本消息应产生 output 卡片
+ * 测试：助手纯文本消息不应产生工具卡片
+     * 纯文本在消息气泡中显示，不需要工具卡片
      */
     @Test
-    fun `assistant text message should produce output card`() {
+    fun `assistant text message should not produce tool cards`() {
         val assistantMessage = MessageUi(
             id = "msg-2",
             role = MessageRole.ASSISTANT,
@@ -42,10 +43,7 @@ class MessageGroupingTest {
 
         val toolCards = pairToolCards(assistantMessage)
 
-        assertEquals("助手文本消息应产生 1 个 output 卡片", 1, toolCards.size)
-        assertEquals("卡片名称应为 output", "output", toolCards[0].name)
-        assertEquals("卡片类型应为 RESULT", ToolCardKind.RESULT, toolCards[0].kind)
-        assertFalse("不应是错误", toolCards[0].isError)
+        assertTrue("助手纯文本消息不应产生工具卡片", toolCards.isEmpty())
     }
 
     /**
