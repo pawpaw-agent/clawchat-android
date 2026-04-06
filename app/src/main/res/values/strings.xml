@@ -124,6 +124,8 @@
     <string name="session_batch_select">Batch select</string>
     <string name="session_select_all">Select all</string>
     <string name="session_deselect_all">Deselect all</string>
+    <string name="session_batch_selected">%d sessions selected</string>
+    <string name="session_delete_selected">Delete selected</string>
     <string name="session_pin">Pin session</string>
     <string name="session_unpin">Unpin session</string>
     <string name="session_message_count">%d messages</string>

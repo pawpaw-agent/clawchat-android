@@ -123,6 +123,8 @@
     <string name="session_batch_select">批量选择</string>
     <string name="session_select_all">全选</string>
     <string name="session_deselect_all">取消全选</string>
+    <string name="session_batch_selected">%d 个会话已选择</string>
+    <string name="session_delete_selected">删除选中</string>
     <string name="session_pin">置顶会话</string>
     <string name="session_unpin">取消置顶</string>
     <string name="session_message_count">%d 条消息</string>

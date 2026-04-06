@@ -12,8 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.state.SessionUi
 
 /**
@@ -115,7 +117,7 @@ fun SessionListItem(
                     onDismissRequest = { expanded = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("重命名") },
+                        text = { Text(stringResource(R.string.session_rename)) },
                         leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                         onClick = {
                             onRename()
@@ -123,7 +125,7 @@ fun SessionListItem(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("删除") },
+                        text = { Text(stringResource(R.string.delete)) },
                         leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
                         onClick = {
                             onDelete()
@@ -137,7 +139,7 @@ fun SessionListItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
-                        contentDescription = "更多选项"
+                        contentDescription = stringResource(R.string.session_options)
                     )
                 }
             }
@@ -158,12 +160,12 @@ fun SessionRenameDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("重命名会话") },
+        title = { Text(stringResource(R.string.session_rename_title)) },
         text = {
             OutlinedTextField(
                 value = newName,
                 onValueChange = { newName = it },
-                label = { Text("会话名称") },
+                label = { Text(stringResource(R.string.session_name)) },
                 modifier = Modifier.fillMaxWidth()
             )
         },
@@ -171,14 +173,14 @@ fun SessionRenameDialog(
             Button(
                 onClick = { onConfirm(newName) }
             ) {
-                Text("确认")
+                Text(stringResource(R.string.confirm))
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -210,7 +212,7 @@ fun BatchSessionOperations(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${selectedSessions.size} 个会话已选择",
+                    text = stringResource(R.string.session_batch_selected, selectedSessions.size),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
@@ -224,7 +226,7 @@ fun BatchSessionOperations(
                     ) {
                         Icon(
                             imageVector = Icons.Default.SelectAll,
-                            contentDescription = "全选",
+                            contentDescription = stringResource(R.string.session_select_all),
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
@@ -234,7 +236,7 @@ fun BatchSessionOperations(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Clear,
-                            contentDescription = "取消选择",
+                            contentDescription = stringResource(R.string.session_deselect_all),
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
@@ -245,7 +247,7 @@ fun BatchSessionOperations(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "删除选中",
+                            contentDescription = stringResource(R.string.session_delete_selected),
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
