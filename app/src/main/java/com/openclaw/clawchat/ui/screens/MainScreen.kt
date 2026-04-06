@@ -141,7 +141,7 @@ fun MainScreen(
                         onSearchQueryChange = { searchQuery = it },
                         onSelectSession = { viewModel.selectSession(it) },
                         onSessionLongPress = { showSessionOptions = it },
-                        onCreateSession = { viewModel.createSession() },
+                        onCreateSession = { viewModel.showCreateSessionDialog() },
                         onRefresh = { viewModel.refreshSessions() },
                         onDeleteSession = { viewModel.deleteSession(it) },
                         onSteerSession = { sessionKey, text -> viewModel.steerSession(sessionKey, text) },
@@ -180,7 +180,7 @@ fun MainScreen(
                 timestamp = session.lastActivityAt
             )
         }
-        
+
         com.openclaw.clawchat.ui.components.CommandPalette(
             query = commandPaletteQuery,
             onQueryChange = { commandPaletteQuery = it },
@@ -196,7 +196,7 @@ fun MainScreen(
                 showCommandPalette = false
                 commandPaletteQuery = ""
                 when (commandId) {
-                    "new-session" -> viewModel.createSession()
+                    "new-session" -> viewModel.showCreateSessionDialog()
                     "settings" -> showSettings = true
                     "clear-chat" -> viewModel.clearCurrentSession()
                     "debug" -> onNavigateToDebug()
@@ -206,6 +206,19 @@ fun MainScreen(
                 showCommandPalette = false
                 commandPaletteQuery = ""
             }
+        )
+    }
+
+    // 创建会话对话框
+    if (state.showCreateDialog) {
+        com.openclaw.clawchat.ui.components.CreateSessionDialog(
+            agents = state.agents,
+            models = state.models,
+            onDismiss = { viewModel.hideCreateSessionDialog() },
+            onCreate = { agentId, model, initialMessage, label ->
+                viewModel.createSessionWithAgentModel(agentId, model, initialMessage, label)
+            },
+            isLoading = state.isLoadingAgentsModels
         )
     }
 }

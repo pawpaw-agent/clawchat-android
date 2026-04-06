@@ -60,7 +60,12 @@ data class MainUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val latency: Long? = null,
-    val connectionError: String? = null  // 自动连接失败时的错误信息
+    val connectionError: String? = null,  // 自动连接失败时的错误信息
+    // Agent 和 Model 选择
+    val agents: List<com.openclaw.clawchat.ui.components.AgentItem> = emptyList(),
+    val models: List<com.openclaw.clawchat.ui.components.ModelItem> = emptyList(),
+    val isLoadingAgentsModels: Boolean = false,
+    val showCreateDialog: Boolean = false
 )
 
 /**

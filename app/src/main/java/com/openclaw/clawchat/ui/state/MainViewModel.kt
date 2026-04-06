@@ -10,6 +10,7 @@ import com.openclaw.clawchat.security.EncryptedStorage
 import com.openclaw.clawchat.util.AppLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -378,16 +379,29 @@ class MainViewModel @Inject constructor(
     }
 
     fun createSession(model: String = "default", thinking: Boolean = false) {
+        createSessionWithAgentModel(agentId = null, model = model.takeIf { it != "default" })
+    }
+
+    /**
+     * 创建会话（支持 Agent/Model 选择）
+     */
+    fun createSessionWithAgentModel(
+        agentId: String? = null,
+        model: String? = null,
+        initialMessage: String? = null,
+        label: String? = null
+    ) {
         viewModelScope.launch(exceptionHandler) {
+            _uiState.update { it.copy(isLoading = true) }
             try {
-                // 优先使用 sessions.create API
                 val response = gateway.sessionsCreate(
-                    label = "New Chat",
-                    model = model.takeIf { it != "default" }
+                    agentId = agentId,
+                    model = model,
+                    label = label,
+                    message = initialMessage
                 )
 
                 if (response.isSuccess()) {
-                    // 解析响应获取新会话信息
                     response.payload?.let { payload ->
                         val sessionObj = payload.jsonObject["session"]?.jsonObject
                         val sessionKey = sessionObj?.get("key")?.jsonPrimitive?.content
@@ -409,6 +423,96 @@ class MainViewModel @Inject constructor(
             } catch (e: Exception) {
                 AppLog.w(TAG, "Create session failed: ${e.message}")
                 _events.trySend(UiEvent.ShowError("创建会话失败：${e.message}"))
+            } finally {
+                _uiState.update { it.copy(isLoading = false, showCreateDialog = false) }
+            }
+        }
+    }
+
+    /**
+     * 显示创建会话对话框
+     */
+    fun showCreateSessionDialog() {
+        // 先加载 agents 和 models
+        loadAgentsAndModels()
+        _uiState.update { it.copy(showCreateDialog = true) }
+    }
+
+    /**
+     * 隐藏创建会话对话框
+     */
+    fun hideCreateSessionDialog() {
+        _uiState.update { it.copy(showCreateDialog = false) }
+    }
+
+    /**
+     * 加载 Agents 和 Models 列表
+     */
+    private fun loadAgentsAndModels() {
+        if (_uiState.value.connectionStatus !is ConnectionStatus.Connected) {
+            return
+        }
+        viewModelScope.launch(exceptionHandler) {
+            _uiState.update { it.copy(isLoadingAgentsModels = true) }
+            try {
+                // 并行加载 agents 和 models
+                val agentsDeferred = kotlinx.coroutines.async { gateway.agentsList() }
+                val modelsDeferred = kotlinx.coroutines.async { gateway.modelsList() }
+
+                val agentsResponse = agentsDeferred.await()
+                val modelsResponse = modelsDeferred.await()
+
+                // 解析 Agents
+                val agents = if (agentsResponse.isSuccess()) {
+                    agentsResponse.payload?.jsonObject?.get("agents")?.jsonArray?.mapNotNull { element ->
+                        try {
+                            val obj = element.jsonObject
+                            com.openclaw.clawchat.ui.components.AgentItem(
+                                id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
+                                name = obj["name"]?.jsonPrimitive?.content ?: "Unknown",
+                                emoji = obj["emoji"]?.jsonPrimitive?.content,
+                                avatar = obj["avatar"]?.jsonPrimitive?.content,
+                                model = obj["model"]?.jsonPrimitive?.content
+                            )
+                        } catch (e: Exception) {
+                            null
+                        }
+                    } ?: emptyList()
+                } else {
+                    emptyList()
+                }
+
+                // 解析 Models
+                val models = if (modelsResponse.isSuccess()) {
+                    modelsResponse.payload?.jsonObject?.get("models")?.jsonArray?.mapNotNull { element ->
+                        try {
+                            val obj = element.jsonObject
+                            com.openclaw.clawchat.ui.components.ModelItem(
+                                id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
+                                name = obj["name"]?.jsonPrimitive?.content ?: obj["id"]?.jsonPrimitive?.content ?: "Unknown",
+                                provider = obj["provider"]?.jsonPrimitive?.content,
+                                supportsVision = obj["supportsVision"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
+                            )
+                        } catch (e: Exception) {
+                            null
+                        }
+                    } ?: emptyList()
+                } else {
+                    emptyList()
+                }
+
+                _uiState.update {
+                    it.copy(
+                        agents = agents,
+                        models = models,
+                        isLoadingAgentsModels = false
+                    )
+                }
+
+                AppLog.i(TAG, "Loaded ${agents.size} agents and ${models.size} models")
+            } catch (e: Exception) {
+                AppLog.w(TAG, "Failed to load agents/models: ${e.message}")
+                _uiState.update { it.copy(isLoadingAgentsModels = false) }
             }
         }
     }
