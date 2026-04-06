@@ -66,13 +66,13 @@ fun pairToolCards(message: MessageUi, allMessagesInGroup: List<MessageUi> = empt
             result.toolCallId == call.id
         }
 
-        AppLog.d(TAG, "=== ToolCard: name=${call.name}, callId=${call.id}, resultId=${matchingResult?.toolCallId}, matched=${matchingResult != null}")
-
         val displayArgs = if (call.name == "exec" && call.args != null) {
             call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
         } else {
             call.args?.toString()
         }
+
+        AppLog.d(TAG, "=== ToolCard: name=${call.name}, argsPreview=${displayArgs?.take(80)}, resultPreview=${matchingResult?.text?.take(80)}")
 
         // 使用 call.phase 判断完成状态
         val phase = call.phase
