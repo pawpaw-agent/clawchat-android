@@ -450,48 +450,80 @@ fun MessageActionDropdownMenu(
 }
 
 /**
- * 消息图片内容
+ * 消息图片内容（带加载占位）
  */
 @Composable
 fun MessageImageContent(image: MessageContentItem.Image) {
-    val bitmap = remember(image.base64) {
-        try {
-            val base64Data = image.base64 ?: return@remember null
-            val bytes = Base64.decode(base64Data, Base64.DEFAULT)
-            
-            // 先解码尺寸
-            val options = android.graphics.BitmapFactory.Options().apply {
-                inJustDecodeBounds = true
+    var isLoading by remember { mutableStateOf(true) }
+    var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+
+    // 异步加载图片
+    LaunchedEffect(image.base64) {
+        isLoading = true
+        bitmap = try {
+            val base64Data = image.base64
+            if (base64Data.isNullOrBlank()) {
+                null
+            } else {
+                val bytes = Base64.decode(base64Data, Base64.DEFAULT)
+
+                // 先解码尺寸
+                val options = android.graphics.BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+
+                // 计算采样率，限制最大尺寸
+                val maxSize = MAX_IMAGE_SIZE
+                val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxSize)
+
+                // 用采样率解码
+                val loadOptions = android.graphics.BitmapFactory.Options().apply {
+                    inSampleSize = sampleSize
+                }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, loadOptions)
             }
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-            
-            // 计算采样率，限制最大尺寸
-            val maxSize = MAX_IMAGE_SIZE
-            val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxSize)
-            
-            // 用采样率解码
-            val loadOptions = android.graphics.BitmapFactory.Options().apply {
-                inSampleSize = sampleSize
-            }
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, loadOptions)
         } catch (e: Exception) {
             null
         }
+        isLoading = false
     }
-    
+
     Box(
         modifier = Modifier
             .widthIn(max = 280.dp)
+            .heightIn(min = 100.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.primaryContainer)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        if (bitmap != null) {
+        if (isLoading) {
+            // 加载占位（闪烁效果）
+            LoadingSkeleton(
+                type = SkeletonType.THUMBNAIL,
+                modifier = Modifier.fillMaxWidth().height(150.dp)
+            )
+        } else if (bitmap != null) {
             androidx.compose.foundation.Image(
-                bitmap = bitmap.asImageBitmap(),
+                bitmap = bitmap!!.asImageBitmap(),
                 contentDescription = "图片",
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = ContentScale.FillWidth
             )
+        } else {
+            // 加载失败占位
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.BrokenImage,
+                    contentDescription = "加载失败",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }
