@@ -106,6 +106,15 @@ class SessionMessageLoader(
                         val content = msgObj["content"]?.let { JsonUtils.json.encodeToString(JsonElement.serializer(), it) } ?: "{}"
                         val timestamp = msgObj["timestamp"]?.jsonPrimitive?.content?.toLongOrNull() ?: System.currentTimeMillis()
 
+                        // 调试：打印消息结构
+                        AppLog.d(TAG, "=== Message: role=$role, content preview=${content.take(200)}")
+
+                        // 检查是否有 toolCallId（TOOL 消息）
+                        val toolCallId = msgObj["toolCallId"]?.jsonPrimitive?.content
+                        if (toolCallId != null) {
+                            AppLog.d(TAG, "=== TOOL message: toolCallId=$toolCallId")
+                        }
+
                         messagesToSave.add(Triple(content, role, timestamp))
                     } catch (e: Exception) {
                         AppLog.w(TAG, "Failed to parse history message: ${e.message}")
