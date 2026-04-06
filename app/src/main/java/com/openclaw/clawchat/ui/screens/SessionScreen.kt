@@ -365,11 +365,12 @@ private fun NewMessagesIndicator(
 @Composable
 private fun ErrorSnackbar(
     message: String,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onRetry: (() -> Unit)? = null
 ) {
     // 自动关闭
     LaunchedEffect(message) {
-        kotlinx.coroutines.delay(5000)
+        kotlinx.coroutines.delay(8000)
         onDismiss()
     }
 
@@ -380,8 +381,7 @@ private fun ErrorSnackbar(
         color = MaterialTheme.colorScheme.errorContainer,
         contentColor = MaterialTheme.colorScheme.onErrorContainer,
         shape = RoundedCornerShape(DesignTokens.radiusMd),
-        shadowElevation = DesignTokens.elevationSm,
-        onClick = onDismiss
+        shadowElevation = DesignTokens.elevationSm
     ) {
         Row(
             modifier = Modifier
@@ -401,6 +401,22 @@ private fun ErrorSnackbar(
                 modifier = Modifier.weight(1f),
                 maxLines = 3
             )
+
+            // 重试按钮
+            if (onRetry != null) {
+                TextButton(
+                    onClick = {
+                        onDismiss()
+                        onRetry()
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                ) {
+                    Text("重试")
+                }
+            }
+
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier.size(32.dp)
