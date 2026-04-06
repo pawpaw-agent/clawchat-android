@@ -4,9 +4,9 @@ import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
 
 /**
- * 斜杠命令 - 1:1 复刻 webchat slash-commands.ts
+ * Slash Commands - 1:1 replica of webchat slash-commands.ts
  *
- * 支持的命令：
+ * Supported commands:
  * - Session: /new, /reset, /compact, /stop, /clear, /focus
  * - Model: /model, /think, /verbose, /fast
  * - Tools: /help, /status, /export, /usage
@@ -14,7 +14,7 @@ import kotlinx.serialization.Serializable
  */
 
 /**
- * 斜杠菜单状态
+ * Slash menu state
  */
 @Immutable
 data class SlashMenuState(
@@ -27,7 +27,7 @@ data class SlashMenuState(
 )
 
 /**
- * 命令类别
+ * Command category
  */
 enum class SlashCommandCategory {
     SESSION,
@@ -37,7 +37,7 @@ enum class SlashCommandCategory {
 }
 
 /**
- * 命令定义
+ * Command definition
  */
 @Serializable
 data class SlashCommandDef(
@@ -46,16 +46,16 @@ data class SlashCommandDef(
     val args: String? = null,
     val icon: String? = null,
     val category: SlashCommandCategory = SlashCommandCategory.TOOLS,
-    /** 是否在客户端本地执行（而不是发送给 agent） */
+    /** Execute locally on client (not sent to agent) */
     val executeLocal: Boolean = false,
-    /** 参数选项（用于提示） */
+    /** Argument options (for hints) */
     val argOptions: List<String>? = null,
-    /** 快捷键提示（仅显示） */
+    /** Shortcut hint (for display only) */
     val shortcut: String? = null
 )
 
 /**
- * 解析后的斜杠命令
+ * Parsed slash command
  */
 data class ParsedSlashCommand(
     val command: SlashCommandDef,
@@ -64,26 +64,28 @@ data class ParsedSlashCommand(
 
 /**
  * 所有支持的斜杠命令
+ * Note: Descriptions here are default/fallback values. Localized versions are
+ * provided by SlashCommandExecutor.getLocalizedCommandDescription() using string resources.
  */
 val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
     // ── Session ──
     SlashCommandDef(
         name = "new",
-        description = "开始新会话",
+        description = "Start a new session",
         icon = "plus",
         category = SlashCommandCategory.SESSION,
         executeLocal = true
     ),
     SlashCommandDef(
         name = "reset",
-        description = "重置当前会话",
+        description = "Reset current session",
         icon = "refresh",
         category = SlashCommandCategory.SESSION,
         executeLocal = true
     ),
     SlashCommandDef(
         name = "compact",
-        description = "压缩会话上下文",
+        description = "Compact session context",
         icon = "loader",
         category = SlashCommandCategory.SESSION,
         executeLocal = true
@@ -91,56 +93,56 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
     // 停止命令（多个别名）
     SlashCommandDef(
         name = "stop",
-        description = "停止当前运行",
+        description = "Stop current run",
         icon = "stop",
         category = SlashCommandCategory.SESSION,
         executeLocal = true
     ),
     SlashCommandDef(
         name = "esc",
-        description = "停止当前运行（stop 别名）",
+        description = "Stop current run (stop alias)",
         icon = "stop",
         category = SlashCommandCategory.SESSION,
         executeLocal = true
     ),
     SlashCommandDef(
         name = "abort",
-        description = "停止当前运行（stop 别名）",
+        description = "Stop current run (stop alias)",
         icon = "stop",
         category = SlashCommandCategory.SESSION,
         executeLocal = true
     ),
     SlashCommandDef(
         name = "wait",
-        description = "停止当前运行（stop 别名）",
+        description = "Stop current run (stop alias)",
         icon = "stop",
         category = SlashCommandCategory.SESSION,
         executeLocal = true
     ),
     SlashCommandDef(
         name = "exit",
-        description = "停止当前运行（stop 别名）",
+        description = "Stop current run (stop alias)",
         icon = "stop",
         category = SlashCommandCategory.SESSION,
         executeLocal = true
     ),
     SlashCommandDef(
         name = "clear",
-        description = "清空聊天历史",
+        description = "Clear chat history",
         icon = "trash",
         category = SlashCommandCategory.SESSION,
         executeLocal = true
     ),
     SlashCommandDef(
         name = "focus",
-        description = "切换专注模式",
+        description = "Toggle focus mode",
         icon = "eye",
         category = SlashCommandCategory.SESSION,
         executeLocal = true
     ),
     SlashCommandDef(
         name = "undo",
-        description = "撤销上一轮对话",
+        description = "Undo last conversation",
         icon = "undo",
         category = SlashCommandCategory.SESSION,
         executeLocal = true
@@ -149,7 +151,7 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
     // ── Model ──
     SlashCommandDef(
         name = "model",
-        description = "显示或设置模型",
+        description = "Show or set model",
         args = "<name>",
         icon = "brain",
         category = SlashCommandCategory.MODEL,
@@ -157,7 +159,7 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
     ),
     SlashCommandDef(
         name = "think",
-        description = "设置思考级别",
+        description = "Set thinking level",
         args = "<level>",
         icon = "brain",
         category = SlashCommandCategory.MODEL,
@@ -166,7 +168,7 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
     ),
     SlashCommandDef(
         name = "verbose",
-        description = "切换详细模式",
+        description = "Toggle verbose mode",
         args = "<on|off|full>",
         icon = "terminal",
         category = SlashCommandCategory.MODEL,
@@ -175,7 +177,7 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
     ),
     SlashCommandDef(
         name = "fast",
-        description = "切换快速模式",
+        description = "Toggle fast mode",
         args = "<status|on|off>",
         icon = "zap",
         category = SlashCommandCategory.MODEL,
@@ -186,28 +188,28 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
     // ── Tools ──
     SlashCommandDef(
         name = "help",
-        description = "显示可用命令",
+        description = "Show available commands",
         icon = "book",
         category = SlashCommandCategory.TOOLS,
         executeLocal = true
     ),
     SlashCommandDef(
         name = "status",
-        description = "显示会话状态",
+        description = "Show session status",
         icon = "barChart",
         category = SlashCommandCategory.TOOLS,
         executeLocal = false
     ),
     SlashCommandDef(
         name = "export",
-        description = "导出会话到 Markdown",
+        description = "Export session to Markdown",
         icon = "download",
         category = SlashCommandCategory.TOOLS,
         executeLocal = true
     ),
     SlashCommandDef(
         name = "usage",
-        description = "显示 token 使用量",
+        description = "Show token usage",
         icon = "barChart",
         category = SlashCommandCategory.TOOLS,
         executeLocal = true
@@ -216,14 +218,14 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
     // ── Agents ──
     SlashCommandDef(
         name = "agents",
-        description = "列出 agents",
+        description = "List agents",
         icon = "monitor",
         category = SlashCommandCategory.AGENTS,
         executeLocal = true
     ),
     SlashCommandDef(
         name = "kill",
-        description = "终止子 agents",
+        description = "Terminate child agents",
         args = "<id|all>",
         icon = "x",
         category = SlashCommandCategory.AGENTS,
@@ -231,7 +233,7 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
     ),
     SlashCommandDef(
         name = "skill",
-        description = "运行一个 skill",
+        description = "Run a skill",
         args = "<name>",
         icon = "zap",
         category = SlashCommandCategory.TOOLS,
@@ -239,7 +241,7 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
     ),
     SlashCommandDef(
         name = "steer",
-        description = "引导子 agent",
+        description = "Steer child agent",
         args = "<id> <msg>",
         icon = "send",
         category = SlashCommandCategory.AGENTS,
@@ -248,7 +250,7 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
 )
 
 /**
- * 命令类别排序
+ * Command category order
  */
 val CATEGORY_ORDER: List<SlashCommandCategory> = listOf(
     SlashCommandCategory.SESSION,
@@ -258,23 +260,23 @@ val CATEGORY_ORDER: List<SlashCommandCategory> = listOf(
 )
 
 /**
- * 获取斜杠命令补全
- * 
- * @param filter 过滤字符串（不含 /）
- * @return 匹配的命令列表
+ * Get slash command completions
+ *
+ * @param filter Filter string (without /)
+ * @return List of matching commands
  */
 fun getSlashCommandCompletions(filter: String): List<SlashCommandDef> {
     val lower = filter.lowercase()
-    
+
     val commands = if (lower.isNotBlank()) {
         SLASH_COMMANDS.filter { cmd ->
-            cmd.name.startsWith(lower) || 
+            cmd.name.startsWith(lower) ||
             cmd.description.lowercase().contains(lower)
         }
     } else {
         SLASH_COMMANDS
     }
-    
+
     return commands.sortedWith(compareBy(
         { CATEGORY_ORDER.indexOf(it.category) },
         { if (lower.isNotBlank() && it.name.startsWith(lower)) 0 else 1 }
@@ -282,59 +284,59 @@ fun getSlashCommandCompletions(filter: String): List<SlashCommandDef> {
 }
 
 /**
- * 解析斜杠命令
- * 
- * 支持格式：
+ * Parse slash command
+ *
+ * Supported formats:
  * - /command
  * - /command args...
  * - /command: args...
- * 
- * @param text 输入文本
- * @return 解析结果，如果不是斜杠命令则返回 null
+ *
+ * @param text Input text
+ * @return Parse result, null if not a slash command
  */
 fun parseSlashCommand(text: String): ParsedSlashCommand? {
     val trimmed = text.trim()
     if (!trimmed.startsWith("/")) {
         return null
     }
-    
+
     val body = trimmed.drop(1)
     val firstSeparator = body.indexOfFirst { it == ' ' || it == ':' }
-    
+
     val name = if (firstSeparator == -1) body else body.substring(0, firstSeparator)
     var remainder = if (firstSeparator == -1) "" else body.substring(firstSeparator).trimStart()
-    
-    // 去掉开头的冒号
+
+    // Remove leading colon
     if (remainder.startsWith(":")) {
         remainder = remainder.drop(1).trimStart()
     }
-    
+
     val args = remainder.trim()
-    
+
     if (name.isBlank()) {
         return null
     }
-    
+
     val command = SLASH_COMMANDS.find { it.name.equals(name, ignoreCase = true) }
         ?: return null
-    
+
     return ParsedSlashCommand(command = command, args = args)
 }
 
 /**
- * 检查文本是否是斜杠命令开头
+ * Check if text is a slash command prefix
  */
 fun isSlashCommandPrefix(text: String): Boolean {
     return text.trim().startsWith("/")
 }
 
 /**
- * 获取命令前缀部分（不含 /）
+ * Get command prefix part (without /)
  */
 fun getCommandPrefix(text: String): String {
     val trimmed = text.trim()
     if (!trimmed.startsWith("/")) return ""
-    
+
     val body = trimmed.drop(1)
     val spaceIndex = body.indexOfFirst { it == ' ' || it == ':' }
     return if (spaceIndex == -1) body else body.substring(0, spaceIndex)
