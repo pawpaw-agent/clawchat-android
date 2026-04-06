@@ -19,6 +19,8 @@ import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.components.ToolDetailCard
 import com.openclaw.clawchat.ui.state.*
+import com.openclaw.clawchat.ui.theme.DesignTokens
+import com.openclaw.clawchat.ui.theme.ChatTokens
 
 /**
  * 空会话内容
@@ -30,7 +32,7 @@ fun EmptySessionContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(DesignTokens.space4),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -41,7 +43,7 @@ fun EmptySessionContent(
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(DesignTokens.space4))
 
         Text(
             text = when (connectionStatus) {
@@ -54,7 +56,7 @@ fun EmptySessionContent(
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(DesignTokens.space2))
 
         Text(
             text = if (connectionStatus is ConnectionStatus.Connected) {
@@ -76,17 +78,17 @@ fun LoadingOverlay() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(DesignTokens.space4),
         contentAlignment = Alignment.Center
     ) {
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
-            )
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+            shape = RoundedCornerShape(DesignTokens.radiusMd),
+            shadowElevation = DesignTokens.elevationSm
         ) {
             Row(
-                modifier = Modifier.padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(DesignTokens.space4),
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.space2),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 CircularProgressIndicator(
@@ -176,12 +178,12 @@ fun MessageGroupList(
         state = listState,
         reverseLayout = true,  // 关键：反转布局，新消息在底部
         contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = 16.dp,
-            bottom = 16.dp
+            start = DesignTokens.space4,
+            end = DesignTokens.space4,
+            top = DesignTokens.space4,
+            bottom = DesignTokens.space4
         ),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(ChatTokens.groupGap)
     ) {
         // 注意：reverseLayout = true 时，items 顺序也需要反转
         // 显示顺序（从下到上）：流式文本 → 工具消息 → 文本段 → 历史消息
@@ -339,7 +341,7 @@ fun MessageGroupItem(
             MessageRole.TOOL -> {
                 // 纯 TOOL 分组：显示工具卡片
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = DesignTokens.space2),
                     horizontalAlignment = Alignment.Start
                 ) {
                     group.messages.forEach { RenderToolCardsFromMessage(it) }
@@ -348,7 +350,7 @@ fun MessageGroupItem(
             else -> {
                 // USER/ASSISTANT 分组：消息气泡 + 工具卡片
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = DesignTokens.space2),
                     horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
                 ) {
                     group.messages.forEachIndexed { index, message ->
@@ -368,19 +370,19 @@ fun MessageGroupItem(
 
                             // 工具调用显示（使用 pairToolCards 正确配对结果）
                             pairToolCards(message).forEach { toolCard ->
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(DesignTokens.space1))
                                 ToolDetailCard(toolCard = toolCard)
                             }
                         }
 
                         if (index < group.messages.lastIndex) {
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(DesignTokens.space1))
                         }
                     }
 
                     // 时间戳
                     group.lastMessage?.let { msg: MessageUi ->
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(DesignTokens.space1))
                         Text(
                             text = formatTimestamp(msg.timestamp),
                             style = MaterialTheme.typography.labelSmall,
@@ -390,7 +392,7 @@ fun MessageGroupItem(
 
                     // 流式指示器
                     if (group.isStreaming) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(DesignTokens.space2))
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
                             strokeWidth = 2.dp,
@@ -453,7 +455,7 @@ fun ToolMessageCard(message: MessageUi, historyGroups: List<MessageGroup> = empt
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(DesignTokens.space2)
     ) {
         finalToolCards.forEach { toolCard ->
             ToolDetailCard(toolCard = toolCard)
@@ -462,14 +464,12 @@ fun ToolMessageCard(message: MessageUi, historyGroups: List<MessageGroup> = empt
         if (finalToolCards.isEmpty()) {
             val textContent = message.getTextContent()
             if (textContent.isNotBlank()) {
-                Card(
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    )
+                    shape = RoundedCornerShape(ChatTokens.toolCardRadius),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(modifier = Modifier.padding(ChatTokens.toolCardPadding)) {
                         androidx.compose.foundation.text.selection.SelectionContainer {
                             Text(
                                 text = textContent,

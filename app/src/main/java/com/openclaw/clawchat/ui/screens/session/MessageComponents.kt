@@ -499,17 +499,16 @@ private fun calculateSampleSize(width: Int, height: Int, maxSize: Int): Int {
  */
 @Composable
 fun SystemMessageItem(message: MessageUi) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(DesignTokens.radiusMd)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(DesignTokens.space3),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.space2)
         ) {
             Icon(
                 imageVector = Icons.Default.Info,
@@ -517,7 +516,6 @@ fun SystemMessageItem(message: MessageUi) {
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = message.getTextContent(),
                 style = MaterialTheme.typography.bodySmall,
@@ -553,17 +551,17 @@ fun ToolDetailCard(toolCard: ToolCard) {
     val toolIcon = getToolIcon(toolCard.name)
     val toolColor = getToolColor(toolCard.name)
 
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
                 enabled = hasContent,
                 onClick = { expanded = !expanded }
             ),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        shape = RoundedCornerShape(6.dp)
+        color = backgroundColor,
+        shape = RoundedCornerShape(DesignTokens.radiusSm)
     ) {
-        Column(modifier = Modifier.padding(6.dp)) {
+        Column(modifier = Modifier.padding(DesignTokens.space2)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -590,7 +588,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                         }
                     )
                 }
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(DesignTokens.space1))
                 Text(
                     text = toolCard.name.replaceFirstChar { it.uppercase() },
                     modifier = Modifier.weight(1f),
@@ -606,7 +604,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                         fontSize = 9.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(DesignTokens.space1))
                 }
                 if (hasContent) {
                     Icon(
@@ -617,7 +615,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                     )
                 }
             }
-            
+
             // 运行中时默认展开显示参数
             AnimatedVisibility(
                 visible = (expanded || isRunning) && hasArgs,
@@ -625,7 +623,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                 exit = fadeOut() + shrinkVertically()
             ) {
                 Column {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(DesignTokens.space1))
                     SelectionContainer {
                         Text(
                             text = toolCard.args!!,
@@ -637,7 +635,7 @@ fun ToolDetailCard(toolCard: ToolCard) {
                     }
                 }
             }
-            
+
             // 结果（完成时显示）
             AnimatedVisibility(
                 visible = expanded && hasResult && isComplete,
@@ -646,9 +644,9 @@ fun ToolDetailCard(toolCard: ToolCard) {
             ) {
                 Column {
                     if (hasArgs) {
-                        Spacer(modifier = Modifier.height(3.dp))
+                        Spacer(modifier = Modifier.height(DesignTokens.space1))
                         HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 2.dp),
+                            modifier = Modifier.padding(vertical = DesignTokens.space1),
                             color = MaterialTheme.colorScheme.outline
                         )
                     }

@@ -24,6 +24,8 @@ import com.openclaw.clawchat.ui.components.SkeletonType
 import com.openclaw.clawchat.ui.components.ContextNotice
 import com.openclaw.clawchat.ui.components.CompactionIndicator
 import com.openclaw.clawchat.ui.state.*
+import com.openclaw.clawchat.ui.theme.DesignTokens
+import com.openclaw.clawchat.ui.theme.ChatTokens
 import com.openclaw.clawchat.ui.screens.session.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -321,26 +323,29 @@ private fun NewMessagesIndicator(
     onClick: () -> Unit
 ) {
     Surface(
-        modifier = modifier.padding(bottom = 16.dp),
-        color = MaterialTheme.colorScheme.primary,
-        shape = MaterialTheme.shapes.small,
+        modifier = modifier.padding(bottom = DesignTokens.space4),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        shape = RoundedCornerShape(DesignTokens.radiusFull),
+        shadowElevation = DesignTokens.elevationSm,
         onClick = onClick
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(
+                horizontal = DesignTokens.space4,
+                vertical = DesignTokens.space2
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.space1)
         ) {
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(16.dp)
             )
-            Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = if (count > 0) "$count 条新消息" else "新消息",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onPrimary
+                text = if (count > 0) "${count} 条新消息" else "新消息",
+                style = MaterialTheme.typography.labelMedium
             )
         }
     }
@@ -359,42 +364,43 @@ private fun ErrorSnackbar(
         kotlinx.coroutines.delay(5000)
         onDismiss()
     }
-    
-    Card(
+
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        ),
-        shape = RoundedCornerShape(12.dp),
+            .padding(DesignTokens.space4),
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        shape = RoundedCornerShape(DesignTokens.radiusMd),
+        shadowElevation = DesignTokens.elevationSm,
         onClick = onDismiss
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .padding(DesignTokens.space3),
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.space2),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.Error,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.error
+                modifier = Modifier.size(18.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer,
                 modifier = Modifier.weight(1f),
                 maxLines = 3
             )
-            IconButton(onClick = onDismiss) {
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier.size(32.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "关闭",
-                    tint = MaterialTheme.colorScheme.onErrorContainer
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }

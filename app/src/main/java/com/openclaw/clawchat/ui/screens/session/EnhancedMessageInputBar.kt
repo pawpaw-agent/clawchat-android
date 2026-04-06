@@ -30,6 +30,7 @@ import com.openclaw.clawchat.util.isNewSessionShortcut
 import com.openclaw.clawchat.util.isSearchShortcut
 import com.openclaw.clawchat.util.isUndoShortcut
 import com.openclaw.clawchat.util.isSaveDraftShortcut
+import com.openclaw.clawchat.ui.theme.DesignTokens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -173,8 +174,8 @@ fun EnhancedMessageInputBar(
     }
 
     Surface(
-        shadowElevation = 8.dp,
-        color = MaterialTheme.colorScheme.background
+        tonalElevation = DesignTokens.elevationSm,
+        color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             if (slashMenu.isOpen) {
@@ -213,19 +214,19 @@ fun EnhancedMessageInputBar(
                     onRemove = onRemoveAttachment,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = DesignTokens.space2, vertical = DesignTokens.space1)
                 )
             }
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp)
+                    .padding(DesignTokens.space2)
                     .onPreviewKeyEvent { event ->
                         currentKeyEvent = event
                         false
                     },
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.space1),
                 verticalAlignment = Alignment.Bottom
             ) {
                 // 附加功能按钮
@@ -347,18 +348,17 @@ private fun SlashCommandMenu(
     onSelectArg: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
-        ),
-        shape = RoundedCornerShape(8.dp)
+            .padding(horizontal = DesignTokens.space2, vertical = DesignTokens.space1),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
+        shape = RoundedCornerShape(DesignTokens.radiusMd),
+        shadowElevation = DesignTokens.elevationSm
     ) {
         androidx.compose.foundation.lazy.LazyColumn(
             modifier = Modifier.heightIn(max = 240.dp),
-            contentPadding = PaddingValues(vertical = 4.dp)
+            contentPadding = PaddingValues(vertical = DesignTokens.space1)
         ) {
             if (items.isNotEmpty()) {
                 items(items.size) { index ->
@@ -377,7 +377,10 @@ private fun SlashCommandMenu(
                         text = command.description,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(
+                            horizontal = DesignTokens.space3,
+                            vertical = DesignTokens.space1
+                        )
                     )
                 }
                 items(argItems.size) { index ->
