@@ -1,7 +1,13 @@
 package com.openclaw.clawchat.ui.screens.session
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -13,6 +19,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.offset
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.data.FontSize
@@ -73,10 +81,12 @@ fun EmptySessionContent(
 }
 
 /**
- * 加载覆盖层
+ * 加载覆盖层（带动画打字指示器）
  */
 @Composable
 fun LoadingOverlay() {
+    val infiniteTransition = rememberInfiniteTransition(label = "typing")
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -93,16 +103,47 @@ fun LoadingOverlay() {
                 horizontalArrangement = Arrangement.spacedBy(DesignTokens.space2),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp
-                )
+                // 动画打字指示器（三个点）
+                TypingDots()
                 Text(
                     text = "助手正在思考...",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+    }
+}
+
+/**
+ * 动画打字指示器（三个跳动的小点）
+ */
+@Composable
+private fun TypingDots() {
+    val infiniteTransition = rememberInfiniteTransition(label = "dots")
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(3) { index ->
+            val offsetY by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = -6f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(300, delayMillis = index * 100, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "dot_$index"
+            )
+
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .offset(y = offsetY.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.primary)
+            )
         }
     }
 }
