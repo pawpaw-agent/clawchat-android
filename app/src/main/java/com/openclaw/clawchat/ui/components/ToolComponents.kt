@@ -87,18 +87,18 @@ fun CompactToolCard(
         mutableStateOf(isRunning)
     }
 
-    // 状态颜色：运行中红色，完成绿色，错误保持红色
+    // 状态颜色：运行中红色，完成蓝色，错误保持红色
     val statusColor = when {
         hasError -> MaterialTheme.colorScheme.error
         isRunning -> Color(0xFFE53935) // 红色
-        else -> Color(0xFF43A047) // 绿色
+        else -> Color(0xFF1E88E5) // 蓝色
     }
 
     // 背景
     val bgColor = when {
         hasError -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
         isRunning -> Color(0xFFFFEBEE) // 红色背景
-        else -> Color(0xFFE8F5E9) // 绿色背景
+        else -> Color(0xFFE3F2FD) // 蓝色背景
     }
 
     Surface(
