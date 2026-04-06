@@ -237,6 +237,20 @@
     <string name="error_connection_exception">Connection error: %s</string>
     <string name="error_check_network">Please check network connection</string>
 
+    <!-- Network Error Messages -->
+    <string name="network_error_timeout">Connection timed out, please check network and retry</string>
+    <string name="network_error_no_connection">Cannot connect to network, please check network connection</string>
+    <string name="network_error_unauthorized">Device not authorized, please re-pair device</string>
+    <string name="network_error_server">Server temporarily unavailable, please retry later</string>
+    <string name="network_error_connection_closed">Connection closed: %s</string>
+    <string name="network_error_generic">Error occurred: %s</string>
+    <string name="network_error_description_timeout">Request timed out</string>
+    <string name="network_error_description_no_connection">No network connection</string>
+    <string name="network_error_description_unauthorized">Authentication failed, please check device pairing</string>
+    <string name="network_error_description_server">Server error</string>
+    <string name="network_error_description_connection_closed">Connection closed: %d - %s</string>
+    <string name="network_error_description_unknown">Unknown error: %s</string>
+
     <!-- About -->
     <string name="about_website">Website</string>
     <string name="about_source">Source Code</string>

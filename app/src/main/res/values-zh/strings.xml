@@ -224,6 +224,20 @@
     <string name="error_connection_exception">连接异常：%s</string>
     <string name="error_check_network">请检查网络连接</string>
 
+    <!-- Network Error Messages -->
+    <string name="network_error_timeout">连接超时，请检查网络后重试</string>
+    <string name="network_error_no_connection">无法连接到网络，请检查网络连接</string>
+    <string name="network_error_unauthorized">设备未授权，请重新配对设备</string>
+    <string name="network_error_server">服务器暂时不可用，请稍后重试</string>
+    <string name="network_error_connection_closed">连接已断开：%s</string>
+    <string name="network_error_generic">发生错误：%s</string>
+    <string name="network_error_description_timeout">请求超时</string>
+    <string name="network_error_description_no_connection">无网络连接</string>
+    <string name="network_error_description_unauthorized">认证失败，请检查设备配对</string>
+    <string name="network_error_description_server">服务器错误</string>
+    <string name="network_error_description_connection_closed">连接已关闭：%d - %s</string>
+    <string name="network_error_description_unknown">未知错误：%s</string>
+
     <!-- About -->
     <string name="about_website">网站</string>
     <string name="about_source">源代码</string>
