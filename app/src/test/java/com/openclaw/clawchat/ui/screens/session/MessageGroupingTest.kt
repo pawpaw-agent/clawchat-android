@@ -195,4 +195,109 @@ class MessageGroupingTest {
 
         assertTrue("系统消息不应产生工具卡片", toolCards.isEmpty())
     }
+
+    /**
+     * 测试：跨消息的 ToolResult 匹配
+     */
+    @Test
+    fun `tool result from group messages should be matched`() {
+        val toolCallId = "call-cross-1"
+        val assistantMessage = MessageUi(
+            id = "msg-9",
+            role = MessageRole.ASSISTANT,
+            content = listOf(
+                MessageContentItem.ToolCall(
+                    id = toolCallId,
+                    name = "web_search",
+                    args = JsonObject(mapOf("query" to JsonPrimitive("test"))),
+                    phase = "result"
+                )
+            ),
+            timestamp = System.currentTimeMillis()
+        )
+
+        val toolMessage = MessageUi(
+            id = "msg-10",
+            role = MessageRole.TOOL,
+            content = listOf(MessageContentItem.Text("Search results here")),
+            timestamp = System.currentTimeMillis(),
+            toolCallId = toolCallId,
+            toolName = "web_search"
+        )
+
+        val toolCards = pairToolCards(assistantMessage, listOf(assistantMessage, toolMessage))
+
+        assertEquals("应产生 1 个工具卡片", 1, toolCards.size)
+        assertEquals("应有结果", "Search results here", toolCards[0].result)
+    }
+
+    /**
+     * 测试：ToolResult 精确匹配 toolCallId
+     */
+    @Test
+    fun `tool result should match exact toolCallId`() {
+        val assistantMessage = MessageUi(
+            id = "msg-11",
+            role = MessageRole.ASSISTANT,
+            content = listOf(
+                MessageContentItem.ToolCall(
+                    id = "call-exact-1",
+                    name = "read",
+                    phase = "result"
+                ),
+                MessageContentItem.ToolCall(
+                    id = "call-exact-2",
+                    name = "write",
+                    phase = "result"
+                )
+            ),
+            timestamp = System.currentTimeMillis()
+        )
+
+        val toolMessage1 = MessageUi(
+            id = "msg-12",
+            role = MessageRole.TOOL,
+            content = listOf(MessageContentItem.Text("read result")),
+            timestamp = System.currentTimeMillis(),
+            toolCallId = "call-exact-1",
+            toolName = "read"
+        )
+
+        val toolMessage2 = MessageUi(
+            id = "msg-13",
+            role = MessageRole.TOOL,
+            content = listOf(MessageContentItem.Text("write result")),
+            timestamp = System.currentTimeMillis(),
+            toolCallId = "call-exact-2",
+            toolName = "write"
+        )
+
+        val toolCards = pairToolCards(assistantMessage, listOf(assistantMessage, toolMessage1, toolMessage2))
+
+        assertEquals("应产生 2 个工具卡片", 2, toolCards.size)
+        assertEquals("第一个工具应为 read", "read", toolCards[0].name)
+        assertEquals("第二个工具应为 write", "write", toolCards[1].name)
+        assertEquals("read 结果应正确匹配", "read result", toolCards[0].result)
+        assertEquals("write 结果应正确匹配", "write result", toolCards[1].result)
+    }
+
+    /**
+     * 测试：时间戳格式化
+     */
+    @Test
+    fun `formatTimestamp should return correct format`() {
+        val now = System.currentTimeMillis()
+
+        // 刚刚
+        val justNow = formatTimestamp(now - 30_000)
+        assertEquals("30秒前应显示刚刚", "刚刚", justNow)
+
+        // 分钟前
+        val minutesAgo = formatTimestamp(now - 5 * 60_000)
+        assertTrue("5分钟前应包含分钟", minutesAgo.contains("分钟前"))
+
+        // 小时前
+        val hoursAgo = formatTimestamp(now - 2 * 3600_000)
+        assertTrue("2小时前应包含小时", hoursAgo.contains("小时前"))
+    }
 }
