@@ -153,6 +153,7 @@ fun SessionScreen(
                 sessionLabel = state.session?.label,
                 agentId = state.session?.agentId,
                 currentModel = state.session?.model,
+                messageCount = state.chatMessages.size,
                 // Model 切换
                 models = state.models,
                 onModelChange = { viewModel.changeModel(it) },

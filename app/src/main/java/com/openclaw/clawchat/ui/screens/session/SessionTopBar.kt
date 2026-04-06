@@ -37,6 +37,7 @@ fun SessionTopAppBar(
     sessionLabel: String? = null,
     agentId: String? = null,
     currentModel: String? = null,
+    messageCount: Int = 0,
     // Model 切换
     models: List<ModelItem> = emptyList(),
     onModelChange: ((String) -> Unit)? = null,
@@ -133,6 +134,7 @@ fun SessionTopAppBar(
                         sessionLabel = sessionLabel,
                         agentId = agentId,
                         currentModel = currentModel,
+                        messageCount = messageCount,
                         onDismiss = { showSessionInfo = false }
                     )
                 }
@@ -331,6 +333,7 @@ private fun SessionInfoDialog(
     sessionLabel: String?,
     agentId: String?,
     currentModel: String?,
+    messageCount: Int = 0,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -364,8 +367,16 @@ private fun SessionInfoDialog(
                     )
                 }
 
+                // Message count
+                if (messageCount > 0) {
+                    SessionInfoRow(
+                        label = "消息数",
+                        value = "$messageCount 条"
+                    )
+                }
+
                 // 如果没有任何信息
-                if (sessionLabel.isNullOrBlank() && agentId.isNullOrBlank() && currentModel.isNullOrBlank()) {
+                if (sessionLabel.isNullOrBlank() && agentId.isNullOrBlank() && currentModel.isNullOrBlank() && messageCount == 0) {
                     Text(
                         text = "暂无详细信息",
                         style = MaterialTheme.typography.bodyMedium,
