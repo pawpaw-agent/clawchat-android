@@ -479,39 +479,99 @@ private fun SessionItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 会话头像
+            // 会话头像（根据 Agent 或 Model 显示不同图标）
             Box(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(
+                        when {
+                            session.agentId != null -> MaterialTheme.colorScheme.tertiaryContainer
+                            session.model?.contains("claude", ignoreCase = true) == true -> MaterialTheme.colorScheme.primaryContainer
+                            session.model?.contains("gpt", ignoreCase = true) == true -> MaterialTheme.colorScheme.secondaryContainer
+                            else -> MaterialTheme.colorScheme.primaryContainer
+                        }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = if (session.label?.contains("GPT", ignoreCase = true) == true || 
-                                     session.label?.contains("Chat", ignoreCase = true) == true) {
-                        Icons.Default.SmartToy
-                    } else {
-                        Icons.Default.Chat
-                    },
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(24.dp)
-                )
+                // Agent emoji 或图标
+                if (session.agentId != null) {
+                    Icon(
+                        imageVector = Icons.Default.SmartToy,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = when {
+                            session.model?.contains("claude", ignoreCase = true) == true -> Icons.Default.SmartToy
+                            session.model?.contains("gpt", ignoreCase = true) == true -> Icons.Default.Psychology
+                            session.model?.contains("gemini", ignoreCase = true) == true -> Icons.Default.AutoAwesome
+                            session.label?.contains("GPT", ignoreCase = true) == true -> Icons.Default.Psychology
+                            session.label?.contains("Chat", ignoreCase = true) == true -> Icons.Default.SmartToy
+                            else -> Icons.Default.Chat
+                        },
+                        contentDescription = null,
+                        tint = when {
+                            session.model?.contains("claude", ignoreCase = true) == true -> MaterialTheme.colorScheme.onPrimaryContainer
+                            session.model?.contains("gpt", ignoreCase = true) == true -> MaterialTheme.colorScheme.onSecondaryContainer
+                            else -> MaterialTheme.colorScheme.onPrimaryContainer
+                        },
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
-                // 会话名称
-                Text(
-                    text = session.getDisplayName(),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                
+                // 会话名称 + Agent/Model 标签
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = session.getDisplayName(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+
+                    // Agent 标签
+                    if (session.agentId != null) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
+                        ) {
+                            Text(
+                                text = "Agent",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    // Model 标签
+                    if (session.model != null && session.agentId == null) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                        ) {
+                            Text(
+                                text = formatModelName(session.model),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                maxLines = 1,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+
                 // 最后一条消息
                 if (session.lastMessage != null) {
                     Spacer(modifier = Modifier.height(4.dp))
@@ -523,7 +583,7 @@ private fun SessionItem(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                
+
                 // 时间和消息数
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
@@ -647,12 +707,46 @@ private fun EmptySessionList(onCreateSession: () -> Unit) {
 private fun formatTimeAgo(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
-    
+
     return when {
         diff < 60_000 -> "刚刚"
         diff < 3_600_000 -> "${diff / 60_000} 分钟前"
         diff < 86_400_000 -> "${diff / 3_600_000} 小时前"
         diff < 604_800_000 -> "${diff / 86_400_000} 天前"
         else -> SimpleDateFormat("MM-dd", Locale.getDefault()).format(Date(timestamp))
+    }
+}
+
+/**
+ * 格式化模型名称（简化显示）
+ */
+private fun formatModelName(model: String): String {
+    return when {
+        // Claude 模型
+        model.contains("claude-3-5-sonnet", ignoreCase = true) -> "Claude 3.5"
+        model.contains("claude-3-opus", ignoreCase = true) -> "Claude 3 Opus"
+        model.contains("claude-3-sonnet", ignoreCase = true) -> "Claude 3"
+        model.contains("claude-3-haiku", ignoreCase = true) -> "Claude 3 Haiku"
+        model.contains("claude", ignoreCase = true) -> "Claude"
+
+        // GPT 模型
+        model.contains("gpt-4o", ignoreCase = true) -> "GPT-4o"
+        model.contains("gpt-4-turbo", ignoreCase = true) -> "GPT-4 Turbo"
+        model.contains("gpt-4", ignoreCase = true) -> "GPT-4"
+        model.contains("gpt-3.5", ignoreCase = true) -> "GPT-3.5"
+        model.contains("gpt", ignoreCase = true) -> "GPT"
+
+        // Gemini 模型
+        model.contains("gemini-1.5-pro", ignoreCase = true) -> "Gemini 1.5 Pro"
+        model.contains("gemini-1.5-flash", ignoreCase = true) -> "Gemini 1.5 Flash"
+        model.contains("gemini-pro", ignoreCase = true) -> "Gemini Pro"
+        model.contains("gemini", ignoreCase = true) -> "Gemini"
+
+        // Llama 模型
+        model.contains("llama-3", ignoreCase = true) -> "Llama 3"
+        model.contains("llama", ignoreCase = true) -> "Llama"
+
+        // 其他
+        else -> model.take(12)
     }
 }
