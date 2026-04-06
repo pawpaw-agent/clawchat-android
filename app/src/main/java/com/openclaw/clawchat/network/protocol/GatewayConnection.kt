@@ -723,6 +723,126 @@ class GatewayConnection(
         return call("sessions.messages.unsubscribe", params)
     }
 
+    /** sessions.subscribe — 订阅会话变更事件 */
+    suspend fun sessionsSubscribe(): ResponseFrame {
+        return call("sessions.subscribe", null)
+    }
+
+    /** sessions.unsubscribe — 取消订阅会话变更 */
+    suspend fun sessionsUnsubscribe(): ResponseFrame {
+        return call("sessions.unsubscribe", null)
+    }
+
+    /** sessions.resolve — 解析会话 */
+    suspend fun sessionsResolve(
+        key: String? = null,
+        sessionId: String? = null,
+        label: String? = null,
+        agentId: String? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>()
+        if (key != null) params["key"] = JsonPrimitive(key)
+        if (sessionId != null) params["sessionId"] = JsonPrimitive(sessionId)
+        if (label != null) params["label"] = JsonPrimitive(label)
+        if (agentId != null) params["agentId"] = JsonPrimitive(agentId)
+        return call("sessions.resolve", params.ifEmpty { null })
+    }
+
+    // ==================== Agents API ====================
+
+    /** agents.list — 列出所有 Agent */
+    suspend fun agentsList(): ResponseFrame {
+        return call("agents.list", null)
+    }
+
+    /** agents.create — 创建新 Agent */
+    suspend fun agentsCreate(
+        name: String,
+        workspace: String,
+        emoji: String? = null,
+        avatar: String? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "name" to JsonPrimitive(name),
+            "workspace" to JsonPrimitive(workspace)
+        )
+        if (emoji != null) params["emoji"] = JsonPrimitive(emoji)
+        if (avatar != null) params["avatar"] = JsonPrimitive(avatar)
+        return call("agents.create", params)
+    }
+
+    /** agents.update — 更新 Agent */
+    suspend fun agentsUpdate(
+        agentId: String,
+        name: String? = null,
+        workspace: String? = null,
+        model: String? = null,
+        avatar: String? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "agentId" to JsonPrimitive(agentId)
+        )
+        if (name != null) params["name"] = JsonPrimitive(name)
+        if (workspace != null) params["workspace"] = JsonPrimitive(workspace)
+        if (model != null) params["model"] = JsonPrimitive(model)
+        if (avatar != null) params["avatar"] = JsonPrimitive(avatar)
+        return call("agents.update", params)
+    }
+
+    /** agents.delete — 删除 Agent */
+    suspend fun agentsDelete(
+        agentId: String,
+        deleteFiles: Boolean = false
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "agentId" to JsonPrimitive(agentId)
+        )
+        if (deleteFiles) params["deleteFiles"] = JsonPrimitive(true)
+        return call("agents.delete", params)
+    }
+
+    // ==================== Config API ====================
+
+    /** config.get — 获取配置 */
+    suspend fun configGet(key: String? = null): ResponseFrame {
+        val params = if (key != null) mapOf("key" to JsonPrimitive(key)) else null
+        return call("config.get", params)
+    }
+
+    /** config.set — 设置配置 */
+    suspend fun configSet(key: String, value: String): ResponseFrame {
+        val params = mapOf(
+            "key" to JsonPrimitive(key),
+            "value" to JsonPrimitive(value)
+        )
+        return call("config.set", params)
+    }
+
+    /** config.patch — 部分更新配置 */
+    suspend fun configPatch(patches: Map<String, String>): ResponseFrame {
+        val params = patches.mapValues { JsonPrimitive(it.value) }
+        return call("config.patch", params)
+    }
+
+    /** config.schema — 获取配置 Schema */
+    suspend fun configSchema(key: String? = null): ResponseFrame {
+        val params = if (key != null) mapOf("key" to JsonPrimitive(key)) else null
+        return call("config.schema", params)
+    }
+
+    // ==================== Channels API ====================
+
+    /** channels.status — 获取渠道状态 */
+    suspend fun channelsStatus(): ResponseFrame {
+        return call("channels.status", null)
+    }
+
+    /** channels.logout — 登出渠道 */
+    suspend fun channelsLogout(channelId: String? = null): ResponseFrame {
+        val params = if (channelId != null) mapOf("channelId" to JsonPrimitive(channelId)) else null
+        return call("channels.logout", params)
+    }
+
     /** cron.list — 列出定时任务 */
     suspend fun cronList(): ResponseFrame {
         return call("cron.list", null)

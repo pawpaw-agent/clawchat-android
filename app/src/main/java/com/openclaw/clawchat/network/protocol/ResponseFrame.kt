@@ -433,3 +433,244 @@ data class ModelInfo(
 fun ResponseFrame.parseModelsListResponse(): ModelsListResponse? {
     return parsePayload(ModelsListResponse.serializer())
 }
+
+// ==================== Agents API 响应 ====================
+
+/**
+ * Agent 列表响应载荷
+ */
+@Serializable
+data class AgentsListResponse(
+    @SerialName("agents")
+    val agents: List<AgentInfo>
+)
+
+/**
+ * Agent 信息
+ */
+@Serializable
+data class AgentInfo(
+    @SerialName("id")
+    val id: String,
+
+    @SerialName("name")
+    val name: String,
+
+    @SerialName("workspace")
+    val workspace: String? = null,
+
+    @SerialName("emoji")
+    val emoji: String? = null,
+
+    @SerialName("avatar")
+    val avatar: String? = null,
+
+    @SerialName("model")
+    val model: String? = null,
+
+    @SerialName("createdAt")
+    val createdAt: Long? = null,
+
+    @SerialName("updatedAt")
+    val updatedAt: Long? = null
+)
+
+/**
+ * 创建 Agent 响应载荷
+ */
+@Serializable
+data class AgentsCreateResponse(
+    @SerialName("agent")
+    val agent: AgentInfo
+)
+
+/**
+ * 更新 Agent 响应载荷
+ */
+@Serializable
+data class AgentsUpdateResponse(
+    @SerialName("agent")
+    val agent: AgentInfo
+)
+
+/**
+ * 解析为 AgentsListResponse
+ */
+fun ResponseFrame.parseAgentsListResponse(): AgentsListResponse? {
+    return parsePayload(AgentsListResponse.serializer())
+}
+
+/**
+ * 解析为 AgentsCreateResponse
+ */
+fun ResponseFrame.parseAgentsCreateResponse(): AgentsCreateResponse? {
+    return parsePayload(AgentsCreateResponse.serializer())
+}
+
+/**
+ * 解析为 AgentsUpdateResponse
+ */
+fun ResponseFrame.parseAgentsUpdateResponse(): AgentsUpdateResponse? {
+    return parsePayload(AgentsUpdateResponse.serializer())
+}
+
+// ==================== Config API 响应 ====================
+
+/**
+ * 配置获取响应载荷
+ */
+@Serializable
+data class ConfigGetResponse(
+    @SerialName("key")
+    val key: String,
+
+    @SerialName("value")
+    val value: String? = null,
+
+    @SerialName("schema")
+    val schema: ConfigSchema? = null
+)
+
+/**
+ * 配置 Schema
+ */
+@Serializable
+data class ConfigSchema(
+    @SerialName("type")
+    val type: String,
+
+    @SerialName("description")
+    val description: String? = null,
+
+    @SerialName("default")
+    val defaultValue: String? = null,
+
+    @SerialName("enum")
+    val enumValues: List<String>? = null,
+
+    @SerialName("min")
+    val min: Double? = null,
+
+    @SerialName("max")
+    val max: Double? = null
+)
+
+/**
+ * 配置 Schema 列表响应
+ */
+@Serializable
+data class ConfigSchemaListResponse(
+    @SerialName("schemas")
+    val schemas: List<ConfigSchemaEntry>
+)
+
+/**
+ * 配置 Schema 条目
+ */
+@Serializable
+data class ConfigSchemaEntry(
+    @SerialName("key")
+    val key: String,
+
+    @SerialName("schema")
+    val schema: ConfigSchema
+)
+
+/**
+ * 解析为 ConfigGetResponse
+ */
+fun ResponseFrame.parseConfigGetResponse(): ConfigGetResponse? {
+    return parsePayload(ConfigGetResponse.serializer())
+}
+
+/**
+ * 解析为 ConfigSchemaListResponse
+ */
+fun ResponseFrame.parseConfigSchemaListResponse(): ConfigSchemaListResponse? {
+    return parsePayload(ConfigSchemaListResponse.serializer())
+}
+
+// ==================== Channels API 响应 ====================
+
+/**
+ * 渠道状态响应载荷
+ */
+@Serializable
+data class ChannelsStatusResponse(
+    @SerialName("channels")
+    val channels: List<ChannelInfo>
+)
+
+/**
+ * 渠道信息
+ */
+@Serializable
+data class ChannelInfo(
+    @SerialName("id")
+    val id: String,
+
+    @SerialName("type")
+    val type: String,
+
+    @SerialName("name")
+    val name: String? = null,
+
+    @SerialName("status")
+    val status: String,
+
+    @SerialName("connected")
+    val connected: Boolean = false,
+
+    @SerialName("lastActivityAt")
+    val lastActivityAt: Long? = null,
+
+    @SerialName("metadata")
+    val metadata: Map<String, String>? = null
+)
+
+/**
+ * 解析为 ChannelsStatusResponse
+ */
+fun ResponseFrame.parseChannelsStatusResponse(): ChannelsStatusResponse? {
+    return parsePayload(ChannelsStatusResponse.serializer())
+}
+
+// ==================== Sessions 扩展 API 响应 ====================
+
+/**
+ * 会话订阅响应载荷
+ */
+@Serializable
+data class SessionsSubscribeResponse(
+    @SerialName("subscribed")
+    val subscribed: Boolean,
+
+    @SerialName("sessionKeys")
+    val sessionKeys: List<String>? = null
+)
+
+/**
+ * 会话解析响应载荷
+ */
+@Serializable
+data class SessionsResolveResponse(
+    @SerialName("session")
+    val session: SessionInfo? = null,
+
+    @SerialName("sessions")
+    val sessions: List<SessionInfo>? = null
+)
+
+/**
+ * 解析为 SessionsSubscribeResponse
+ */
+fun ResponseFrame.parseSessionsSubscribeResponse(): SessionsSubscribeResponse? {
+    return parsePayload(SessionsSubscribeResponse.serializer())
+}
+
+/**
+ * 解析为 SessionsResolveResponse
+ */
+fun ResponseFrame.parseSessionsResolveResponse(): SessionsResolveResponse? {
+    return parsePayload(SessionsResolveResponse.serializer())
+}

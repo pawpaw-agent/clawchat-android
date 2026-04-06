@@ -76,9 +76,28 @@ enum class GatewayMethod(val value: String) {
     SESSIONS_STEER("sessions.steer"),
     SESSIONS_MESSAGES_SUBSCRIBE("sessions.messages.subscribe"),
     SESSIONS_MESSAGES_UNSUBSCRIBE("sessions.messages.unsubscribe"),
+    SESSIONS_SUBSCRIBE("sessions.subscribe"),
+    SESSIONS_UNSUBSCRIBE("sessions.unsubscribe"),
+    SESSIONS_RESOLVE("sessions.resolve"),
+
+    // Agent 管理（agents.* 命名空间）
+    AGENTS_LIST("agents.list"),
+    AGENTS_CREATE("agents.create"),
+    AGENTS_UPDATE("agents.update"),
+    AGENTS_DELETE("agents.delete"),
 
     // 模型
     MODELS_LIST("models.list"),
+
+    // 配置（config.* 命名空间）
+    CONFIG_GET("config.get"),
+    CONFIG_SET("config.set"),
+    CONFIG_PATCH("config.patch"),
+    CONFIG_SCHEMA("config.schema"),
+
+    // 渠道（channels.* 命名空间）
+    CHANNELS_STATUS("channels.status"),
+    CHANNELS_LOGOUT("channels.logout"),
 
     // 设备
     DEVICE_TOKEN_ROTATE("device.token.rotate"),
