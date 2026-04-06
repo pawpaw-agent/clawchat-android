@@ -14,6 +14,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -155,16 +157,26 @@ fun SessionListContent(
                     }
                 }
             } else {
-                SessionList(
-                    sessions = state.sessions,
-                    currentSession = state.currentSession,
-                    onSelectSession = onSelectSession,
-                    onSessionLongPress = onSessionLongPress,
-                    onDeleteSession = onDeleteSession,
-                    onSteerSession = onSteerSession,
-                    onRenameSession = onRenameSession,
-                    onTogglePinSession = onTogglePinSession
-                )
+                // 下拉刷新
+                val refreshState = rememberPullToRefreshState()
+
+                PullToRefreshBox(
+                    state = refreshState,
+                    isRefreshing = state.isLoading && state.sessions.isNotEmpty(),
+                    onRefresh = onRefresh,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    SessionList(
+                        sessions = state.sessions,
+                        currentSession = state.currentSession,
+                        onSelectSession = onSelectSession,
+                        onSessionLongPress = onSessionLongPress,
+                        onDeleteSession = onDeleteSession,
+                        onSteerSession = onSteerSession,
+                        onRenameSession = onRenameSession,
+                        onTogglePinSession = onTogglePinSession
+                    )
+                }
             }
         }
         
