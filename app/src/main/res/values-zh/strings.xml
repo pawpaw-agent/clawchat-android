@@ -141,6 +141,21 @@
     <string name="session_status_paused">已暂停</string>
     <string name="session_status_terminated">已终止</string>
 
+    <!-- Session List -->
+    <string name="session_selected_count">已选 %d</string>
+    <string name="session_search_not_found">未找到 \"%s\"</string>
+    <string name="session_delete_selected_count">删除 (%d)</string>
+    <string name="session_steer_title">引导会话</string>
+    <string name="session_steer_placeholder">输入引导消息…</string>
+    <string name="session_steer_send">发送</string>
+    <string name="session_empty_title">暂无会话</string>
+    <string name="session_empty_hint">点击下方按钮创建新会话</string>
+    <string name="session_create_button">创建会话</string>
+    <string name="session_time_just_now">刚刚</string>
+    <string name="session_time_minutes_ago">%d 分钟前</string>
+    <string name="session_time_hours_ago">%d 小时前</string>
+    <string name="session_time_days_ago">%d 天前</string>
+
     <!-- Pairing -->
     <string name="pairing_title">设备配对</string>
     <string name="pairing_request">请求配对</string>

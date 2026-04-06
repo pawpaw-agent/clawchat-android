@@ -137,6 +137,21 @@
     <string name="session_options_resume">Resume session</string>
     <string name="session_options_status">Status: %s</string>
     <string name="session_options_message_count">Messages: %d</string>
+
+    <!-- Session List -->
+    <string name="session_selected_count">%d selected</string>
+    <string name="session_search_not_found">Not found \"%s\"</string>
+    <string name="session_delete_selected_count">Delete (%d)</string>
+    <string name="session_steer_title">Steer session</string>
+    <string name="session_steer_placeholder">Enter steer message…</string>
+    <string name="session_steer_send">Send</string>
+    <string name="session_empty_title">No sessions yet</string>
+    <string name="session_empty_hint">Tap the button below to create a new session</string>
+    <string name="session_create_button">Create session</string>
+    <string name="session_time_just_now">Just now</string>
+    <string name="session_time_minutes_ago">%d min ago</string>
+    <string name="session_time_hours_ago">%d hr ago</string>
+    <string name="session_time_days_ago">%d days ago</string>
     <string name="session_delete_confirm_text">Delete session \"%s\"? This action cannot be undone.</string>
     <string name="session_status_running">Running</string>
     <string name="session_status_paused">Paused</string>

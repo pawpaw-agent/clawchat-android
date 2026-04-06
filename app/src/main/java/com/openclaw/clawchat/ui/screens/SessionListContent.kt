@@ -113,7 +113,7 @@ fun SessionListContent(
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         Text(
-                            text = "已选 ${selectedSessions.size}",
+                            text = stringResource(R.string.session_selected_count, selectedSessions.size),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.weight(1f))
@@ -152,7 +152,7 @@ fun SessionListContent(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "未找到 \"$searchQuery\"",
+                            text = stringResource(R.string.session_search_not_found, searchQuery),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -221,7 +221,7 @@ fun SessionListContent(
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("删除 (${selectedSessions.size})")
+                    Text(stringResource(R.string.session_delete_selected_count, selectedSessions.size))
                 }
             }
         }
@@ -242,11 +242,17 @@ private fun SessionList(
     onRenameSession: ((String, String) -> Unit)? = null,
     onTogglePinSession: ((String, Boolean) -> Unit)? = null
 ) {
+    // Localized date labels
+    val todayLabel = stringResource(R.string.session_today)
+    val yesterdayLabel = stringResource(R.string.session_yesterday)
+    val thisWeekLabel = stringResource(R.string.session_this_week)
+    val earlierLabel = stringResource(R.string.session_earlier)
+
     // 按日期分组
-    val groupedSessions = remember(sessions) {
-        groupSessionsByDate(sessions)
+    val groupedSessions = remember(sessions, todayLabel, yesterdayLabel, thisWeekLabel, earlierLabel) {
+        groupSessionsByDate(sessions, todayLabel, yesterdayLabel, thisWeekLabel, earlierLabel)
     }
-    
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -262,7 +268,7 @@ private fun SessionList(
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
-            
+
             // 该日期下的会话
             items(
                 items = sessionsInGroup,
@@ -290,14 +296,20 @@ private fun SessionList(
 /**
  * 按日期分组会话（支持置顶和归档）
  */
-private fun groupSessionsByDate(sessions: List<SessionUi>): List<Pair<String, List<SessionUi>>> {
+private fun groupSessionsByDate(
+    sessions: List<SessionUi>,
+    todayLabel: String,
+    yesterdayLabel: String,
+    thisWeekLabel: String,
+    earlierLabel: String
+): List<Pair<String, List<SessionUi>>> {
     // 先按置顶/归档排序，再按日期分组
     val sortedSessions = sessions.sortedWith(
         compareByDescending<SessionUi> { it.isPinned }
             .thenBy { it.isArchived }
             .thenByDescending { it.lastActivityAt }
     )
-    
+
     val now = System.currentTimeMillis()
     val today = Calendar.getInstance().apply {
         timeInMillis = now
@@ -306,34 +318,34 @@ private fun groupSessionsByDate(sessions: List<SessionUi>): List<Pair<String, Li
         set(Calendar.SECOND, 0)
         set(Calendar.MILLISECOND, 0)
     }.timeInMillis
-    
+
     val yesterday = today - 86_400_000 // 24 hours in ms
     val weekAgo = today - 7 * 86_400_000
-    
+
     val groups = mutableMapOf<String, MutableList<SessionUi>>()
-    
+
     sortedSessions.forEach { session ->
         val label = when {
-            session.lastActivityAt >= today -> "今天"
-            session.lastActivityAt >= yesterday -> "昨天"
+            session.lastActivityAt >= today -> todayLabel
+            session.lastActivityAt >= yesterday -> yesterdayLabel
             session.lastActivityAt >= weekAgo -> {
                 val cal = Calendar.getInstance()
                 cal.timeInMillis = session.lastActivityAt
                 SimpleDateFormat("EEEE", Locale.getDefault()).format(cal.time)
             }
-            else -> "更早"
+            else -> earlierLabel
         }
-        
+
         groups.getOrPut(label) { mutableListOf() }.add(session)
     }
-    
+
     // 保持顺序：今天 -> 昨天 -> 本周 -> 更早
-    return listOf("今天", "昨天", "本周", "更早")
+    return listOf(todayLabel, yesterdayLabel, thisWeekLabel, earlierLabel)
         .filter { groups.containsKey(it) }
         .mapNotNull { label ->
             // 处理 "本周" 的特殊情况
-            if (label == "本周") {
-                val weekSessions = groups.filterKeys { it != "今天" && it != "昨天" && it != "更早" }
+            if (label == thisWeekLabel) {
+                val weekSessions = groups.filterKeys { it != todayLabel && it != yesterdayLabel && it != earlierLabel }
                     .values
                     .flatten()
                 if (weekSessions.isNotEmpty()) {
@@ -373,13 +385,13 @@ private fun SessionItem(
     if (showSteerDialog) {
         AlertDialog(
             onDismissRequest = { showSteerDialog = false },
-            title = { Text("引导会话") },
+            title = { Text(stringResource(R.string.session_steer_title)) },
             text = {
                 OutlinedTextField(
                     value = steerText,
                     onValueChange = { steerText = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("输入引导消息...") },
+                    placeholder = { Text(stringResource(R.string.session_steer_placeholder)) },
                     singleLine = false,
                     maxLines = 3
                 )
@@ -394,7 +406,7 @@ private fun SessionItem(
                         showSteerDialog = false
                     }
                 ) {
-                    Text("发送")
+                    Text(stringResource(R.string.session_steer_send))
                 }
             },
             dismissButton = {
@@ -628,7 +640,7 @@ private fun SessionItem(
         ) {
             // 重命名选项
             DropdownMenuItem(
-                text = { Text("重命名") },
+                text = { Text(stringResource(R.string.session_rename)) },
                 leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                 onClick = {
                     showMenu = false
@@ -636,26 +648,26 @@ private fun SessionItem(
                     showRenameDialog = true
                 }
             )
-            
+
             // 置顶选项
             DropdownMenuItem(
                 text = { Text(if (session.isPinned) stringResource(R.string.session_unpin) else stringResource(R.string.session_pin)) },
-                leadingIcon = { 
+                leadingIcon = {
                     Icon(
                         if (session.isPinned) Icons.Default.PushPin else Icons.Default.PushPin,
                         contentDescription = null
-                    ) 
+                    )
                 },
                 onClick = {
                     showMenu = false
                     onTogglePin?.invoke(session.id, session.isPinned)
                 }
             )
-            
+
             // 引导选项
             if (onSteer != null) {
                 DropdownMenuItem(
-                    text = { Text("引导会话") },
+                    text = { Text(stringResource(R.string.session_steer_title)) },
                     leadingIcon = { Icon(Icons.Default.Navigation, contentDescription = null) },
                     onClick = {
                         showMenu = false
@@ -663,7 +675,7 @@ private fun SessionItem(
                     }
                 )
             }
-            
+
             Divider()
             
             // 删除选项
@@ -699,19 +711,19 @@ private fun EmptySessionList(onCreateSession: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "暂无会话",
+            text = stringResource(R.string.session_empty_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "点击下方按钮创建新会话",
+            text = stringResource(R.string.session_empty_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         )
         Spacer(modifier = Modifier.height(24.dp))
         FilledIconButton(onClick = onCreateSession) {
-            Icon(Icons.Default.Add, contentDescription = "创建会话")
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.session_create_button))
         }
     }
 }
@@ -719,15 +731,16 @@ private fun EmptySessionList(onCreateSession: () -> Unit) {
 /**
  * 格式化时间为"多久以前"
  */
+@Composable
 private fun formatTimeAgo(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
 
     return when {
-        diff < 60_000 -> "刚刚"
-        diff < 3_600_000 -> "${diff / 60_000} 分钟前"
-        diff < 86_400_000 -> "${diff / 3_600_000} 小时前"
-        diff < 604_800_000 -> "${diff / 86_400_000} 天前"
+        diff < 60_000 -> stringResource(R.string.session_time_just_now)
+        diff < 3_600_000 -> stringResource(R.string.session_time_minutes_ago, diff / 60_000)
+        diff < 86_400_000 -> stringResource(R.string.session_time_hours_ago, diff / 3_600_000)
+        diff < 604_800_000 -> stringResource(R.string.session_time_days_ago, diff / 86_400_000)
         else -> SimpleDateFormat("MM-dd", Locale.getDefault()).format(Date(timestamp))
     }
 }
