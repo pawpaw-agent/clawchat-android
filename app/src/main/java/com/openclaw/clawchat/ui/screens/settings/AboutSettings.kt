@@ -10,9 +10,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.BuildConfig
+import com.openclaw.clawchat.R
 
 /**
  * 关于对话框
@@ -61,12 +63,12 @@ fun AboutDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
-                                "版本 ${BuildConfig.VERSION_NAME}",
+                                stringResource(R.string.about_version, BuildConfig.VERSION_NAME),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                "Build ${BuildConfig.VERSION_CODE}",
+                                stringResource(R.string.about_build, BuildConfig.VERSION_CODE),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -78,13 +80,13 @@ fun AboutDialog(
 
                 // 描述
                 Text(
-                    "OpenClaw 第三方 Android 客户端（非官方）",
+                    stringResource(R.string.about_description),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
 
                 Text(
-                    "ClawChat 是 OpenClaw 生态系统的第三方 Android 客户端，提供与 OpenClaw Gateway 的实时通信能力，让开发者和管理员能够随时随地监控和管理 AI Agent 会话。",
+                    stringResource(R.string.about_full_description),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -93,16 +95,16 @@ fun AboutDialog(
 
                 // 特性列表
                 Text(
-                    "主要特性",
+                    stringResource(R.string.about_features),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold
                 )
 
                 val features = listOf(
-                    "Ed25519 密钥 + 加密存储安全设计" to Icons.Outlined.Security,
-                    "Jetpack Compose + Material Design 3" to Icons.Outlined.Palette,
-                    "WebSocket 实时通信，Gateway 协议 v3" to Icons.Outlined.Sync,
-                    "支持局域网和 Tailscale 远程访问" to Icons.Outlined.Wifi
+                    stringResource(R.string.about_feature_security) to Icons.Outlined.Security,
+                    stringResource(R.string.about_feature_compose) to Icons.Outlined.Palette,
+                    stringResource(R.string.about_feature_websocket) to Icons.Outlined.Sync,
+                    stringResource(R.string.about_feature_network) to Icons.Outlined.Wifi
                 )
 
                 features.forEach { (text, icon) ->
@@ -137,13 +139,13 @@ fun AboutDialog(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("开源许可")
+                    Text(stringResource(R.string.about_open_source_licenses))
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("关闭")
+                Text(stringResource(R.string.close))
             }
         }
     )

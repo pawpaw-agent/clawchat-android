@@ -303,4 +303,16 @@
     <string name="command_palette_sessions">会话</string>
     <string name="command_palette_commands">命令</string>
     <string name="command_palette_no_results">未找到结果</string>
+
+    <!-- About (Chinese) -->
+    <string name="about_version">版本 %s</string>
+    <string name="about_build">Build %d</string>
+    <string name="about_description">OpenClaw 第三方 Android 客户端（非官方）</string>
+    <string name="about_full_description">ClawChat 是 OpenClaw 生态系统的第三方 Android 客户端，提供与 OpenClaw Gateway 的实时通信能力，让开发者和管理员能够随时随地监控和管理 AI Agent 会话。</string>
+    <string name="about_features">主要特性</string>
+    <string name="about_feature_security">Ed25519 密钥 + 加密存储安全设计</string>
+    <string name="about_feature_compose">Jetpack Compose + Material Design 3</string>
+    <string name="about_feature_websocket">WebSocket 实时通信，Gateway 协议 v3</string>
+    <string name="about_feature_network">支持局域网和 Tailscale 远程访问</string>
+    <string name="about_open_source_licenses">开源许可</string>
 </resources>
