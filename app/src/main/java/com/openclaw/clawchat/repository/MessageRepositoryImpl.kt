@@ -169,7 +169,7 @@ class MessageRepositoryImpl @Inject constructor(
         return MessageUi(
             id = id,
             content = parseContent(content),
-            role = MessageRole.valueOf(role),
+            role = MessageRole.fromString(role),
             timestamp = timestamp,
             toolCallId = toolCallId,
             toolName = toolName,
