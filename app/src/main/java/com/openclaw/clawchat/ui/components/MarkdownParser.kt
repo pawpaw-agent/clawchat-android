@@ -322,6 +322,27 @@ internal fun highlightSyntax(code: String, language: String): AnnotatedString {
                 "source", "alias", "unset", "readonly", "declare", "echo", "printf", "read",
                 "true", "false", "test", "shift", "set", "trap"
             )
+            "ruby", "rb" -> setOf(
+                "def", "class", "module", "end", "if", "else", "elsif", "unless", "case",
+                "when", "while", "for", "do", "begin", "rescue", "ensure", "raise", "return",
+                "yield", "lambda", "proc", "true", "false", "nil", "self", "super", "require",
+                "include", "extend", "attr_reader", "attr_writer", "attr_accessor", "private",
+                "protected", "public", "puts", "print", "p", "gets", "chomp", "to_s", "to_i"
+            )
+            "php" -> setOf(
+                "function", "class", "interface", "trait", "extends", "implements", "public",
+                "private", "protected", "static", "final", "abstract", "const", "var", "new",
+                "if", "else", "elseif", "switch", "case", "default", "break", "continue",
+                "for", "foreach", "while", "do", "try", "catch", "finally", "throw", "use",
+                "namespace", "return", "echo", "print", "true", "false", "null", "array",
+                "isset", "empty", "die", "exit", "include", "require", "include_once", "require_once"
+            )
+            "yaml", "yml" -> setOf(
+                "true", "false", "null", "yes", "no", "on", "off"
+            )
+            "toml" -> setOf(
+                "true", "false"
+            )
             else -> setOf(
                 "if", "else", "for", "while", "return", "function", "class", "const",
                 "let", "var", "true", "false", "null", "import", "export", "public",
@@ -334,6 +355,8 @@ internal fun highlightSyntax(code: String, language: String): AnnotatedString {
             "java" -> setOf("String", "Integer", "Long", "Float", "Double", "Boolean", "Object", "Class", "List", "Map", "Set", "ArrayList", "HashMap", "HashSet")
             "python" -> setOf("str", "int", "float", "bool", "list", "dict", "set", "tuple", "None", "Exception", "BaseException")
             "typescript", "ts" -> setOf("string", "number", "boolean", "object", "any", "void", "null", "undefined", "never", "unknown", "Promise", "Array")
+            "ruby", "rb" -> setOf("String", "Integer", "Float", "Array", "Hash", "Symbol", "NilClass", "TrueClass", "FalseClass")
+            "php" -> setOf("string", "int", "float", "bool", "array", "object", "null", "mixed", "void", "callable")
             else -> emptySet()
         }
 
