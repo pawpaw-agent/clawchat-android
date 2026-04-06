@@ -257,21 +257,12 @@ class ChatEventHandler(
             totalReceivedChars = 0
         }
         
-        // 提交流式文本到 segments
+        // 提交最后的流式文本到数据库后，清除 segments 避免重复显示
+        // 流式文本已通过 saveMessageToDb 保存，将由 DB observer 更新 chatMessages
         state.update { currentState ->
-            val now = System.currentTimeMillis()
-            val segments = currentState.chatStreamSegments
-            val stream = currentState.chatStream
-            
-            val finalSegments = if (!stream.isNullOrBlank()) {
-                segments + StreamSegment(stream.trim(), now)
-            } else {
-                segments
-            }
-            
             currentState.copy(
                 chatStream = null,
-                chatStreamSegments = finalSegments,
+                chatStreamSegments = emptyList(),  // 清除 segments，避免与 chatMessages 重复
                 chatStreamStartedAt = null,
                 chatRunId = null,
                 isSending = false,
@@ -291,29 +282,30 @@ class ChatEventHandler(
      */
     private fun handleAborted(runId: String, msgObj: JsonObject?) {
         AppLog.w(TAG, "Message aborted: runId=$runId")
-        
+
+        // aborted 消息不保存到数据库，保留 segments 显示
         state.update { currentState ->
             val now = System.currentTimeMillis()
             val segments = currentState.chatStreamSegments
             val stream = currentState.chatStream
-            
-            // 提交最后的流式文本（如果有）
+
+            // 提交最后的流式文本（如果有），标记为 aborted
             val finalSegments = if (!stream.isNullOrBlank()) {
                 segments + StreamSegment("(aborted) ${stream.trim()}", now)
             } else {
                 segments + StreamSegment("(message aborted)", now)
             }
-            
+
             currentState.copy(
                 chatStream = null,
-                chatStreamSegments = finalSegments,
+                chatStreamSegments = finalSegments,  // aborted 保留 segments（不保存到 DB）
                 chatStreamStartedAt = null,
                 chatRunId = null,
                 isSending = false,
                 isLoading = false
             )
         }
-        
+
         // 触发队列刷新
         onChatComplete?.invoke()
     }
