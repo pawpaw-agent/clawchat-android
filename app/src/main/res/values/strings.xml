@@ -222,7 +222,7 @@
     <string name="session_edit_placeholder">输入消息内容…</string>
     <string name="session_edit_send">发送</string>
     <string name="session_edit_cancel">取消</string>
-    <string name="session_search_placeholder">搜索消息…</string>
+    <string name="session_message_search_placeholder">搜索消息…</string>
     <string name="session_search_no_results">未找到 \"%s\"</string>
     <string name="session_thinking">助手正在思考…</string>
     <string name="session_start_conversation_hint">开始对话吧</string>

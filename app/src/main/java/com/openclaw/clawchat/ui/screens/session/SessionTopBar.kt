@@ -67,7 +67,7 @@ fun SessionTopAppBar(
                     value = searchQuery,
                     onValueChange = onSearchQueryChange,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(stringResource(R.string.session_search_placeholder)) },
+                    placeholder = { Text(stringResource(R.string.session_message_search_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { }),
@@ -231,7 +231,7 @@ fun SessionTopAppBar(
                 IconButton(onClick = onToggleSearch) {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = stringResource(R.string.session_search_placeholder)
+                        contentDescription = stringResource(R.string.session_message_search_placeholder)
                     )
                 }
 
