@@ -20,9 +20,11 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.nativeKeyCode
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.components.*
 import com.openclaw.clawchat.ui.state.AttachmentUi
 import com.openclaw.clawchat.util.FileUtils
@@ -265,7 +267,7 @@ fun EnhancedMessageInputBar(
                     ) {
                         Icon(
                             imageVector = Icons.Default.AttachFile,
-                            contentDescription = "添加附件",
+                            contentDescription = stringResource(R.string.action_add_attachment),
                             tint = if (enabled) {
                                 if (attachments.isNotEmpty()) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.onSurfaceVariant
@@ -281,7 +283,7 @@ fun EnhancedMessageInputBar(
                         onDismissRequest = { showAttachmentMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("图片") },
+                            text = { Text(stringResource(R.string.action_attach_image)) },
                             onClick = {
                                 showAttachmentMenu = false
                                 imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -291,7 +293,7 @@ fun EnhancedMessageInputBar(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("文件") },
+                            text = { Text(stringResource(R.string.action_attach_file)) },
                             onClick = {
                                 showAttachmentMenu = false
                                 filePicker.launch(arrayOf("*/*"))
@@ -311,7 +313,7 @@ fun EnhancedMessageInputBar(
                         .weight(1f)
                         .focusRequester(focusRequester)
                         .heightIn(min = 48.dp, max = 120.dp),
-                    placeholder = { Text("输入消息或使用 / 命令...") },
+                    placeholder = { Text(stringResource(R.string.input_placeholder)) },
                     enabled = enabled,
                     maxLines = 6,
                     minLines = 1,
@@ -353,7 +355,7 @@ fun EnhancedMessageInputBar(
                         } else {
                             Icons.Default.NearMe
                         },
-                        contentDescription = "发送",
+                        contentDescription = stringResource(R.string.action_send),
                         tint = if (enabled && (value.isNotBlank() || attachments.isNotEmpty())) {
                             MaterialTheme.colorScheme.primary
                         } else {

@@ -33,12 +33,14 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.core.app.ShareCompat
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
@@ -169,7 +171,7 @@ fun MessageContentCard(
                 shape = RoundedCornerShape(4.dp)
             ) {
                 Text(
-                    text = "已复制",
+                    text = stringResource(R.string.action_copied),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     color = MaterialTheme.colorScheme.inverseOnSurface,
                     style = MaterialTheme.typography.labelMedium
@@ -257,8 +259,8 @@ fun MessageContentCard(
         if (showDeleteConfirm) {
             AlertDialog(
                 onDismissRequest = { showDeleteConfirm = false },
-                title = { Text("删除消息") },
-                text = { Text("确定要删除这条消息吗？") },
+                title = { Text(stringResource(R.string.action_delete_message)) },
+                text = { Text(stringResource(R.string.action_delete_confirm)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -266,12 +268,12 @@ fun MessageContentCard(
                             onDelete()
                         }
                     ) {
-                        Text("删除", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteConfirm = false }) {
-                        Text("取消")
+                        Text(stringResource(R.string.action_cancel))
                     }
                 }
             )
@@ -303,7 +305,7 @@ private fun MessageStatusIndicator(
             
             Icon(
                 imageVector = Icons.Default.Sync,
-                contentDescription = "发送中",
+                contentDescription = stringResource(R.string.status_sending),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = modifier
                     .size(14.dp)
@@ -313,7 +315,7 @@ private fun MessageStatusIndicator(
         MessageStatus.SENT -> {
             Icon(
                 imageVector = Icons.Default.Check,
-                contentDescription = "已发送",
+                contentDescription = stringResource(R.string.status_sent),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = modifier.size(14.dp)
             )
@@ -321,7 +323,7 @@ private fun MessageStatusIndicator(
         MessageStatus.DELIVERED -> {
             Icon(
                 imageVector = Icons.Default.DoneAll,
-                contentDescription = "已送达",
+                contentDescription = stringResource(R.string.status_delivered),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = modifier.size(14.dp)
             )
@@ -329,7 +331,7 @@ private fun MessageStatusIndicator(
         MessageStatus.FAILED -> {
             Icon(
                 imageVector = Icons.Default.Error,
-                contentDescription = "发送失败",
+                contentDescription = stringResource(R.string.status_failed),
                 tint = MaterialTheme.colorScheme.error,
                 modifier = modifier.size(14.dp)
             )
@@ -347,6 +349,8 @@ fun AnimatedCopyIcon(
     modifier: Modifier = Modifier
 ) {
     // 使用 Crossfade 实现 150ms 图标切换
+    val copiedText = stringResource(R.string.action_copied)
+    val copyText = stringResource(R.string.action_copy)
     Crossfade(
         targetState = copied,
         animationSpec = tween(150, easing = FastOutSlowInEasing),
@@ -354,11 +358,11 @@ fun AnimatedCopyIcon(
     ) { isCopied ->
         Icon(
             imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
-            contentDescription = if (isCopied) "已复制" else "复制",
+            contentDescription = if (isCopied) copiedText else copyText,
             modifier = modifier.size(18.dp),
-            tint = if (isCopied) 
-                MaterialTheme.colorScheme.primary 
-            else 
+            tint = if (isCopied)
+                MaterialTheme.colorScheme.primary
+            else
                 MaterialTheme.colorScheme.onSurface
         )
     }
@@ -394,8 +398,10 @@ fun MessageActionDropdownMenu(
         expanded = true,
         onDismissRequest = onDismiss
     ) {
+        val copiedStr = stringResource(R.string.action_copied)
+        val copyStr = stringResource(R.string.action_copy)
         DropdownMenuItem(
-            text = { Text(if (showCopied) "已复制" else "复制") },
+            text = { Text(if (showCopied) copiedStr else copyStr) },
             onClick = {
                 onCopy()
                 showCopied = true
@@ -405,7 +411,7 @@ fun MessageActionDropdownMenu(
             }
         )
         DropdownMenuItem(
-            text = { Text("复制 Markdown") },
+            text = { Text(stringResource(R.string.action_copy_markdown)) },
             onClick = {
                 onCopyMarkdown()
                 onDismiss()
@@ -413,7 +419,7 @@ fun MessageActionDropdownMenu(
             leadingIcon = { Icon(Icons.Default.Code, contentDescription = null, modifier = Modifier.size(18.dp)) }
         )
         DropdownMenuItem(
-            text = { Text("分享") },
+            text = { Text(stringResource(R.string.action_share)) },
             onClick = onShare,
             leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp)) }
         )
@@ -421,7 +427,7 @@ fun MessageActionDropdownMenu(
         // 用户消息显示编辑选项
         if (isUser) {
             DropdownMenuItem(
-                text = { Text("编辑") },
+                text = { Text(stringResource(R.string.action_edit)) },
                 onClick = {
                     onEdit()
                     onDismiss()
@@ -430,20 +436,20 @@ fun MessageActionDropdownMenu(
             )
         }
         DropdownMenuItem(
-            text = { Text("删除", color = MaterialTheme.colorScheme.error) },
+            text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
             onClick = onDelete,
             leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error) }
         )
         if (isUser) {
             DropdownMenuItem(
-                text = { Text("重试") },
+                text = { Text(stringResource(R.string.action_retry)) },
                 onClick = onRetry,
                 leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp)) }
             )
         }
         if (!isUser) {
             DropdownMenuItem(
-                text = { Text("重新生成") },
+                text = { Text(stringResource(R.string.action_regenerate)) },
                 onClick = onRegenerate,
                 leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp)) }
             )
@@ -507,7 +513,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
         } else if (bitmap != null) {
             androidx.compose.foundation.Image(
                 bitmap = bitmap!!.asImageBitmap(),
-                contentDescription = "图片",
+                contentDescription = stringResource(R.string.action_image),
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = ContentScale.FillWidth
             )
@@ -522,7 +528,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
             ) {
                 Icon(
                     imageVector = Icons.Default.BrokenImage,
-                    contentDescription = "加载失败",
+                    contentDescription = stringResource(R.string.action_load_failed),
                     tint = MaterialTheme.colorScheme.error
                 )
             }

@@ -14,10 +14,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import com.openclaw.clawchat.R
 
 /**
  * 图片全屏查看对话框
@@ -52,7 +54,7 @@ fun ImageFullScreenDialog(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "关闭",
+                    contentDescription = stringResource(R.string.action_close),
                     tint = Color.White,
                     modifier = Modifier.size(32.dp)
                 )
@@ -92,7 +94,7 @@ fun ImageFullScreenDialog(
                         .align(Alignment.BottomCenter)
                         .padding(16.dp)
                 ) {
-                    Text("重置", color = Color.White)
+                    Text(stringResource(R.string.action_reset), color = Color.White)
                 }
             }
         }
