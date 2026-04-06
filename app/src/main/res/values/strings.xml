@@ -275,6 +275,11 @@
     <string name="time_minutes_ago">%d分钟前</string>
     <string name="time_hours_ago">%d小时前</string>
 
+    <!-- Time Format (English) -->
+    <string name="time_just_now_en">Just now</string>
+    <string name="time_minutes_ago_en">%d min ago</string>
+    <string name="time_hours_ago_en">%d hr ago</string>
+
     <!-- Input Bar (Chinese) -->
     <string name="input_placeholder">输入消息或使用 / 命令…</string>
 </resources>

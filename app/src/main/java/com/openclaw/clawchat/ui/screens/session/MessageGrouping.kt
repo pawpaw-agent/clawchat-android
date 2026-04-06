@@ -1,5 +1,8 @@
 package com.openclaw.clawchat.ui.screens.session
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.state.MessageContentItem
 import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
@@ -13,14 +16,15 @@ private const val TAG = "MessageGrouping"
 /**
  * 格式化时间戳
  */
+@Composable
 fun formatTimestamp(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
 
     return when {
-        diff < 60_000 -> "刚刚"
-        diff < 3600_000 -> "${diff / 60_000}分钟前"
-        diff < 86400_000 -> "${diff / 3600_000}小时前"
+        diff < 60_000 -> stringResource(R.string.time_just_now)
+        diff < 3600_000 -> stringResource(R.string.time_minutes_ago, diff / 60_000)
+        diff < 86400_000 -> stringResource(R.string.time_hours_ago, diff / 3600_000)
         else -> {
             val sdf = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
             sdf.format(java.util.Date(timestamp))
