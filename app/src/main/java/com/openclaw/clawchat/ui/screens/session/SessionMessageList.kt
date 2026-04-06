@@ -154,7 +154,7 @@ fun MessageGroupList(
         if (!chatHasAutoScrolled) return@LaunchedEffect
         // 用户在底部时自动滚动到最新消息
         if (chatUserNearBottom && groups.isNotEmpty()) {
-            listState.scrollToItem(0)
+            listState.animateScrollToItem(0)
         }
     }
 
@@ -167,7 +167,7 @@ fun MessageGroupList(
 
         // 用户在底部时自动跟随流式输出
         if (chatUserNearBottom) {
-            listState.scrollToItem(0)
+            listState.animateScrollToItem(0)
         }
     }
 
