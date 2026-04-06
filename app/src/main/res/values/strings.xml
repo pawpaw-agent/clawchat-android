@@ -171,7 +171,6 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_system">System</string>
-    <string name="settings_font_size">Font Size</string>
     <string name="settings_font_small">Small</string>
     <string name="settings_font_medium">Medium</string>
     <string name="settings_font_large">Large</string>
