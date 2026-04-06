@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -25,7 +26,10 @@ enum class SkeletonType {
     TEXT_LINE,
     THUMBNAIL,
     BUTTON,
-    LIST_ITEM
+    LIST_ITEM,
+    USER_MESSAGE,   // 用户消息骨架（右对齐）
+    ASSISTANT_MESSAGE, // 助手消息骨架（左对齐）
+    TOOL_CARD   // 工具卡片骨架（完整版）
 }
 
 /**
@@ -252,6 +256,105 @@ fun LoadingSkeleton(
                             .background(brush)
                     )
                 }
+            }
+        }
+
+        SkeletonType.USER_MESSAGE -> {
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.End
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .height(80.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(brush)
+                )
+            }
+        }
+
+        SkeletonType.ASSISTANT_MESSAGE -> {
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(brush)
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .width(100.dp)
+                                .height(12.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(brush)
+                        )
+                    }
+                }
+                // 消息内容行
+                repeat(3) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f - it * 0.15f)
+                            .height(14.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(brush)
+                    )
+                }
+            }
+        }
+
+        SkeletonType.TOOL_CARD -> {
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // 头部
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(brush)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(100.dp)
+                            .height(14.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(brush)
+                    )
+                }
+                // 参数
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .height(40.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(brush)
+                )
+                // 结果
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .height(60.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(brush)
+                )
             }
         }
     }
