@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupMenu
 import com.openclaw.clawchat.ui.components.AgentItem
 import com.openclaw.clawchat.ui.components.ModelItem
 import com.openclaw.clawchat.ui.state.ConnectionStatus
