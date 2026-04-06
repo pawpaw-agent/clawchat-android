@@ -120,6 +120,23 @@ fun SessionTopAppBar(
                 }
             },
             actions = {
+                // 会话信息按钮
+                var showSessionInfo by remember { mutableStateOf(false) }
+                IconButton(onClick = { showSessionInfo = true }) {
+                    Icon(
+                        imageVector = Icons.Default.InfoOutline,
+                        contentDescription = "会话信息"
+                    )
+                }
+                if (showSessionInfo) {
+                    SessionInfoDialog(
+                        sessionLabel = sessionLabel,
+                        agentId = agentId,
+                        currentModel = currentModel,
+                        onDismiss = { showSessionInfo = false }
+                    )
+                }
+
                 // Model 切换按钮（如果有可用的 models）
                 if (canSwitchModel) {
                     Box {
@@ -304,6 +321,90 @@ private fun getModelIcon(modelId: String) = when {
     modelId.contains("gemini", ignoreCase = true) -> Icons.Outlined.AutoAwesome
     modelId.contains("llama", ignoreCase = true) -> Icons.Outlined.Pets
     else -> Icons.Outlined.Memory
+}
+
+/**
+ * 会话信息对话框
+ */
+@Composable
+private fun SessionInfoDialog(
+    sessionLabel: String?,
+    agentId: String?,
+    currentModel: String?,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("会话信息") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // 会话名称
+                if (!sessionLabel.isNullOrBlank()) {
+                    SessionInfoRow(
+                        label = "名称",
+                        value = sessionLabel
+                    )
+                }
+
+                // Agent
+                if (!agentId.isNullOrBlank()) {
+                    SessionInfoRow(
+                        label = "Agent",
+                        value = formatAgentName(agentId)
+                    )
+                }
+
+                // Model
+                if (!currentModel.isNullOrBlank()) {
+                    SessionInfoRow(
+                        label = "模型",
+                        value = formatModelName(currentModel)
+                    )
+                }
+
+                // 如果没有任何信息
+                if (sessionLabel.isNullOrBlank() && agentId.isNullOrBlank() && currentModel.isNullOrBlank()) {
+                    Text(
+                        text = "暂无详细信息",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("确定")
+            }
+        }
+    )
+}
+
+/**
+ * 会话信息行
+ */
+@Composable
+private fun SessionInfoRow(
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+    }
 }
 
 /**
