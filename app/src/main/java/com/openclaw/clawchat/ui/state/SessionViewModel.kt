@@ -437,24 +437,24 @@ class SessionViewModel @Inject constructor(
     }
 
     fun clearNewMessagesBelow() {
-        _state.update { it.copy(chatNewMessagesBelow = false) }
+        _state.update { it.copy(chatNewMessagesBelow = false, unreadMessageCount = 0) }
     }
-    
+
     /**
      * 更新用户滚动状态
      * 参考 webchat: handleChatScroll
      */
     fun updateUserNearBottom(nearBottom: Boolean) {
         _state.update { state ->
-            // 用户回到底部时清除新消息提示
+            // 用户回到底部时清除新消息提示和未读计数
             if (nearBottom && state.chatNewMessagesBelow) {
-                state.copy(chatUserNearBottom = true, chatNewMessagesBelow = false)
+                state.copy(chatUserNearBottom = true, chatNewMessagesBelow = false, unreadMessageCount = 0)
             } else {
                 state.copy(chatUserNearBottom = nearBottom)
             }
         }
     }
-    
+
     /**
      * 标记已自动滚动
      * 参考 webchat: chatHasAutoScrolled
@@ -462,12 +462,31 @@ class SessionViewModel @Inject constructor(
     fun markAutoScrolled() {
         _state.update { it.copy(chatHasAutoScrolled = true) }
     }
-    
+
     /**
-     * 设置有新消息在下方
+     * 设置有新消息在下方（带未读计数）
+     * 参考 Stream SDK: 新消息到达时增加未读计数
      */
     fun setNewMessagesBelow() {
-        _state.update { it.copy(chatNewMessagesBelow = true) }
+        _state.update { state ->
+            state.copy(
+                chatNewMessagesBelow = true,
+                unreadMessageCount = state.unreadMessageCount + 1
+            )
+        }
+    }
+
+    /**
+     * 用户滚动离开底部（不增加计数）
+     */
+    fun setUserScrolledAway() {
+        _state.update { state ->
+            if (!state.chatNewMessagesBelow) {
+                state.copy(chatNewMessagesBelow = true)
+            } else {
+                state
+            }
+        }
     }
     
     /**

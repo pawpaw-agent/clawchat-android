@@ -114,13 +114,14 @@ fun MessageGroupList(
     toolMessages: List<MessageUi> = emptyList(),
     chatStream: String? = null,
     messageFontSize: FontSize = FontSize.MEDIUM,
-    // 滚动状态（参考 webchat app-scroll.ts）
+    // 滚动状态（参考 webchat app-scroll.ts 和 Stream SDK）
     chatUserNearBottom: Boolean = true,
     chatHasAutoScrolled: Boolean = false,
     chatNewMessagesBelow: Boolean = false,
     onUpdateUserNearBottom: (Boolean) -> Unit = {},
     onMarkAutoScrolled: () -> Unit = {},
-    onSetNewMessagesBelow: () -> Unit = {},
+    onSetNewMessagesBelow: () -> Unit = {},      // 新消息到达，增加未读计数
+    onUserScrolledAway: () -> Unit = {},          // 用户滚动离开底部，不增加计数
     onDeleteMessage: (String) -> Unit = {},
     onRegenerate: () -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
@@ -133,26 +134,36 @@ fun MessageGroupList(
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
             .collect { (index, offset) ->
                 val isNearBottom = index == 0 && offset < 100
-                // 用户离开底部时显示"新消息"按钮
-                if (!isNearBottom && chatHasAutoScrolled) {
-                    onSetNewMessagesBelow()
+                // 用户离开底部时显示"新消息"按钮（不增加计数）
+                if (!isNearBottom && chatHasAutoScrolled && !chatNewMessagesBelow) {
+                    onUserScrolledAway()
                 }
                 onUpdateUserNearBottom(isNearBottom)
             }
     }
 
     // 新消息/流式输出到达时自动滚动
-    // 使用 chatStream 的 hash 作为 key，避免每个字符更新都触发
+    // 参考 Stream SDK: 区分自己发的消息和 AI 响应
+    // - 用户消息：始终滚动
+    // - AI 响应：用户在底部时才滚动
     val streamKey = chatStream?.hashCode() ?: 0
     LaunchedEffect(groups.size, streamKey, toolMessages.size, streamSegments.size) {
         if (groups.isEmpty()) return@LaunchedEffect
-        // 只有用户在底部且已经完成初始滚动时才自动滚动
+        // 只有已经完成初始滚动时才处理
         if (!chatHasAutoScrolled) return@LaunchedEffect
 
-        // 用户在底部时自动跟随，否则显示"新消息"按钮
-        if (chatUserNearBottom) {
+        // 检查最新消息是否是用户消息
+        val lastGroup = groups.lastOrNull()
+        val isUserMessage = lastGroup?.role == MessageRole.USER
+
+        if (isUserMessage) {
+            // 用户消息：始终滚动到底部
+            listState.scrollToItem(0)
+        } else if (chatUserNearBottom) {
+            // AI 响应 + 用户在底部：自动跟随
             listState.scrollToItem(0)
         } else {
+            // AI 响应 + 用户不在底部：增加未读计数
             onSetNewMessagesBelow()
         }
     }

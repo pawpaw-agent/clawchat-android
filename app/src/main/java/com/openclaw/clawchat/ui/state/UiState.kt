@@ -129,6 +129,7 @@ data class SessionUiState(
 
     // 新消息提示（用户滚动后有新消息到达时显示）
     val chatNewMessagesBelow: Boolean = false,
+    val unreadMessageCount: Int = 0,              // 未读消息计数（显示在按钮上）
 
     // 滚动状态（参考 webchat app-scroll.ts）
     val chatUserNearBottom: Boolean = true,      // 用户是否在底部附近（< 450px）

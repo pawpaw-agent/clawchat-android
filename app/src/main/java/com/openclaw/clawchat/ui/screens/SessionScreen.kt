@@ -218,13 +218,14 @@ fun SessionScreen(
                             toolMessages = state.chatToolMessages,
                             chatStream = state.chatStream,
                             messageFontSize = messageFontSize,
-                            // 滚动状态（参考 webchat app-scroll.ts）
+                            // 滚动状态（参考 webchat app-scroll.ts 和 Stream SDK）
                             chatUserNearBottom = state.chatUserNearBottom,
                             chatHasAutoScrolled = state.chatHasAutoScrolled,
                             chatNewMessagesBelow = state.chatNewMessagesBelow,
                             onUpdateUserNearBottom = { viewModel.updateUserNearBottom(it) },
                             onMarkAutoScrolled = { viewModel.markAutoScrolled() },
                             onSetNewMessagesBelow = { viewModel.setNewMessagesBelow() },
+                            onUserScrolledAway = { viewModel.setUserScrolledAway() },
                             onDeleteMessage = { viewModel.deleteMessage(it) },
                             onRegenerate = { viewModel.regenerateLastMessage() },
                             onRetryMessage = { viewModel.retryMessage(it) },
@@ -261,6 +262,7 @@ fun SessionScreen(
                     if (state.chatNewMessagesBelow) {
                         NewMessagesIndicator(
                             modifier = Modifier.align(Alignment.BottomCenter),
+                            count = state.unreadMessageCount,
                             onClick = {
                                 scope.launch {
                                     // reverseLayout 模式下，index 0 是最新消息
@@ -310,10 +312,12 @@ fun SessionScreen(
 
 /**
  * 新消息提示按钮
+ * 参考 Stream SDK: ScrollToBottomButton
  */
 @Composable
 private fun NewMessagesIndicator(
     modifier: Modifier = Modifier,
+    count: Int = 0,
     onClick: () -> Unit
 ) {
     Surface(
@@ -334,7 +338,7 @@ private fun NewMessagesIndicator(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "新消息",
+                text = if (count > 0) "$count 条新消息" else "新消息",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onPrimary
             )
