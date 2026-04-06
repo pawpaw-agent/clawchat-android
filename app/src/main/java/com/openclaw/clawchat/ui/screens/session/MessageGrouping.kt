@@ -5,7 +5,10 @@ import com.openclaw.clawchat.ui.state.MessageRole
 import com.openclaw.clawchat.ui.state.MessageUi
 import com.openclaw.clawchat.ui.state.ToolCard
 import com.openclaw.clawchat.ui.state.ToolCardKind
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.serialization.json.jsonPrimitive
+
+private const val TAG = "MessageGrouping"
 
 /**
  * 格式化时间戳
@@ -51,8 +54,27 @@ fun pairToolCards(message: MessageUi, allMessagesInGroup: List<MessageUi> = empt
         return emptyList()
     }
 
+    // 调试日志
+    AppLog.d(TAG, "=== pairToolCards: calls=${calls.size}, results=${results.size}")
+    calls.forEach { call ->
+        AppLog.d(TAG, "=== ToolCall: id=${call.id}, name=${call.name}, phase=${call.phase}")
+    }
+    results.forEach { result ->
+        AppLog.d(TAG, "=== ToolResult: toolCallId=${result.toolCallId}, name=${result.name}")
+    }
+
     return calls.map { call ->
-        val matchingResult = results.find { it.toolCallId == call.id }
+        // 匹配 ToolResult（toolCallId 可能和 call.id 格式不同，需要更宽松的匹配）
+        val matchingResult = results.find { result ->
+            // 精确匹配
+            result.toolCallId == call.id ||
+            // 或者 toolCallId 包含 call.id
+            (result.toolCallId != null && call.id != null &&
+                (result.toolCallId.contains(call.id) || call.id.contains(result.toolCallId)))
+        }
+
+        AppLog.d(TAG, "=== Matching: call.id=${call.id}, matchingResult=${matchingResult != null}")
+
         val displayArgs = if (call.name == "exec" && call.args != null) {
             call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
         } else {
