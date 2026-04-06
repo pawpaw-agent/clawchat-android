@@ -16,6 +16,7 @@ androidx-security = "1.1.0-alpha06"
 androidx-test-junit = "1.2.1"
 androidx-test-espresso = "3.6.1"
 androidx-core-testing = "2.2.0"
+room = "2.6.1"
 
 # Hilt
 hilt = "2.53.1"
@@ -76,6 +77,11 @@ okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-i
 
 # Security
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "androidx-security" }
+
+# Room
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 # DataStore
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "androidx-datastore" }
