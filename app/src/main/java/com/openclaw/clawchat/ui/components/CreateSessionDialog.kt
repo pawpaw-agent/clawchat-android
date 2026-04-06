@@ -9,9 +9,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.openclaw.clawchat.R
 
 /**
  * 创建会话对话框
@@ -59,14 +61,14 @@ fun CreateSessionDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "新建会话",
+                        text = stringResource(R.string.create_session_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "关闭"
+                            contentDescription = stringResource(R.string.create_session_close)
                         )
                     }
                 }
@@ -112,7 +114,7 @@ fun CreateSessionDialog(
                         contentDescription = null
                     )
                     Text(
-                        text = "高级选项",
+                        text = stringResource(R.string.create_session_advanced),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -123,8 +125,8 @@ fun CreateSessionDialog(
                         value = sessionLabel,
                         onValueChange = { sessionLabel = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("会话名称") },
-                        placeholder = { Text("可选，自动生成") },
+                        label = { Text(stringResource(R.string.create_session_name)) },
+                        placeholder = { Text(stringResource(R.string.create_session_name_placeholder)) },
                         singleLine = true
                     )
 
@@ -134,8 +136,8 @@ fun CreateSessionDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 80.dp, max = 150.dp),
-                        label = { Text("初始消息") },
-                        placeholder = { Text("可选，创建后发送") },
+                        label = { Text(stringResource(R.string.create_session_initial_message)) },
+                        placeholder = { Text(stringResource(R.string.create_session_initial_message_placeholder)) },
                         maxLines = 4
                     )
                 }
@@ -160,21 +162,21 @@ fun CreateSessionDialog(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("创建中...")
+                        Text(stringResource(R.string.create_session_creating))
                     } else {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = null
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("创建会话")
+                        Text(stringResource(R.string.create_session_button))
                     }
                 }
 
                 // 提示信息
                 if (agents.isEmpty() && models.isEmpty()) {
                     Text(
-                        text = "未获取到 Agent/Model 信息，将创建默认会话",
+                        text = stringResource(R.string.create_session_no_agents),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -207,17 +209,9 @@ fun QuickCreateSessionButton(
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "新建会话",
+            text = stringResource(R.string.create_session_quick),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium
         )
     }
-}
-
-/**
- * 会话创建模式选择（简单/高级）
- */
-sealed class CreateSessionMode {
-    data object Simple : CreateSessionMode()
-    data object Advanced : CreateSessionMode()
 }

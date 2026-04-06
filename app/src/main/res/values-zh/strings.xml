@@ -454,6 +454,19 @@
     <string name="selector_default">默认</string>
     <string name="selector_supports_vision">支持视觉</string>
 
+    <!-- Create Session Dialog -->
+    <string name="create_session_title">新建会话</string>
+    <string name="create_session_close">关闭</string>
+    <string name="create_session_advanced">高级选项</string>
+    <string name="create_session_name">会话名称</string>
+    <string name="create_session_name_placeholder">可选，自动生成</string>
+    <string name="create_session_initial_message">初始消息</string>
+    <string name="create_session_initial_message_placeholder">可选，创建后发送</string>
+    <string name="create_session_creating">创建中…</string>
+    <string name="create_session_button">创建会话</string>
+    <string name="create_session_no_agents">未获取到 Agent/Model 信息，将创建默认会话</string>
+    <string name="create_session_quick">新建会话</string>
+
     <!-- Connection Settings -->
     <string name="connection_not_configured">未配置</string>
     <string name="connection_configure_gateway_hint">点击配置 Gateway 地址</string>

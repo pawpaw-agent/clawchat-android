@@ -461,6 +461,19 @@
     <string name="selector_default">Default</string>
     <string name="selector_supports_vision">Supports Vision</string>
 
+    <!-- Create Session Dialog -->
+    <string name="create_session_title">New Session</string>
+    <string name="create_session_close">Close</string>
+    <string name="create_session_advanced">Advanced options</string>
+    <string name="create_session_name">Session name</string>
+    <string name="create_session_name_placeholder">Optional, auto-generated</string>
+    <string name="create_session_initial_message">Initial message</string>
+    <string name="create_session_initial_message_placeholder">Optional, send after creation</string>
+    <string name="create_session_creating">Creating…</string>
+    <string name="create_session_button">Create session</string>
+    <string name="create_session_no_agents">No Agent/Model info retrieved, will create default session</string>
+    <string name="create_session_quick">New session</string>
+
     <!-- Connection Settings -->
     <string name="connection_not_configured">Not configured</string>
     <string name="connection_configure_gateway_hint">Tap to configure Gateway address</string>
