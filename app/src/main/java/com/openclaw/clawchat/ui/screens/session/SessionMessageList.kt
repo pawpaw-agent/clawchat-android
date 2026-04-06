@@ -1,6 +1,7 @@
 package com.openclaw.clawchat.ui.screens.session
 
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -20,8 +21,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.offset
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
@@ -140,7 +141,7 @@ private fun TypingDots() {
             Box(
                 modifier = Modifier
                     .size(6.dp)
-                    .offset(y = offsetY.dp)
+                    .offset { IntOffset(0, offsetY.toInt()) }
                     .clip(RoundedCornerShape(50))
                     .background(MaterialTheme.colorScheme.primary)
             )
