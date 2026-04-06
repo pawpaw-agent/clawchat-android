@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -42,6 +43,7 @@ fun MainScreen(
     var showCommandPalette by remember { mutableStateOf(false) }
     var commandPaletteQuery by remember { mutableStateOf("") }
     val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
     
     // 过滤会话列表
     val filteredSessions = remember(state.sessions, searchQuery) {
@@ -185,7 +187,7 @@ fun MainScreen(
             query = commandPaletteQuery,
             onQueryChange = { commandPaletteQuery = it },
             sessions = sessionItems,
-            commands = com.openclaw.clawchat.ui.components.getDefaultCommands(),
+            commands = com.openclaw.clawchat.ui.components.getDefaultCommands(context),
             onSessionSelect = { sessionId ->
                 showCommandPalette = false
                 commandPaletteQuery = ""

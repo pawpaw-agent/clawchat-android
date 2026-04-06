@@ -284,6 +284,14 @@
     <string name="command_palette_sessions">会话</string>
     <string name="command_palette_commands">命令</string>
     <string name="command_palette_no_results">未找到结果</string>
+    <string name="command_new_session_desc">创建新的对话会话</string>
+    <string name="command_settings_desc">打开应用设置</string>
+    <string name="command_clear_chat">清除当前会话</string>
+    <string name="command_clear_chat_desc">清除当前会话的所有消息</string>
+    <string name="command_export_session">导出会话</string>
+    <string name="command_export_session_desc">导出当前会话为文件</string>
+    <string name="command_debug_info">调试信息</string>
+    <string name="command_debug_info_desc">查看连接状态和日志</string>
 
     <!-- Attachments -->
     <string name="attachment_preview">附件预览</string>

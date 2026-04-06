@@ -291,6 +291,14 @@
     <string name="command_palette_sessions">Sessions</string>
     <string name="command_palette_commands">Commands</string>
     <string name="command_palette_no_results">No results found</string>
+    <string name="command_new_session_desc">Create a new chat session</string>
+    <string name="command_settings_desc">Open app settings</string>
+    <string name="command_clear_chat">Clear current session</string>
+    <string name="command_clear_chat_desc">Clear all messages in current session</string>
+    <string name="command_export_session">Export session</string>
+    <string name="command_export_session_desc">Export current session to file</string>
+    <string name="command_debug_info">Debug info</string>
+    <string name="command_debug_info_desc">View connection status and logs</string>
 
     <!-- Attachments -->
     <string name="attachment_preview">Attachment preview</string>

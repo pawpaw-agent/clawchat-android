@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import android.content.Context
 import com.openclaw.clawchat.R
 
 /**
@@ -280,35 +281,35 @@ private fun CommandPaletteItemRow(
 /**
  * 默认命令列表
  */
-fun getDefaultCommands(): List<CommandPaletteItem.CommandItem> = listOf(
+fun getDefaultCommands(context: Context): List<CommandPaletteItem.CommandItem> = listOf(
     CommandPaletteItem.CommandItem(
         id = "new-session",
-        title = "新建会话",
+        title = context.getString(R.string.session_new),
         icon = Icons.Default.Add,
-        description = "创建新的对话会话"
+        description = context.getString(R.string.command_new_session_desc)
     ),
     CommandPaletteItem.CommandItem(
         id = "settings",
-        title = "设置",
+        title = context.getString(R.string.settings_title),
         icon = Icons.Default.Settings,
-        description = "打开应用设置"
+        description = context.getString(R.string.command_settings_desc)
     ),
     CommandPaletteItem.CommandItem(
         id = "clear-chat",
-        title = "清除当前会话",
+        title = context.getString(R.string.command_clear_chat),
         icon = Icons.Default.DeleteSweep,
-        description = "清除当前会话的所有消息"
+        description = context.getString(R.string.command_clear_chat_desc)
     ),
     CommandPaletteItem.CommandItem(
         id = "export",
-        title = "导出会话",
+        title = context.getString(R.string.command_export_session),
         icon = Icons.Default.Download,
-        description = "导出当前会话为文件"
+        description = context.getString(R.string.command_export_session_desc)
     ),
     CommandPaletteItem.CommandItem(
         id = "debug",
-        title = "调试信息",
+        title = context.getString(R.string.command_debug_info),
         icon = Icons.Default.BugReport,
-        description = "查看连接状态和日志"
+        description = context.getString(R.string.command_debug_info_desc)
     )
 )
