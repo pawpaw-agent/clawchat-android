@@ -414,6 +414,11 @@ fun MessageGroupItem(
  */
 @Composable
 private fun RenderToolCardsFromMessage(message: MessageUi) {
+    // 用户消息不应该显示为工具卡片
+    if (message.role == MessageRole.USER) {
+        return
+    }
+
     val calls = message.getToolCalls()
     val results = message.getToolResults()
 
