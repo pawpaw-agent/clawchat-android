@@ -61,16 +61,12 @@ fun pairToolCards(message: MessageUi, allMessagesInGroup: List<MessageUi> = empt
     }
 
     return calls.map { call ->
-        // 匹配 ToolResult（toolCallId 可能和 call.id 格式不同，需要更宽松的匹配）
+        // 匹配 ToolResult（精确匹配 toolCallId）
         val matchingResult = results.find { result ->
-            // 精确匹配
-            result.toolCallId == call.id ||
-            // 或者 toolCallId 包含 call.id
-            (result.toolCallId != null && call.id != null &&
-                (result.toolCallId.contains(call.id) || call.id.contains(result.toolCallId)))
+            result.toolCallId == call.id
         }
 
-        AppLog.d(TAG, "=== Matching: call.id=${call.id}, matchingResult=${matchingResult != null}")
+        AppLog.d(TAG, "=== ToolCard: name=${call.name}, callId=${call.id?.take(12)}, matched=${matchingResult != null}")
 
         val displayArgs = if (call.name == "exec" && call.args != null) {
             call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
