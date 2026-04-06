@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -32,7 +33,7 @@ private val toolIconMap = mapOf(
     // 文件操作
     "read_file" to Icons.Outlined.Description,
     "write_file" to Icons.Outlined.Edit,
-    "edit_file" to Icons.Outlined.EditDocument,
+    "edit_file" to Icons.Outlined.Article,
     "list_directory" to Icons.Outlined.Folder,
     "create_directory" to Icons.Outlined.CreateNewFolder,
     "delete_file" to Icons.Outlined.Delete,

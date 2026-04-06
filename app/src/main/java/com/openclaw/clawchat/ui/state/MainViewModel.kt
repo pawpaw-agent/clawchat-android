@@ -456,8 +456,8 @@ class MainViewModel @Inject constructor(
             _uiState.update { it.copy(isLoadingAgentsModels = true) }
             try {
                 // 并行加载 agents 和 models
-                val agentsDeferred = kotlinx.coroutines.async { gateway.agentsList() }
-                val modelsDeferred = kotlinx.coroutines.async { gateway.modelsList() }
+                val agentsDeferred = async { gateway.agentsList() }
+                val modelsDeferred = async { gateway.modelsList() }
 
                 val agentsResponse = agentsDeferred.await()
                 val modelsResponse = modelsDeferred.await()
