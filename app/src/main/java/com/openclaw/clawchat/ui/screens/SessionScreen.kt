@@ -85,6 +85,8 @@ fun SessionScreen(
             // 切换会话时重置搜索
             isSearchMode = false
             searchQuery = ""
+            // 加载可用模型
+            viewModel.loadModels()
         }
     }
 
@@ -139,7 +141,15 @@ fun SessionScreen(
                     if (!isSearchMode) {
                         searchQuery = ""
                     }
-                }
+                },
+                // 会话信息
+                sessionLabel = state.session?.label,
+                agentId = state.session?.agentId,
+                currentModel = state.session?.model,
+                // Model 切换
+                models = state.models,
+                onModelChange = { viewModel.changeModel(it) },
+                isLoadingModels = state.isLoadingModels
             )
         },
         contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.ime)

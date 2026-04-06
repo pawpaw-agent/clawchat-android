@@ -21,6 +21,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.util.UUID
 import javax.inject.Inject
@@ -493,25 +496,99 @@ class SessionViewModel @Inject constructor(
     fun retryMessage(messageId: String) {
         viewModelScope.launch {
             val sessionId = _state.value.sessionId ?: return@launch
-            
+
             // 查找失败的消息
             val failedMessage = _state.value.chatMessages.find { it.id == messageId }
                 ?: return@launch
-            
+
             // 如果是用户消息，重新发送
             if (failedMessage.role == MessageRole.USER) {
                 val userText = failedMessage.content.filterIsInstance<MessageContentItem.Text>()
                     .firstOrNull()?.text ?: return@launch
-                
+
                 // 删除失败的消息
                 messageRepository.deleteMessage(sessionId, messageId)
-                
+
                 // 重新发送
                 sendMessage(userText)
             }
         }
     }
-    
+
+    // ── Model 切换 ──
+
+    /**
+     * 加载可用模型列表
+     */
+    fun loadModels() {
+        if (_state.value.connectionStatus !is ConnectionStatus.Connected) {
+            return
+        }
+        if (_state.value.models.isNotEmpty()) {
+            return // 已加载过
+        }
+        viewModelScope.launch(exceptionHandler) {
+            _state.update { it.copy(isLoadingModels = true) }
+            try {
+                val response = gateway.modelsList()
+                if (response.isSuccess()) {
+                    val models = response.payload?.jsonObject?.get("models")?.jsonArray?.mapNotNull { element ->
+                        try {
+                            val obj = element.jsonObject
+                            com.openclaw.clawchat.ui.components.ModelItem(
+                                id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
+                                name = obj["name"]?.jsonPrimitive?.content ?: obj["id"]?.jsonPrimitive?.content ?: "Unknown",
+                                provider = obj["provider"]?.jsonPrimitive?.content,
+                                supportsVision = obj["supportsVision"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
+                            )
+                        } catch (e: Exception) {
+                            null
+                        }
+                    } ?: emptyList()
+
+                    _state.update { it.copy(models = models, isLoadingModels = false) }
+                    AppLog.i(TAG, "Loaded ${models.size} models")
+                } else {
+                    _state.update { it.copy(isLoadingModels = false) }
+                }
+            } catch (e: Exception) {
+                AppLog.w(TAG, "Failed to load models: ${e.message}")
+                _state.update { it.copy(isLoadingModels = false) }
+            }
+        }
+    }
+
+    /**
+     * 切换会话的 Model
+     */
+    fun changeModel(newModel: String) {
+        val sessionId = _state.value.sessionId ?: return
+
+        viewModelScope.launch(exceptionHandler) {
+            try {
+                val response = gateway.call("sessions.patch", mapOf(
+                    "key" to kotlinx.serialization.json.JsonPrimitive(sessionId),
+                    "model" to kotlinx.serialization.json.JsonPrimitive(newModel)
+                ))
+
+                if (response.isSuccess()) {
+                    // 更新本地 session 状态
+                    _state.update { state ->
+                        state.copy(
+                            session = state.session?.copy(model = newModel)
+                        )
+                    }
+                    AppLog.i(TAG, "Model changed to $newModel")
+                } else {
+                    _state.update { it.copy(error = "切换模型失败：${response.error?.message}") }
+                }
+            } catch (e: Exception) {
+                AppLog.e(TAG, "Failed to change model", e)
+                _state.update { it.copy(error = "切换模型失败：${e.message}") }
+            }
+        }
+    }
+
 }
 
 // ── 事件定义 ──

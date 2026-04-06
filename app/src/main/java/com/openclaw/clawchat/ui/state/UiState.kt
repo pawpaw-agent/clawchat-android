@@ -112,37 +112,37 @@ data class SessionUiState(
     val isLoading: Boolean = false,
     val isSending: Boolean = false,
     val error: String? = null,
-    
+
     // 会话信息
     val sessionId: String? = null,
     val session: SessionUi? = null,
-    
+
     // 消息状态（1:1 对应 webchat）
     val chatMessages: List<MessageUi> = emptyList(),           // 历史消息
     val chatStream: String? = null,                             // 当前流式文本
     val chatStreamStartedAt: Long? = null,                      // 流式开始时间
     val chatRunId: String? = null,                              // 当前 runId
     val chatStreamSegments: List<StreamSegment> = emptyList(),  // 已提交的文本段
-    
+
     // 消息队列（busy 时排队）
     val chatQueue: List<ChatQueueItem> = emptyList(),
-    
+
     // 新消息提示（用户滚动后有新消息到达时显示）
     val chatNewMessagesBelow: Boolean = false,
-    
+
     // 滚动状态（参考 webchat app-scroll.ts）
     val chatUserNearBottom: Boolean = true,      // 用户是否在底部附近（< 450px）
     val chatHasAutoScrolled: Boolean = false,    // 是否已经自动滚动过（初始加载后设为 true）
-    
+
     // Context 用量警告（参考 webchat renderContextNotice）
     val totalTokens: Int? = null,                 // 已使用的 token 数
     val contextTokensLimit: Int? = null,          // token 限制
     val totalTokensFresh: Boolean = true,         // token 数据是否新鲜
-    
+
     // Compaction 指示器（参考 webchat renderCompactionIndicator）
     val compactionActive: Boolean = false,        // 是否正在进行压缩
     val compactionCompletedAt: Long? = null,      // 压缩完成时间戳
-    
+
     // 工具流状态（1:1 对应 webchat ToolStreamHost）
     val toolStreamById: Map<String, ToolStreamEntry> = emptyMap(),
     val toolStreamOrder: List<String> = emptyList(),
@@ -151,12 +151,16 @@ data class SessionUiState(
     // 附件状态
     val attachments: List<AttachmentUi> = emptyList(),
     val isUploadingAttachment: Boolean = false,
-    
+
     // 斜杠命令补全
     val slashCommandCompletion: SlashCommandCompletion = SlashCommandCompletion(),
-    
+
     // 输入
-    val inputText: String = ""
+    val inputText: String = "",
+
+    // Model 切换支持
+    val models: List<com.openclaw.clawchat.ui.components.ModelItem> = emptyList(),
+    val isLoadingModels: Boolean = false
 ) {
     /**
      * 清除会话数据，保留 sessionId 和 connectionStatus
