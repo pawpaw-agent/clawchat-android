@@ -9,8 +9,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.state.ConnectionStatusUi
 import com.openclaw.clawchat.ui.state.GatewayConfigInput
 import com.openclaw.clawchat.ui.state.GatewayConfigUi
@@ -28,7 +30,7 @@ fun GatewayConfigItem(
     ListItem(
         headlineContent = {
             Text(
-                text = gateway?.name ?: "未配置",
+                text = gateway?.name ?: stringResource(R.string.connection_not_configured),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -36,7 +38,7 @@ fun GatewayConfigItem(
         supportingContent = {
             Column {
                 Text(
-                    text = gateway?.host ?: "点击配置 Gateway 地址",
+                    text = gateway?.host ?: stringResource(R.string.connection_configure_gateway_hint),
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -127,10 +129,10 @@ fun DisconnectItem(
 ) {
     ListItem(
         headlineContent = {
-            Text("断开连接")
+            Text(stringResource(R.string.connection_disconnect))
         },
         supportingContent = {
-            Text("断开与当前 Gateway 的连接")
+            Text(stringResource(R.string.connection_disconnect_description))
         },
         leadingContent = {
             Icon(
@@ -155,10 +157,10 @@ fun PairingItem(
 ) {
     ListItem(
         headlineContent = {
-            Text(if (isPaired) "重新连接" else "配对设备")
+            Text(if (isPaired) stringResource(R.string.connection_reconnect) else stringResource(R.string.connection_pair_device))
         },
         supportingContent = {
-            Text(if (isPaired) "连接到已配对的 Gateway" else "扫描二维码或输入配对码")
+            Text(if (isPaired) stringResource(R.string.connection_reconnect_description) else stringResource(R.string.connection_pair_description))
         },
         leadingContent = {
             Icon(
@@ -190,7 +192,7 @@ fun GatewayConfigDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("配置 Gateway") },
+        title = { Text(stringResource(R.string.connection_configure_gateway)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -198,25 +200,25 @@ fun GatewayConfigDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("名称") },
-                    placeholder = { Text("例如：Home Server") },
+                    label = { Text(stringResource(R.string.connection_gateway_name)) },
+                    placeholder = { Text(stringResource(R.string.connection_gateway_name_hint)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
                 OutlinedTextField(
                     value = host,
                     onValueChange = { host = it },
-                    label = { Text("主机地址") },
-                    placeholder = { Text("例如：192.168.1.100") },
+                    label = { Text(stringResource(R.string.connection_gateway_host)) },
+                    placeholder = { Text(stringResource(R.string.connection_gateway_host_hint)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
                 OutlinedTextField(
                     value = port,
                     onValueChange = { port = it },
-                    label = { Text("端口") },
+                    label = { Text(stringResource(R.string.gateway_port)) },
                     placeholder = { Text("18789") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -241,12 +243,12 @@ fun GatewayConfigDialog(
                     )
                 }
             ) {
-                Text(if (isPaired) "保存并连接" else "保存")
+                Text(if (isPaired) stringResource(R.string.gateway_save_and_connect) else stringResource(R.string.gateway_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

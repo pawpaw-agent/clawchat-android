@@ -315,4 +315,22 @@
     <string name="about_feature_websocket">WebSocket 实时通信，Gateway 协议 v3</string>
     <string name="about_feature_network">支持局域网和 Tailscale 远程访问</string>
     <string name="about_open_source_licenses">开源许可</string>
+
+    <!-- Connection Settings (Chinese) -->
+    <string name="connection_not_configured">未配置</string>
+    <string name="connection_configure_gateway_hint">点击配置 Gateway 地址</string>
+    <string name="connection_disconnect">断开连接</string>
+    <string name="connection_disconnect_description">断开与当前 Gateway 的连接</string>
+    <string name="connection_reconnect">重新连接</string>
+    <string name="connection_pair_device">配对设备</string>
+    <string name="connection_reconnect_description">连接到已配对的 Gateway</string>
+    <string name="connection_pair_description">扫描二维码或输入配对码</string>
+    <string name="connection_configure_gateway">配置 Gateway</string>
+    <string name="connection_gateway_name">名称</string>
+    <string name="connection_gateway_name_hint">例如：Home Server</string>
+    <string name="connection_gateway_host">主机地址</string>
+    <string name="connection_gateway_host_hint">例如：192.168.1.100</string>
+    <string name="gateway_port">端口</string>
+    <string name="gateway_save_and_connect">保存并连接</string>
+    <string name="gateway_save">保存</string>
 </resources>
