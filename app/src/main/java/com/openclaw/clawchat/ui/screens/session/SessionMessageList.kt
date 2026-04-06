@@ -363,7 +363,7 @@ fun MessageGroupItem(
                     }
 
                     // 时间戳
-                    group.lastMessage?.let { msg ->
+                    group.lastMessage?.let { msg: MessageUi ->
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = formatTimestamp(msg.timestamp),
@@ -473,7 +473,7 @@ fun ToolMessageCard(message: MessageUi, historyGroups: List<MessageGroup> = empt
 /**
  * 格式化时间戳
  */
-private fun formatTimestamp(timestamp: Long): String {
+internal fun formatTimestamp(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
 
@@ -487,6 +487,29 @@ private fun formatTimestamp(timestamp: Long): String {
             sdf.format(java.util.Date(timestamp))
         }
     }
+}
+
+/**
+ * 格式化消息为 Markdown 格式（用于复制/分享）
+ */
+internal fun formatMessageAsMarkdown(message: MessageUi): String {
+    val roleLabel = when (message.role) {
+        MessageRole.USER -> "用户"
+        MessageRole.ASSISTANT -> "助手"
+        MessageRole.SYSTEM -> "系统"
+        MessageRole.TOOL -> "工具"
+    }
+
+    val content = message.content.joinToString("\n\n") { item ->
+        when (item) {
+            is MessageContentItem.Text -> item.text
+            is MessageContentItem.Image -> "[图片]"
+            is MessageContentItem.ToolCall -> "**工具调用**: ${item.name}"
+            is MessageContentItem.ToolResult -> "**工具结果**: ${item.text.take(100)}..."
+        }
+    }
+
+    return "### $roleLabel\n\n$content"
 }
 
 
