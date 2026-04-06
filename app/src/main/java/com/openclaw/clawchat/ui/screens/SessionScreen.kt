@@ -13,11 +13,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.LoadingSkeleton
 import com.openclaw.clawchat.ui.components.SkeletonType
@@ -253,7 +255,7 @@ fun SessionScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "未找到 \"$searchQuery\"",
+                                text = stringResource(R.string.session_search_no_results, searchQuery),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -360,7 +362,8 @@ private fun NewMessagesIndicator(
                 modifier = Modifier.size(16.dp)
             )
             Text(
-                text = if (count > 0) "${count} 条新消息" else "新消息",
+                text = if (count > 0) stringResource(R.string.session_new_messages_count, count)
+                       else stringResource(R.string.session_new_messages),
                 style = MaterialTheme.typography.labelMedium
             )
         }
@@ -421,7 +424,7 @@ private fun ErrorSnackbar(
                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
                 ) {
-                    Text("重试")
+                    Text(stringResource(R.string.retry))
                 }
             }
 
@@ -431,7 +434,7 @@ private fun ErrorSnackbar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "关闭",
+                    contentDescription = stringResource(R.string.close),
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -452,7 +455,7 @@ private fun EditMessageDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("编辑消息") },
+        title = { Text(stringResource(R.string.session_edit_message)) },
         text = {
             OutlinedTextField(
                 value = text,
@@ -460,7 +463,7 @@ private fun EditMessageDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 100.dp),
-                placeholder = { Text("输入消息内容...") },
+                placeholder = { Text(stringResource(R.string.session_edit_placeholder)) },
                 maxLines = 10
             )
         },
@@ -472,12 +475,12 @@ private fun EditMessageDialog(
                     }
                 }
             ) {
-                Text("发送")
+                Text(stringResource(R.string.session_edit_send))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.session_edit_cancel))
             }
         }
     )

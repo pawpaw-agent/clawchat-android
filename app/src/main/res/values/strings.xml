@@ -214,4 +214,67 @@
     <string name="about_openclaw">OpenClaw</string>
     <string name="about_title">About</string>
     <string name="about_licenses">Open Source Licenses</string>
+
+    <!-- Session Screen (Chinese) -->
+    <string name="session_new_messages_count">%d 条新消息</string>
+    <string name="session_new_messages">新消息</string>
+    <string name="session_edit_message">编辑消息</string>
+    <string name="session_edit_placeholder">输入消息内容…</string>
+    <string name="session_edit_send">发送</string>
+    <string name="session_edit_cancel">取消</string>
+    <string name="session_search_placeholder">搜索消息…</string>
+    <string name="session_search_no_results">未找到 \"%s\"</string>
+    <string name="session_thinking">助手正在思考…</string>
+    <string name="session_start_conversation_hint">开始对话吧</string>
+    <string name="session_input_hint">输入消息并按发送键开始</string>
+    <string name="session_not_connected">未连接到服务器</string>
+    <string name="session_connecting_hint">请稍候…</string>
+    <string name="session_check_network">请检查网络连接</string>
+    <string name="session_tip_title">💡 提示</string>
+    <string name="session_tip_content">• 输入 /help 查看可用命令\n• 支持发送图片和文件\n• 按消息可复制、编辑或删除</string>
+    <string name="session_continue_generation">继续生成</string>
+    <string name="session_info_title">会话信息</string>
+    <string name="session_info_name">名称</string>
+    <string name="session_info_agent">Agent</string>
+    <string name="session_info_model">模型</string>
+    <string name="session_info_message_count">消息数</string>
+    <string name="session_info_count">%d 条</string>
+    <string name="session_info_no_details">暂无详细信息</string>
+    <string name="session_switch_model">切换模型</string>
+    <string name="session_model_loading">加载中…</string>
+
+    <!-- Message Actions (Chinese) -->
+    <string name="action_add_attachment">添加附件</string>
+    <string name="action_attach_image">图片</string>
+    <string name="action_attach_file">文件</string>
+    <string name="action_send">发送</string>
+    <string name="action_close">关闭</string>
+    <string name="action_reset">重置</string>
+    <string name="action_copied">已复制</string>
+    <string name="action_delete_message">删除消息</string>
+    <string name="action_delete_confirm">确定要删除这条消息吗？</string>
+    <string name="action_delete">删除</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_copy">复制</string>
+    <string name="action_copy_markdown">复制 Markdown</string>
+    <string name="action_share">分享</string>
+    <string name="action_edit">编辑</string>
+    <string name="action_retry">重试</string>
+    <string name="action_regenerate">重新生成</string>
+    <string name="action_image">图片</string>
+    <string name="action_load_failed">加载失败</string>
+
+    <!-- Message Status (Chinese) -->
+    <string name="status_sending">发送中</string>
+    <string name="status_sent">已发送</string>
+    <string name="status_delivered">已送达</string>
+    <string name="status_failed">发送失败</string>
+
+    <!-- Time Format (Chinese) -->
+    <string name="time_just_now">刚刚</string>
+    <string name="time_minutes_ago">%d分钟前</string>
+    <string name="time_hours_ago">%d小时前</string>
+
+    <!-- Input Bar (Chinese) -->
+    <string name="input_placeholder">输入消息或使用 / 命令…</string>
 </resources>

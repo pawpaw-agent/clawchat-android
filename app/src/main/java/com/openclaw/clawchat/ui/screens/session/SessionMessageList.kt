@@ -21,9 +21,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.components.ToolCardRow
@@ -85,10 +87,10 @@ fun EmptySessionContent(
 
         Text(
             text = when (connectionStatus) {
-                is ConnectionStatus.Connected -> "开始对话吧"
-                is ConnectionStatus.Disconnected -> "未连接到服务器"
-                is ConnectionStatus.Connecting -> "正在连接..."
-                else -> "准备中..."
+                is ConnectionStatus.Connected -> stringResource(R.string.session_start_conversation_hint)
+                is ConnectionStatus.Disconnected -> stringResource(R.string.session_not_connected)
+                is ConnectionStatus.Connecting -> stringResource(R.string.status_connecting)
+                else -> stringResource(R.string.loading)
             },
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground
@@ -98,11 +100,11 @@ fun EmptySessionContent(
 
         Text(
             text = if (connectionStatus is ConnectionStatus.Connected) {
-                "输入消息并按发送键开始"
+                stringResource(R.string.session_input_hint)
             } else if (connectionStatus is ConnectionStatus.Connecting) {
-                "请稍候..."
+                stringResource(R.string.session_connecting_hint)
             } else {
-                "请检查网络连接"
+                stringResource(R.string.session_check_network)
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -121,13 +123,13 @@ fun EmptySessionContent(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "💡 提示",
+                        text = stringResource(R.string.session_tip_title),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(DesignTokens.space2))
                     Text(
-                        text = "• 输入 /help 查看可用命令\n• 支持发送图片和文件\n• 长按消息可复制、编辑或删除",
+                        text = stringResource(R.string.session_tip_content),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -163,7 +165,7 @@ fun LoadingOverlay() {
                 // 动画打字指示器（三个点）
                 TypingDots()
                 Text(
-                    text = "助手正在思考...",
+                    text = stringResource(R.string.session_thinking),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -374,7 +376,7 @@ fun MessageGroupList(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("继续生成")
+                    Text(stringResource(R.string.session_continue_generation))
                 }
             }
         }

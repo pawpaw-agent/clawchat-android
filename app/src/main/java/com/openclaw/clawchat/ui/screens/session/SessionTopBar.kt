@@ -14,9 +14,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.components.AgentItem
 import com.openclaw.clawchat.ui.components.ModelItem
 import com.openclaw.clawchat.ui.state.ConnectionStatus
@@ -65,14 +67,14 @@ fun SessionTopAppBar(
                     value = searchQuery,
                     onValueChange = onSearchQueryChange,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("搜索消息...") },
+                    placeholder = { Text(stringResource(R.string.session_search_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { }),
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { onSearchQueryChange("") }) {
-                                Icon(Icons.Default.Close, "清除")
+                                Icon(Icons.Default.Close, stringResource(R.string.clear))
                             }
                         }
                     },
@@ -84,7 +86,7 @@ fun SessionTopAppBar(
             },
             navigationIcon = {
                 IconButton(onClick = onToggleSearch) {
-                    Icon(Icons.Default.ArrowBack, "关闭搜索")
+                    Icon(Icons.Default.ArrowBack, stringResource(R.string.close))
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
@@ -116,7 +118,7 @@ fun SessionTopAppBar(
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "返回"
+                        contentDescription = stringResource(R.string.close)
                     )
                 }
             },
@@ -126,7 +128,7 @@ fun SessionTopAppBar(
                 IconButton(onClick = { showSessionInfo = true }) {
                     Icon(
                         imageVector = Icons.Outlined.Info,
-                        contentDescription = "会话信息"
+                        contentDescription = stringResource(R.string.session_info_title)
                     )
                 }
                 if (showSessionInfo) {
@@ -145,7 +147,7 @@ fun SessionTopAppBar(
                         IconButton(onClick = { showModelMenu = true }) {
                             Icon(
                                 imageVector = Icons.Default.Tune,
-                                contentDescription = "切换模型"
+                                contentDescription = stringResource(R.string.session_switch_model)
                             )
                         }
 
@@ -154,7 +156,7 @@ fun SessionTopAppBar(
                             onDismissRequest = { showModelMenu = false }
                         ) {
                             Text(
-                                text = "切换模型",
+                                text = stringResource(R.string.session_switch_model),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -171,7 +173,7 @@ fun SessionTopAppBar(
                                                 modifier = Modifier.size(16.dp),
                                                 strokeWidth = 2.dp
                                             )
-                                            Text("加载中...")
+                                            Text(stringResource(R.string.session_model_loading))
                                         }
                                     },
                                     onClick = { }
@@ -229,7 +231,7 @@ fun SessionTopAppBar(
                 IconButton(onClick = onToggleSearch) {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "搜索消息"
+                        contentDescription = stringResource(R.string.session_search_placeholder)
                     )
                 }
 
@@ -238,7 +240,7 @@ fun SessionTopAppBar(
                 IconButton(onClick = { showHelpDialog = true }) {
                     Icon(
                         imageVector = Icons.Default.HelpOutline,
-                        contentDescription = "帮助"
+                        contentDescription = stringResource(R.string.settings_about)
                     )
                 }
 
@@ -338,7 +340,7 @@ private fun SessionInfoDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("会话信息") },
+        title = { Text(stringResource(R.string.session_info_title)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -346,7 +348,7 @@ private fun SessionInfoDialog(
                 // 会话名称
                 if (!sessionLabel.isNullOrBlank()) {
                     SessionInfoRow(
-                        label = "名称",
+                        label = stringResource(R.string.session_info_name),
                         value = sessionLabel
                     )
                 }
@@ -354,7 +356,7 @@ private fun SessionInfoDialog(
                 // Agent
                 if (!agentId.isNullOrBlank()) {
                     SessionInfoRow(
-                        label = "Agent",
+                        label = stringResource(R.string.session_info_agent),
                         value = formatAgentName(agentId)
                     )
                 }
@@ -362,7 +364,7 @@ private fun SessionInfoDialog(
                 // Model
                 if (!currentModel.isNullOrBlank()) {
                     SessionInfoRow(
-                        label = "模型",
+                        label = stringResource(R.string.session_info_model),
                         value = formatModelName(currentModel)
                     )
                 }
@@ -370,15 +372,15 @@ private fun SessionInfoDialog(
                 // Message count
                 if (messageCount > 0) {
                     SessionInfoRow(
-                        label = "消息数",
-                        value = "$messageCount 条"
+                        label = stringResource(R.string.session_info_message_count),
+                        value = stringResource(R.string.session_info_count, messageCount)
                     )
                 }
 
                 // 如果没有任何信息
                 if (sessionLabel.isNullOrBlank() && agentId.isNullOrBlank() && currentModel.isNullOrBlank() && messageCount == 0) {
                     Text(
-                        text = "暂无详细信息",
+                        text = stringResource(R.string.session_info_no_details),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -387,7 +389,7 @@ private fun SessionInfoDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("确定")
+                Text(stringResource(R.string.ok))
             }
         }
     )
