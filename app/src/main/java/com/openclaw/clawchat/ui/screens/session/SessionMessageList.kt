@@ -34,12 +34,23 @@ import com.openclaw.clawchat.ui.theme.ChatTokens
 import com.openclaw.clawchat.util.AppLog
 
 /**
- * 空会话内容
+ * 空会话内容（增强版）
  */
 @Composable
 fun EmptySessionContent(
     connectionStatus: ConnectionStatus
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -47,23 +58,39 @@ fun EmptySessionContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.ChatBubbleOutline,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        // 动画图标
+        Surface(
+            modifier = Modifier.size(100.dp),
+            shape = RoundedCornerShape(DesignTokens.radiusFull),
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        ) {
+            Box(
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = when (connectionStatus) {
+                        is ConnectionStatus.Connected -> Icons.Default.ChatBubbleOutline
+                        is ConnectionStatus.Connecting -> Icons.Default.Sync
+                        is ConnectionStatus.Disconnected -> Icons.Default.CloudOff
+                        else -> Icons.Default.CloudQueue
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = alpha)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(DesignTokens.space4))
 
         Text(
             text = when (connectionStatus) {
                 is ConnectionStatus.Connected -> "开始对话吧"
-                is ConnectionStatus.Disconnected -> "未连接到网关"
+                is ConnectionStatus.Disconnected -> "未连接到服务器"
                 is ConnectionStatus.Connecting -> "正在连接..."
                 else -> "准备中..."
             },
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
 
@@ -72,12 +99,41 @@ fun EmptySessionContent(
         Text(
             text = if (connectionStatus is ConnectionStatus.Connected) {
                 "输入消息并按发送键开始"
+            } else if (connectionStatus is ConnectionStatus.Connecting) {
+                "请稍候..."
             } else {
-                "请等待连接完成"
+                "请检查网络连接"
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        // 提示卡片
+        if (connectionStatus is ConnectionStatus.Connected) {
+            Spacer(modifier = Modifier.height(DesignTokens.space6))
+
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(DesignTokens.radiusMd)
+            ) {
+                Column(
+                    modifier = Modifier.padding(DesignTokens.space4),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "💡 提示",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(DesignTokens.space2))
+                    Text(
+                        text = "• 输入 /help 查看可用命令\n• 支持发送图片和文件\n• 长按消息可复制、编辑或删除",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
     }
 }
 
