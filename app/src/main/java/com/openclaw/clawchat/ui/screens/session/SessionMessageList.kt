@@ -458,8 +458,6 @@ fun ToolMessageCard(message: MessageUi, historyGroups: List<MessageGroup> = empt
         }
     }
 }
-    }
-}
 
 
 
