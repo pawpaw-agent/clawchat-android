@@ -550,6 +550,21 @@ class SessionViewModel @Inject constructor(
         _state.update { it.copy(error = null) }
     }
 
+    /**
+     * 重试连接
+     * 尝试触发网关重连
+     */
+    fun retryConnection() {
+        val currentStatus = _state.value.connectionStatus
+        // 仅在断开或错误状态时尝试重连
+        if (currentStatus is ConnectionStatus.Disconnected ||
+            currentStatus is ConnectionStatus.Error) {
+            // 连接由 MainViewModel 管理，这里只是清理错误状态
+            // 实际重连由 gateway 的自动重连机制处理
+            _state.update { it.copy(error = null) }
+        }
+    }
+
     fun clearNewMessagesBelow() {
         _state.update { it.copy(chatNewMessagesBelow = false, unreadMessageCount = 0) }
     }

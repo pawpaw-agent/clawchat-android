@@ -23,6 +23,7 @@ import com.openclaw.clawchat.ui.components.LoadingSkeleton
 import com.openclaw.clawchat.ui.components.SkeletonType
 import com.openclaw.clawchat.ui.components.ContextNotice
 import com.openclaw.clawchat.ui.components.CompactionIndicator
+import com.openclaw.clawchat.ui.components.NetworkStatusBanner
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import com.openclaw.clawchat.ui.theme.ChatTokens
@@ -180,12 +181,18 @@ fun SessionScreen(
                     Column(
                         modifier = Modifier.align(Alignment.TopCenter)
                     ) {
+                        // 网络状态横幅（连接断开/错误时显示）
+                        NetworkStatusBanner(
+                            status = state.connectionStatus,
+                            onRetry = { viewModel.retryConnection() }
+                        )
+
                         // Compaction 指示器
                         CompactionIndicator(
                             active = state.compactionActive,
                             completedAt = state.compactionCompletedAt
                         )
-                        
+
                         // Context 用量警告（>= 85%）
                         val totalTokens = state.totalTokens
                         val contextTokensLimit = state.contextTokensLimit
