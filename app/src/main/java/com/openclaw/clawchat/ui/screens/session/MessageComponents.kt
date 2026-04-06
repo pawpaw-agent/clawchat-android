@@ -534,14 +534,18 @@ fun ToolDetailCard(toolCard: ToolCard) {
     val isRunning = !isComplete && toolCard.kind == ToolCardKind.CALL
     // 完成时显示 result，运行时不显示（避免闪烁）
     val hasContent = hasArgs || (hasResult && isComplete)
-    
+
     val backgroundColor = when {
         toolCard.isError -> MaterialTheme.colorScheme.errorContainer
         isRunning -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)  // 执行中
         toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)  // 已完成
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
-    
+
+    // 工具特定图标和颜色
+    val toolIcon = getToolIcon(toolCard.name)
+    val toolColor = getToolColor(toolCard.name)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -561,21 +565,21 @@ fun ToolDetailCard(toolCard: ToolCard) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(10.dp),
                         strokeWidth = 1.5.dp,
-                        color = MaterialTheme.colorScheme.primary
+                        color = toolColor
                     )
                 } else {
                     Icon(
                         imageVector = when {
                             toolCard.isError -> Icons.Default.ErrorOutline
-                            toolCard.kind == ToolCardKind.CALL -> Icons.Default.Bolt
-                            else -> Icons.Default.CheckCircle
+                            isComplete -> Icons.Default.CheckCircle
+                            else -> toolIcon
                         },
                         contentDescription = null,
                         modifier = Modifier.size(10.dp),
                         tint = when {
                             toolCard.isError -> MaterialTheme.colorScheme.error
-                            toolCard.kind == ToolCardKind.CALL -> MaterialTheme.colorScheme.primary
-                            else -> MaterialTheme.colorScheme.tertiary
+                            isComplete -> MaterialTheme.colorScheme.tertiary
+                            else -> toolColor
                         }
                     )
                 }
@@ -653,6 +657,73 @@ fun ToolDetailCard(toolCard: ToolCard) {
                 }
             }
         }
+    }
+}
+
+/**
+ * 获取工具特定图标
+ */
+private fun getToolIcon(toolName: String): androidx.compose.ui.graphics.vector.ImageVector {
+    return when (toolName.lowercase()) {
+        // 文件操作
+        "read_file", "write_file", "edit_file", "read", "write" -> Icons.Default.Description
+        "list_files", "list_directory", "ls", "glob" -> Icons.Default.FolderOpen
+
+        // 代码执行
+        "bash", "shell", "exec", "execute", "run" -> Icons.Default.Terminal
+        "python", "python3" -> Icons.Default.Code
+
+        // 搜索
+        "search", "grep", "find" -> Icons.Default.Search
+        "search_files" -> Icons.Default.Search
+
+        // 网络请求
+        "curl", "wget", "http", "fetch", "request" -> Icons.Default.Cloud
+        "web_search", "websearch" -> Icons.Default.Public
+
+        // 数据处理
+        "json", "parse", "format" -> Icons.Default.DataObject
+        "sql", "database", "query" -> Icons.Default.Storage
+
+        // AI 相关
+        "think", "reason", "analyze" -> Icons.Default.Psychology
+        "image", "vision", "ocr" -> Icons.Default.Image
+
+        // 其他
+        else -> Icons.Default.Bolt
+    }
+}
+
+/**
+ * 获取工具特定颜色
+ */
+@Composable
+private fun getToolColor(toolName: String): Color {
+    return when (toolName.lowercase()) {
+        // 文件操作 - 蓝色
+        "read_file", "write_file", "edit_file", "read", "write",
+        "list_files", "list_directory", "ls", "glob" -> MaterialTheme.colorScheme.primary
+
+        // 代码执行 - 深色
+        "bash", "shell", "exec", "execute", "run",
+        "python", "python3" -> MaterialTheme.colorScheme.secondary
+
+        // 搜索 - 橙色
+        "search", "grep", "find", "search_files" -> MaterialTheme.colorScheme.tertiary
+
+        // 网络请求 - 绿色
+        "curl", "wget", "http", "fetch", "request",
+        "web_search", "websearch" -> MaterialTheme.colorScheme.primary
+
+        // 数据处理 - 紫色
+        "json", "parse", "format", "sql", "database", "query" -> MaterialTheme.colorScheme.secondary
+
+        // AI 相关 - 特殊颜色
+        "think", "reason", "analyze" -> MaterialTheme.colorScheme.tertiary
+        "image", "vision", "ocr" -> MaterialTheme.colorScheme.primary
+
+        // 其他 - 默认
+        else -> MaterialTheme.colorScheme.primary
     }
 }
 
