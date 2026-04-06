@@ -234,7 +234,7 @@ fun CompactToolCard(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = toolCard.result.take(300) + if (toolCard.result.length > 300) "..." else "",
+                            text = formatToolResult(toolCard.name, toolCard.result),
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = FontFamily.Monospace,
                             color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground,
@@ -266,6 +266,47 @@ fun isJsonString(str: String): Boolean {
     val trimmed = str.trim()
     return (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
            (trimmed.startsWith("[") && trimmed.endsWith("]"))
+}
+
+/**
+ * 格式化工具结果，提取关键内容
+ */
+private fun formatToolResult(toolName: String, result: String): String {
+    val json = result.trim()
+    if (!json.startsWith("{")) {
+        return result.take(300) + if (result.length > 300) "..." else ""
+    }
+
+    // 尝试提取关键内容
+    return try {
+        when (toolName) {
+            "web_search" -> {
+                // 提取 results 数组或 externalContent
+                val resultsMatch = Regex("\"results\"\\s*:\\s*\\[").find(json)
+                val contentMatch = Regex("\"externalContent\"\\s*:").find(json)
+                if (resultsMatch != null || contentMatch != null) {
+                    // 找到 results 开始位置，截取显示
+                    val startIdx = resultsMatch?.range?.first ?: contentMatch!!.range.first
+                    json.drop(startIdx).take(300) + "..."
+                } else {
+                    json.take(300) + if (json.length > 300) "..." else ""
+                }
+            }
+            "web_fetch" -> {
+                // 提取 content 或 text 字段
+                val contentMatch = Regex("\"content\"\\s*:\\s*\"").find(json)
+                if (contentMatch != null) {
+                    val startIdx = contentMatch.range.last
+                    json.drop(startIdx).take(300).removeSuffix("\"").removeSuffix("}").trim() + "..."
+                } else {
+                    json.take(300) + if (json.length > 300) "..." else ""
+                }
+            }
+            else -> json.take(300) + if (json.length > 300) "..." else ""
+        }
+    } catch (e: Exception) {
+        result.take(300) + if (result.length > 300) "..." else ""
+    }
 }
 
 /**
