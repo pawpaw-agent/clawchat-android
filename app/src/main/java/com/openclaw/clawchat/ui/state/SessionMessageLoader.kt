@@ -110,6 +110,10 @@ class SessionMessageLoader(
                 // 收集所有消息，批量处理（包含 toolCallId 和 toolName）
                 val messagesToSave = mutableListOf<MessageSaveData>()
 
+                // 先清除该会话的旧消息，避免重复
+                messageRepository.clearMessages(sessionId)
+                AppLog.d(TAG, "=== loadMessageHistory: cleared old messages for session $sessionId")
+
                 messagesArray?.forEach { msgElement ->
                     try {
                         val msgObj = msgElement.jsonObject
