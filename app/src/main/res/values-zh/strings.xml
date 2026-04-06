@@ -276,6 +276,17 @@
     <string name="slash_category_agents">Agents</string>
     <string name="slash_category_tools">工具</string>
 
+    <!-- Debug Screen -->
+    <string name="debug_tab_connection">连接</string>
+    <string name="debug_tab_logs">日志</string>
+    <string name="debug_tab_performance">性能</string>
+    <string name="debug_tab_messages">消息</string>
+    <string name="debug_tab_crashes">崩溃</string>
+    <string name="debug_last_connection">最后连接：%s</string>
+    <string name="debug_error_history">错误历史</string>
+    <string name="debug_back">返回</string>
+    <string name="debug_not_configured">未配置</string>
+
     <!-- Message Status -->
     <string name="status_sending">发送中</string>
     <string name="status_sent">已发送</string>

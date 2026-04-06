@@ -11,10 +11,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.state.DebugUiState
 import com.openclaw.clawchat.ui.state.DebugViewModel
 import com.openclaw.clawchat.ui.state.LogLine
@@ -40,7 +42,13 @@ fun DebugScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("连接", "日志", "性能", "消息", "崩溃")
+    val tabs = listOf(
+        stringResource(R.string.debug_tab_connection),
+        stringResource(R.string.debug_tab_logs),
+        stringResource(R.string.debug_tab_performance),
+        stringResource(R.string.debug_tab_messages),
+        stringResource(R.string.debug_tab_crashes)
+    )
 
     Scaffold(
         topBar = {
@@ -48,7 +56,7 @@ fun DebugScreen(
                 title = { Text("Debug") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.debug_back))
                     }
                 }
             )
@@ -134,7 +142,7 @@ private fun ConnectionDiagnosticsTab(state: DebugUiState) {
 
         item {
             Text(
-                text = state.gatewayUrl ?: "未配置",
+                text = state.gatewayUrl ?: stringResource(R.string.debug_not_configured),
                 style = MaterialTheme.typography.bodyMedium,
                 fontFamily = FontFamily.Monospace
             )
@@ -142,8 +150,9 @@ private fun ConnectionDiagnosticsTab(state: DebugUiState) {
 
         if (state.lastConnectedTime != null) {
             item {
+                val timeStr = java.text.SimpleDateFormat("HH:mm:ss").format(java.util.Date(state.lastConnectedTime!!))
                 Text(
-                    text = "最后连接: ${java.text.SimpleDateFormat("HH:mm:ss").format(java.util.Date(state.lastConnectedTime))}",
+                    text = stringResource(R.string.debug_last_connection, timeStr),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -152,7 +161,7 @@ private fun ConnectionDiagnosticsTab(state: DebugUiState) {
         if (state.connectionErrors.isNotEmpty()) {
             item {
                 Text(
-                    text = "错误历史",
+                    text = stringResource(R.string.debug_error_history),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.error
                 )

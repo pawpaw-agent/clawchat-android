@@ -283,6 +283,17 @@
     <string name="slash_category_agents">Agents</string>
     <string name="slash_category_tools">Tools</string>
 
+    <!-- Debug Screen -->
+    <string name="debug_tab_connection">Connection</string>
+    <string name="debug_tab_logs">Logs</string>
+    <string name="debug_tab_performance">Performance</string>
+    <string name="debug_tab_messages">Messages</string>
+    <string name="debug_tab_crashes">Crashes</string>
+    <string name="debug_last_connection">Last connection: %s</string>
+    <string name="debug_error_history">Error history</string>
+    <string name="debug_back">Back</string>
+    <string name="debug_not_configured">Not configured</string>
+
     <!-- Message Status -->
     <string name="status_sending">Sending</string>
     <string name="status_sent">Sent</string>
