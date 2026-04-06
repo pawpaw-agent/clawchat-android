@@ -51,7 +51,7 @@ private fun getToolIcon(toolName: String): ImageVector {
 }
 
 /**
- * 工具卡片列表 - 一行显示多个可折叠卡片
+ * 工具卡片列表 - 每个卡片占据整行
  */
 @Composable
 fun ToolCardRow(
@@ -60,18 +60,18 @@ fun ToolCardRow(
 ) {
     if (toolCards.isEmpty()) return
 
-    LazyRow(
+    Column(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(toolCards, key = { it.callId ?: it.name }) { card ->
-            CompactToolCard(toolCard = card)
+        toolCards.forEach { card ->
+            CompactToolCard(toolCard = card, modifier = Modifier.fillMaxWidth())
         }
     }
 }
 
 /**
- * 紧凑型工具卡片 - 一行显示，可点击展开
+ * 紧凑型工具卡片 - 占据整行，可点击展开
  */
 @Composable
 fun CompactToolCard(
@@ -87,29 +87,40 @@ fun CompactToolCard(
         mutableStateOf(isRunning)
     }
 
-    // 状态颜色
+    // 状态颜色：运行中红色，完成绿色，错误保持红色
     val statusColor = when {
         hasError -> MaterialTheme.colorScheme.error
-        isRunning -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.tertiary
+        isRunning -> Color(0xFFE53935) // 红色
+        else -> Color(0xFF43A047) // 绿色
     }
 
     // 背景
     val bgColor = when {
-        hasError -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-        isRunning -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        hasError -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+        isRunning -> Color(0xFFFFEBEE) // 红色背景
+        else -> Color(0xFFE8F5E9) // 绿色背景
     }
 
     Surface(
         modifier = modifier
-            .widthIn(min = 120.dp, max = 280.dp)
+            .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .clickable(enabled = hasContent) { expanded = !expanded },
         color = bgColor,
         shape = RoundedCornerShape(8.dp)
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            // 左侧状态指示条
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .background(statusColor)
+            )
+
+            Column(modifier = Modifier
+                .weight(1f)
+                .padding(8.dp)) {
             // 头部：图标 + 名称 + 状态
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -231,8 +242,8 @@ fun CompactToolCard(
                     }
                 }
             }
-        }
-    }
+        } // Column 结束
+    } // Row 结束
 }
 
 /**
