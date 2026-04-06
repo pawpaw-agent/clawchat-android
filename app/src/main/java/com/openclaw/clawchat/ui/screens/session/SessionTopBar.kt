@@ -53,7 +53,7 @@ fun SessionTopAppBar(
         !agentId.isNullOrBlank() -> formatAgentName(agentId)
         !currentModel.isNullOrBlank() -> formatModelName(currentModel)
         !sessionLabel.isNullOrBlank() -> sessionLabel
-        else -> "会话"
+        else -> stringResource(R.string.session_title)
     }
 
     // 是否可以切换 Model
@@ -303,7 +303,7 @@ private fun ConnectionStatusIcon(status: ConnectionStatus) {
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = "连接状态",
+            contentDescription = stringResource(R.string.connection_status),
             tint = color
         )
         if (latencyText != null) {

@@ -282,4 +282,12 @@
 
     <!-- Input Bar (Chinese) -->
     <string name="input_placeholder">输入消息或使用 / 命令…</string>
+
+    <!-- Attachments (Chinese) -->
+    <string name="attachment_preview">附件预览</string>
+    <string name="attachment_remove">移除附件</string>
+    <string name="attachment_file">文件</string>
+
+    <!-- Connection Status (Chinese) -->
+    <string name="connection_status">连接状态</string>
 </resources>

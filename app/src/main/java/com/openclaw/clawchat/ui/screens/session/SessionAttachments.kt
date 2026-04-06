@@ -18,7 +18,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.state.AttachmentUi
 
 /**
@@ -108,7 +110,7 @@ fun AttachmentPreview(
             if (bitmap != null) {
                 androidx.compose.foundation.Image(
                     bitmap = bitmap.asImageBitmap(),
-                    contentDescription = "附件预览",
+                    contentDescription = stringResource(R.string.attachment_preview),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -133,7 +135,7 @@ fun AttachmentPreview(
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "移除附件",
+                contentDescription = stringResource(R.string.attachment_remove),
                 modifier = Modifier.size(14.dp),
                 tint = MaterialTheme.colorScheme.error
             )
@@ -161,7 +163,7 @@ private fun FilePreviewPlaceholder(attachment: AttachmentUi) {
         Spacer(modifier = Modifier.height(4.dp))
         // 文件名（截断显示）
         Text(
-            text = attachment.fileName?.take(10)?.plus("...") ?: "文件",
+            text = attachment.fileName?.take(10)?.plus("...") ?: stringResource(R.string.attachment_file),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1
