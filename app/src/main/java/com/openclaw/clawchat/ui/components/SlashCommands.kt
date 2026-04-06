@@ -248,16 +248,6 @@ val SLASH_COMMANDS: List<SlashCommandDef> = listOf(
 )
 
 /**
- * 命令类别标签
- */
-val CATEGORY_LABELS: Map<SlashCommandCategory, String> = mapOf(
-    SlashCommandCategory.SESSION to "会话",
-    SlashCommandCategory.MODEL to "模型",
-    SlashCommandCategory.AGENTS to "Agents",
-    SlashCommandCategory.TOOLS to "工具"
-)
-
-/**
  * 命令类别排序
  */
 val CATEGORY_ORDER: List<SlashCommandCategory> = listOf(

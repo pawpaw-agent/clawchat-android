@@ -277,6 +277,12 @@
     <string name="tool_result">Result</string>
     <string name="tool_error">Error</string>
 
+    <!-- Slash Command Categories -->
+    <string name="slash_category_session">Session</string>
+    <string name="slash_category_model">Model</string>
+    <string name="slash_category_agents">Agents</string>
+    <string name="slash_category_tools">Tools</string>
+
     <!-- Message Status -->
     <string name="status_sending">Sending</string>
     <string name="status_sent">Sent</string>

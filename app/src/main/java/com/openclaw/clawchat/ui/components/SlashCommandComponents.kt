@@ -10,8 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 
 /**
  * 斜杠命令菜单项组件
@@ -23,10 +25,10 @@ fun SlashCommandMenuItem(
     onClick: () -> Unit
 ) {
     val categoryLabel = when (command.category) {
-        SlashCommandCategory.SESSION -> "会话"
-        SlashCommandCategory.MODEL -> "模型"
-        SlashCommandCategory.AGENTS -> "Agents"
-        SlashCommandCategory.TOOLS -> "工具"
+        SlashCommandCategory.SESSION -> stringResource(R.string.slash_category_session)
+        SlashCommandCategory.MODEL -> stringResource(R.string.slash_category_model)
+        SlashCommandCategory.AGENTS -> stringResource(R.string.slash_category_agents)
+        SlashCommandCategory.TOOLS -> stringResource(R.string.slash_category_tools)
     }
 
     Surface(

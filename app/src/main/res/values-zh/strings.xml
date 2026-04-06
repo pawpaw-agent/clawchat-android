@@ -270,6 +270,12 @@
     <string name="tool_result">结果</string>
     <string name="tool_error">错误</string>
 
+    <!-- Slash Command Categories -->
+    <string name="slash_category_session">会话</string>
+    <string name="slash_category_model">模型</string>
+    <string name="slash_category_agents">Agents</string>
+    <string name="slash_category_tools">工具</string>
+
     <!-- Message Status -->
     <string name="status_sending">发送中</string>
     <string name="status_sent">已发送</string>
