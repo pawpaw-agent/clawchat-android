@@ -187,19 +187,22 @@ class SessionViewModel @Inject constructor(
         }
 
         AppLog.d(TAG, "=== setSessionId: $currentSessionId -> $sessionId")
-        
+
+        // 先设置加载状态，阻止 Flow 更新
+        isLoadingHistory = true
+
         // 切换会话：清除旧状态，设置新 sessionId
-        _state.update { 
-            it.clearSession().copy(sessionId = sessionId) 
+        _state.update {
+            it.clearSession().copy(sessionId = sessionId)
         }
-        
+
         // 清除工具流
         toolStreamManager.clear()
-        
-        // 观察新会话的消息
+
+        // 观察新会话的消息（此时 isLoadingHistory=true，会跳过初始更新）
         observeSessionMessages(sessionId)
-        
-        // 加载历史消息
+
+        // 加载历史消息（完成后会设置 isLoadingHistory=false）
         messageLoader.loadMessageHistory(sessionId)
     }
 
