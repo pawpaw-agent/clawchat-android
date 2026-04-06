@@ -85,8 +85,7 @@ jobs:
             jacocoTestReport \
             --no-daemon \
             --stacktrace \
-            -x lint \
-            -x ktlint
+            -x lint
         continue-on-error: true
 
       - name: Collect Coverage Reports
