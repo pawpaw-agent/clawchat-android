@@ -129,6 +129,16 @@
     <string name="session_unnamed">未命名会话</string>
     <string name="session_enter_new_name">输入新名称…</string>
 
+    <!-- Session Options Dialog -->
+    <string name="session_options_pause">暂停会话</string>
+    <string name="session_options_resume">恢复会话</string>
+    <string name="session_options_status">状态：%s</string>
+    <string name="session_options_message_count">消息数：%d</string>
+    <string name="session_delete_confirm_text">确定要删除会话「%s」吗？此操作不可撤销。</string>
+    <string name="session_status_running">运行中</string>
+    <string name="session_status_paused">已暂停</string>
+    <string name="session_status_terminated">已终止</string>
+
     <!-- Pairing -->
     <string name="pairing_title">设备配对</string>
     <string name="pairing_request">请求配对</string>

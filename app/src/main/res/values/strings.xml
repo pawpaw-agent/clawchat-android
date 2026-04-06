@@ -130,6 +130,16 @@
     <string name="session_unnamed">Unnamed session</string>
     <string name="session_enter_new_name">Enter new name…</string>
 
+    <!-- Session Options Dialog -->
+    <string name="session_options_pause">Pause session</string>
+    <string name="session_options_resume">Resume session</string>
+    <string name="session_options_status">Status: %s</string>
+    <string name="session_options_message_count">Messages: %d</string>
+    <string name="session_delete_confirm_text">Delete session \"%s\"? This action cannot be undone.</string>
+    <string name="session_status_running">Running</string>
+    <string name="session_status_paused">Paused</string>
+    <string name="session_status_terminated">Terminated</string>
+
     <!-- Pairing -->
     <string name="pairing_title">Device Pairing</string>
     <string name="pairing_request">Request Pairing</string>

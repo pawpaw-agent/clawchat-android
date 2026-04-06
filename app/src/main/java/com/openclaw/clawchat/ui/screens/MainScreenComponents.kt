@@ -6,7 +6,9 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.state.SessionStatus
 import com.openclaw.clawchat.ui.state.SessionUi
 
@@ -28,7 +30,7 @@ fun SessionOptionsDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("会话选项") },
+        title = { Text(stringResource(R.string.session_options)) },
         text = {
             Column {
                 Text(
@@ -37,12 +39,12 @@ fun SessionOptionsDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "状态：${session.status.name}",
+                    text = stringResource(R.string.session_options_status, session.status.name),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "消息数：${session.messageCount}",
+                    text = stringResource(R.string.session_options_message_count, session.messageCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -59,9 +61,9 @@ fun SessionOptionsDialog(
                 ) {
                     Text(
                         if (session.status == SessionStatus.RUNNING) {
-                            "暂停会话"
+                            stringResource(R.string.session_options_pause)
                         } else {
-                            "恢复会话"
+                            stringResource(R.string.session_options_resume)
                         }
                     )
                 }
@@ -70,7 +72,7 @@ fun SessionOptionsDialog(
                     onClick = { showRenameDialog = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("重命名")
+                    Text(stringResource(R.string.session_rename))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(
@@ -80,7 +82,7 @@ fun SessionOptionsDialog(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("终止会话")
+                    Text(stringResource(R.string.session_terminate_button))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(
@@ -90,13 +92,13 @@ fun SessionOptionsDialog(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("删除会话")
+                    Text(stringResource(R.string.session_delete_button))
                 }
             }
         },
         dismissButton = {
             Button(onClick = onDismiss) {
-                Text("关闭")
+                Text(stringResource(R.string.session_close))
             }
         }
     )
@@ -105,8 +107,8 @@ fun SessionOptionsDialog(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("删除会话") },
-            text = { Text("确定要删除会话「${session.getDisplayName()}」吗？此操作不可撤销。") },
+            title = { Text(stringResource(R.string.session_delete_title)) },
+            text = { Text(stringResource(R.string.session_delete_confirm_text, session.getDisplayName())) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -117,12 +119,12 @@ fun SessionOptionsDialog(
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("删除")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showDeleteConfirm = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -132,12 +134,12 @@ fun SessionOptionsDialog(
     if (showRenameDialog) {
         AlertDialog(
             onDismissRequest = { showRenameDialog = false },
-            title = { Text("重命名会话") },
+            title = { Text(stringResource(R.string.session_rename_title)) },
             text = {
                 OutlinedTextField(
                     value = newName,
                     onValueChange = { newName = it },
-                    label = { Text("会话名称") },
+                    label = { Text(stringResource(R.string.session_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -147,12 +149,12 @@ fun SessionOptionsDialog(
                     onClick = { onRename(newName) },
                     enabled = newName.isNotBlank()
                 ) {
-                    Text("确认")
+                    Text(stringResource(R.string.session_confirm))
                 }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showRenameDialog = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -174,7 +176,7 @@ fun ConnectionStatusIcon(status: com.openclaw.clawchat.ui.state.ConnectionStatus
 
     Icon(
         imageVector = icon,
-        contentDescription = "连接状态",
+        contentDescription = stringResource(R.string.connection_status),
         tint = color
     )
 }
