@@ -309,10 +309,12 @@ fun EnhancedMessageInputBar(
                     onValueChange = onValueChange,
                     modifier = Modifier
                         .weight(1f)
-                        .focusRequester(focusRequester),
+                        .focusRequester(focusRequester)
+                        .heightIn(min = 48.dp, max = 120.dp),
                     placeholder = { Text("输入消息或使用 / 命令...") },
                     enabled = enabled,
-                    maxLines = 4,
+                    maxLines = 6,
+                    minLines = 1,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                     keyboardActions = KeyboardActions(
                         onSend = { onSend() },
