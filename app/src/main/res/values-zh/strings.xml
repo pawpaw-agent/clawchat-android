@@ -207,4 +207,114 @@
     <string name="about_documentation">文档</string>
     <string name="about_developer">开发者</string>
     <string name="about_openclaw">OpenClaw</string>
+    <string name="about_build">构建号 %d</string>
+    <string name="about_full_description">ClawChat 是 OpenClaw 生态系统的第三方 Android 客户端，提供与 OpenClaw Gateway 的实时通信能力，让开发者和管理员能够随时随地监控和管理 AI Agent 会话。</string>
+    <string name="about_features">主要特性</string>
+    <string name="about_feature_security">Ed25519 密钥 + 加密存储安全设计</string>
+    <string name="about_feature_compose">Jetpack Compose + Material Design 3</string>
+    <string name="about_feature_websocket">WebSocket 实时通信，Gateway 协议 v3</string>
+    <string name="about_feature_network">支持局域网和 Tailscale 远程访问</string>
+    <string name="about_open_source_licenses">开源许可</string>
+
+    <!-- Session Screen -->
+    <string name="session_new_messages_count">%d 条新消息</string>
+    <string name="session_new_messages">新消息</string>
+    <string name="session_edit_message">编辑消息</string>
+    <string name="session_edit_placeholder">输入消息内容…</string>
+    <string name="session_edit_send">发送</string>
+    <string name="session_edit_cancel">取消</string>
+    <string name="session_message_search_placeholder">搜索消息…</string>
+    <string name="session_search_no_results">未找到 \"%s\"</string>
+    <string name="session_thinking">助手正在思考…</string>
+    <string name="session_start_conversation_hint">开始对话吧</string>
+    <string name="session_input_hint">输入消息并按发送键开始</string>
+    <string name="session_not_connected">未连接到服务器</string>
+    <string name="session_connecting_hint">请稍候…</string>
+    <string name="session_check_network">请检查网络连接</string>
+    <string name="session_tip_title">💡 提示</string>
+    <string name="session_tip_content">• 输入 /help 查看可用命令\n• 支持发送图片和文件\n• 长按消息可复制、编辑或删除</string>
+    <string name="session_continue_generation">继续生成</string>
+    <string name="session_info_title">会话信息</string>
+    <string name="session_info_name">名称</string>
+    <string name="session_info_agent">Agent</string>
+    <string name="session_info_model">模型</string>
+    <string name="session_info_message_count">消息数</string>
+    <string name="session_info_count">%d 条</string>
+    <string name="session_info_no_details">暂无详细信息</string>
+    <string name="session_switch_model">切换模型</string>
+    <string name="session_model_loading">加载中…</string>
+
+    <!-- Message Actions -->
+    <string name="action_add_attachment">添加附件</string>
+    <string name="action_attach_image">图片</string>
+    <string name="action_attach_file">文件</string>
+    <string name="action_send">发送</string>
+    <string name="action_close">关闭</string>
+    <string name="action_reset">重置</string>
+    <string name="action_copied">已复制</string>
+    <string name="action_delete_message">删除消息</string>
+    <string name="action_delete_confirm">确定要删除这条消息吗？</string>
+    <string name="action_delete">删除</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_copy">复制</string>
+    <string name="action_copy_markdown">复制 Markdown</string>
+    <string name="action_share">分享</string>
+    <string name="action_edit">编辑</string>
+    <string name="action_retry">重试</string>
+    <string name="action_regenerate">重新生成</string>
+    <string name="action_image">图片</string>
+    <string name="action_load_failed">加载失败</string>
+
+    <!-- Message Status -->
+    <string name="status_sending">发送中</string>
+    <string name="status_sent">已发送</string>
+    <string name="status_delivered">已送达</string>
+    <string name="status_failed">发送失败</string>
+
+    <!-- Time Format -->
+    <string name="time_just_now">刚刚</string>
+    <string name="time_minutes_ago">%d分钟前</string>
+    <string name="time_hours_ago">%d小时前</string>
+
+    <!-- Input Bar -->
+    <string name="input_placeholder">输入消息或使用 / 命令…</string>
+
+    <!-- Command Palette -->
+    <string name="command_palette_search_placeholder">搜索会话或命令…</string>
+    <string name="command_palette_sessions">会话</string>
+    <string name="command_palette_commands">命令</string>
+    <string name="command_palette_no_results">未找到结果</string>
+
+    <!-- Attachments -->
+    <string name="attachment_preview">附件预览</string>
+    <string name="attachment_remove">移除附件</string>
+    <string name="attachment_file">文件</string>
+
+    <!-- Connection Status -->
+    <string name="connection_status">连接状态</string>
+
+    <!-- Selector -->
+    <string name="selector_select_agent">选择 Agent</string>
+    <string name="selector_default_chat">默认对话</string>
+    <string name="selector_default_model">默认模型</string>
+    <string name="selector_default">默认</string>
+    <string name="selector_supports_vision">支持视觉</string>
+
+    <!-- Connection Settings -->
+    <string name="connection_not_configured">未配置</string>
+    <string name="connection_configure_gateway_hint">点击配置 Gateway 地址</string>
+    <string name="connection_disconnect">断开连接</string>
+    <string name="connection_disconnect_description">断开与当前 Gateway 的连接</string>
+    <string name="connection_reconnect">重新连接</string>
+    <string name="connection_pair_device">配对设备</string>
+    <string name="connection_reconnect_description">连接到已配对的 Gateway</string>
+    <string name="connection_pair_description">扫描二维码或输入配对码</string>
+    <string name="connection_configure_gateway">配置 Gateway</string>
+    <string name="connection_gateway_name">名称</string>
+    <string name="connection_gateway_name_hint">例如：Home Server</string>
+    <string name="connection_gateway_host">主机地址</string>
+    <string name="connection_gateway_host_hint">例如：192.168.1.100</string>
+    <string name="gateway_port">端口</string>
+    <string name="gateway_save_and_connect">保存并连接</string>
+    <string name="gateway_save">保存</string>
 </resources>
