@@ -56,8 +56,8 @@ fun pairToolCards(message: MessageUi, allMessagesInGroup: List<MessageUi> = empt
 
     // 调试日志（减少输出）
     AppLog.d(TAG, "=== pairToolCards: msgId=${message.id.take(8)}, role=${message.role}, calls=${calls.size}, results=${results.size}")
-    if (results.isNotEmpty()) {
-        AppLog.d(TAG, "=== ToolResult found: toolCallId=${results.first().toolCallId?.take(8)}, textPreview=${results.first().text.take(50)}")
+    results.forEach { result ->
+        AppLog.d(TAG, "=== Available result: toolCallId=${result.toolCallId}, name=${result.name}")
     }
 
     return calls.map { call ->
@@ -66,7 +66,7 @@ fun pairToolCards(message: MessageUi, allMessagesInGroup: List<MessageUi> = empt
             result.toolCallId == call.id
         }
 
-        AppLog.d(TAG, "=== ToolCard: name=${call.name}, callId=${call.id?.take(12)}, matched=${matchingResult != null}")
+        AppLog.d(TAG, "=== ToolCard: name=${call.name}, callId=${call.id}, resultId=${matchingResult?.toolCallId}, matched=${matchingResult != null}")
 
         val displayArgs = if (call.name == "exec" && call.args != null) {
             call.args?.get("command")?.jsonPrimitive?.content ?: call.args.toString()
