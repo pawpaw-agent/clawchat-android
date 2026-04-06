@@ -211,20 +211,25 @@ private fun MarkdownRegularContent(
     // 流式：内容变化超过 50 字符才重新解析
     val lastParsedLength = remember { mutableStateOf(0) }
     val shouldParse = !isStreaming || content.length - lastParsedLength.value > 50
-    
+
     if (shouldParse) {
         lastParsedLength.value = content.length
     }
-    
+
+    // 在 @Composable 上下文中获取颜色
+    val linkColor = MaterialTheme.colorScheme.primary
+    val codeColor = MaterialTheme.colorScheme.tertiary
+    val codeBgColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+
     val cachedAnnotatedString = remember(lastParsedLength.value) {
         if (shouldParse) parseMarkdownToAnnotatedString(
             content,
-            linkColor = MaterialTheme.colorScheme.primary,
-            codeColor = MaterialTheme.colorScheme.tertiary,
-            codeBgColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+            linkColor = linkColor,
+            codeColor = codeColor,
+            codeBgColor = codeBgColor
         ) else null
     }
-    
+
     // 流式时使用缓存的解析结果，最后 50 字符用原始文本显示
     val annotatedString = if (isStreaming && cachedAnnotatedString != null && !shouldParse) {
         buildAnnotatedString {
@@ -234,9 +239,9 @@ private fun MarkdownRegularContent(
     } else {
         cachedAnnotatedString ?: parseMarkdownToAnnotatedString(
             content,
-            linkColor = MaterialTheme.colorScheme.primary,
-            codeColor = MaterialTheme.colorScheme.tertiary,
-            codeBgColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+            linkColor = linkColor,
+            codeColor = codeColor,
+            codeBgColor = codeBgColor
         )
     }
     
@@ -278,7 +283,9 @@ private fun MarkdownRegularContent(
 
 /**
  * 处理行内样式（粗体、斜体、行内代码）
+ * 注意：此函数未使用，保留作为备用
  */
+@Suppress("unused")
 private fun AnnotatedString.Builder.appendStyledText(text: String) {
     var i = 0
     while (i < text.length) {
@@ -325,11 +332,11 @@ private fun AnnotatedString.Builder.appendStyledText(text: String) {
             text[i] == '`' -> {
                 val end = text.indexOf('`', i + 1)
                 if (end != -1 && end > i + 1) {
-                    // 使用主题感知颜色（tertiary 是链接色）
+                    // 使用固定颜色（此函数未使用，保留作为备用）
                     withStyle(SpanStyle(
                         fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        background = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+                        color = Color(0xFF60A5FA),
+                        background = Color(0x1A60A5FA)
                     )) {
                         append(text.substring(i + 1, end))
                     }
@@ -349,7 +356,7 @@ private fun AnnotatedString.Builder.appendStyledText(text: String) {
                         val url = text.substring(textEnd + 2, urlEnd)
                         pushStringAnnotation(tag = "URL", annotation = url)
                         withStyle(SpanStyle(
-                            color = MaterialTheme.colorScheme.primary,
+                            color = Color(0xFF2196F3),
                             fontWeight = FontWeight.Medium
                         )) {
                             append(linkText)
