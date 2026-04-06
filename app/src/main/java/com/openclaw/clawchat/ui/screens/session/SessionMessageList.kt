@@ -126,26 +126,31 @@ fun MessageGroupList(
     onRetryMessage: (String) -> Unit = {},
     onContinueGeneration: () -> Unit = {}
 ) {
-    // 滚动优化：只监听用户滚动位置，SessionScreen 处理初始滚动
+    // 滚动优化：监听用户滚动位置
     // reverseLayout=true 时，firstVisibleItemIndex=0 表示在底部
+    // 阈值 100dp：用户离开最新消息约 1 条消息高度时才认为"不在底部"
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
             .collect { (index, offset) ->
-                val isNearBottom = index == 0 && offset < 450
+                val isNearBottom = index == 0 && offset < 100
+                // 用户离开底部时显示"新消息"按钮
+                if (!isNearBottom && chatHasAutoScrolled) {
+                    onSetNewMessagesBelow()
+                }
                 onUpdateUserNearBottom(isNearBottom)
             }
     }
 
     // 新消息/流式输出到达时自动滚动
-    // 用户在底部时，自动跟随到最新
-    LaunchedEffect(groups.size, chatStream, toolMessages.size, streamSegments.size) {
+    // 使用 chatStream 的 hash 作为 key，避免每个字符更新都触发
+    val streamKey = chatStream?.hashCode() ?: 0
+    LaunchedEffect(groups.size, streamKey, toolMessages.size, streamSegments.size) {
         if (groups.isEmpty()) return@LaunchedEffect
         // 只有用户在底部且已经完成初始滚动时才自动滚动
         if (!chatHasAutoScrolled) return@LaunchedEffect
 
-        val isNearBottom = listState.firstVisibleItemIndex == 0 &&
-                           listState.firstVisibleItemScrollOffset < 450
-        if (isNearBottom) {
+        // 用户在底部时自动跟随，否则显示"新消息"按钮
+        if (chatUserNearBottom) {
             listState.scrollToItem(0)
         } else {
             onSetNewMessagesBelow()

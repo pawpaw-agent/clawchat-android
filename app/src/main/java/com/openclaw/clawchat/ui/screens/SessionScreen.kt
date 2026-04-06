@@ -52,12 +52,6 @@ fun SessionScreen(
 
     // 当前会话 ID
     var currentSessionId by remember { mutableStateOf<String?>(null) }
-    
-    // reverseLayout = true 后，滚动语义反转：
-    // - canScrollForward: 可以向上滚动（查看历史）
-    // - canScrollBackward: 可以向下滚动（查看新消息）
-    // 显示"新消息"按钮当用户向上滚动查看历史时
-    val showNewMessagesButton by remember { derivedStateOf { listState.canScrollBackward } }
 
     // 监听生命周期
     DisposableEffect(lifecycleOwner) {
@@ -249,8 +243,8 @@ fun SessionScreen(
                     }
                     
                     // "新消息"按钮：点击滚动到最底部（最新消息）
-                    // 显示条件：用户向上滚动 OR 有新消息在下方
-                    if (showNewMessagesButton || state.chatNewMessagesBelow) {
+                    // 显示条件：有新消息在下方（由 ViewModel 统一管理）
+                    if (state.chatNewMessagesBelow) {
                         NewMessagesIndicator(
                             modifier = Modifier.align(Alignment.BottomCenter),
                             onClick = {
