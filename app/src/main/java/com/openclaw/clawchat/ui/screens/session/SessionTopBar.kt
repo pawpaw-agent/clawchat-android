@@ -241,23 +241,58 @@ fun SessionTopAppBar(
 }
 
 /**
- * 连接状态图标
+ * 连接状态图标（带延迟显示）
  */
 @Composable
 private fun ConnectionStatusIcon(status: ConnectionStatus) {
-    val (icon, color) = when (status) {
-        is ConnectionStatus.Connected -> Icons.Default.CheckCircle to MaterialTheme.colorScheme.tertiary
-        is ConnectionStatus.Connecting, is ConnectionStatus.Disconnecting -> Icons.Default.Sync to MaterialTheme.colorScheme.error
-        is ConnectionStatus.Disconnected -> Icons.Default.CloudOff to MaterialTheme.colorScheme.onSurfaceVariant
-        is ConnectionStatus.Error -> Icons.Default.Error to MaterialTheme.colorScheme.error
-        else -> Icons.Default.Help to MaterialTheme.colorScheme.onSurfaceVariant
+    val (icon, color, latencyText) = when (status) {
+        is ConnectionStatus.Connected -> {
+            val latency = status.latency
+            Triple(
+                Icons.Default.CheckCircle,
+                if (latency != null && latency > 500) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
+                if (latency != null) "${latency}ms" else null
+            )
+        }
+        is ConnectionStatus.Connecting, is ConnectionStatus.Disconnecting -> Triple(
+            Icons.Default.Sync,
+            MaterialTheme.colorScheme.tertiary,
+            null
+        )
+        is ConnectionStatus.Disconnected -> Triple(
+            Icons.Default.CloudOff,
+            MaterialTheme.colorScheme.onSurfaceVariant,
+            null
+        )
+        is ConnectionStatus.Error -> Triple(
+            Icons.Default.Error,
+            MaterialTheme.colorScheme.error,
+            null
+        )
+        else -> Triple(
+            Icons.Default.Help,
+            MaterialTheme.colorScheme.onSurfaceVariant,
+            null
+        )
     }
 
-    Icon(
-        imageVector = icon,
-        contentDescription = "连接状态",
-        tint = color
-    )
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = "连接状态",
+            tint = color
+        )
+        if (latencyText != null) {
+            Text(
+                text = latencyText,
+                style = MaterialTheme.typography.labelSmall,
+                color = color
+            )
+        }
+    }
 }
 
 /**
