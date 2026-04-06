@@ -706,6 +706,23 @@ class GatewayConnection(
         return call("sessions.usage", params.ifEmpty { null })
     }
 
+    /** models.list — 获取可用模型列表 */
+    suspend fun modelsList(): ResponseFrame {
+        return call("models.list", null)
+    }
+
+    /** sessions.messages.subscribe — 订阅会话消息 */
+    suspend fun sessionsMessagesSubscribe(sessionKey: String): ResponseFrame {
+        val params = mapOf("key" to JsonPrimitive(sessionKey))
+        return call("sessions.messages.subscribe", params)
+    }
+
+    /** sessions.messages.unsubscribe — 取消订阅会话消息 */
+    suspend fun sessionsMessagesUnsubscribe(sessionKey: String): ResponseFrame {
+        val params = mapOf("key" to JsonPrimitive(sessionKey))
+        return call("sessions.messages.unsubscribe", params)
+    }
+
     /** cron.list — 列出定时任务 */
     suspend fun cronList(): ResponseFrame {
         return call("cron.list", null)

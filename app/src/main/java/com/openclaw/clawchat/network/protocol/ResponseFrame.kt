@@ -384,3 +384,52 @@ fun ResponseFrame.parseDeviceStatusResponse(): DeviceStatusResponse? {
 fun ResponseFrame.parsePingResponse(): PingResponse? {
     return parsePayload(PingResponse.serializer())
 }
+
+/**
+ * 模型列表响应载荷
+ */
+@Serializable
+data class ModelsListResponse(
+    @SerialName("models")
+    val models: List<ModelInfo>
+)
+
+/**
+ * 模型信息
+ */
+@Serializable
+data class ModelInfo(
+    @SerialName("id")
+    val id: String,
+
+    @SerialName("name")
+    val name: String? = null,
+
+    @SerialName("provider")
+    val provider: String? = null,
+
+    @SerialName("contextWindow")
+    val contextWindow: Int? = null,
+
+    @SerialName("maxOutputTokens")
+    val maxOutputTokens: Int? = null,
+
+    @SerialName("supportsVision")
+    val supportsVision: Boolean = false,
+
+    @SerialName("supportsTools")
+    val supportsTools: Boolean = true,
+
+    @SerialName("inputPrice")
+    val inputPrice: Double? = null,
+
+    @SerialName("outputPrice")
+    val outputPrice: Double? = null
+)
+
+/**
+ * 解析为 ModelsListResponse
+ */
+fun ResponseFrame.parseModelsListResponse(): ModelsListResponse? {
+    return parsePayload(ModelsListResponse.serializer())
+}

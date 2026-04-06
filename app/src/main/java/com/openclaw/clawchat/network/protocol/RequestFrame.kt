@@ -74,6 +74,11 @@ enum class GatewayMethod(val value: String) {
     SESSIONS_PREVIEW("sessions.preview"),
     SESSIONS_USAGE("sessions.usage"),
     SESSIONS_STEER("sessions.steer"),
+    SESSIONS_MESSAGES_SUBSCRIBE("sessions.messages.subscribe"),
+    SESSIONS_MESSAGES_UNSUBSCRIBE("sessions.messages.unsubscribe"),
+
+    // 模型
+    MODELS_LIST("models.list"),
 
     // 设备
     DEVICE_TOKEN_ROTATE("device.token.rotate"),
