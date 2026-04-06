@@ -120,6 +120,14 @@
     <string name="session_delete_confirm_message">删除这条消息？</string>
     <string name="session_no_messages">暂无消息</string>
     <string name="session_start_conversation">开始输入以开始对话</string>
+    <string name="session_batch_select">批量选择</string>
+    <string name="session_select_all">全选</string>
+    <string name="session_deselect_all">取消全选</string>
+    <string name="session_pin">置顶会话</string>
+    <string name="session_unpin">取消置顶</string>
+    <string name="session_message_count">%d 条消息</string>
+    <string name="session_unnamed">未命名会话</string>
+    <string name="session_enter_new_name">输入新名称…</string>
 
     <!-- Pairing -->
     <string name="pairing_title">设备配对</string>

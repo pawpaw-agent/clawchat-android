@@ -30,7 +30,18 @@ data class SessionUi(
             !agentName.isNullOrBlank() -> agentName
             !label.isNullOrBlank() -> label
             !model.isNullOrBlank() -> model
-            else -> "未命名会话"
+            else -> "Unnamed session"  // Use string resource in Composable context
+        }
+    }
+
+    @Composable
+    fun getDisplayNameLocalized(): String {
+        val agentName = agentId?.removePrefix("agent:")?.substringBefore(":") ?: agentId
+        return when {
+            !agentName.isNullOrBlank() -> agentName
+            !label.isNullOrBlank() -> label
+            !model.isNullOrBlank() -> model
+            else -> androidx.compose.ui.res.stringResource(com.openclaw.clawchat.R.string.session_unnamed)
         }
     }
 }

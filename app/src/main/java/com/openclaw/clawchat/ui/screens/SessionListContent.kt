@@ -20,8 +20,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.MainUiState
 import com.openclaw.clawchat.ui.state.SessionUi
@@ -63,19 +65,19 @@ fun SessionListContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text("搜索会话...") },
+                    placeholder = { Text(stringResource(R.string.search_sessions)) },
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = null)
                     },
                     trailingIcon = {
                         if (searchQuery.isNotBlank()) {
                             IconButton(onClick = { onSearchQueryChange("") }) {
-                                Icon(Icons.Default.Close, contentDescription = "清除")
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
                             }
                         } else if (!isSelectionMode && state.sessions.isNotEmpty()) {
                             // 选择模式按钮
                             IconButton(onClick = { isSelectionMode = true }) {
-                                Icon(Icons.Default.Checklist, contentDescription = "批量选择")
+                                Icon(Icons.Default.Checklist, contentDescription = stringResource(R.string.session_batch_select))
                             }
                         }
                     },
@@ -107,7 +109,7 @@ fun SessionListContent(
                                 selectedSessions = state.sessions.map { it.id }.toSet()
                             }
                         }) {
-                            Text(if (selectedSessions.size == state.sessions.size) "取消全选" else "全选")
+                            Text(if (selectedSessions.size == state.sessions.size) stringResource(R.string.session_deselect_all) else stringResource(R.string.session_select_all))
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         Text(
@@ -119,7 +121,7 @@ fun SessionListContent(
                             isSelectionMode = false
                             selectedSessions = emptySet()
                         }) {
-                            Text("取消")
+                            Text(stringResource(R.string.cancel))
                         }
                     }
                 }
@@ -397,7 +399,7 @@ private fun SessionItem(
             },
             dismissButton = {
                 TextButton(onClick = { showSteerDialog = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -407,13 +409,13 @@ private fun SessionItem(
     if (showRenameDialog) {
         AlertDialog(
             onDismissRequest = { showRenameDialog = false },
-            title = { Text("重命名会话") },
+            title = { Text(stringResource(R.string.session_rename_title)) },
             text = {
                 OutlinedTextField(
                     value = renameText,
                     onValueChange = { renameText = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("输入新名称...") },
+                    placeholder = { Text(stringResource(R.string.session_enter_new_name)) },
                     singleLine = true
                 )
             },
@@ -426,12 +428,12 @@ private fun SessionItem(
                         showRenameDialog = false
                     }
                 ) {
-                    Text("确定")
+                    Text(stringResource(R.string.confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showRenameDialog = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -441,8 +443,8 @@ private fun SessionItem(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("删除会话") },
-            text = { Text("确定要删除「${session.getDisplayName()}」吗？") },
+            title = { Text(stringResource(R.string.session_delete_title)) },
+            text = { Text(stringResource(R.string.session_delete_message, session.getDisplayName())) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -450,12 +452,12 @@ private fun SessionItem(
                         showDeleteConfirm = false
                     }
                 ) {
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -610,7 +612,7 @@ private fun SessionItem(
                     if (session.messageCount > 0) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "· ${session.messageCount} 条消息",
+                            text = "· ${stringResource(R.string.session_message_count, session.messageCount)}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -637,7 +639,7 @@ private fun SessionItem(
             
             // 置顶选项
             DropdownMenuItem(
-                text = { Text(if (session.isPinned) "取消置顶" else "置顶会话") },
+                text = { Text(if (session.isPinned) stringResource(R.string.session_unpin) else stringResource(R.string.session_pin)) },
                 leadingIcon = { 
                     Icon(
                         if (session.isPinned) Icons.Default.PushPin else Icons.Default.PushPin,
@@ -666,7 +668,7 @@ private fun SessionItem(
             
             // 删除选项
             DropdownMenuItem(
-                text = { Text("删除会话", color = MaterialTheme.colorScheme.error) },
+                text = { Text(stringResource(R.string.session_delete_button), color = MaterialTheme.colorScheme.error) },
                 leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                 onClick = {
                     showMenu = false
