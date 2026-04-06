@@ -314,7 +314,6 @@
     <string name="connection_gateway_name_hint">例如：Home Server</string>
     <string name="connection_gateway_host">主机地址</string>
     <string name="connection_gateway_host_hint">例如：192.168.1.100</string>
-    <string name="gateway_port">端口</string>
     <string name="gateway_save_and_connect">保存并连接</string>
     <string name="gateway_save">保存</string>
 </resources>
