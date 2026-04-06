@@ -155,7 +155,6 @@
     <string name="settings_theme">主题</string>
     <string name="settings_language">语言</string>
     <string name="settings_about">关于</string>
-    <string name="settings_version">版本</string>
     <string name="settings_device_info">设备信息</string>
     <string name="settings_pairing_status">配对状态</string>
     <string name="settings_close">关闭</string>
