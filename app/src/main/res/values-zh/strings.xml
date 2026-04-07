@@ -168,13 +168,11 @@
     <string name="pairing_timeout">配对超时</string>
     <string name="pairing_connect_gateway">连接网关</string>
     <string name="pairing_gateway_address">网关地址</string>
-    <string name="pairing_gateway_address_hint">192.168.0.213:18789</string>
     <string name="pairing_gateway_token">网关令牌</string>
     <string name="pairing_gateway_token_hint">粘贴 OPENCLAW_GATEWAY_TOKEN</string>
     <string name="pairing_connect">连接</string>
     <string name="pairing_start">开始配对</string>
     <string name="pairing_generating_key">正在生成 Ed25519 设备密钥…</string>
-    <string name="pairing_device_id">设备 ID</string>
     <string name="pairing_public_key">公钥 (Ed25519)</string>
     <string name="pairing_invalid_address">请输入有效的地址</string>
     <string name="pairing_waiting_approval">等待管理员批准</string>
