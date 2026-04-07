@@ -63,6 +63,7 @@
     <string name="message_speak">朗读</string>
     <string name="message_retry">重试</string>
     <string name="message_copied">已复制到剪贴板</string>
+    <string name="message_copied_to_clipboard">消息已复制到剪贴板</string>
     <string name="message_delete_title">删除消息</string>
     <string name="message_delete_confirm">删除这条消息？</string>
     <string name="message_code_copied">代码已复制</string>
@@ -200,6 +201,8 @@
     <string name="settings_disconnect_description">断开当前网关连接</string>
     <string name="settings_configure_gateway">配置网关</string>
     <string name="settings_gateway_url">网关 URL</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_debug">调试</string>
     <string name="settings_gateway_url_hint">例如：http://192.168.1.100:18789</string>
     <string name="settings_connecting">连接中…</string>
     <string name="settings_theme_light">浅色</string>
@@ -221,6 +224,8 @@
     <string name="notification_mark_as_read">标记为已读</string>
     <string name="notification_channel_description">消息通知</string>
     <string name="notification_new_message_title">来自 %s 的新消息</string>
+    <string name="notification_channel_name">ClawChat 消息</string>
+    <string name="notification_new_message_text">收到新消息</string>
 
     <!-- Errors -->
     <string name="error_network">网络错误，请检查您的连接。</string>
@@ -270,6 +275,8 @@
     <string name="about_feature_websocket">WebSocket 实时通信，Gateway 协议 v3</string>
     <string name="about_feature_network">支持局域网和 Tailscale 远程访问</string>
     <string name="about_open_source_licenses">开源许可</string>
+    <string name="about_licenses">开源许可</string>
+    <string name="about_title">关于</string>
 
     <!-- Session Screen -->
     <string name="session_new_messages_count">%d 条新消息</string>
