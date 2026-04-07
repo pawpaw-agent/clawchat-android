@@ -58,10 +58,6 @@ fun EnhancedMessageInputBar(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
 
-    // 键盘快捷键处理
-    var currentKeyEvent by remember { mutableStateOf<KeyEvent?>(null) }
-    val scope = rememberCoroutineScope()
-
     // 斜杠菜单状态
     var slashMenu by remember { mutableStateOf(SlashMenuState()) }
 
@@ -165,44 +161,6 @@ fun EnhancedMessageInputBar(
     // 附件菜单状态
     var showAttachmentMenu by remember { mutableStateOf(false) }
 
-    // 处理键盘快捷键
-    LaunchedEffect(currentKeyEvent) {
-        currentKeyEvent?.let { event ->
-            if (event.type == KeyEventType.KeyUp) {
-                when {
-                    event.isNewSessionShortcut() -> {
-                        // 新建会话快捷键 - 执行相应命令
-                        val newSessionCmd = SLASH_COMMANDS.find { it.name == "new" }
-                        if (newSessionCmd != null) {
-                            onExecuteCommand(newSessionCmd, "")
-                        }
-                    }
-                    event.isSearchShortcut() -> {
-                        // 搜索快捷键
-                        val searchCmd = SLASH_COMMANDS.find { it.name == "search" }
-                        if (searchCmd != null) {
-                            onExecuteCommand(searchCmd, "")
-                        }
-                    }
-                    event.isUndoShortcut() -> {
-                        // 撤销快捷键
-                        val undoCmd = SLASH_COMMANDS.find { it.name == "undo" }
-                        if (undoCmd != null) {
-                            onExecuteCommand(undoCmd, "")
-                        }
-                    }
-                    event.isSaveDraftShortcut() -> {
-                        // 保存草稿快捷键
-                        val saveCmd = SLASH_COMMANDS.find { it.name == "save" }
-                        if (saveCmd != null) {
-                            onExecuteCommand(saveCmd, "")
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     Surface(
         tonalElevation = DesignTokens.elevationSm,
         color = MaterialTheme.colorScheme.surfaceContainerLow
@@ -253,8 +211,40 @@ fun EnhancedMessageInputBar(
                     .fillMaxWidth()
                     .padding(DesignTokens.space2)
                     .onPreviewKeyEvent { event ->
-                        currentKeyEvent = event
-                        false
+                        // 直接在 KeyUp 时处理快捷键
+                        if (event.type == KeyEventType.KeyUp) {
+                            when {
+                                event.isNewSessionShortcut() -> {
+                                    val newSessionCmd = SLASH_COMMANDS.find { it.name == "new" }
+                                    if (newSessionCmd != null) {
+                                        onExecuteCommand(newSessionCmd, "")
+                                        return@onPreviewKeyEvent true  // 消费事件
+                                    }
+                                }
+                                event.isSearchShortcut() -> {
+                                    val searchCmd = SLASH_COMMANDS.find { it.name == "search" }
+                                    if (searchCmd != null) {
+                                        onExecuteCommand(searchCmd, "")
+                                        return@onPreviewKeyEvent true
+                                    }
+                                }
+                                event.isUndoShortcut() -> {
+                                    val undoCmd = SLASH_COMMANDS.find { it.name == "undo" }
+                                    if (undoCmd != null) {
+                                        onExecuteCommand(undoCmd, "")
+                                        return@onPreviewKeyEvent true
+                                    }
+                                }
+                                event.isSaveDraftShortcut() -> {
+                                    val saveCmd = SLASH_COMMANDS.find { it.name == "save" }
+                                    if (saveCmd != null) {
+                                        onExecuteCommand(saveCmd, "")
+                                        return@onPreviewKeyEvent true
+                                    }
+                                }
+                            }
+                        }
+                        false  // 不消费其他事件
                     },
                 horizontalArrangement = Arrangement.spacedBy(DesignTokens.space1),
                 verticalAlignment = Alignment.Bottom
