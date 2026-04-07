@@ -216,6 +216,7 @@ fun MessageGroupList(
     listState: LazyListState,
     streamSegments: List<StreamSegment> = emptyList(),
     toolMessages: List<MessageUi> = emptyList(),
+    toolStreamById: Map<String, ToolStreamEntry> = emptyMap(),  // 实时工具流状态
     chatStream: String? = null,
     messageFontSize: FontSize = FontSize.MEDIUM,
     // 滚动状态（参考 webchat app-scroll.ts 和 Stream SDK）
@@ -348,6 +349,7 @@ fun MessageGroupList(
         ) { group ->
             MessageGroupItem(
                 group = group,
+                toolStreamById = toolStreamById,  // 实时工具流状态
                 messageFontSize = messageFontSize,
                 onDeleteMessage = onDeleteMessage,
                 onEditMessage = onEditMessage,
@@ -420,6 +422,7 @@ fun groupMessages(messages: List<MessageUi>): List<MessageGroup> {
 @Composable
 fun MessageGroupItem(
     group: MessageGroup,
+    toolStreamById: Map<String, ToolStreamEntry> = emptyMap(),  // 实时工具流状态
     messageFontSize: FontSize = FontSize.MEDIUM,
     onDeleteMessage: (String) -> Unit = {},
     onEditMessage: (String) -> Unit = {},
@@ -472,8 +475,22 @@ fun MessageGroupItem(
 
                         // ASSISTANT 消息后面立即显示其工具卡片
                         if (message.role == MessageRole.ASSISTANT) {
-                            val toolCards = remember(message, group.messages) {
-                                pairToolCards(message, group.messages).distinctBy { it.callId }
+                            val toolCards = remember(message, group.messages, toolStreamById) {
+                                pairToolCards(message, group.messages)
+                                    .distinctBy { it.callId }
+                                    .map { card ->
+                                        // 合并实时工具流状态
+                                        val streamEntry = toolStreamById[card.callId]
+                                        if (streamEntry != null) {
+                                            card.copy(
+                                                phase = streamEntry.phase,
+                                                result = streamEntry.output ?: card.result,
+                                                isError = streamEntry.isError
+                                            )
+                                        } else {
+                                            card
+                                        }
+                                    }
                             }
                             if (toolCards.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(DesignTokens.space1))

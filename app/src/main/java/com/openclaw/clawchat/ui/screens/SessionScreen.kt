@@ -226,6 +226,7 @@ fun SessionScreen(
                             listState = listState,
                             streamSegments = state.chatStreamSegments,
                             toolMessages = state.chatToolMessages,
+                            toolStreamById = state.toolStreamById,  // 实时工具流状态
                             chatStream = state.chatStream,
                             messageFontSize = messageFontSize,
                             // 滚动状态（参考 webchat app-scroll.ts 和 Stream SDK）
