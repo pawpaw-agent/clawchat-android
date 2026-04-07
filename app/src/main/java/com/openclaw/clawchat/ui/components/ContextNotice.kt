@@ -14,15 +14,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
  * Context 用量警告组件
  * 参考 webchat: renderContextNotice
- * 
+ *
  * 显示条件：used / limit >= 0.85
  * 颜色：amber (85%) → red (95%+) 渐变
  */
@@ -33,24 +35,24 @@ fun ContextNotice(
     modifier: Modifier = Modifier
 ) {
     val ratio = totalTokens.toFloat() / contextTokensLimit.toFloat()
-    
+
     // 只在 >= 85% 时显示
     if (ratio < 0.85f) return
-    
+
     val pct = min((ratio * 100).roundToInt(), 100)
-    
+
     // 颜色渐变：amber (85%) → red (95%+)
     // t: 0 at 85%, 1 at 95%+
     val t = min(maxOf((ratio - 0.85f) / 0.1f, 0f), 1f)
-    
+
     // Warn: Color(0xFFF59E0B) - amber
     // Danger: Color(0xFFEF4444) - red
     val warnColor = Color(0xFFF59E0B)
     val dangerColor = Color(0xFFEF4444)
-    
+
     val color = lerpColor(warnColor, dangerColor, t)
     val bgColor = color.copy(alpha = 0.08f + 0.08f * t)
-    
+
     AnimatedVisibility(
         visible = true,
         enter = fadeIn(),
@@ -76,16 +78,16 @@ fun ContextNotice(
                     contentDescription = null,
                     tint = color
                 )
-                
+
                 Text(
-                    text = "$pct% context used",
+                    text = stringResource(R.string.context_used, pct),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = color
                 )
-                
+
                 Text(
-                    text = "(${formatTokens(totalTokens)} / ${formatTokens(contextTokensLimit)})",
+                    text = stringResource(R.string.context_tokens_format, formatTokens(totalTokens), formatTokens(contextTokensLimit)),
                     style = MaterialTheme.typography.bodySmall,
                     color = color.copy(alpha = 0.7f)
                 )
@@ -97,7 +99,7 @@ fun ContextNotice(
 /**
  * Compaction 指示器组件
  * 参考 webchat: renderCompactionIndicator
- * 
+ *
  * 显示状态：
  * - active: "Compacting context..." + loader
  * - complete: "Context compacted" + check icon, 2秒后消失
@@ -110,7 +112,7 @@ fun CompactionIndicator(
 ) {
     // 完成后显示 2 秒
     var showComplete by remember { mutableStateOf(false) }
-    
+
     LaunchedEffect(completedAt) {
         if (completedAt != null) {
             showComplete = true
@@ -118,7 +120,7 @@ fun CompactionIndicator(
             showComplete = false
         }
     }
-    
+
     AnimatedVisibility(
         visible = active || showComplete,
         enter = fadeIn(),
@@ -145,9 +147,9 @@ fun CompactionIndicator(
                         strokeWidth = 2.dp,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    
+
                     Text(
-                        text = "Compacting context...",
+                        text = stringResource(R.string.context_compacting),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -157,9 +159,9 @@ fun CompactionIndicator(
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
-                    
+
                     Text(
-                        text = "Context compacted",
+                        text = stringResource(R.string.context_compacted),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )

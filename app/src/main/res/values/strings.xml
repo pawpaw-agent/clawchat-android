@@ -447,6 +447,22 @@
     <string name="command_debug_info">Debug info</string>
     <string name="command_debug_info_desc">View connection status and logs</string>
 
+    <!-- Context Notice -->
+    <string name="context_used">%d%% context used</string>
+    <string name="context_tokens_format">(%s / %s)</string>
+    <string name="context_compacting">Compacting context…</string>
+    <string name="context_compacted">Context compacted</string>
+
+    <!-- Network Status -->
+    <string name="network_not_connected">Not connected to server</string>
+    <string name="network_connecting">Connecting…</string>
+    <string name="network_connection_failed">Connection failed</string>
+    <string name="network_configure_gateway">Go to Settings to configure Gateway</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome">Welcome to ClawChat</string>
+    <string name="onboarding_subtitle">Connect to OpenClaw Gateway to get started</string>
+
     <!-- Attachments -->
     <string name="attachment_preview">Attachment preview</string>
     <string name="attachment_remove">Remove attachment</string>
