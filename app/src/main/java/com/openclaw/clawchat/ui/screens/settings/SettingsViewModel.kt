@@ -128,10 +128,16 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(themeMode = themeMode) }
             }
         }
-        
+
         viewModelScope.launch {
             userPreferences.dynamicColor.collect { dynamicColor ->
                 _uiState.update { it.copy(dynamicColor = dynamicColor) }
+            }
+        }
+
+        viewModelScope.launch {
+            userPreferences.themeColorIndex.collect { themeColorIndex ->
+                _uiState.update { it.copy(themeColorIndex = themeColorIndex) }
             }
         }
     }
@@ -173,14 +179,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun toggleNotifications(enabled: Boolean) {
-        _uiState.update { it.copy(notificationsEnabled = enabled) }
-    }
-
-    fun toggleDnd(enabled: Boolean) {
-        _uiState.update { it.copy(dndEnabled = enabled) }
-    }
-    
     fun setMessageFontSize(fontSize: FontSize) {
         viewModelScope.launch {
             userPreferences.setMessageFontSize(fontSize)
@@ -192,7 +190,7 @@ class SettingsViewModel @Inject constructor(
             userPreferences.setThemeMode(themeMode)
         }
     }
-    
+
     fun setDynamicColor(enabled: Boolean) {
         viewModelScope.launch {
             userPreferences.setDynamicColor(enabled)
@@ -200,6 +198,8 @@ class SettingsViewModel @Inject constructor(
     }
     
     fun setThemeColor(colorIndex: Int) {
-        _uiState.update { it.copy(themeColorIndex = colorIndex) }
+        viewModelScope.launch {
+            userPreferences.setThemeColorIndex(colorIndex)
+        }
     }
 }

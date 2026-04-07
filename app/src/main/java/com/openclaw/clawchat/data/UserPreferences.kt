@@ -56,6 +56,7 @@ class UserPreferences @Inject constructor(
         private val MESSAGE_FONT_SIZE = intPreferencesKey("message_font_size")
         private val THEME_MODE = intPreferencesKey("theme_mode")
         private val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        private val THEME_COLOR_INDEX = intPreferencesKey("theme_color_index")
     }
     
     /**
@@ -108,6 +109,23 @@ class UserPreferences @Inject constructor(
     suspend fun setThemeMode(themeMode: ThemeMode) {
         context.dataStore.edit { preferences ->
             preferences[THEME_MODE] = themeMode.value
+        }
+    }
+
+    /**
+     * 主题颜色索引
+     */
+    val themeColorIndex: Flow<Int> = context.dataStore.data
+        .map { preferences ->
+            preferences[THEME_COLOR_INDEX] ?: 0
+        }
+
+    /**
+     * 设置主题颜色索引
+     */
+    suspend fun setThemeColorIndex(index: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[THEME_COLOR_INDEX] = index
         }
     }
 }

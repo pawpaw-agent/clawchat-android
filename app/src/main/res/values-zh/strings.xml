@@ -418,7 +418,6 @@
     <string name="settings_back">返回</string>
     <string name="settings_section_connection">连接</string>
     <string name="settings_section_display">显示</string>
-    <string name="settings_section_notifications">通知</string>
     <string name="settings_section_automation">自动化</string>
     <string name="settings_section_security">安全</string>
     <string name="settings_section_about">关于</string>
@@ -430,15 +429,9 @@
     <string name="settings_font_size_desc">调整所有消息的字体大小</string>
     <string name="settings_theme_color">主题色</string>
     <string name="settings_theme_color_desc">选择应用主题颜色</string>
-    <string name="settings_push_notifications">推送通知</string>
-    <string name="settings_push_notifications_desc">接收新消息通知</string>
-    <string name="settings_dnd_mode">勿扰模式</string>
-    <string name="settings_dnd_mode_desc">定时静音通知</string>
     <string name="settings_scheduled_tasks">定时任务</string>
     <string name="settings_scheduled_tasks_desc">管理定时执行的任务</string>
     <string name="settings_version">版本 %s</string>
-    <string name="settings_open_source_licenses">开源许可</string>
-    <string name="settings_open_source_licenses_desc">查看第三方库许可</string>
     <string name="settings_debug_subtitle">调试和诊断工具</string>
 
     <!-- Security Status -->

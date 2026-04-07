@@ -119,25 +119,6 @@ fun SettingsScreen(
                 )
             }
 
-            // 通知设置区域
-            SettingsSection(title = stringResource(R.string.settings_section_notifications)) {
-                ToggleSettingItem(
-                    icon = Icons.Outlined.Notifications,
-                    title = stringResource(R.string.settings_push_notifications),
-                    subtitle = stringResource(R.string.settings_push_notifications_desc),
-                    checked = state.notificationsEnabled,
-                    onCheckedChange = { viewModel.toggleNotifications(it) }
-                )
-
-                ToggleSettingItem(
-                    icon = Icons.Outlined.DoNotDisturb,
-                    title = stringResource(R.string.settings_dnd_mode),
-                    subtitle = stringResource(R.string.settings_dnd_mode_desc),
-                    checked = state.dndEnabled,
-                    onCheckedChange = { viewModel.toggleDnd(it) }
-                )
-            }
-
             // 自动化区域
             SettingsSection(title = stringResource(R.string.settings_section_automation)) {
                 ClickableSettingItem(
@@ -171,13 +152,6 @@ fun SettingsScreen(
                             onNavigateToDebug()
                         }
                     }
-                )
-
-                ClickableSettingItem(
-                    icon = Icons.Outlined.Description,
-                    title = stringResource(R.string.settings_open_source_licenses),
-                    subtitle = stringResource(R.string.settings_open_source_licenses_desc),
-                    onClick = { /* 尚未实现 */ }
                 )
 
                 // Debug 入口（开发版显示）

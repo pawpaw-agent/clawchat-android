@@ -262,8 +262,6 @@ data class SettingsUiState(
     val gatewayConfigInput: GatewayConfigInput = GatewayConfigInput(),
     val connectionStatus: ConnectionStatusUi = ConnectionStatusUi.Disconnected,
     val isPaired: Boolean = false,
-    val notificationsEnabled: Boolean = true,
-    val dndEnabled: Boolean = false,
     val appVersion: String = "1.0.0",
     // 字体大小设置（统一）
     val messageFontSize: FontSize = FontSize.MEDIUM,
