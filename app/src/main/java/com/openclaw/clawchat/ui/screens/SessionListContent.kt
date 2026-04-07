@@ -46,73 +46,10 @@ fun SessionListContent(
     onDeleteSession: (String) -> Unit = {},
     onSteerSession: ((String, String) -> Unit)? = null,  // sessionKey, steerText
     onRenameSession: ((String, String) -> Unit)? = null,  // sessionKey, newLabel
-    onTogglePinSession: ((String, Boolean) -> Unit)? = null,  // sessionKey, currentPinned
-    onDeleteSessions: ((List<String>) -> Unit)? = null  // 批量删除回调
+    onTogglePinSession: ((String, Boolean) -> Unit)? = null  // sessionKey, currentPinned
 ) {
-    // 批量操作状态
-    var isSelectionMode by remember { mutableStateOf(false) }
-    var selectedSessions by remember { mutableStateOf<Set<String>>(emptySet()) }
-
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // 顶部操作栏（有会话时显示选择按钮）
-            if (state.sessions.isNotEmpty() && !isSelectionMode) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = { isSelectionMode = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Checklist,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.session_batch_select))
-                    }
-                }
-            }
-
-            // 批量操作栏
-            if (isSelectionMode) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextButton(onClick = {
-                            if (selectedSessions.size == state.sessions.size) {
-                                selectedSessions = emptySet()
-                            } else {
-                                selectedSessions = state.sessions.map { it.id }.toSet()
-                            }
-                        }) {
-                            Text(if (selectedSessions.size == state.sessions.size) stringResource(R.string.session_deselect_all) else stringResource(R.string.session_select_all))
-                        }
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(
-                            text = stringResource(R.string.session_selected_count, selectedSessions.size),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        TextButton(onClick = {
-                            isSelectionMode = false
-                            selectedSessions = emptySet()
-                        }) {
-                            Text(stringResource(R.string.cancel))
-                        }
-                    }
-                }
-            }
-
             // 列表内容
             if (state.isLoading && state.sessions.isEmpty()) {
                 // 加载骨架屏
@@ -145,49 +82,10 @@ fun SessionListContent(
                 }
             }
         }
-        
+
         // 连接状态提示条（未连接时显示）- 放在最上层
         if (state.connectionStatus !is ConnectionStatus.Connected) {
             ConnectionStatusBar(connectionStatus = state.connectionStatus)
-        }
-        
-        // 批量删除按钮（使用动画 FAB）
-        androidx.compose.animation.AnimatedVisibility(
-            visible = isSelectionMode && selectedSessions.isNotEmpty(),
-            enter = androidx.compose.animation.scaleIn(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            ),
-            exit = androidx.compose.animation.scaleOut(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            ),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-        ) {
-            FloatingActionButton(
-                onClick = {
-                    onDeleteSessions?.invoke(selectedSessions.toList())
-                    selectedSessions = emptySet()
-                    isSelectionMode = false
-                },
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.session_delete_selected_count, selectedSessions.size))
-                }
-            }
         }
     }
 }

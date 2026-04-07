@@ -121,11 +121,6 @@
     <string name="session_delete_confirm_message">Delete this message?</string>
     <string name="session_no_messages">No messages yet</string>
     <string name="session_start_conversation">Start typing to begin</string>
-    <string name="session_batch_select">Batch select</string>
-    <string name="session_select_all">Select all</string>
-    <string name="session_deselect_all">Deselect all</string>
-    <string name="session_batch_selected">%d sessions selected</string>
-    <string name="session_delete_selected">Delete selected</string>
     <string name="session_pin">Pin session</string>
     <string name="session_unpin">Unpin session</string>
     <string name="session_message_count">%d messages</string>
@@ -139,8 +134,6 @@
     <string name="session_options_message_count">Messages: %d</string>
 
     <!-- Session List -->
-    <string name="session_selected_count">%d selected</string>
-    <string name="session_delete_selected_count">Delete (%d)</string>
     <string name="session_steer_title">Steer session</string>
     <string name="session_steer_placeholder">Enter steer message…</string>
     <string name="session_steer_send">Send</string>
