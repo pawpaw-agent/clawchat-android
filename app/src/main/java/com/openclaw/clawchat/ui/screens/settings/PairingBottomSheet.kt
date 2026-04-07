@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.network.GatewayUrlUtil
 import com.openclaw.clawchat.ui.state.ConnectMode
 import com.openclaw.clawchat.ui.state.PairingEvent
