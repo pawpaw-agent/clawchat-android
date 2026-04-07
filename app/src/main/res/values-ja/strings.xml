@@ -51,7 +51,6 @@
 
     <!-- Session -->
     <string name="session_title">セッション</string>
-    <string name="session_search">セッションを検索…</string>
     <string name="session_today">今日</string>
     <string name="session_yesterday">昨日</string>
     <string name="session_this_week">今週</string>
@@ -68,7 +67,6 @@
     <string name="session_rename_title">セッション名を変更</string>
     <string name="session_name">セッション名</string>
     <string name="session_confirm">確認</string>
-    <string name="session_search_placeholder">セッションを検索…</string>
     <string name="session_delete_confirm_title">メッセージを削除</string>
     <string name="session_delete_confirm_message">このメッセージを削除しますか？</string>
     <string name="session_no_messages">メッセージはありません</string>

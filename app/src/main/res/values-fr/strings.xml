@@ -51,7 +51,6 @@
 
     <!-- Session -->
     <string name="session_title">Session</string>
-    <string name="session_search">Rechercher des sessions…</string>
     <string name="session_today">Aujourd\'hui</string>
     <string name="session_yesterday">Hier</string>
     <string name="session_this_week">Cette semaine</string>
@@ -68,7 +67,6 @@
     <string name="session_rename_title">Renommer la session</string>
     <string name="session_name">Nom de la session</string>
     <string name="session_confirm">Confirmer</string>
-    <string name="session_search_placeholder">Rechercher des sessions…</string>
     <string name="session_delete_confirm_title">Supprimer le message</string>
     <string name="session_delete_confirm_message">Supprimer ce message ?</string>
     <string name="session_no_messages">Aucun message</string>

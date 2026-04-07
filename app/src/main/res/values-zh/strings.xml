@@ -117,7 +117,6 @@
     <string name="session_rename_title">重命名会话</string>
     <string name="session_name">会话名称</string>
     <string name="session_confirm">确认</string>
-    <string name="session_search_placeholder">搜索会话…</string>
     <string name="session_delete_confirm_title">删除消息</string>
     <string name="session_delete_confirm_message">删除这条消息？</string>
     <string name="session_no_messages">暂无消息</string>
@@ -145,7 +144,6 @@
 
     <!-- Session List -->
     <string name="session_selected_count">已选 %d</string>
-    <string name="session_search_not_found">未找到 \"%s\"</string>
     <string name="session_delete_selected_count">删除 (%d)</string>
     <string name="session_steer_title">引导会话</string>
     <string name="session_steer_placeholder">输入引导消息…</string>
@@ -284,7 +282,6 @@
     <string name="session_edit_send">发送</string>
     <string name="session_edit_cancel">取消</string>
     <string name="session_message_search_placeholder">搜索消息…</string>
-    <string name="session_search_no_results">未找到 \"%s\"</string>
     <string name="session_thinking">助手正在思考…</string>
     <string name="session_start_conversation_hint">开始对话吧</string>
     <string name="session_input_hint">输入消息并按发送键开始</string>

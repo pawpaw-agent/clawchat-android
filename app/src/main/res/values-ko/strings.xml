@@ -51,7 +51,6 @@
 
     <!-- Session -->
     <string name="session_title">세션</string>
-    <string name="session_search">세션 검색…</string>
     <string name="session_today">오늘</string>
     <string name="session_yesterday">어제</string>
     <string name="session_this_week">이번 주</string>
@@ -68,7 +67,6 @@
     <string name="session_rename_title">세션 이름 변경</string>
     <string name="session_name">세션 이름</string>
     <string name="session_confirm">확인</string>
-    <string name="session_search_placeholder">세션 검색…</string>
     <string name="session_delete_confirm_title">메시지 삭제</string>
     <string name="session_delete_confirm_message">이 메시지를 삭제하시겠습니까?</string>
     <string name="session_no_messages">메시지 없음</string>

@@ -83,7 +83,6 @@
     <string name="empty_session_hint">Comece a digitar para iniciar a conversa</string>
     <string name="empty_search">Nenhum resultado encontrado</string>
     <string name="empty_search_hint">Tente um termo de busca diferente</string>
-    <string name="search_sessions">Buscar sessões…</string>
     <string name="input_message">Digite uma mensagem…</string>
     <string name="new_messages">Novas mensagens</string>
     <string name="scroll_to_bottom">Rolar para baixo</string>
@@ -98,7 +97,6 @@
     <string name="session_empty">Nenhuma sessão ativa</string>
     <string name="session_model">Modelo</string>
     <string name="session_delete_confirm">Excluir sessão \"%s\"? Isso não pode ser desfeito.</string>
-    <string name="session_search">Buscar sessões…</string>
     <string name="session_today">Hoje</string>
     <string name="session_yesterday">Ontem</string>
     <string name="session_this_week">Esta semana</string>
@@ -116,7 +114,6 @@
     <string name="session_rename_title">Renomear sessão</string>
     <string name="session_name">Nome da sessão</string>
     <string name="session_confirm">Confirmar</string>
-    <string name="session_search_placeholder">Buscar sessões…</string>
     <string name="session_delete_confirm_title">Excluir mensagem</string>
     <string name="session_delete_confirm_message">Excluir esta mensagem?</string>
     <string name="session_no_messages">Nenhuma mensagem ainda</string>
