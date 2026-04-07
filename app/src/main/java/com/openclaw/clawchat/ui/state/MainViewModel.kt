@@ -262,17 +262,23 @@ class MainViewModel @Inject constructor(
                         } else {
                             null
                         }
-                        
+
+                        // Agent 名称和 emoji（从 Gateway 响应中提取）
+                        val agentName = obj["agentName"]?.jsonPrimitive?.content
+                        val agentEmoji = obj["agentEmoji"]?.jsonPrimitive?.content
+
                         // 优先级：derivedTitle > label > displayName
                         val displayLabel = obj["derivedTitle"]?.jsonPrimitive?.content
                             ?: obj["label"]?.jsonPrimitive?.content
                             ?: obj["displayName"]?.jsonPrimitive?.content
-                        
+
                         SessionUi(
                             id = sessionKey,
                             label = displayLabel,
                             model = obj["model"]?.jsonPrimitive?.content,
                             agentId = agentId,
+                            agentName = agentName,
+                            agentEmoji = agentEmoji,
                             status = SessionStatus.RUNNING,
                             lastActivityAt = obj["lastActivityAt"]?.jsonPrimitive?.long
                                 ?: System.currentTimeMillis(),

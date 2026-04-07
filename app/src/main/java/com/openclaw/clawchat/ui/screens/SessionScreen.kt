@@ -154,6 +154,8 @@ fun SessionScreen(
                 // 会话信息
                 sessionLabel = state.session?.label,
                 agentId = state.session?.agentId,
+                agentName = state.session?.agentName,
+                agentEmoji = state.session?.agentEmoji,
                 currentModel = state.session?.model,
                 messageCount = state.chatMessages.size,
                 // Model 切换

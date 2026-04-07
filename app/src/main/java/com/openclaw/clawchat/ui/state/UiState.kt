@@ -16,6 +16,8 @@ data class SessionUi(
     val label: String?,
     val model: String?,
     val agentId: String? = null,
+    val agentName: String? = null,  // Agent 显示名称
+    val agentEmoji: String? = null,  // Agent emoji 图标
     val status: SessionStatus,
     val lastActivityAt: Long,
     val messageCount: Int = 0,
@@ -25,9 +27,9 @@ data class SessionUi(
     val isArchived: Boolean = false  // 归档
 ) {
     fun getDisplayName(): String {
-        val agentName = agentId?.removePrefix("agent:")?.substringBefore(":") ?: agentId
         return when {
             !agentName.isNullOrBlank() -> agentName
+            !agentId.isNullOrBlank() -> agentId.removePrefix("agent:").substringBefore(":")
             !label.isNullOrBlank() -> label
             !model.isNullOrBlank() -> model
             else -> "Unnamed session"  // Use string resource in Composable context
@@ -36,9 +38,9 @@ data class SessionUi(
 
     @Composable
     fun getDisplayNameLocalized(): String {
-        val agentName = agentId?.removePrefix("agent:")?.substringBefore(":") ?: agentId
         return when {
             !agentName.isNullOrBlank() -> agentName
+            !agentId.isNullOrBlank() -> agentId.removePrefix("agent:").substringBefore(":")
             !label.isNullOrBlank() -> label
             !model.isNullOrBlank() -> model
             else -> androidx.compose.ui.res.stringResource(com.openclaw.clawchat.R.string.session_unnamed)

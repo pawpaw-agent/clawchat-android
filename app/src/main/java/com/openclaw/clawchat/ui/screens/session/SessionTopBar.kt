@@ -38,6 +38,8 @@ fun SessionTopAppBar(
     // 会话信息
     sessionLabel: String? = null,
     agentId: String? = null,
+    agentName: String? = null,
+    agentEmoji: String? = null,
     currentModel: String? = null,
     messageCount: Int = 0,
     // Model 切换
@@ -48,8 +50,9 @@ fun SessionTopAppBar(
     var showModelMenu by remember { mutableStateOf(false) }
     var showSessionMenu by remember { mutableStateOf(false) }
 
-    // 显示名称优先级：Agent ID > Model > 默认
+    // 显示名称优先级：Agent Name > Agent ID > Model > Label > 默认
     val displayName = when {
+        !agentName.isNullOrBlank() -> agentName
         !agentId.isNullOrBlank() -> formatAgentName(agentId)
         !currentModel.isNullOrBlank() -> formatModelName(currentModel)
         !sessionLabel.isNullOrBlank() -> sessionLabel

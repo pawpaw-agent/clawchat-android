@@ -53,6 +53,8 @@ data class SessionEntity(
     val label: String? = null,
     val model: String? = null,
     val agentId: String? = null,
+    val agentName: String? = null,  // Agent 显示名称
+    val agentEmoji: String? = null,  // Agent emoji 图标
     val status: String = "RUNNING",
     val lastActivityAt: Long,
     val messageCount: Int = 0,

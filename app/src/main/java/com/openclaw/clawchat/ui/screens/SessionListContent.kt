@@ -522,7 +522,12 @@ private fun SessionItem(
                 contentAlignment = Alignment.Center
             ) {
                 // Agent emoji 或图标
-                if (session.agentId != null) {
+                if (session.agentEmoji != null) {
+                    Text(
+                        text = session.agentEmoji,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                } else if (session.agentId != null) {
                     Icon(
                         imageVector = Icons.Default.SmartToy,
                         contentDescription = null,

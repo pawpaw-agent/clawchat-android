@@ -12,7 +12,7 @@ import androidx.room.RoomDatabase
         SessionEntity::class,
         PendingMessageEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class ClawChatDatabase : RoomDatabase() {
