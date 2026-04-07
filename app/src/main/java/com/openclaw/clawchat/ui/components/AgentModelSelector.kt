@@ -35,7 +35,8 @@ data class AgentItem(
     val name: String,
     val emoji: String? = null,
     val avatar: String? = null,
-    val model: String? = null
+    val model: String? = null,
+    val description: String? = null  // Agent 描述
 )
 
 /**
@@ -45,7 +46,9 @@ data class ModelItem(
     val id: String,
     val name: String,
     val provider: String? = null,
-    val supportsVision: Boolean = false
+    val supportsVision: Boolean = false,
+    val description: String? = null,  // Model 描述
+    val contextWindow: Int? = null    // 上下文窗口大小
 )
 
 /**
@@ -226,7 +229,7 @@ private fun AgentOption(
             }
         }
 
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = agent?.name ?: stringResource(R.string.selector_default_chat),
                 style = MaterialTheme.typography.bodyMedium,
@@ -234,11 +237,15 @@ private fun AgentOption(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            if (agent?.model != null) {
+            // 显示描述或模型信息
+            val subtitle = agent?.description ?: agent?.model
+            if (!subtitle.isNullOrBlank()) {
                 Text(
-                    text = agent.model,
+                    text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -409,24 +416,42 @@ private fun ModelOption(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            if (model?.provider != null) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            // 显示描述、provider 或上下文窗口信息
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Provider
+                if (!model?.provider.isNullOrBlank()) {
                     Text(
                         text = model.provider,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (model.supportsVision) {
-                        Icon(
-                            imageVector = Icons.Default.Image,
-                            contentDescription = stringResource(R.string.selector_supports_vision),
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.tertiary
+                }
+                // 上下文窗口
+                if (model?.contextWindow != null && model.contextWindow > 0) {
+                    if (!model.provider.isNullOrBlank()) {
+                        Text(
+                            text = "·",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    Text(
+                        text = "${model.contextWindow / 1000}k",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                // Vision 支持
+                if (model?.supportsVision == true) {
+                    Icon(
+                        imageVector = Icons.Default.Image,
+                        contentDescription = stringResource(R.string.selector_supports_vision),
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
                 }
             }
         }

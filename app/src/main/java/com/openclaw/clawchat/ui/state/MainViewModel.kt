@@ -478,7 +478,8 @@ class MainViewModel @Inject constructor(
                                 name = obj["name"]?.jsonPrimitive?.content ?: "Unknown",
                                 emoji = obj["emoji"]?.jsonPrimitive?.content,
                                 avatar = obj["avatar"]?.jsonPrimitive?.content,
-                                model = obj["model"]?.jsonPrimitive?.content
+                                model = obj["model"]?.jsonPrimitive?.content,
+                                description = obj["description"]?.jsonPrimitive?.content
                             )
                         } catch (e: Exception) {
                             null
@@ -497,7 +498,9 @@ class MainViewModel @Inject constructor(
                                 id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
                                 name = obj["name"]?.jsonPrimitive?.content ?: obj["id"]?.jsonPrimitive?.content ?: "Unknown",
                                 provider = obj["provider"]?.jsonPrimitive?.content,
-                                supportsVision = obj["supportsVision"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
+                                supportsVision = obj["supportsVision"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false,
+                                description = obj["description"]?.jsonPrimitive?.content,
+                                contextWindow = obj["contextWindow"]?.jsonPrimitive?.content?.toIntOrNull()
                             )
                         } catch (e: Exception) {
                             null
