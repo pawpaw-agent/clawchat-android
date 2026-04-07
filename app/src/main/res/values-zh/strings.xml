@@ -384,6 +384,24 @@
     <string name="debug_back">返回</string>
     <string name="debug_not_configured">未配置</string>
     <string name="debug_gateway">网关</string>
+    <string name="debug_connection_status">状态：%s</string>
+    <string name="debug_reconnect_attempts">重连次数：%d</string>
+    <string name="debug_memory_used">已用：%dMB / %dMB (%d%%)</string>
+    <string name="debug_fps">帧率：%d FPS</string>
+    <string name="debug_app_uptime">运行时间：%d 秒</string>
+    <string name="debug_recent_messages">最近消息</string>
+    <string name="debug_no_messages">暂无消息</string>
+    <string name="debug_message_size">大小：%d bytes</string>
+    <string name="debug_no_crash_report">没有崩溃记录</string>
+    <string name="debug_last_crash">上次崩溃</string>
+    <string name="debug_stack_trace">堆栈跟踪</string>
+    <string name="debug_clear_crash">清除崩溃记录</string>
+    <string name="debug_auto_scroll">自动滚动</string>
+    <string name="debug_search">搜索</string>
+    <string name="debug_memory">内存</string>
+    <string name="debug_fps_title">帧率</string>
+    <string name="debug_app">应用</string>
+    <string name="debug_status">状态：%s</string>
 
     <!-- Settings Screen -->
     <string name="settings_back">返回</string>

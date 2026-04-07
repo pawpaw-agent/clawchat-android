@@ -391,6 +391,24 @@
     <string name="debug_back">Back</string>
     <string name="debug_not_configured">Not configured</string>
     <string name="debug_gateway">Gateway</string>
+    <string name="debug_connection_status">Status: %s</string>
+    <string name="debug_reconnect_attempts">Reconnect attempts: %d</string>
+    <string name="debug_memory_used">Used: %dMB / %dMB (%d%%)</string>
+    <string name="debug_fps">FPS: %d</string>
+    <string name="debug_app_uptime">App uptime: %d seconds</string>
+    <string name="debug_recent_messages">Recent messages</string>
+    <string name="debug_no_messages">No messages</string>
+    <string name="debug_message_size">Size: %d bytes</string>
+    <string name="debug_no_crash_report">No crash report</string>
+    <string name="debug_last_crash">Last crash</string>
+    <string name="debug_stack_trace">Stack trace</string>
+    <string name="debug_clear_crash">Clear crash report</string>
+    <string name="debug_auto_scroll">Auto scroll</string>
+    <string name="debug_search">Search</string>
+    <string name="debug_memory">Memory</string>
+    <string name="debug_fps_title">FPS</string>
+    <string name="debug_app">App</string>
+    <string name="debug_status">Status: %s</string>
 
     <!-- Settings Screen -->
     <string name="settings_back">Back</string>

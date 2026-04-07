@@ -105,8 +105,8 @@ private fun ConnectionDiagnosticsTab(state: DebugUiState) {
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
                     containerColor = when {
-                        state.connectionState == "Connected" -> MaterialTheme.colorScheme.primaryContainer
-                        state.connectionState == "Connecting" -> MaterialTheme.colorScheme.secondaryContainer
+                        state.connectionState == "Connected" || state.connectionState == stringResource(R.string.status_connected) -> MaterialTheme.colorScheme.primaryContainer
+                        state.connectionState == "Connecting" || state.connectionState == stringResource(R.string.status_connecting) -> MaterialTheme.colorScheme.secondaryContainer
                         else -> MaterialTheme.colorScheme.errorContainer
                     }
                 )
@@ -115,17 +115,17 @@ private fun ConnectionDiagnosticsTab(state: DebugUiState) {
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "状态: ${state.connectionState}",
+                        text = stringResource(R.string.debug_connection_status, state.connectionState),
                         style = MaterialTheme.typography.titleMedium
                     )
                     state.connectionLatency?.let { latency ->
                         Text(
-                            text = "延迟: ${latency}ms",
+                            text = stringResource(R.string.status_latency, latency),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
                     Text(
-                        text = "重连次数: ${state.reconnectAttempts}",
+                        text = stringResource(R.string.debug_reconnect_attempts, state.reconnectAttempts),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -234,14 +234,14 @@ private fun LogViewerTab(
             OutlinedTextField(
                 value = state.logSearchQuery,
                 onValueChange = { viewModel.setLogSearchQuery(it) },
-                placeholder = { Text("搜索") },
+                placeholder = { Text(stringResource(R.string.debug_search)) },
                 modifier = Modifier.weight(1f),
                 singleLine = true
             )
 
             // 自动滚动开关
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("自动滚动", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.debug_auto_scroll), style = MaterialTheme.typography.bodySmall)
                 Switch(
                     checked = state.autoScroll,
                     onCheckedChange = { viewModel.toggleAutoScroll() }
@@ -293,15 +293,15 @@ private fun PerformanceTab(state: DebugUiState) {
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("内存", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.debug_memory), style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
-                    val usedMB = state.usedMemory / 1024 / 1024
-                    val maxMB = state.maxMemory / 1024 / 1024
+                    val usedMB = state.usedMemory
+                    val maxMB = state.maxMemory
                     val percent = if (state.maxMemory > 0) {
                         (state.usedMemory * 100 / state.maxMemory).toInt()
                     } else 0
-                    
-                    Text("已用: ${usedMB}MB / ${maxMB}MB ($percent%)")
+
+                    Text(stringResource(R.string.debug_memory_used, usedMB.toInt(), maxMB.toInt(), percent))
                     Spacer(modifier = Modifier.height(8.dp))
                     LinearProgressIndicator(
                         progress = { percent / 100f },
@@ -315,9 +315,9 @@ private fun PerformanceTab(state: DebugUiState) {
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("帧率", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.debug_fps_title), style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("${state.fps} FPS")
+                    Text(stringResource(R.string.debug_fps, state.fps))
                 }
             }
         }
@@ -326,9 +326,9 @@ private fun PerformanceTab(state: DebugUiState) {
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("应用", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.debug_app), style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("运行时间: ${state.appUptime}秒")
+                    Text(stringResource(R.string.debug_app_uptime, state.appUptime))
                 }
             }
         }
@@ -347,7 +347,7 @@ private fun MessageDetailsTab(state: DebugUiState) {
     ) {
         item {
             Text(
-                text = "最近消息",
+                text = stringResource(R.string.debug_recent_messages),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -355,7 +355,7 @@ private fun MessageDetailsTab(state: DebugUiState) {
 
         if (state.recentMessages.isEmpty()) {
             item {
-                Text("暂无消息", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.debug_no_messages), style = MaterialTheme.typography.bodyMedium)
             }
         } else {
             items(
@@ -369,11 +369,11 @@ private fun MessageDetailsTab(state: DebugUiState) {
                             style = MaterialTheme.typography.labelSmall
                         )
                         Text(
-                            text = "状态: ${msg.status}",
+                            text = stringResource(R.string.debug_status, msg.status),
                             style = MaterialTheme.typography.bodySmall
                         )
                         Text(
-                            text = "大小: ${msg.size} bytes",
+                            text = stringResource(R.string.debug_message_size, msg.size),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -384,7 +384,7 @@ private fun MessageDetailsTab(state: DebugUiState) {
 }
 
 /**
- * 崩溃报告 Tab
+ * Crash Report Tab
  */
 @Composable
 private fun CrashReportTab(viewModel: DebugViewModel) {
@@ -419,7 +419,7 @@ private fun CrashReportTab(viewModel: DebugViewModel) {
                             modifier = Modifier.size(48.dp)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("没有崩溃记录", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.debug_no_crash_report), style = MaterialTheme.typography.titleMedium)
                     }
                 }
             }
@@ -437,7 +437,7 @@ private fun CrashReportTab(viewModel: DebugViewModel) {
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "上次崩溃",
+                                stringResource(R.string.debug_last_crash),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
@@ -458,7 +458,7 @@ private fun CrashReportTab(viewModel: DebugViewModel) {
 
             item {
                 Text(
-                    text = "堆栈跟踪",
+                    text = stringResource(R.string.debug_stack_trace),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -486,7 +486,7 @@ private fun CrashReportTab(viewModel: DebugViewModel) {
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("清除崩溃记录")
+                    Text(stringResource(R.string.debug_clear_crash))
                 }
             }
         }
