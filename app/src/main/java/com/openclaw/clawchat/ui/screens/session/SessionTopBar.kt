@@ -240,21 +240,6 @@ fun SessionTopAppBar(
                     )
                 }
 
-                // 帮助按钮（显示快捷键）
-                var showHelpDialog by remember { mutableStateOf(false) }
-                IconButton(onClick = { showHelpDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Default.HelpOutline,
-                        contentDescription = stringResource(R.string.settings_about)
-                    )
-                }
-
-                if (showHelpDialog) {
-                    com.openclaw.clawchat.ui.components.KeyboardShortcutsDialog(
-                        onDismiss = { showHelpDialog = false }
-                    )
-                }
-
                 // 连接状态
                 ConnectionStatusIcon(connectionStatus)
             },

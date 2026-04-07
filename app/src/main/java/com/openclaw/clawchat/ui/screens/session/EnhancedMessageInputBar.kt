@@ -28,10 +28,6 @@ import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.components.*
 import com.openclaw.clawchat.ui.state.AttachmentUi
 import com.openclaw.clawchat.util.FileUtils
-import com.openclaw.clawchat.util.isNewSessionShortcut
-import com.openclaw.clawchat.util.isSearchShortcut
-import com.openclaw.clawchat.util.isUndoShortcut
-import com.openclaw.clawchat.util.isSaveDraftShortcut
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -209,43 +205,7 @@ fun EnhancedMessageInputBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(DesignTokens.space2)
-                    .onPreviewKeyEvent { event ->
-                        // 直接在 KeyUp 时处理快捷键
-                        if (event.type == KeyEventType.KeyUp) {
-                            when {
-                                event.isNewSessionShortcut() -> {
-                                    val newSessionCmd = SLASH_COMMANDS.find { it.name == "new" }
-                                    if (newSessionCmd != null) {
-                                        onExecuteCommand(newSessionCmd, "")
-                                        return@onPreviewKeyEvent true  // 消费事件
-                                    }
-                                }
-                                event.isSearchShortcut() -> {
-                                    val searchCmd = SLASH_COMMANDS.find { it.name == "search" }
-                                    if (searchCmd != null) {
-                                        onExecuteCommand(searchCmd, "")
-                                        return@onPreviewKeyEvent true
-                                    }
-                                }
-                                event.isUndoShortcut() -> {
-                                    val undoCmd = SLASH_COMMANDS.find { it.name == "undo" }
-                                    if (undoCmd != null) {
-                                        onExecuteCommand(undoCmd, "")
-                                        return@onPreviewKeyEvent true
-                                    }
-                                }
-                                event.isSaveDraftShortcut() -> {
-                                    val saveCmd = SLASH_COMMANDS.find { it.name == "save" }
-                                    if (saveCmd != null) {
-                                        onExecuteCommand(saveCmd, "")
-                                        return@onPreviewKeyEvent true
-                                    }
-                                }
-                            }
-                        }
-                        false  // 不消费其他事件
-                    },
+                    .padding(DesignTokens.space2),
                 horizontalArrangement = Arrangement.spacedBy(DesignTokens.space1),
                 verticalAlignment = Alignment.Bottom
             ) {

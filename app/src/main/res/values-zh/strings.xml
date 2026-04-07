@@ -512,15 +512,6 @@
     <string name="create_session_no_agents">未获取到 Agent/Model 信息，将创建默认会话</string>
     <string name="create_session_quick">新建会话</string>
 
-    <!-- Keyboard Shortcuts -->
-    <string name="keyboard_shortcuts_title">键盘快捷键</string>
-    <string name="keyboard_shortcut_new_session">新建会话</string>
-    <string name="keyboard_shortcut_search">搜索</string>
-    <string name="keyboard_shortcut_undo">撤销</string>
-    <string name="keyboard_shortcut_save_draft">保存草稿</string>
-    <string name="keyboard_shortcut_send">发送消息</string>
-    <string name="keyboard_shortcut_newline">换行</string>
-
     <!-- Connection Settings -->
     <string name="connection_not_configured">未配置</string>
     <string name="connection_configure_gateway_hint">点击配置 Gateway 地址</string>

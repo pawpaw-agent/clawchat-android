@@ -558,15 +558,6 @@
     <string name="create_session_no_agents">No Agent/Model info retrieved, will create default session</string>
     <string name="create_session_quick">New session</string>
 
-    <!-- Keyboard Shortcuts -->
-    <string name="keyboard_shortcuts_title">Keyboard Shortcuts</string>
-    <string name="keyboard_shortcut_new_session">New session</string>
-    <string name="keyboard_shortcut_search">Search</string>
-    <string name="keyboard_shortcut_undo">Undo</string>
-    <string name="keyboard_shortcut_save_draft">Save draft</string>
-    <string name="keyboard_shortcut_send">Send message</string>
-    <string name="keyboard_shortcut_newline">New line</string>
-
     <!-- Connection Settings -->
     <string name="connection_not_configured">Not configured</string>
     <string name="connection_configure_gateway_hint">Tap to configure Gateway address</string>
