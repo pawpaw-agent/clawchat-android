@@ -41,23 +41,10 @@ fun MainScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showSettings by remember { mutableStateOf(false) }
     var showSessionOptions by remember { mutableStateOf<SessionUi?>(null) }
-    var searchQuery by remember { mutableStateOf("") }
     var showCommandPalette by remember { mutableStateOf(false) }
     var commandPaletteQuery by remember { mutableStateOf("") }
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
-    
-    // 过滤会话列表
-    val filteredSessions = remember(state.sessions, searchQuery) {
-        if (searchQuery.isBlank()) {
-            state.sessions
-        } else {
-            state.sessions.filter { session ->
-                session.getDisplayName().contains(searchQuery, ignoreCase = true) ||
-                session.lastMessage?.contains(searchQuery, ignoreCase = true) == true
-            }
-        }
-    }
 
     // 监听生命周期，onResume 时检查并重连
     DisposableEffect(lifecycleOwner) {
@@ -140,9 +127,7 @@ fun MainScreen(
                 else -> {
                     // 显示会话列表（即使未连接也显示缓存的会话）
                     SessionListContent(
-                        state = state.copy(sessions = filteredSessions),
-                        searchQuery = searchQuery,
-                        onSearchQueryChange = { searchQuery = it },
+                        state = state,
                         onSelectSession = { viewModel.selectSession(it) },
                         onSessionLongPress = { showSessionOptions = it },
                         onCreateSession = { viewModel.showCreateSessionDialog() },

@@ -86,7 +86,6 @@
     <string name="empty_session_hint">Start typing to begin the conversation</string>
     <string name="empty_search">No results found</string>
     <string name="empty_search_hint">Try a different search term</string>
-    <string name="search_sessions">Search sessions…</string>
     <string name="input_message">Type a message…</string>
     <string name="new_messages">New messages</string>
     <string name="scroll_to_bottom">Scroll to bottom</string>
@@ -101,7 +100,6 @@
     <string name="session_empty">No active sessions</string>
     <string name="session_model">Model</string>
     <string name="session_delete_confirm">Delete session \"%s\"? This cannot be undone.</string>
-    <string name="session_search">Search sessions…</string>
     <string name="session_today">Today</string>
     <string name="session_yesterday">Yesterday</string>
     <string name="session_this_week">This Week</string>
@@ -119,7 +117,6 @@
     <string name="session_rename_title">Rename Session</string>
     <string name="session_name">Session Name</string>
     <string name="session_confirm">Confirm</string>
-    <string name="session_search_placeholder">Search sessions…</string>
     <string name="session_delete_confirm_title">Delete message</string>
     <string name="session_delete_confirm_message">Delete this message?</string>
     <string name="session_no_messages">No messages yet</string>
@@ -143,7 +140,6 @@
 
     <!-- Session List -->
     <string name="session_selected_count">%d selected</string>
-    <string name="session_search_not_found">Not found \"%s\"</string>
     <string name="session_delete_selected_count">Delete (%d)</string>
     <string name="session_steer_title">Steer session</string>
     <string name="session_steer_placeholder">Enter steer message…</string>

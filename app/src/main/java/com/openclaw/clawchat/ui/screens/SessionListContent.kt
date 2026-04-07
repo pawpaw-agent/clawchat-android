@@ -39,8 +39,6 @@ import java.util.Locale
 @Composable
 fun SessionListContent(
     state: MainUiState,
-    searchQuery: String = "",
-    onSearchQueryChange: (String) -> Unit = {},
     onSelectSession: (String) -> Unit,
     onSessionLongPress: (SessionUi?) -> Unit,
     onCreateSession: () -> Unit,
@@ -54,41 +52,29 @@ fun SessionListContent(
     // 批量操作状态
     var isSelectionMode by remember { mutableStateOf(false) }
     var selectedSessions by remember { mutableStateOf<Set<String>>(emptySet()) }
-    
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // 搜索框
-            if (state.sessions.isNotEmpty() || searchQuery.isNotBlank()) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = onSearchQueryChange,
+            // 顶部操作栏（有会话时显示选择按钮）
+            if (state.sessions.isNotEmpty() && !isSelectionMode) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text(stringResource(R.string.search_sessions)) },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null)
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotBlank()) {
-                            IconButton(onClick = { onSearchQueryChange("") }) {
-                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
-                            }
-                        } else if (!isSelectionMode && state.sessions.isNotEmpty()) {
-                            // 选择模式按钮
-                            IconButton(onClick = { isSelectionMode = true }) {
-                                Icon(Icons.Default.Checklist, contentDescription = stringResource(R.string.session_batch_select))
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
-                )
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = { isSelectionMode = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Checklist,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(R.string.session_batch_select))
+                    }
+                }
             }
-            
+
             // 批量操作栏
             if (isSelectionMode) {
                 Surface(
@@ -126,7 +112,7 @@ fun SessionListContent(
                     }
                 }
             }
-            
+
             // 列表内容
             if (state.isLoading && state.sessions.isEmpty()) {
                 // 加载骨架屏
@@ -135,29 +121,7 @@ fun SessionListContent(
                     modifier = Modifier.fillMaxSize()
                 )
             } else if (state.sessions.isEmpty()) {
-                if (searchQuery.isBlank()) {
-                    EmptySessionList(onCreateSession = onCreateSession)
-                } else {
-                    // 搜索无结果
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Spacer(modifier = Modifier.height(48.dp))
-                        Icon(
-                            imageVector = Icons.Default.SearchOff,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.session_search_not_found, searchQuery),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                EmptySessionList(onCreateSession = onCreateSession)
             } else {
                 // 下拉刷新
                 val refreshState = rememberPullToRefreshState()

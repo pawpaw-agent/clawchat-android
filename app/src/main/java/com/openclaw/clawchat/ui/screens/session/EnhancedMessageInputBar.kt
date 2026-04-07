@@ -276,19 +276,7 @@ fun EnhancedMessageInputBar(
                         focusedBorderColor = Color.Transparent,
                         unfocusedBorderColor = Color.Transparent,
                         disabledBorderColor = Color.Transparent
-                    ),
-                    supportingText = {
-                        // 显示字符计数
-                        val charCount = value.length
-                        val warningThreshold = 2000 // 警告阈值
-                        val isWarning = charCount > warningThreshold
-
-                        Text(
-                            text = "$charCount",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    )
                 )
 
                 // 发送按钮

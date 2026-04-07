@@ -86,7 +86,6 @@
     <string name="empty_session_hint">开始输入以开始对话</string>
     <string name="empty_search">未找到结果</string>
     <string name="empty_search_hint">尝试其他搜索词</string>
-    <string name="search_sessions">搜索会话…</string>
     <string name="input_message">输入消息…</string>
     <string name="new_messages">新消息</string>
     <string name="scroll_to_bottom">滚动到底部</string>
@@ -101,7 +100,6 @@
     <string name="session_empty">暂无会话</string>
     <string name="session_model">模型</string>
     <string name="session_delete_confirm">删除会话「%s」？此操作无法撤销。</string>
-    <string name="session_search">搜索会话…</string>
     <string name="session_today">今天</string>
     <string name="session_yesterday">昨天</string>
     <string name="session_this_week">本周</string>

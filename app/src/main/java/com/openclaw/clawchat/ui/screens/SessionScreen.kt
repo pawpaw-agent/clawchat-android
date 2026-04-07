@@ -157,11 +157,7 @@ fun SessionScreen(
                 agentName = state.session?.agentName,
                 agentEmoji = state.session?.agentEmoji,
                 currentModel = state.session?.model,
-                messageCount = state.chatMessages.size,
-                // Model 切换
-                models = state.models,
-                onModelChange = { viewModel.changeModel(it) },
-                isLoadingModels = state.isLoadingModels
+                messageCount = state.chatMessages.size
             )
         },
         contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.ime)

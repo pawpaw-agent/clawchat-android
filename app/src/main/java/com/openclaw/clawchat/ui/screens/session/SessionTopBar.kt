@@ -41,13 +41,8 @@ fun SessionTopAppBar(
     agentName: String? = null,
     agentEmoji: String? = null,
     currentModel: String? = null,
-    messageCount: Int = 0,
-    // Model 切换
-    models: List<ModelItem> = emptyList(),
-    onModelChange: ((String) -> Unit)? = null,
-    isLoadingModels: Boolean = false
+    messageCount: Int = 0
 ) {
-    var showModelMenu by remember { mutableStateOf(false) }
     var showSessionMenu by remember { mutableStateOf(false) }
 
     // 显示名称优先级：Agent Name > Agent ID > Model > Label > 默认
@@ -58,9 +53,6 @@ fun SessionTopAppBar(
         !sessionLabel.isNullOrBlank() -> sessionLabel
         else -> stringResource(R.string.session_title)
     }
-
-    // 是否可以切换 Model
-    val canSwitchModel = onModelChange != null && models.isNotEmpty()
 
     if (isSearchMode) {
         // 搜索模式
@@ -144,92 +136,6 @@ fun SessionTopAppBar(
                         messageCount = messageCount,
                         onDismiss = { showSessionInfo = false }
                     )
-                }
-
-                // Model 切换按钮（如果有可用的 models）
-                if (canSwitchModel) {
-                    Box {
-                        IconButton(onClick = { showModelMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Tune,
-                                contentDescription = stringResource(R.string.session_switch_model)
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = showModelMenu,
-                            onDismissRequest = { showModelMenu = false }
-                        ) {
-                            Text(
-                                text = stringResource(R.string.session_switch_model),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-
-                            if (isLoadingModels) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(16.dp),
-                                                strokeWidth = 2.dp
-                                            )
-                                            Text(stringResource(R.string.session_model_loading))
-                                        }
-                                    },
-                                    onClick = { }
-                                )
-                            } else {
-                                models.forEach { model ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Column {
-                                                Text(
-                                                    text = model.name,
-                                                    style = MaterialTheme.typography.bodyMedium
-                                                )
-                                                if (model.provider != null) {
-                                                    Text(
-                                                        text = model.provider,
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
-                                            }
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = getModelIcon(model.id),
-                                                contentDescription = null,
-                                                tint = if (model.id == currentModel) {
-                                                    MaterialTheme.colorScheme.primary
-                                                } else {
-                                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                                }
-                                            )
-                                        },
-                                        trailingIcon = {
-                                            if (model.id == currentModel) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            onModelChange(model.id)
-                                            showModelMenu = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
                 }
 
                 // 搜索按钮
