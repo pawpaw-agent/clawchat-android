@@ -456,15 +456,7 @@ fun MessageGroupItem(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = DesignTokens.space2),
                     horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
                 ) {
-                    // 收集分组中所有消息的工具卡片，避免重复渲染
-                    val allToolCards = remember(group.messages) {
-                        group.messages
-                            .filter { it.role != MessageRole.USER }
-                            .flatMap { pairToolCards(it, group.messages) }
-                            .distinctBy { it.callId }  // 按 callId 去重
-                    }
-
-                    // 渲染非 TOOL 角色的消息内容
+                    // 渲染非 TOOL 角色的消息内容，每个 ASSISTANT 消息后面立即显示其工具卡片
                     group.messages.filter { it.role != MessageRole.TOOL }.forEachIndexed { index, message ->
                         MessageContentCard(
                             message = message,
@@ -478,15 +470,20 @@ fun MessageGroupItem(
                             onContinueGeneration = onContinueGeneration
                         )
 
+                        // ASSISTANT 消息后面立即显示其工具卡片
+                        if (message.role == MessageRole.ASSISTANT) {
+                            val toolCards = remember(message, group.messages) {
+                                pairToolCards(message, group.messages).distinctBy { it.callId }
+                            }
+                            if (toolCards.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(DesignTokens.space1))
+                                ToolCardRow(toolCards = toolCards)
+                            }
+                        }
+
                         if (index < group.messages.lastIndex) {
                             Spacer(modifier = Modifier.height(DesignTokens.space1))
                         }
-                    }
-
-                    // 统一渲染所有工具卡片（避免重复）
-                    if (allToolCards.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(DesignTokens.space1))
-                        ToolCardRow(toolCards = allToolCards)
                     }
 
                     // 时间戳
