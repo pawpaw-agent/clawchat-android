@@ -178,21 +178,32 @@ class SettingsStateTest {
 
     @Test
     fun `FontSize enum values`() {
-        assertEquals(5, FontSize.entries.size)
-        assertEquals(FontSize.EXTRA_SMALL, FontSize.valueOf("EXTRA_SMALL"))
+        assertEquals(3, FontSize.entries.size)
         assertEquals(FontSize.SMALL, FontSize.valueOf("SMALL"))
         assertEquals(FontSize.MEDIUM, FontSize.valueOf("MEDIUM"))
         assertEquals(FontSize.LARGE, FontSize.valueOf("LARGE"))
-        assertEquals(FontSize.EXTRA_LARGE, FontSize.valueOf("EXTRA_LARGE"))
     }
 
     @Test
-    fun `FontSize scale values`() {
-        // Each size has a scale multiplier
-        assertTrue(FontSize.EXTRA_SMALL.scale < FontSize.SMALL.scale)
-        assertTrue(FontSize.SMALL.scale < FontSize.MEDIUM.scale)
-        assertTrue(FontSize.MEDIUM.scale < FontSize.LARGE.scale)
-        assertTrue(FontSize.LARGE.scale < FontSize.EXTRA_LARGE.scale)
+    fun `FontSize value ordering`() {
+        // SMALL(0) < MEDIUM(1) < LARGE(2)
+        assertTrue(FontSize.SMALL.value < FontSize.MEDIUM.value)
+        assertTrue(FontSize.MEDIUM.value < FontSize.LARGE.value)
+    }
+
+    @Test
+    fun `FontSize displayName`() {
+        assertEquals("小", FontSize.SMALL.displayName)
+        assertEquals("中", FontSize.MEDIUM.displayName)
+        assertEquals("大", FontSize.LARGE.displayName)
+    }
+
+    @Test
+    fun `FontSize fromValue`() {
+        assertEquals(FontSize.SMALL, FontSize.fromValue(0))
+        assertEquals(FontSize.MEDIUM, FontSize.fromValue(1))
+        assertEquals(FontSize.LARGE, FontSize.fromValue(2))
+        assertEquals(FontSize.MEDIUM, FontSize.fromValue(99))  // Default to MEDIUM
     }
 
     // ─────────────────────────────────────────────────────────────
