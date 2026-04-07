@@ -219,13 +219,13 @@ fun GatewayConfigDialog(
                     value = port,
                     onValueChange = { port = it },
                     label = { Text(stringResource(R.string.gateway_port)) },
-                    placeholder = { Text("18789") },
+                    placeholder = { Text(stringResource(R.string.gateway_port_hint)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
                 Text(
-                    text = "ws://${host.ifEmpty { "host" }}:${port.ifEmpty { "port" }}/ws",
+                    text = stringResource(R.string.gateway_ws_preview, host.ifEmpty { "host" }, port.ifEmpty { "port" }),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

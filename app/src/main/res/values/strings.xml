@@ -47,8 +47,10 @@
     <string name="gateway_delete">Delete Gateway</string>
     <string name="gateway_host">Host</string>
     <string name="gateway_port">Port</string>
+    <string name="gateway_port_hint">18789</string>
     <string name="gateway_tls">Use TLS (WSS)</string>
     <string name="gateway_test">Test Connection</string>
+    <string name="gateway_ws_preview">ws://%s:%s/ws</string>
 
     <!-- Messages -->
     <string name="message_hint">Type a message…</string>
@@ -361,6 +363,8 @@
     <string name="slash_steer_desc">Steer child agent</string>
 
     <!-- Slash Command Execution Messages -->
+    <string name="slash_error_prefix">❌ %s</string>
+    <string name="slash_success_prefix">✅ %s</string>
     <string name="slash_error_no_session">Cannot execute command: Please select a session first</string>
     <string name="slash_error_clear_no_session">Cannot clear messages: Please select a session first</string>
     <string name="slash_error_reset_no_session">Cannot reset session: Please select a session first</string>

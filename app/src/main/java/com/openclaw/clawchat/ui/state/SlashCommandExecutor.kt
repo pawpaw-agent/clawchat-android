@@ -32,11 +32,12 @@ class SlashCommandExecutor(
      * 显示错误消息给用户
      */
     private fun showError(message: String) {
+        val formattedMessage = strings.getString(R.string.slash_error_prefix, message)
         onStateUpdate {
             copy(
                 chatMessages = chatMessages + MessageUi(
                     id = "error-${System.currentTimeMillis()}",
-                    content = listOf(MessageContentItem.Text("❌ $message")),
+                    content = listOf(MessageContentItem.Text(formattedMessage)),
                     role = MessageRole.ASSISTANT,
                     timestamp = System.currentTimeMillis()
                 )
@@ -48,11 +49,12 @@ class SlashCommandExecutor(
      * 显示成功消息给用户
      */
     private fun showSuccess(message: String) {
+        val formattedMessage = strings.getString(R.string.slash_success_prefix, message)
         onStateUpdate {
             copy(
                 chatMessages = chatMessages + MessageUi(
                     id = "success-${System.currentTimeMillis()}",
-                    content = listOf(MessageContentItem.Text("✅ $message")),
+                    content = listOf(MessageContentItem.Text(formattedMessage)),
                     role = MessageRole.ASSISTANT,
                     timestamp = System.currentTimeMillis()
                 )
