@@ -369,6 +369,23 @@ internal fun highlightSyntax(code: String, language: String): AnnotatedString {
                 "break", "return", "TRUE", "FALSE", "NULL", "NA", "Inf", "NaN",
                 "library", "require", "source"
             )
+            // Kotlin DSL / Gradle support
+            "gradle", "gradle.kts" -> setOf(
+                "plugins", "dependencies", "repositories", "tasks", "android",
+                "implementation", "api", "compileOnly", "runtimeOnly", "testImplementation",
+                "apply", "from", "version", "group", "id"
+            )
+            // Dockerfile support
+            "dockerfile", "docker" -> setOf(
+                "FROM", "RUN", "CMD", "LABEL", "MAINTAINER", "EXPOSE", "ENV",
+                "ADD", "COPY", "ENTRYPOINT", "VOLUME", "USER", "WORKDIR", "ARG",
+                "ONBUILD", "STOPSIGNAL", "HEALTHCHECK", "SHELL"
+            )
+            // Makefile support
+            "makefile", "make" -> setOf(
+                "include", "define", "endef", "ifdef", "ifndef", "ifeq", "ifneq",
+                "else", "endif", "override", "export", "unexport", "vpath"
+            )
             else -> setOf(
                 "if", "else", "for", "while", "return", "function", "class", "const",
                 "let", "var", "true", "false", "null", "import", "export", "public",

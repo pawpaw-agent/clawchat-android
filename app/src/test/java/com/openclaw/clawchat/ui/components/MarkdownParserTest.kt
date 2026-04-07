@@ -296,6 +296,30 @@ class MarkdownParserTest {
         assertTrue(result.spanStyles.isNotEmpty())
     }
 
+    @Test
+    fun `highlightSyntax handles gradle code`() {
+        val code = "plugins { id(\"com.android.application\") }"
+        val result = highlightSyntax(code, "gradle")
+
+        assertTrue(result.spanStyles.isNotEmpty())
+    }
+
+    @Test
+    fun `highlightSyntax handles dockerfile`() {
+        val code = "FROM ubuntu:latest\nRUN apt-get update"
+        val result = highlightSyntax(code, "dockerfile")
+
+        assertTrue(result.spanStyles.isNotEmpty())
+    }
+
+    @Test
+    fun `highlightSyntax handles makefile`() {
+        val code = "all: build\n\t$(CC) -o app main.c"
+        val result = highlightSyntax(code, "makefile")
+
+        assertTrue(result.text.isNotEmpty())
+    }
+
     // ─────────────────────────────────────────────────────────────
     // parseTableRow 测试
     // ─────────────────────────────────────────────────────────────
