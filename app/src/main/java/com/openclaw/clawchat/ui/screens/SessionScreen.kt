@@ -92,8 +92,6 @@ fun SessionScreen(
             // 切换会话时重置搜索
             isSearchMode = false
             searchQuery = ""
-            // 加载可用模型
-            viewModel.loadModels()
         }
     }
 
