@@ -456,36 +456,37 @@ fun MessageGroupItem(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = DesignTokens.space2),
                     horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
                 ) {
-                    group.messages.forEachIndexed { index, message ->
-                        if (message.role == MessageRole.TOOL) {
-                            RenderToolCardsFromMessage(message, group.messages)
-                        } else {
-                            MessageContentCard(
-                                message = message,
-                                isUser = isUser,
-                                isLastInGroup = index == group.messages.lastIndex,
-                                messageFontSize = messageFontSize,
-                                onDelete = { onDeleteMessage(message.id) },
-                                onEdit = { onEditMessage(message.id) },
-                                onRegenerate = onRegenerate,
-                                onRetry = { onRetryMessage(message.id) },
-                                onContinueGeneration = onContinueGeneration
-                            )
+                    // 收集分组中所有消息的工具卡片，避免重复渲染
+                    val allToolCards = remember(group.messages) {
+                        group.messages
+                            .filter { it.role != MessageRole.USER }
+                            .flatMap { pairToolCards(it, group.messages) }
+                            .distinctBy { it.callId }  // 按 callId 去重
+                    }
 
-                            // 工具调用显示（一行显示多个可折叠卡片）
-                            // 传递分组中所有消息，以便查找 ToolResult
-                            val toolCards = remember(message, group.messages) {
-                                pairToolCards(message, group.messages)
-                            }
-                            if (toolCards.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(DesignTokens.space1))
-                                ToolCardRow(toolCards = toolCards)
-                            }
-                        }
+                    // 渲染非 TOOL 角色的消息内容
+                    group.messages.filter { it.role != MessageRole.TOOL }.forEachIndexed { index, message ->
+                        MessageContentCard(
+                            message = message,
+                            isUser = isUser,
+                            isLastInGroup = index == group.messages.lastIndex,
+                            messageFontSize = messageFontSize,
+                            onDelete = { onDeleteMessage(message.id) },
+                            onEdit = { onEditMessage(message.id) },
+                            onRegenerate = onRegenerate,
+                            onRetry = { onRetryMessage(message.id) },
+                            onContinueGeneration = onContinueGeneration
+                        )
 
                         if (index < group.messages.lastIndex) {
                             Spacer(modifier = Modifier.height(DesignTokens.space1))
                         }
+                    }
+
+                    // 统一渲染所有工具卡片（避免重复）
+                    if (allToolCards.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(DesignTokens.space1))
+                        ToolCardRow(toolCards = allToolCards)
                     }
 
                     // 时间戳
