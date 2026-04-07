@@ -16,7 +16,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.theme.DesignTokens
 
@@ -91,7 +93,7 @@ private fun DisconnectedBanner(
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = "未连接到服务器",
+                    text = stringResource(R.string.network_not_connected),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -103,7 +105,7 @@ private fun DisconnectedBanner(
                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
                 ) {
-                    Text("重试")
+                    Text(stringResource(R.string.retry))
                 }
             }
         }
@@ -157,7 +159,7 @@ private fun ErrorBanner(
                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
                 ) {
-                    Text("重试")
+                    Text(stringResource(R.string.retry))
                 }
             }
         }
@@ -209,7 +211,7 @@ private fun ConnectingBanner() {
             }
 
             Text(
-                text = "正在连接...",
+                text = stringResource(R.string.network_connecting),
                 style = MaterialTheme.typography.bodyMedium
             )
 

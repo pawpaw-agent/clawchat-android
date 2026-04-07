@@ -28,6 +28,7 @@
     <!-- Connection Status -->
     <string name="status_connected">Connected</string>
     <string name="status_connecting">Connecting…</string>
+    <string name="status_disconnecting">Disconnecting…</string>
     <string name="status_disconnected">Disconnected</string>
     <string name="status_error">Connection Error</string>
     <string name="status_connect">Connect</string>
@@ -480,6 +481,25 @@
     <!-- Onboarding -->
     <string name="onboarding_welcome">Welcome to ClawChat</string>
     <string name="onboarding_subtitle">Connect to OpenClaw Gateway to get started</string>
+    <string name="onboarding_gateway_name">Gateway name (optional)</string>
+    <string name="onboarding_gateway_name_hint">e.g., Home Server</string>
+    <string name="onboarding_gateway_address">Gateway address</string>
+    <string name="onboarding_gateway_address_hint">e.g., 192.168.1.100:18789</string>
+    <string name="onboarding_connect_method">Connect method</string>
+    <string name="onboarding_token_hint">Enter Gateway Token</string>
+    <string name="onboarding_token_instruction">Get OPENCLAW_GATEWAY_TOKEN from Gateway settings</string>
+    <string name="onboarding_pairing_flow">Pairing flow</string>
+    <string name="onboarding_pairing_steps">1. Enter Gateway address\n2. Click \"Start pairing\"\n3. Run openclaw devices approve on Gateway terminal</string>
+    <string name="onboarding_waiting_approval">Waiting for approval…</string>
+    <string name="onboarding_waiting_approval_hint">Please approve this device in Gateway admin panel</string>
+    <string name="onboarding_cancel_pairing">Cancel pairing</string>
+    <string name="onboarding_connecting">Connecting…</string>
+    <string name="onboarding_connect">Connect</string>
+    <string name="onboarding_start_pairing">Start pairing</string>
+    <string name="onboarding_token">Token</string>
+    <string name="onboarding_pairing">Pairing</string>
+    <string name="onboarding_password_show">Show</string>
+    <string name="onboarding_password_hide">Hide</string>
 
     <!-- Attachments -->
     <string name="attachment_preview">Attachment preview</string>
@@ -535,4 +555,16 @@
     <string name="connection_gateway_host_hint">e.g., 192.168.1.100</string>
     <string name="gateway_save_and_connect">Save and Connect</string>
     <string name="gateway_save">Save</string>
+
+    <!-- Cron Screen -->
+    <string name="cron_title">Scheduled Tasks</string>
+    <string name="cron_add_task">Add task</string>
+    <string name="cron_unnamed">Unnamed</string>
+    <string name="cron_load_failed">Load failed</string>
+    <string name="cron_execute">Execute</string>
+    <string name="cron_back">Back</string>
+    <string name="cron_no_tasks">No scheduled tasks</string>
+    <string name="cron_add_hint">Tap the button above to add a new task</string>
+    <string name="cron_prompt">Prompt: %s</string>
+    <string name="cron_delete">Delete</string>
 </resources>

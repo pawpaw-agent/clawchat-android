@@ -7,7 +7,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.state.ConnectionStatus
 
 /**
@@ -16,10 +18,10 @@ import com.openclaw.clawchat.ui.state.ConnectionStatus
 @Composable
 fun ConnectionStatusBar(connectionStatus: ConnectionStatus) {
     val (icon, color, text) = when (connectionStatus) {
-        is ConnectionStatus.Connecting -> Triple(Icons.Default.Sync, MaterialTheme.colorScheme.primary, "正在连接...")
-        is ConnectionStatus.Disconnected -> Triple(Icons.Default.CloudOff, MaterialTheme.colorScheme.outline, "未连接")
-        is ConnectionStatus.Error -> Triple(Icons.Default.Error, MaterialTheme.colorScheme.error, "连接错误")
-        else -> Triple(Icons.Default.CheckCircle, MaterialTheme.colorScheme.primary, "已连接")
+        is ConnectionStatus.Connecting -> Triple(Icons.Default.Sync, MaterialTheme.colorScheme.primary, stringResource(R.string.status_connecting))
+        is ConnectionStatus.Disconnected -> Triple(Icons.Default.CloudOff, MaterialTheme.colorScheme.outline, stringResource(R.string.status_disconnected))
+        is ConnectionStatus.Error -> Triple(Icons.Default.Error, MaterialTheme.colorScheme.error, stringResource(R.string.status_error))
+        else -> Triple(Icons.Default.CheckCircle, MaterialTheme.colorScheme.primary, stringResource(R.string.status_connected))
     }
     
     Surface(
@@ -82,7 +84,7 @@ fun ConnectionErrorBanner(
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "连接失败",
+                    text = stringResource(R.string.network_connection_failed),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -93,17 +95,17 @@ fun ConnectionErrorBanner(
                     maxLines = 2
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(8.dp))
-            
+
             TextButton(onClick = onRetry) {
-                Text("重试")
+                Text(stringResource(R.string.retry))
             }
-            
+
             IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "关闭",
+                    contentDescription = stringResource(R.string.close),
                     tint = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.size(18.dp)
                 )
@@ -138,28 +140,28 @@ fun NotConnectedContent(
         
         Text(
             text = when (connectionStatus) {
-                is ConnectionStatus.Disconnected -> "未连接到 Gateway"
-                is ConnectionStatus.Connecting -> "正在连接..."
-                is ConnectionStatus.Disconnecting -> "正在断开..."
-                is ConnectionStatus.Error -> "连接错误：${connectionStatus.message}"
-                is ConnectionStatus.Connected -> "已连接"
-                else -> "未知状态"
+                is ConnectionStatus.Disconnected -> stringResource(R.string.session_not_connected)
+                is ConnectionStatus.Connecting -> stringResource(R.string.status_connecting)
+                is ConnectionStatus.Disconnecting -> stringResource(R.string.status_disconnecting)
+                is ConnectionStatus.Error -> stringResource(R.string.error_connection_exception, connectionStatus.message)
+                is ConnectionStatus.Connected -> stringResource(R.string.status_connected)
+                else -> stringResource(R.string.error_unknown)
             },
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         if (connectionStatus is ConnectionStatus.Disconnected || connectionStatus is ConnectionStatus.Error) {
             Text(
-                text = "请前往设置页面配置 Gateway 连接",
+                text = stringResource(R.string.network_configure_gateway),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Button(onClick = onOpenSettings) {
                 Icon(
                     imageVector = Icons.Default.Settings,
@@ -167,7 +169,7 @@ fun NotConnectedContent(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("去设置")
+                Text(stringResource(R.string.go_to_settings))
             }
         }
     }

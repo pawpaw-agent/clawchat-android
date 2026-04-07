@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -77,7 +78,7 @@ fun OnboardingScreen(
 
             // 标题
             Text(
-                text = "欢迎使用 ClawChat",
+                text = stringResource(R.string.onboarding_welcome),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -85,7 +86,7 @@ fun OnboardingScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "连接到 OpenClaw Gateway 开始使用",
+                text = stringResource(R.string.onboarding_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -96,8 +97,8 @@ fun OnboardingScreen(
             OutlinedTextField(
                 value = state.gatewayName,
                 onValueChange = { viewModel.setGatewayName(it) },
-                label = { Text("Gateway 名称（可选）") },
-                placeholder = { Text("例如：Home Server") },
+                label = { Text(stringResource(R.string.onboarding_gateway_name)) },
+                placeholder = { Text(stringResource(R.string.onboarding_gateway_name_hint)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = {
@@ -111,8 +112,8 @@ fun OnboardingScreen(
             OutlinedTextField(
                 value = state.gatewayUrl,
                 onValueChange = { viewModel.setGatewayUrl(it) },
-                label = { Text("Gateway 地址") },
-                placeholder = { Text("例如：192.168.1.100:18789") },
+                label = { Text(stringResource(R.string.onboarding_gateway_address)) },
+                placeholder = { Text(stringResource(R.string.onboarding_gateway_address_hint)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = {
@@ -125,7 +126,7 @@ fun OnboardingScreen(
 
             // 连接模式选择
             Text(
-                text = "连接方式",
+                text = stringResource(R.string.onboarding_connect_method),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth()
@@ -141,7 +142,7 @@ fun OnboardingScreen(
                 FilterChip(
                     selected = state.connectMode == ConnectMode.TOKEN,
                     onClick = { viewModel.setConnectMode(ConnectMode.TOKEN) },
-                    label = { Text("Token") },
+                    label = { Text(stringResource(R.string.onboarding_token)) },
                     modifier = Modifier.weight(1f)
                 )
 
@@ -149,7 +150,7 @@ fun OnboardingScreen(
                 FilterChip(
                     selected = state.connectMode == ConnectMode.PAIRING,
                     onClick = { viewModel.setConnectMode(ConnectMode.PAIRING) },
-                    label = { Text("配对") },
+                    label = { Text(stringResource(R.string.onboarding_pairing)) },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -163,8 +164,8 @@ fun OnboardingScreen(
                 OutlinedTextField(
                     value = state.token,
                     onValueChange = { viewModel.setToken(it) },
-                    label = { Text("Token") },
-                    placeholder = { Text("输入 Gateway Token") },
+                    label = { Text(stringResource(R.string.onboarding_token)) },
+                    placeholder = { Text(stringResource(R.string.onboarding_token_hint)) },
                     singleLine = true,
                     visualTransformation = if (tokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -176,7 +177,7 @@ fun OnboardingScreen(
                         IconButton(onClick = { tokenVisible = !tokenVisible }) {
                             Icon(
                                 imageVector = if (tokenVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = if (tokenVisible) "隐藏" else "显示"
+                                contentDescription = stringResource(if (tokenVisible) R.string.onboarding_password_hide else R.string.onboarding_password_show)
                             )
                         }
                     }
@@ -185,7 +186,7 @@ fun OnboardingScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "从 Gateway 设置获取 OPENCLAW_GATEWAY_TOKEN",
+                    text = stringResource(R.string.onboarding_token_instruction),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -213,14 +214,14 @@ fun OnboardingScreen(
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
-                                text = "配对流程",
+                                text = stringResource(R.string.onboarding_pairing_flow),
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "1. 输入 Gateway 地址\n2. 点击\"开始配对\"\n3. 在 Gateway 终端运行 openclaw devices approve 批准",
+                            text = stringResource(R.string.onboarding_pairing_steps),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -252,12 +253,12 @@ fun OnboardingScreen(
                             )
                             Column {
                                 Text(
-                                    text = "等待批准...",
+                                    text = stringResource(R.string.onboarding_waiting_approval),
                                     style = MaterialTheme.typography.titleSmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                                 Text(
-                                    text = "请在 Gateway 管理界面批准此设备",
+                                    text = stringResource(R.string.onboarding_waiting_approval_hint),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                                 )
@@ -306,7 +307,7 @@ fun OnboardingScreen(
                     ) {
                         Icon(Icons.Default.Cancel, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("取消配对")
+                        Text(stringResource(R.string.onboarding_cancel_pairing))
                     }
                 }
                 else -> {
@@ -328,14 +329,14 @@ fun OnboardingScreen(
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("连接中...")
+                            Text(stringResource(R.string.onboarding_connecting))
                         } else {
                             Icon(
                                 imageVector = if (state.connectMode == ConnectMode.TOKEN) Icons.Default.Link else Icons.Default.QrCodeScanner,
                                 contentDescription = null
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(if (state.connectMode == ConnectMode.TOKEN) "连接" else "开始配对")
+                            Text(if (state.connectMode == ConnectMode.TOKEN) stringResource(R.string.onboarding_connect) else stringResource(R.string.onboarding_start_pairing))
                         }
                     }
                 }

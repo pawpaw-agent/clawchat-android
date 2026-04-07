@@ -28,6 +28,7 @@
     <!-- Connection Status -->
     <string name="status_connected">已连接</string>
     <string name="status_connecting">连接中…</string>
+    <string name="status_disconnecting">断开中…</string>
     <string name="status_disconnected">已断开</string>
     <string name="status_error">连接错误</string>
     <string name="status_connect">连接</string>
@@ -513,6 +514,18 @@
     <string name="gateway_save_and_connect">保存并连接</string>
     <string name="gateway_save">保存</string>
 
+    <!-- Cron Screen -->
+    <string name="cron_title">定时任务</string>
+    <string name="cron_add_task">添加任务</string>
+    <string name="cron_unnamed">未命名</string>
+    <string name="cron_load_failed">加载失败</string>
+    <string name="cron_execute">执行</string>
+    <string name="cron_back">返回</string>
+    <string name="cron_no_tasks">暂无定时任务</string>
+    <string name="cron_add_hint">点击右上角添加新任务</string>
+    <string name="cron_prompt">提示词：%s</string>
+    <string name="cron_delete">删除</string>
+
     <!-- Context Notice -->
     <string name="context_used">已使用 %d%% 上下文</string>
     <string name="context_tokens_format">（%s / %s）</string>
@@ -528,4 +541,23 @@
     <!-- Onboarding -->
     <string name="onboarding_welcome">欢迎使用 ClawChat</string>
     <string name="onboarding_subtitle">连接到 OpenClaw Gateway 开始使用</string>
+    <string name="onboarding_gateway_name">Gateway 名称（可选）</string>
+    <string name="onboarding_gateway_name_hint">例如：Home Server</string>
+    <string name="onboarding_gateway_address">Gateway 地址</string>
+    <string name="onboarding_gateway_address_hint">例如：192.168.1.100:18789</string>
+    <string name="onboarding_connect_method">连接方式</string>
+    <string name="onboarding_token_hint">输入 Gateway Token</string>
+    <string name="onboarding_token_instruction">从 Gateway 设置获取 OPENCLAW_GATEWAY_TOKEN</string>
+    <string name="onboarding_pairing_flow">配对流程</string>
+    <string name="onboarding_pairing_steps">1. 输入 Gateway 地址\n2. 点击\"开始配对\"\n3. 在 Gateway 终端运行 openclaw devices approve 批准</string>
+    <string name="onboarding_waiting_approval">等待批准…</string>
+    <string name="onboarding_waiting_approval_hint">请在 Gateway 管理界面批准此设备</string>
+    <string name="onboarding_cancel_pairing">取消配对</string>
+    <string name="onboarding_connecting">连接中…</string>
+    <string name="onboarding_connect">连接</string>
+    <string name="onboarding_start_pairing">开始配对</string>
+    <string name="onboarding_token">Token</string>
+    <string name="onboarding_pairing">配对</string>
+    <string name="onboarding_password_show">显示</string>
+    <string name="onboarding_password_hide">隐藏</string>
 </resources>

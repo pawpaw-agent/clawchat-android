@@ -9,7 +9,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
@@ -31,7 +33,11 @@ fun CronScreen(
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
-    
+
+    // Get localized strings outside of LaunchedEffect
+    val unnamedText = stringResource(R.string.cron_unnamed)
+    val loadFailedText = stringResource(R.string.cron_load_failed)
+
     // 加载定时任务列表
     LaunchedEffect(Unit) {
         scope.launch {
@@ -43,7 +49,7 @@ fun CronScreen(
                         val obj = element.jsonObject
                         CronJob(
                             id = obj["id"]?.jsonPrimitive?.content ?: index.toString(),
-                            name = obj["name"]?.jsonPrimitive?.content ?: "未命名",
+                            name = obj["name"]?.jsonPrimitive?.content ?: unnamedText,
                             cron = obj["cron"]?.jsonPrimitive?.content ?: "",
                             sessionKey = obj["sessionKey"]?.jsonPrimitive?.content ?: "",
                             prompt = obj["prompt"]?.jsonPrimitive?.content ?: "",
@@ -51,28 +57,28 @@ fun CronScreen(
                         )
                     } ?: emptyList()
                 } else {
-                    error = response.error?.message ?: "加载失败"
+                    error = response.error?.message ?: loadFailedText
                 }
             } catch (e: Exception) {
-                error = e.message ?: "加载失败"
+                error = e.message ?: loadFailedText
             } finally {
                 isLoading = false
             }
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("定时任务") },
+                title = { Text(stringResource(R.string.cron_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.cron_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { showAddDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "添加任务")
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cron_add_task))
                     }
                 }
             )
@@ -105,7 +111,7 @@ fun CronScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = error ?: "未知错误",
+                            text = error ?: stringResource(R.string.error_unknown),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -127,13 +133,13 @@ fun CronScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "暂无定时任务",
+                            text = stringResource(R.string.cron_no_tasks),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "点击右上角添加新任务",
+                            text = stringResource(R.string.cron_add_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -237,7 +243,7 @@ private fun CronJobItem(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "提示词: ${job.prompt.take(50)}${if (job.prompt.length > 50) "..." else ""}",
+                text = stringResource(R.string.cron_prompt, "${job.prompt.take(50)}${if (job.prompt.length > 50) "..." else ""}"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -248,7 +254,7 @@ private fun CronJobItem(
                 OutlinedButton(onClick = onRun) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("执行")
+                    Text(stringResource(R.string.cron_execute))
                 }
                 OutlinedButton(
                     onClick = onDelete,
@@ -258,7 +264,7 @@ private fun CronJobItem(
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("删除")
+                    Text(stringResource(R.string.cron_delete))
                 }
             }
         }
