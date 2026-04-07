@@ -30,6 +30,7 @@ import com.openclaw.clawchat.ui.screens.MainScreen
 import com.openclaw.clawchat.ui.screens.OnboardingScreen
 import com.openclaw.clawchat.ui.screens.SessionScreen
 import com.openclaw.clawchat.ui.screens.debug.DebugScreen
+import com.openclaw.clawchat.ui.screens.settings.CronScreen
 import com.openclaw.clawchat.ui.screens.settings.SettingsScreen
 import com.openclaw.clawchat.ui.theme.TerminalFlowTheme
 import com.openclaw.clawchat.ui.state.MainViewModel
@@ -50,6 +51,9 @@ class MainActivity : ComponentActivity() {
     
     @Inject
     lateinit var encryptedStorage: EncryptedStorage
+
+    @Inject
+    lateinit var gatewayConnection: com.openclaw.clawchat.network.protocol.GatewayConnection
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // 安装启动屏
@@ -81,7 +85,8 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     ClawChatNavHost(
-                        encryptedStorage = encryptedStorage
+                        encryptedStorage = encryptedStorage,
+                        gatewayConnection = gatewayConnection
                     )
                 }
             }
@@ -125,7 +130,8 @@ class MainActivity : ComponentActivity() {
 @androidx.compose.runtime.Composable
 fun ClawChatNavHost(
     mainViewModel: MainViewModel = hiltViewModel(),
-    encryptedStorage: EncryptedStorage
+    encryptedStorage: EncryptedStorage,
+    gatewayConnection: com.openclaw.clawchat.network.protocol.GatewayConnection
 ) {
     val navController = rememberNavController()
     
@@ -194,7 +200,16 @@ fun ClawChatNavHost(
         composable("settings") {
             SettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToDebug = { navController.navigate("debug") }
+                onNavigateToDebug = { navController.navigate("debug") },
+                onNavigateToCron = { navController.navigate("cron") }
+            )
+        }
+
+        // Cron 屏幕
+        composable("cron") {
+            CronScreen(
+                gateway = gatewayConnection,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
