@@ -525,6 +525,13 @@
     <string name="cron_add_hint">点击右上角添加新任务</string>
     <string name="cron_prompt">提示词：%s</string>
     <string name="cron_delete">删除</string>
+    <string name="cron_add_dialog_title">添加定时任务</string>
+    <string name="cron_task_name">任务名称</string>
+    <string name="cron_expression">Cron 表达式</string>
+    <string name="cron_expression_hint">0 9 * * *</string>
+    <string name="cron_session_key">会话 Key</string>
+    <string name="cron_task_prompt">提示词</string>
+    <string name="cron_add_button">添加</string>
 
     <!-- Context Notice -->
     <string name="context_used">已使用 %d%% 上下文</string>
@@ -560,4 +567,15 @@
     <string name="onboarding_pairing">配对</string>
     <string name="onboarding_password_show">显示</string>
     <string name="onboarding_password_hide">隐藏</string>
+
+    <!-- Pairing Bottom Sheet -->
+    <string name="pairing_sheet_title">连接到 Gateway</string>
+    <string name="pairing_gateway_address_label">Gateway 地址</string>
+    <string name="pairing_gateway_address_hint">例如：192.168.1.100:18789</string>
+    <string name="pairing_token_label">Token</string>
+    <string name="pairing_token_hint">输入 Gateway Token</string>
+    <string name="pairing_device_id">设备 ID：%s</string>
+    <string name="pairing_waiting_admin">等待管理员批准…</string>
+    <string name="pairing_connected">连接成功！</string>
+    <string name="pairing_approval_hint">配对后需在 Gateway 终端运行：openclaw devices approve</string>
 </resources>

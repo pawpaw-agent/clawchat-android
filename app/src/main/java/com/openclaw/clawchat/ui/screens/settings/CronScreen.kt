@@ -283,10 +283,10 @@ private fun AddCronJobDialog(
     var cron by remember { mutableStateOf("") }
     var sessionKey by remember { mutableStateOf("") }
     var prompt by remember { mutableStateOf("") }
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("添加定时任务") },
+        title = { Text(stringResource(R.string.cron_add_dialog_title)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -294,26 +294,26 @@ private fun AddCronJobDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("任务名称") },
+                    label = { Text(stringResource(R.string.cron_task_name)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = cron,
                     onValueChange = { cron = it },
-                    label = { Text("Cron 表达式") },
-                    placeholder = { Text("0 9 * * *") },
+                    label = { Text(stringResource(R.string.cron_expression)) },
+                    placeholder = { Text(stringResource(R.string.cron_expression_hint)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = sessionKey,
                     onValueChange = { sessionKey = it },
-                    label = { Text("会话 Key") },
+                    label = { Text(stringResource(R.string.cron_session_key)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = prompt,
                     onValueChange = { prompt = it },
-                    label = { Text("提示词") },
+                    label = { Text(stringResource(R.string.cron_task_prompt)) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
                     maxLines = 4
@@ -328,12 +328,12 @@ private fun AddCronJobDialog(
                     }
                 }
             ) {
-                Text("添加")
+                Text(stringResource(R.string.cron_add_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

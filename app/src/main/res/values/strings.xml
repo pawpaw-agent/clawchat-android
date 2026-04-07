@@ -501,6 +501,17 @@
     <string name="onboarding_password_show">Show</string>
     <string name="onboarding_password_hide">Hide</string>
 
+    <!-- Pairing Bottom Sheet -->
+    <string name="pairing_sheet_title">Connect to Gateway</string>
+    <string name="pairing_gateway_address_label">Gateway address</string>
+    <string name="pairing_gateway_address_hint">e.g., 192.168.1.100:18789</string>
+    <string name="pairing_token_label">Token</string>
+    <string name="pairing_token_hint">Enter Gateway Token</string>
+    <string name="pairing_device_id">Device ID: %s</string>
+    <string name="pairing_waiting_admin">Waiting for admin approval…</string>
+    <string name="pairing_connected">Connected!</string>
+    <string name="pairing_approval_hint">After pairing, run in Gateway terminal: openclaw devices approve</string>
+
     <!-- Attachments -->
     <string name="attachment_preview">Attachment preview</string>
     <string name="attachment_remove">Remove attachment</string>
@@ -567,4 +578,11 @@
     <string name="cron_add_hint">Tap the button above to add a new task</string>
     <string name="cron_prompt">Prompt: %s</string>
     <string name="cron_delete">Delete</string>
+    <string name="cron_add_dialog_title">Add scheduled task</string>
+    <string name="cron_task_name">Task name</string>
+    <string name="cron_expression">Cron expression</string>
+    <string name="cron_expression_hint">0 9 * * *</string>
+    <string name="cron_session_key">Session Key</string>
+    <string name="cron_task_prompt">Prompt</string>
+    <string name="cron_add_button">Add</string>
 </resources>

@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -60,12 +61,12 @@ fun PairingBottomSheet(
                 .padding(16.dp)
         ) {
             Text(
-                text = "连接到 Gateway",
+                text = stringResource(R.string.pairing_sheet_title),
                 style = MaterialTheme.typography.titleLarge
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // 连接模式选择
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -74,19 +75,19 @@ fun PairingBottomSheet(
                 FilterChip(
                     selected = state.connectMode == ConnectMode.TOKEN,
                     onClick = { viewModel.setConnectMode(ConnectMode.TOKEN) },
-                    label = { Text("Token") },
+                    label = { Text(stringResource(R.string.onboarding_token)) },
                     modifier = Modifier.weight(1f)
                 )
                 FilterChip(
                     selected = state.connectMode == ConnectMode.PAIRING,
                     onClick = { viewModel.setConnectMode(ConnectMode.PAIRING) },
-                    label = { Text("配对") },
+                    label = { Text(stringResource(R.string.onboarding_pairing)) },
                     modifier = Modifier.weight(1f)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Gateway 地址
             val urlValid = state.gatewayUrl.isBlank() || GatewayUrlUtil.isValidInput(state.gatewayUrl)
             val wsPreview = if (state.gatewayUrl.isNotBlank() && urlValid) {
@@ -97,8 +98,8 @@ fun PairingBottomSheet(
                 value = state.gatewayUrl,
                 onValueChange = { viewModel.setGatewayUrl(it) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Gateway 地址") },
-                placeholder = { Text("例如：192.168.1.100:18789") },
+                label = { Text(stringResource(R.string.pairing_gateway_address_label)) },
+                placeholder = { Text(stringResource(R.string.pairing_gateway_address_hint)) },
                 enabled = !state.isPairing,
                 singleLine = true,
                 isError = state.gatewayUrl.isNotBlank() && !urlValid,
@@ -110,17 +111,17 @@ fun PairingBottomSheet(
             )
 
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // Token 模式
             if (state.connectMode == ConnectMode.TOKEN) {
                 var tokenVisible by remember { mutableStateOf(false) }
-                
+
                 OutlinedTextField(
                     value = state.token,
                     onValueChange = { viewModel.setToken(it) },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Token") },
-                    placeholder = { Text("输入 Gateway Token") },
+                    label = { Text(stringResource(R.string.pairing_token_label)) },
+                    placeholder = { Text(stringResource(R.string.pairing_token_hint)) },
                     enabled = !state.isPairing,
                     singleLine = true,
                     visualTransformation = if (tokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -129,18 +130,18 @@ fun PairingBottomSheet(
                         IconButton(onClick = { tokenVisible = !tokenVisible }) {
                             Icon(
                                 imageVector = if (tokenVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = if (tokenVisible) "隐藏" else "显示"
+                                contentDescription = stringResource(if (tokenVisible) R.string.onboarding_password_hide else R.string.onboarding_password_show)
                             )
                         }
                     }
                 )
             }
-            
+
             // 配对模式：显示设备 ID
             if (state.connectMode == ConnectMode.PAIRING) {
                 state.deviceId?.let { id ->
                     Text(
-                        text = "设备 ID: $id",
+                        text = stringResource(R.string.pairing_device_id, id),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -160,7 +161,7 @@ fun PairingBottomSheet(
                         onClick = { viewModel.cancelPairing() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("取消配对")
+                        Text(stringResource(R.string.onboarding_cancel_pairing))
                     }
                 }
                 else -> {
@@ -183,16 +184,16 @@ fun PairingBottomSheet(
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("连接中...")
+                            Text(stringResource(R.string.onboarding_connecting))
                         } else {
-                            Text(if (state.connectMode == ConnectMode.TOKEN) "连接" else "开始配对")
+                            Text(if (state.connectMode == ConnectMode.TOKEN) stringResource(R.string.onboarding_connect) else stringResource(R.string.onboarding_start_pairing))
                         }
                     }
-                    
+
                     if (state.connectMode == ConnectMode.PAIRING) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "配对后需在 Gateway 终端运行: openclaw devices approve",
+                            text = stringResource(R.string.pairing_approval_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -200,7 +201,7 @@ fun PairingBottomSheet(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -215,7 +216,7 @@ private fun StatusIndicator(status: PairingStatus, isPairing: Boolean) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                Text("等待管理员批准...")
+                Text(stringResource(R.string.pairing_waiting_admin))
             }
         }
         is PairingStatus.Approved -> {
@@ -228,7 +229,7 @@ private fun StatusIndicator(status: PairingStatus, isPairing: Boolean) {
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary
                 )
-                Text("连接成功！", color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.pairing_connected), color = MaterialTheme.colorScheme.primary)
             }
         }
         is PairingStatus.Error -> {
