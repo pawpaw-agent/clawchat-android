@@ -50,7 +50,7 @@
     <string name="gateway_port_hint">18789</string>
     <string name="gateway_tls">使用 TLS (WSS)</string>
     <string name="gateway_test">测试连接</string>
-    <string name="gateway_ws_preview">ws://%s:%s/ws</string>
+    <string name="gateway_ws_preview">ws://%1$s:%2$s/ws</string>
 
     <!-- Messages -->
     <string name="message_hint">输入消息…</string>
@@ -256,7 +256,7 @@
     <string name="network_error_description_no_connection">无网络连接</string>
     <string name="network_error_description_unauthorized">认证失败，请检查设备配对</string>
     <string name="network_error_description_server">服务器错误</string>
-    <string name="network_error_description_connection_closed">连接已关闭：%d - %s</string>
+    <string name="network_error_description_connection_closed">连接已关闭：%1$d - %2$s</string>
     <string name="network_error_description_unknown">未知错误：%s</string>
 
     <!-- About -->
@@ -397,7 +397,7 @@
     <string name="debug_gateway">网关</string>
     <string name="debug_connection_status">状态：%s</string>
     <string name="debug_reconnect_attempts">重连次数：%d</string>
-    <string name="debug_memory_used">已用：%dMB / %dMB (%d%%)</string>
+    <string name="debug_memory_used">已用：%1$dMB / %2$dMB (%3$d%%)</string>
     <string name="debug_fps">帧率：%d FPS</string>
     <string name="debug_app_uptime">运行时间：%d 秒</string>
     <string name="debug_recent_messages">最近消息</string>
@@ -559,7 +559,7 @@
 
     <!-- Context Notice -->
     <string name="context_used">已使用 %d%% 上下文</string>
-    <string name="context_tokens_format">（%s / %s）</string>
+    <string name="context_tokens_format">（%1$s / %2$s）</string>
     <string name="context_compacting">正在压缩上下文…</string>
     <string name="context_compacted">上下文已压缩</string>
 

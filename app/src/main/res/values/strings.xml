@@ -50,7 +50,7 @@
     <string name="gateway_port_hint">18789</string>
     <string name="gateway_tls">Use TLS (WSS)</string>
     <string name="gateway_test">Test Connection</string>
-    <string name="gateway_ws_preview">ws://%s:%s/ws</string>
+    <string name="gateway_ws_preview">ws://%1$s:%2$s/ws</string>
 
     <!-- Messages -->
     <string name="message_hint">Type a message…</string>
@@ -264,7 +264,7 @@
     <string name="network_error_description_no_connection">No network connection</string>
     <string name="network_error_description_unauthorized">Authentication failed, please check device pairing</string>
     <string name="network_error_description_server">Server error</string>
-    <string name="network_error_description_connection_closed">Connection closed: %d - %s</string>
+    <string name="network_error_description_connection_closed">Connection closed: %1$d - %2$s</string>
     <string name="network_error_description_unknown">Unknown error: %s</string>
 
     <!-- About -->
@@ -397,7 +397,7 @@
     <string name="debug_gateway">Gateway</string>
     <string name="debug_connection_status">Status: %s</string>
     <string name="debug_reconnect_attempts">Reconnect attempts: %d</string>
-    <string name="debug_memory_used">Used: %dMB / %dMB (%d%%)</string>
+    <string name="debug_memory_used">Used: %1$dMB / %2$dMB (%3$d%%)</string>
     <string name="debug_fps">FPS: %d</string>
     <string name="debug_app_uptime">App uptime: %d seconds</string>
     <string name="debug_recent_messages">Recent messages</string>
@@ -485,7 +485,7 @@
 
     <!-- Context Notice -->
     <string name="context_used">%d%% context used</string>
-    <string name="context_tokens_format">(%s / %s)</string>
+    <string name="context_tokens_format">(%1$s / %2$s)</string>
     <string name="context_compacting">Compacting context…</string>
     <string name="context_compacted">Context compacted</string>
 
