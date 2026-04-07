@@ -217,22 +217,18 @@ class ChatEventHandler(
                 lastStreamUpdate = now
 
                 state.update { currentState ->
-                    val segments = currentState.chatStreamSegments
-
                     // 检查是否应该追加（内容长度递增）
                     val shouldAppend = currentState.chatStream == null || streamBuffer.length >= (currentState.chatStream?.length ?: 0)
 
                     val newStream = if (shouldAppend) streamBuffer else currentState.chatStream
 
-                    val newSegments = if (currentState.chatStreamStartedAt == null) {
-                        segments + StreamSegment(newStream ?: "", now)
-                    } else {
-                        segments
-                    }
+                    // 注意：不在 handleDelta 中创建 StreamSegment
+                    // StreamSegment 应仅由 ToolStreamManager 在工具调用前创建
+                    // 这样避免文本重复显示：segments 用于显示工具执行前的已提交文本
+                    // 工具执行后的新文本直接在 chatStream 中显示
 
                     currentState.copy(
                         chatStream = newStream,
-                        chatStreamSegments = newSegments,
                         chatStreamStartedAt = currentState.chatStreamStartedAt ?: now
                     )
                 }
