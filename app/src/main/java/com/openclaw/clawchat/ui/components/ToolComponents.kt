@@ -220,11 +220,10 @@ fun CompactToolCard(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = toolCard.args.take(200) + if (toolCard.args.length > 200) "..." else "",
+                            text = toolCard.args,
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 3
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                     }
 
@@ -245,11 +244,10 @@ fun CompactToolCard(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = formatToolResult(toolCard.name, toolCard.result),
+                            text = toolCard.result,
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = FontFamily.Monospace,
-                            color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground,
-                            maxLines = 5
+                            color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
                         )
                     }
                 }
