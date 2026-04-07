@@ -264,6 +264,38 @@ class MarkdownParserTest {
         assertTrue(result.text.isNotEmpty())
     }
 
+    @Test
+    fun `highlightSyntax handles scala code`() {
+        val code = "def hello(): String = \"world\""
+        val result = highlightSyntax(code, "scala")
+
+        assertTrue(result.spanStyles.isNotEmpty())
+    }
+
+    @Test
+    fun `highlightSyntax handles lua code`() {
+        val code = "function test() return true end"
+        val result = highlightSyntax(code, "lua")
+
+        assertTrue(result.spanStyles.isNotEmpty())
+    }
+
+    @Test
+    fun `highlightSyntax handles perl code`() {
+        val code = "sub test { my $x = 1; return $x; }"
+        val result = highlightSyntax(code, "perl")
+
+        assertTrue(result.spanStyles.isNotEmpty())
+    }
+
+    @Test
+    fun `highlightSyntax handles r code`() {
+        val code = "library(dplyr)\ndata <- data.frame(x = 1:10)"
+        val result = highlightSyntax(code, "r")
+
+        assertTrue(result.spanStyles.isNotEmpty())
+    }
+
     // ─────────────────────────────────────────────────────────────
     // parseTableRow 测试
     // ─────────────────────────────────────────────────────────────

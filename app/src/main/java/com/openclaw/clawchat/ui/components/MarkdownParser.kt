@@ -343,6 +343,32 @@ internal fun highlightSyntax(code: String, language: String): AnnotatedString {
             "toml" -> setOf(
                 "true", "false"
             )
+            // Scala support
+            "scala" -> setOf(
+                "def", "val", "var", "class", "object", "trait", "extends", "with",
+                "if", "else", "match", "case", "for", "while", "do", "yield",
+                "return", "throw", "try", "catch", "finally", "import", "package",
+                "private", "protected", "public", "override", "abstract", "final",
+                "sealed", "implicit", "lazy", "new", "this", "super", "true", "false", "null"
+            )
+            // Lua support
+            "lua" -> setOf(
+                "and", "break", "do", "else", "elseif", "end", "false", "for",
+                "function", "if", "in", "local", "nil", "not", "or", "repeat",
+                "return", "then", "true", "until", "while"
+            )
+            // Perl support
+            "perl", "pl" -> setOf(
+                "sub", "my", "local", "our", "if", "else", "elsif", "unless",
+                "for", "foreach", "while", "do", "return", "last", "next", "redo",
+                "package", "use", "require", "import", "print", "say", "true", "false"
+            )
+            // R support
+            "r" -> setOf(
+                "if", "else", "repeat", "while", "function", "for", "in", "next",
+                "break", "return", "TRUE", "FALSE", "NULL", "NA", "Inf", "NaN",
+                "library", "require", "source"
+            )
             else -> setOf(
                 "if", "else", "for", "while", "return", "function", "class", "const",
                 "let", "var", "true", "false", "null", "import", "export", "public",
@@ -357,6 +383,10 @@ internal fun highlightSyntax(code: String, language: String): AnnotatedString {
             "typescript", "ts" -> setOf("string", "number", "boolean", "object", "any", "void", "null", "undefined", "never", "unknown", "Promise", "Array")
             "ruby", "rb" -> setOf("String", "Integer", "Float", "Array", "Hash", "Symbol", "NilClass", "TrueClass", "FalseClass")
             "php" -> setOf("string", "int", "float", "bool", "array", "object", "null", "mixed", "void", "callable")
+            "scala" -> setOf("String", "Int", "Long", "Float", "Double", "Boolean", "Unit", "Any", "Nothing", "List", "Map", "Set", "Option", "Either")
+            "lua" -> setOf("string", "number", "boolean", "table", "function", "thread", "userdata")
+            "perl", "pl" -> setOf("scalar", "array", "hash", "sub", "ref")
+            "r" -> setOf("character", "numeric", "integer", "logical", "complex", "list", "data.frame", "matrix", "vector")
             else -> emptySet()
         }
 
