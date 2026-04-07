@@ -30,6 +30,7 @@ permissions:
 env:
   RELEASE_VERSION: ${{ github.event.inputs.version || github.ref_name }}
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ─────────────────────────────────────────────────────────────
