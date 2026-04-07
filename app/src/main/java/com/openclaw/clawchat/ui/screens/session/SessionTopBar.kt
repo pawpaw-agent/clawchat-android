@@ -138,6 +138,8 @@ fun SessionTopAppBar(
                     SessionInfoDialog(
                         sessionLabel = sessionLabel,
                         agentId = agentId,
+                        agentName = agentName,
+                        agentEmoji = agentEmoji,
                         currentModel = currentModel,
                         messageCount = messageCount,
                         onDismiss = { showSessionInfo = false }
@@ -337,6 +339,8 @@ private fun getModelIcon(modelId: String) = when {
 private fun SessionInfoDialog(
     sessionLabel: String?,
     agentId: String?,
+    agentName: String? = null,
+    agentEmoji: String? = null,
     currentModel: String?,
     messageCount: Int = 0,
     onDismiss: () -> Unit
@@ -356,11 +360,18 @@ private fun SessionInfoDialog(
                     )
                 }
 
-                // Agent
-                if (!agentId.isNullOrBlank()) {
+                // Agent (显示 emoji + name)
+                if (!agentId.isNullOrBlank() || !agentName.isNullOrBlank()) {
+                    val displayAgent = buildString {
+                        if (!agentEmoji.isNullOrBlank()) {
+                            append(agentEmoji)
+                            append(" ")
+                        }
+                        append(agentName ?: formatAgentName(agentId ?: ""))
+                    }
                     SessionInfoRow(
                         label = stringResource(R.string.session_info_agent),
-                        value = formatAgentName(agentId)
+                        value = displayAgent
                     )
                 }
 
@@ -381,7 +392,7 @@ private fun SessionInfoDialog(
                 }
 
                 // 如果没有任何信息
-                if (sessionLabel.isNullOrBlank() && agentId.isNullOrBlank() && currentModel.isNullOrBlank() && messageCount == 0) {
+                if (sessionLabel.isNullOrBlank() && agentId.isNullOrBlank() && agentName.isNullOrBlank() && currentModel.isNullOrBlank() && messageCount == 0) {
                     Text(
                         text = stringResource(R.string.session_info_no_details),
                         style = MaterialTheme.typography.bodyMedium,
