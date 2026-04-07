@@ -239,7 +239,7 @@ private fun ClawTopAppBar(
     TopAppBar(
         title = {
             Column {
-                Text("ClawChat")
+                Text(stringResource(R.string.app_name))
                 if (latency != null) {
                     Text(
                         text = "${latency}ms",
@@ -254,7 +254,7 @@ private fun ClawTopAppBar(
             IconButton(onClick = onCommandPaletteClick) {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "搜索"
+                    contentDescription = stringResource(R.string.debug_search)
                 )
             }
             

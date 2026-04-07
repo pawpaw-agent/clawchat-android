@@ -375,6 +375,7 @@
     <string name="slash_error_exec_failed">执行命令失败：%s。请检查网络后重试。</string>
 
     <!-- Debug Screen -->
+    <string name="debug_title">调试</string>
     <string name="debug_tab_connection">连接</string>
     <string name="debug_tab_logs">日志</string>
     <string name="debug_tab_performance">性能</string>
@@ -430,6 +431,20 @@
     <string name="settings_open_source_licenses">开源许可</string>
     <string name="settings_open_source_licenses_desc">查看第三方库许可</string>
     <string name="settings_debug_subtitle">调试和诊断工具</string>
+
+    <!-- Security Status -->
+    <string name="security_status_title">设备安全状态</string>
+    <string name="security_root_high">检测到 Root，建议在高安全场景下谨慎使用</string>
+    <string name="security_root_medium">检测到可能的 Root 迹象</string>
+    <string name="security_root_low">设备可能有 Root 权限</string>
+    <string name="security_safe">设备安全</string>
+    <string name="security_risk_high">高风险</string>
+    <string name="security_risk_medium">中风险</string>
+    <string name="security_risk_low">低风险</string>
+    <string name="security_risk_none">安全</string>
+
+    <!-- Font Size -->
+    <string name="font_sample_text">示例文本</string>
 
     <!-- Message Status -->
     <string name="status_sending">发送中</string>

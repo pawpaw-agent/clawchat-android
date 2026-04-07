@@ -11,7 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.openclaw.clawchat.R
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.data.ThemeMode
 import com.openclaw.clawchat.security.RootDetector
@@ -55,16 +57,16 @@ fun SecurityStatusItem(
     rootRiskLevel: RootDetector.RootCheckResult.RiskLevel
 ) {
     ListItem(
-        headlineContent = { Text("设备安全状态") },
+        headlineContent = { Text(stringResource(R.string.security_status_title)) },
         supportingContent = {
             Text(
                 when {
                     isRooted && rootRiskLevel == RootDetector.RootCheckResult.RiskLevel.HIGH ->
-                        "检测到 Root，建议在高安全场景下谨慎使用"
+                        stringResource(R.string.security_root_high)
                     isRooted && rootRiskLevel == RootDetector.RootCheckResult.RiskLevel.MEDIUM ->
-                        "检测到可能的 Root 迹象"
-                    isRooted -> "设备可能有 Root 权限"
-                    else -> "设备安全"
+                        stringResource(R.string.security_root_medium)
+                    isRooted -> stringResource(R.string.security_root_low)
+                    else -> stringResource(R.string.security_safe)
                 }
             )
         },
@@ -92,10 +94,10 @@ fun SecurityStatusItem(
             ) {
                 Text(
                     text = when (rootRiskLevel) {
-                        RootDetector.RootCheckResult.RiskLevel.HIGH -> "高风险"
-                        RootDetector.RootCheckResult.RiskLevel.MEDIUM -> "中风险"
-                        RootDetector.RootCheckResult.RiskLevel.LOW -> "低风险"
-                        RootDetector.RootCheckResult.RiskLevel.NONE -> "安全"
+                        RootDetector.RootCheckResult.RiskLevel.HIGH -> stringResource(R.string.security_risk_high)
+                        RootDetector.RootCheckResult.RiskLevel.MEDIUM -> stringResource(R.string.security_risk_medium)
+                        RootDetector.RootCheckResult.RiskLevel.LOW -> stringResource(R.string.security_risk_low)
+                        RootDetector.RootCheckResult.RiskLevel.NONE -> stringResource(R.string.security_risk_none)
                     },
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall,
@@ -259,7 +261,7 @@ fun FontSizeDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "示例文本 Sample Text",
+                            text = stringResource(R.string.font_sample_text),
                             style = when (size) {
                                 FontSize.SMALL -> MaterialTheme.typography.bodySmall
                                 FontSize.MEDIUM -> MaterialTheme.typography.bodyMedium
@@ -273,12 +275,12 @@ fun FontSizeDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedSize) }) {
-                Text("确定")
+                Text(stringResource(R.string.confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -385,12 +387,12 @@ fun ThemeModeDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedMode) }) {
-                Text("确定")
+                Text(stringResource(R.string.confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -495,12 +497,12 @@ fun ThemeColorDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedIndex) }) {
-                Text("确定")
+                Text(stringResource(R.string.confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

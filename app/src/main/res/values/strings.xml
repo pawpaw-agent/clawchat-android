@@ -382,6 +382,7 @@
     <string name="slash_error_exec_failed">Failed to execute command: %s. Please check network and retry.</string>
 
     <!-- Debug Screen -->
+    <string name="debug_title">Debug</string>
     <string name="debug_tab_connection">Connection</string>
     <string name="debug_tab_logs">Logs</string>
     <string name="debug_tab_performance">Performance</string>
@@ -437,6 +438,20 @@
     <string name="settings_open_source_licenses">Open source licenses</string>
     <string name="settings_open_source_licenses_desc">View third-party library licenses</string>
     <string name="settings_debug_subtitle">Debug and diagnostic tools</string>
+
+    <!-- Security Status -->
+    <string name="security_status_title">Device security status</string>
+    <string name="security_root_high">Root detected, use with caution in high-security scenarios</string>
+    <string name="security_root_medium">Possible root traces detected</string>
+    <string name="security_root_low">Device may have root access</string>
+    <string name="security_safe">Device is secure</string>
+    <string name="security_risk_high">High risk</string>
+    <string name="security_risk_medium">Medium risk</string>
+    <string name="security_risk_low">Low risk</string>
+    <string name="security_risk_none">Safe</string>
+
+    <!-- Font Size -->
+    <string name="font_sample_text">Sample Text</string>
 
     <!-- Message Status -->
     <string name="status_sending">Sending</string>
