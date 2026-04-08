@@ -66,6 +66,13 @@ class SessionMessageLoader(
         // 取消之前的加载任务
         loadMessagesJob?.cancel()
 
+        // 先检查连接状态，避免在未连接时设置加载状态或清除消息
+        if (gateway.connectionState.value !is WebSocketConnectionState.Connected) {
+            AppLog.w(TAG, "Gateway not connected, skipping loadMessageHistory")
+            // 未连接时不清除消息，保持现有消息列表
+            return
+        }
+
         // 设置加载状态
         state.update { it.copy(isLoading = true) }
         onLoadingStateChanged?.invoke(true)
@@ -73,13 +80,6 @@ class SessionMessageLoader(
         loadMessagesJob = scope.launch(exceptionHandler) {
             // 从 Gateway 加载历史消息
             try {
-                // 检查连接状态
-                if (gateway.connectionState.value !is WebSocketConnectionState.Connected) {
-                    AppLog.w(TAG, "Gateway not connected, skipping loadMessageHistory")
-                    state.update { it.copy(isLoading = false) }
-                    onLoadingStateChanged?.invoke(false)
-                    return@launch
-                }
 
                 val response = gateway.chatHistory(sessionId, limit = 100)
 
