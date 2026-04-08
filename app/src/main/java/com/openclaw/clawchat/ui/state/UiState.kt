@@ -145,7 +145,7 @@ data class SessionUiState(
     val unreadMessageCount: Int = 0,              // 未读消息计数（显示在按钮上）
 
     // 滚动状态（参考 webchat app-scroll.ts）
-    val chatUserNearBottom: Boolean = true,      // 用户是否在底部附近（< 450px）
+    val chatUserNearBottom: Boolean = false,     // 用户是否在底部附近（初始为 false，滚动后设为 true）
     val chatHasAutoScrolled: Boolean = false,    // 是否已经自动滚动过（初始加载后设为 true）
 
     // Context 用量警告（参考 webchat renderContextNotice）

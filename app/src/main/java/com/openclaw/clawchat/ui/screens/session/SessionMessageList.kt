@@ -34,6 +34,7 @@ import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import com.openclaw.clawchat.ui.theme.ChatTokens
 import com.openclaw.clawchat.util.AppLog
+import kotlinx.coroutines.flow.first
 
 /**
  * 空会话内容（增强版）
@@ -220,7 +221,7 @@ fun MessageGroupList(
     chatStream: String? = null,
     messageFontSize: FontSize = FontSize.MEDIUM,
     // 滚动状态（参考 webchat app-scroll.ts 和 Stream SDK）
-    chatUserNearBottom: Boolean = true,
+    chatUserNearBottom: Boolean = false,
     chatHasAutoScrolled: Boolean = false,
     chatNewMessagesBelow: Boolean = false,
     onUpdateUserNearBottom: (Boolean) -> Unit = {},
@@ -233,6 +234,20 @@ fun MessageGroupList(
     onRetryMessage: (String) -> Unit = {},
     onContinueGeneration: () -> Unit = {}
 ) {
+    // 初始滚动：等待消息加载完成，然后滚动到底部（只执行一次）
+    LaunchedEffect(groups.size, chatHasAutoScrolled) {
+        if (chatHasAutoScrolled) return@LaunchedEffect
+        if (groups.isEmpty()) return@LaunchedEffect
+        // 等待布局完成
+        snapshotFlow { listState.layoutInfo.totalItemsCount }
+            .first { it > 0 }
+        // 强制滚动到底部（无动画）
+        listState.scrollToItem(0, 0)
+        // 标记已滚动，并设用户在底部
+        onMarkAutoScrolled()
+        onUpdateUserNearBottom(true)
+    }
+
     // 滚动优化：监听用户滚动位置
     // reverseLayout=true 时，firstVisibleItemIndex=0 表示在底部
     // 阈值 100dp：用户离开最新消息约 1 条消息高度时才认为"不在底部"

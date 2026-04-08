@@ -30,9 +30,7 @@ import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import com.openclaw.clawchat.ui.theme.ChatTokens
 import com.openclaw.clawchat.ui.screens.session.*
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 
 /**
  * 会话界面屏幕
@@ -60,7 +58,6 @@ fun SessionScreen(
 
     // 当前会话 ID
     var currentSessionId by remember { mutableStateOf<String?>(null) }
-    var hasScrolledToBottom by remember { mutableStateOf(false) }
 
     // 检测键盘是否可见（用于其他用途）
     val imeVisible = WindowInsets.ime.getBottom(density) > 0
@@ -86,7 +83,6 @@ fun SessionScreen(
     LaunchedEffect(sessionId) {
         if (currentSessionId != sessionId) {
             currentSessionId = sessionId
-            hasScrolledToBottom = false  // 重置滚动状态
             viewModel.setSessionId(sessionId)
             focusRequester.requestFocus()
             // 切换会话时重置搜索
@@ -117,22 +113,6 @@ fun SessionScreen(
         }
     }
     val filteredGroups by remember { derivedStateOf { groupMessages(filteredMessages) } }
-
-    // 进入会话时等待消息加载完成，然后滚动到底部（只执行一次）
-    LaunchedEffect(sessionId, filteredGroups.size, hasScrolledToBottom) {
-        // 已经滚动过则跳过
-        if (hasScrolledToBottom) return@LaunchedEffect
-        // 等待有消息
-        if (filteredGroups.isEmpty()) return@LaunchedEffect
-        // 等待布局完成
-        snapshotFlow { listState.layoutInfo.totalItemsCount }
-            .first { it > 0 }
-        // 强制滚动到底部（无动画）
-        listState.scrollToItem(0, 0)
-        hasScrolledToBottom = true
-        // 标记已滚动
-        viewModel.markAutoScrolled()
-    }
 
     Scaffold(
         modifier = Modifier.background(MaterialTheme.colorScheme.background),
