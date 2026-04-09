@@ -32,6 +32,7 @@ import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import com.openclaw.clawchat.ui.theme.ChatTokens
 import com.openclaw.clawchat.ui.screens.session.*
+import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.launch
 
 /**
@@ -60,8 +61,8 @@ fun SessionScreen(
 
     val messageFontSize by viewModel.messageFontSize.collectAsState(initial = FontSize.MEDIUM)
 
-    // 当前会话 ID
-    var currentSessionId by remember { mutableStateOf<String?>(null) }
+    // 当前会话 ID（从 ViewModel 状态获取，避免进程死亡后丢失）
+    val stateSessionId = state.sessionId
 
     // 检测键盘是否可见（用于其他用途）
     val imeVisible = WindowInsets.ime.getBottom(density) > 0
@@ -88,22 +89,21 @@ fun SessionScreen(
         mainState.sessions.find { it.id == sessionId }
     }
 
-    // 会话切换时重置状态
-    LaunchedEffect(sessionId) {
-        if (currentSessionId != sessionId) {
-            currentSessionId = sessionId
+    // 会话切换时更新 ViewModel
+    // 使用 ViewModel 的 sessionId 状态来判断是否需要切换，避免进程死亡后重复清除
+    LaunchedEffect(sessionId, stateSessionId, currentSession) {
+        // 只在导航传入的 sessionId 与 ViewModel 状态不同时才调用 setSessionId
+        // 进程死亡后 ViewModel 会从 SavedStateHandle 恢复，此时 stateSessionId == sessionId
+        if (stateSessionId != sessionId) {
+            AppLog.d("SessionScreen", "=== sessionId changed: $stateSessionId -> $sessionId")
             viewModel.setSessionId(sessionId)
-            // 更新 session 数据（包含 token 信息）
-            currentSession?.let { viewModel.setSession(it) }
             focusRequester.requestFocus()
             // 切换会话时重置搜索
             isSearchMode = false
             searchQuery = ""
         }
-    }
 
-    // 当 session 数据更新时，同步到 SessionViewModel
-    LaunchedEffect(currentSession) {
+        // 更新 session 数据（包含 token 信息）
         currentSession?.let { viewModel.setSession(it) }
     }
 

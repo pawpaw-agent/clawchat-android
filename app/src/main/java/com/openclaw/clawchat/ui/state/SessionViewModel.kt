@@ -97,13 +97,68 @@ class SessionViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "SessionViewModel"
+        private const val KEY_SESSION_ID = "session_id"
+        private const val KEY_SESSION_LABEL = "session_label"
+        private const val KEY_SESSION_MODEL = "session_model"
+        private const val KEY_SESSION_AGENT_ID = "session_agent_id"
+        private const val KEY_SESSION_AGENT_NAME = "session_agent_name"
+        private const val KEY_SESSION_AGENT_EMOJI = "session_agent_emoji"
     }
 
     init {
         AppLog.d(TAG, "=== SessionViewModel init")
+        // 从 SavedStateHandle 恢复 sessionId（处理进程死亡后的恢复）
+        restoreFromSavedState()
         observeConnectionState()
         observeIncomingMessages()
         observeToolStreamEvents()
+    }
+
+    /**
+     * 从 SavedStateHandle 恢复会话状态
+     * 处理进程死亡后 Android 重建 ViewModel 的情况
+     */
+    private fun restoreFromSavedState() {
+        val savedSessionId = savedStateHandle.get<String>(KEY_SESSION_ID)
+        if (!savedSessionId.isNullOrBlank()) {
+            AppLog.d(TAG, "=== restoreFromSavedState: restoring sessionId=$savedSessionId")
+
+            // 恢复 sessionId 到状态
+            _state.update { it.copy(sessionId = savedSessionId) }
+
+            // 恢复 session 基本信息（从 savedStateHandle）
+            val savedLabel = savedStateHandle.get<String>(KEY_SESSION_LABEL)
+            val savedModel = savedStateHandle.get<String>(KEY_SESSION_MODEL)
+            val savedAgentId = savedStateHandle.get<String>(KEY_SESSION_AGENT_ID)
+            val savedAgentName = savedStateHandle.get<String>(KEY_SESSION_AGENT_NAME)
+            val savedAgentEmoji = savedStateHandle.get<String>(KEY_SESSION_AGENT_EMOJI)
+
+            if (savedLabel != null || savedModel != null || savedAgentId != null) {
+                val savedSession = SessionUi(
+                    id = savedSessionId,
+                    label = savedLabel,
+                    model = savedModel,
+                    agentId = savedAgentId,
+                    agentName = savedAgentName,
+                    agentEmoji = savedAgentEmoji,
+                    status = SessionStatus.RUNNING,
+                    lastActivityAt = System.currentTimeMillis()
+                )
+                _state.update { it.copy(session = savedSession) }
+            }
+
+            // 观察消息（从 Room 数据库，即使 Gateway 未连接也能显示已持久化的消息）
+            observeSessionMessages(savedSessionId)
+
+            // 尝试从 Gateway 加载最新历史（如果已连接）
+            // 如果未连接，Gateway 连接恢复后会自动刷新（见 observeConnectionState）
+            if (gateway.connectionState.value is WebSocketConnectionState.Connected) {
+                isLoadingHistory = true
+                messageLoader.loadMessageHistory(savedSessionId)
+            } else {
+                AppLog.d(TAG, "=== restoreFromSavedState: Gateway not connected, showing cached messages")
+            }
+        }
     }
     
     // ── 消息观察 ──
@@ -139,19 +194,30 @@ class SessionViewModel @Inject constructor(
     }
 
     // ── 连接状态观察 ──
-    
+
+    // 记录上次连接状态，用于判断是否是从断开恢复到已连接
+    private var wasDisconnected = false
+
     private fun observeConnectionState() {
         viewModelScope.launch(exceptionHandler) {
             gateway.connectionState.collect { connectionState ->
                 _state.update { it.copy(connectionStatus = connectionState.toStatus()) }
-                
+
                 // 当连接恢复时，重新加载当前会话的消息
                 if (connectionState is WebSocketConnectionState.Connected) {
-                    _state.value.sessionId?.let { sessionId ->
-                        if (_state.value.chatMessages.isEmpty()) {
+                    val sessionId = _state.value.sessionId
+                    if (sessionId != null) {
+                        // 如果之前是断开的（进程死亡后恢复或网络恢复），刷新消息
+                        if (wasDisconnected || _state.value.chatMessages.isEmpty()) {
+                            AppLog.d(TAG, "=== Gateway reconnected, refreshing messages for $sessionId")
+                            isLoadingHistory = true
                             messageLoader.loadMessageHistory(sessionId)
                         }
                     }
+                    wasDisconnected = false
+                } else if (connectionState is WebSocketConnectionState.Disconnected ||
+                           connectionState is WebSocketConnectionState.Error) {
+                    wasDisconnected = true
                 }
             }
         }
@@ -182,17 +248,11 @@ class SessionViewModel @Inject constructor(
      * 设置当前会话数据（包含 token 信息）
      * 从 MainViewModel 获取 session 数据后调用
      */
-    fun setSession(session: SessionUi) {
-        _state.update { it.copy(
-            session = session,
-            totalTokens = session.totalTokens,
-            contextTokensLimit = session.contextTokens,
-            totalTokensFresh = session.totalTokensFresh
-        ) }
-    }
-
     fun setSessionId(sessionId: String) {
         val currentSessionId = _state.value.sessionId
+
+        // 保存到 SavedStateHandle（处理进程死亡）
+        savedStateHandle[KEY_SESSION_ID] = sessionId
 
         if (currentSessionId == sessionId) {
             // sessionId 未变化，检查消息是否为空
@@ -225,6 +285,28 @@ class SessionViewModel @Inject constructor(
 
         // 加载历史消息（完成后会设置 isLoadingHistory=false）
         messageLoader.loadMessageHistory(sessionId)
+    }
+
+    /**
+     * 设置当前会话数据（包含 token 信息）
+     * 从 MainViewModel 获取 session 数据后调用
+     * 同时保存到 SavedStateHandle 以便进程死亡后恢复
+     */
+    fun setSession(session: SessionUi) {
+        // 保存 session 基本信息 到 SavedStateHandle（只保存非空值）
+        savedStateHandle[KEY_SESSION_ID] = session.id
+        session.label?.let { savedStateHandle[KEY_SESSION_LABEL] = it }
+        session.model?.let { savedStateHandle[KEY_SESSION_MODEL] = it }
+        session.agentId?.let { savedStateHandle[KEY_SESSION_AGENT_ID] = it }
+        session.agentName?.let { savedStateHandle[KEY_SESSION_AGENT_NAME] = it }
+        session.agentEmoji?.let { savedStateHandle[KEY_SESSION_AGENT_EMOJI] = it }
+
+        _state.update { it.copy(
+            session = session,
+            totalTokens = session.totalTokens,
+            contextTokensLimit = session.contextTokens,
+            totalTokensFresh = session.totalTokensFresh
+        ) }
     }
 
     fun refreshMessages() {
