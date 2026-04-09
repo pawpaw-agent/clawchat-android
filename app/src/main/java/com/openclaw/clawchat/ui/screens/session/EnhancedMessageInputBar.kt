@@ -255,29 +255,42 @@ fun EnhancedMessageInputBar(
                     }
                 }
 
-                // 输入框
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    modifier = Modifier
-                        .weight(1f)
-                        .focusRequester(focusRequester)
-                        .heightIn(min = 48.dp, max = 120.dp),
-                    placeholder = { Text(stringResource(R.string.input_placeholder)) },
-                    enabled = enabled,
-                    maxLines = 6,
-                    minLines = 1,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(
-                        onSend = { onSend() },
-                        onDone = { focusRequester.freeFocus() }
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        disabledBorderColor = Color.Transparent
+                // 输入框和 token 估算
+                Column(modifier = Modifier.weight(1f)) {
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = onValueChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester)
+                            .heightIn(min = 48.dp, max = 120.dp),
+                        placeholder = { Text(stringResource(R.string.input_placeholder)) },
+                        enabled = enabled,
+                        maxLines = 6,
+                        minLines = 1,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                        keyboardActions = KeyboardActions(
+                            onSend = { onSend() },
+                            onDone = { focusRequester.freeFocus() }
+                        ),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                            disabledBorderColor = Color.Transparent
+                        )
                     )
-                )
+
+                    // Token 估算显示（参考 webchat tokenEstimate）
+                    if (value.length >= 100) {
+                        val tokenEstimate = "~${(value.length / 4) + 1} tokens"
+                        Text(
+                            text = tokenEstimate,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(start = 16.dp, top = 2.dp)
+                        )
+                    }
+                }
 
                 // 发送按钮
                 IconButton(
