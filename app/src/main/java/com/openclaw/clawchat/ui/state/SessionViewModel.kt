@@ -183,6 +183,7 @@ class SessionViewModel @Inject constructor(
      * 从 MainViewModel 获取 session 数据后调用
      */
     fun setSession(session: SessionUi) {
+        AppLog.d(TAG, "setSession: ${session.id}, totalTokens=${session.totalTokens}, contextTokens=${session.contextTokens}")
         _state.update { it.copy(
             session = session,
             totalTokens = session.totalTokens,
