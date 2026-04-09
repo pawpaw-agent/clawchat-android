@@ -178,6 +178,19 @@ class SessionViewModel @Inject constructor(
 
     // ── 公共 API ──
 
+    /**
+     * 设置当前会话数据（包含 token 信息）
+     * 从 MainViewModel 获取 session 数据后调用
+     */
+    fun setSession(session: SessionUi) {
+        _state.update { it.copy(
+            session = session,
+            totalTokens = session.totalTokens,
+            contextTokensLimit = session.contextTokens,
+            totalTokensFresh = session.totalTokensFresh
+        ) }
+    }
+
     fun setSessionId(sessionId: String) {
         val currentSessionId = _state.value.sessionId
 
@@ -636,12 +649,24 @@ class SessionViewModel @Inject constructor(
     /**
      * 更新 compaction 状态
      * 参考 webchat: renderCompactionIndicator
+     * v2026.4.8: 使用 CompactionStatus 替代 compactionActive + compactionCompletedAt
+     */
+    fun updateCompactionStatus(status: CompactionStatus?) {
+        _state.update { it.copy(compactionStatus = status) }
+    }
+
+    /**
+     * 兼容旧方法：设置 compaction 状态
      */
     fun updateCompactionState(active: Boolean, completedAt: Long? = null) {
-        _state.update { it.copy(
-            compactionActive = active,
-            compactionCompletedAt = completedAt
-        ) }
+        val status = if (active) {
+            CompactionStatus(phase = "active", completedAt = null)
+        } else if (completedAt != null) {
+            CompactionStatus(phase = "complete", completedAt = completedAt)
+        } else {
+            null
+        }
+        updateCompactionStatus(status)
     }
 
     fun retryMessage(messageId: String) {

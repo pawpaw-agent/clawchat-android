@@ -284,7 +284,11 @@ class MainViewModel @Inject constructor(
                                 ?: System.currentTimeMillis(),
                             messageCount = 0,
                             lastMessage = obj["lastMessage"]?.jsonPrimitive?.content,
-                            thinking = false
+                            thinking = false,
+                            // Context token 用量
+                            totalTokens = obj["totalTokens"]?.jsonPrimitive?.int,
+                            contextTokens = obj["contextTokens"]?.jsonPrimitive?.int,
+                            totalTokensFresh = obj["totalTokensFresh"]?.jsonPrimitive?.booleanOrNull ?: true
                         )
                     } catch (e: Exception) {
                         AppLog.w(TAG, "Failed to parse session: ${e.message}")

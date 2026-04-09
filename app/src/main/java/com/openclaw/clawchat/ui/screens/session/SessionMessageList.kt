@@ -38,10 +38,14 @@ import kotlinx.coroutines.flow.first
 
 /**
  * 空会话内容（增强版）
+ * 参考 webchat: renderWelcomeState
  */
 @Composable
 fun EmptySessionContent(
-    connectionStatus: ConnectionStatus
+    connectionStatus: ConnectionStatus,
+    assistantName: String? = null,
+    assistantEmoji: String? = null,
+    onSuggestionClick: (String) -> Unit = {}
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val alpha by infiniteTransition.animateFloat(
@@ -54,6 +58,16 @@ fun EmptySessionContent(
         label = "alpha"
     )
 
+    // Welcome suggestions（参考 webchat WELCOME_SUGGESTIONS）
+    val suggestions = listOf(
+        stringResource(R.string.welcome_suggestion_what),
+        stringResource(R.string.welcome_suggestion_summarize),
+        stringResource(R.string.welcome_suggestion_config),
+        stringResource(R.string.welcome_suggestion_health)
+    )
+
+    val displayName = assistantName ?: stringResource(R.string.app_name)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -61,58 +75,111 @@ fun EmptySessionContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // 动画图标
+        // Agent 头像/图标
         Surface(
-            modifier = Modifier.size(100.dp),
+            modifier = Modifier.size(80.dp),
             shape = RoundedCornerShape(DesignTokens.radiusFull),
             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         ) {
             Box(
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = when (connectionStatus) {
-                        is ConnectionStatus.Connected -> Icons.Default.ChatBubbleOutline
-                        is ConnectionStatus.Connecting -> Icons.Default.Sync
-                        is ConnectionStatus.Disconnected -> Icons.Default.CloudOff
-                        else -> Icons.Default.CloudQueue
-                    },
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = alpha)
-                )
+                if (assistantEmoji != null) {
+                    Text(
+                        text = assistantEmoji,
+                        style = MaterialTheme.typography.displayMedium
+                    )
+                } else {
+                    Icon(
+                        imageVector = when (connectionStatus) {
+                            is ConnectionStatus.Connected -> Icons.Default.ChatBubbleOutline
+                            is ConnectionStatus.Connecting -> Icons.Default.Sync
+                            is ConnectionStatus.Disconnected -> Icons.Default.CloudOff
+                            else -> Icons.Default.CloudQueue
+                        },
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = alpha)
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(DesignTokens.space4))
 
+        // Agent 名称
         Text(
-            text = when (connectionStatus) {
-                is ConnectionStatus.Connected -> stringResource(R.string.session_start_conversation_hint)
-                is ConnectionStatus.Disconnected -> stringResource(R.string.session_not_connected)
-                is ConnectionStatus.Connecting -> stringResource(R.string.status_connecting)
-                else -> stringResource(R.string.loading)
-            },
+            text = displayName,
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
 
+        // Badge: Ready to chat
+        if (connectionStatus is ConnectionStatus.Connected) {
+            Spacer(modifier = Modifier.height(DesignTokens.space2))
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(DesignTokens.radiusSm)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = stringResource(R.string.welcome_ready),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(DesignTokens.space2))
 
         Text(
-            text = if (connectionStatus is ConnectionStatus.Connected) {
-                stringResource(R.string.session_input_hint)
-            } else if (connectionStatus is ConnectionStatus.Connecting) {
-                stringResource(R.string.session_connecting_hint)
-            } else {
-                stringResource(R.string.session_check_network)
+            text = when (connectionStatus) {
+                is ConnectionStatus.Connected -> stringResource(R.string.welcome_hint)
+                is ConnectionStatus.Disconnected -> stringResource(R.string.session_not_connected)
+                is ConnectionStatus.Connecting -> stringResource(R.string.status_connecting)
+                else -> stringResource(R.string.loading)
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        // 提示卡片
+        // Welcome suggestions（参考 webchat agent-chat__suggestions）
         if (connectionStatus is ConnectionStatus.Connected) {
+            Spacer(modifier = Modifier.height(DesignTokens.space6))
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(DesignTokens.space2)
+            ) {
+                suggestions.forEach { suggestion ->
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(0.8f),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(DesignTokens.radiusMd),
+                        onClick = { onSuggestionClick(suggestion) }
+                    ) {
+                        Text(
+                            text = suggestion,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(DesignTokens.space3)
+                        )
+                    }
+                }
+            }
+        } else if (connectionStatus !is ConnectionStatus.Connecting) {
+            // 非连接状态提示
             Spacer(modifier = Modifier.height(DesignTokens.space6))
 
             Surface(
@@ -130,7 +197,11 @@ fun EmptySessionContent(
                     )
                     Spacer(modifier = Modifier.height(DesignTokens.space2))
                     Text(
-                        text = stringResource(R.string.session_tip_content),
+                        text = if (connectionStatus is ConnectionStatus.Disconnected) {
+                            stringResource(R.string.session_check_network)
+                        } else {
+                            stringResource(R.string.session_connecting_hint)
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

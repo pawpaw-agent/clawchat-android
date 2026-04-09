@@ -15,6 +15,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -25,6 +26,7 @@ import com.openclaw.clawchat.ui.components.LoadingSkeleton
 import com.openclaw.clawchat.ui.components.SkeletonType
 import com.openclaw.clawchat.ui.components.ContextNotice
 import com.openclaw.clawchat.ui.components.CompactionIndicator
+import com.openclaw.clawchat.ui.components.FallbackIndicator
 import com.openclaw.clawchat.ui.components.NetworkStatusBanner
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
@@ -45,9 +47,11 @@ import kotlinx.coroutines.launch
 fun SessionScreen(
     viewModel: SessionViewModel,
     sessionId: String,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    mainViewModel: MainViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val mainState by mainViewModel.state.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -79,16 +83,28 @@ fun SessionScreen(
     var isSearchMode by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
+    // 从 MainViewModel 获取当前会话数据（包含 token 信息）
+    val currentSession = remember(sessionId, mainState.sessions) {
+        mainState.sessions.find { it.id == sessionId }
+    }
+
     // 会话切换时重置状态
     LaunchedEffect(sessionId) {
         if (currentSessionId != sessionId) {
             currentSessionId = sessionId
             viewModel.setSessionId(sessionId)
+            // 更新 session 数据（包含 token 信息）
+            currentSession?.let { viewModel.setSession(it) }
             focusRequester.requestFocus()
             // 切换会话时重置搜索
             isSearchMode = false
             searchQuery = ""
         }
+    }
+
+    // 当 session 数据更新时，同步到 SessionViewModel
+    LaunchedEffect(currentSession) {
+        currentSession?.let { viewModel.setSession(it) }
     }
 
     // P1-3: 使用 derivedStateOf 优化消息分组计算，避免不必要的重组
@@ -168,9 +184,21 @@ fun SessionScreen(
 
                         // Compaction 指示器
                         CompactionIndicator(
-                            active = state.compactionActive,
-                            completedAt = state.compactionCompletedAt
+                            compactionStatus = state.compactionStatus
                         )
+
+                        // Fallback 指示器（模型切换通知）
+                        state.fallbackStatus?.let { fallback ->
+                            FallbackIndicator(
+                                phase = fallback.phase,
+                                selected = fallback.selected,
+                                active = fallback.active,
+                                previous = fallback.previous,
+                                reason = fallback.reason,
+                                attempts = fallback.attempts,
+                                occurredAt = fallback.occurredAt
+                            )
+                        }
 
                         // Context 用量警告（>= 85%）
                         val totalTokens = state.totalTokens
@@ -185,7 +213,7 @@ fun SessionScreen(
                             }
                         }
                     }
-                    
+
                     if (state.isLoading && state.chatMessages.isEmpty()) {
                         // 加载骨架屏
                         LoadingSkeleton(
@@ -193,7 +221,15 @@ fun SessionScreen(
                             modifier = Modifier.fillMaxSize()
                         )
                     } else if (state.chatMessages.isEmpty()) {
-                        EmptySessionContent(connectionStatus = state.connectionStatus)
+                        // 空会话内容（带 Welcome suggestions）
+                        EmptySessionContent(
+                            connectionStatus = state.connectionStatus,
+                            assistantName = state.session?.agentName,
+                            assistantEmoji = state.session?.agentEmoji,
+                            onSuggestionClick = { suggestion ->
+                                viewModel.sendMessage(suggestion)
+                            }
+                        )
                     } else if (filteredGroups.isNotEmpty()) {
                         MessageGroupList(
                             groups = filteredGroups,

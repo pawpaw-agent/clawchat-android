@@ -469,7 +469,20 @@
     <string name="context_used">%d%% context used</string>
     <string name="context_tokens_format">(%1$s / %2$s)</string>
     <string name="context_compacting">Compacting context…</string>
+    <string name="context_retrying">Retrying after compaction…</string>
     <string name="context_compacted">Context compacted</string>
+
+    <!-- Fallback Indicator -->
+    <string name="fallback_active">Fallback active: %s</string>
+    <string name="fallback_cleared">Fallback cleared: %s</string>
+
+    <!-- Welcome Suggestions -->
+    <string name="welcome_ready">Ready to chat</string>
+    <string name="welcome_hint">Type a message below · / for commands</string>
+    <string name="welcome_suggestion_what">What can you do?</string>
+    <string name="welcome_suggestion_summarize">Summarize my recent sessions</string>
+    <string name="welcome_suggestion_config">Help me configure a channel</string>
+    <string name="welcome_suggestion_health">Check system health</string>
 
     <!-- Network Status -->
     <string name="network_not_connected">Not connected to server</string>

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.R
+import com.openclaw.clawchat.ui.state.CompactionStatus
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -99,30 +101,36 @@ fun ContextNotice(
 /**
  * Compaction 指示器组件
  * 参考 webchat: renderCompactionIndicator
+ * v2026.4.8: 使用 phase 替代 active 布尔值
  *
  * 显示状态：
  * - active: "Compacting context..." + loader
- * - complete: "Context compacted" + check icon, 2秒后消失
+ * - retrying: "Retrying after compaction..." + loader
+ * - complete: "Context compacted" + check icon, 5秒后消失
  */
 @Composable
 fun CompactionIndicator(
-    active: Boolean,
+    phase: String = "active",           // active, retrying, complete
     completedAt: Long? = null,
     modifier: Modifier = Modifier
 ) {
-    // 完成后显示 2 秒
+    // 完成后显示 5 秒
     var showComplete by remember { mutableStateOf(false) }
 
-    LaunchedEffect(completedAt) {
-        if (completedAt != null) {
+    LaunchedEffect(completedAt, phase) {
+        if (phase == "complete" && completedAt != null) {
             showComplete = true
-            kotlinx.coroutines.delay(2000)
+            kotlinx.coroutines.delay(5000)
+            showComplete = false
+        } else {
             showComplete = false
         }
     }
 
+    val isVisible = phase == "active" || phase == "retrying" || showComplete
+
     AnimatedVisibility(
-        visible = active || showComplete,
+        visible = isVisible,
         enter = fadeIn(),
         exit = fadeOut()
     ) {
@@ -141,19 +149,128 @@ fun CompactionIndicator(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (active) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                when {
+                    phase == "active" -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = stringResource(R.string.context_compacting),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    phase == "retrying" -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = stringResource(R.string.context_retrying),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    showComplete -> {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = stringResource(R.string.context_compacted),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 
-                    Text(
-                        text = stringResource(R.string.context_compacting),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                } else if (showComplete) {
+/**
+ * Compaction 指示器组件（兼容旧 API）
+ */
+@Composable
+fun CompactionIndicator(
+    compactionStatus: CompactionStatus?,
+    modifier: Modifier = Modifier
+) {
+    if (compactionStatus == null) return
+    CompactionIndicator(
+        phase = compactionStatus.phase,
+        completedAt = compactionStatus.completedAt,
+        modifier = modifier
+    )
+}
+
+/**
+ * Fallback 指示器组件
+ * 参考 webchat: renderFallbackIndicator
+ *
+ * 显示状态：
+ * - active: "Fallback active: {model}" + brain icon
+ * - cleared: "Fallback cleared: {model}" + check icon, 8秒后消失
+ */
+@Composable
+fun FallbackIndicator(
+    phase: String = "active",           // active, cleared
+    selected: String,                    // 当前选中的模型
+    active: String = selected,           // fallback active 时的模型
+    previous: String? = null,            // 之前的 fallback
+    reason: String? = null,              // fallback 原因
+    attempts: List<String> = emptyList(), // 尝试过的模型列表
+    occurredAt: Long,                    // 发生时间
+    modifier: Modifier = Modifier
+) {
+    // 完成后显示 8 秒
+    var showCleared by remember { mutableStateOf(false) }
+
+    LaunchedEffect(occurredAt, phase) {
+        if (phase == "cleared") {
+            showCleared = true
+            kotlinx.coroutines.delay(8000)
+            showCleared = false
+        } else {
+            showCleared = false
+        }
+    }
+
+    // active 或 cleared (未过期) 时显示
+    val elapsed = System.currentTimeMillis() - occurredAt
+    val isVisible = phase == "active" || (showCleared && elapsed < 8000)
+
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        Surface(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            shape = RoundedCornerShape(8.dp),
+            color = if (phase == "cleared")
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            else
+                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
+            contentColor = if (phase == "cleared")
+                MaterialTheme.colorScheme.primary
+            else
+                MaterialTheme.colorScheme.secondary
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (phase == "cleared") {
                     Icon(
                         imageVector = Icons.Filled.Check,
                         contentDescription = null,
@@ -161,9 +278,21 @@ fun CompactionIndicator(
                     )
 
                     Text(
-                        text = stringResource(R.string.context_compacted),
+                        text = stringResource(R.string.fallback_cleared, selected),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Psychology,  // brain icon equivalent
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+
+                    Text(
+                        text = stringResource(R.string.fallback_active, active),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
             }

@@ -24,7 +24,11 @@ data class SessionUi(
     val lastMessage: String? = null,
     val thinking: Boolean = false,
     val isPinned: Boolean = false,  // 置顶
-    val isArchived: Boolean = false  // 归档
+    val isArchived: Boolean = false, // 归档
+    // Context 用量（参考 webchat GatewaySessionRow）
+    val totalTokens: Int? = null,           // 已使用的 token 数
+    val contextTokens: Int? = null,         // context 窗口大小
+    val totalTokensFresh: Boolean = true    // token 数据是否新鲜
 ) {
     fun getDisplayName(): String {
         return when {
@@ -105,6 +109,36 @@ data class SlashCommandCompletion(
 )
 
 /**
+ * Compaction 状态（参考 webchat CompactionStatus）
+ * v2026.4.8: phase 替代 active 布尔值
+ */
+@Stable
+data class CompactionStatus(
+    val phase: String = "active",           // active, retrying, complete
+    val runId: String? = null,              // 当前 runId
+    val startedAt: Long? = null,            // 开始时间戳
+    val completedAt: Long? = null           // 完成时间戳
+) {
+    val isActive: Boolean get() = phase == "active"
+    val isRetrying: Boolean get() = phase == "retrying"
+    val isComplete: Boolean get() = phase == "complete"
+}
+
+/**
+ * Fallback 指示器状态（参考 webchat FallbackStatus）
+ */
+@Stable
+data class FallbackStatus(
+    val phase: String = "active",           // active, cleared
+    val selected: String,                   // 当前选中的模型
+    val active: String = selected,          // fallback active 时的模型
+    val previous: String? = null,           // 之前的 fallback
+    val reason: String? = null,             // fallback 原因
+    val attempts: List<String> = emptyList(), // 尝试过的模型列表
+    val occurredAt: Long = System.currentTimeMillis() // 发生时间
+)
+
+/**
  * 消息队列项（busy 时排队等待发送）
  */
 @Stable
@@ -154,8 +188,11 @@ data class SessionUiState(
     val totalTokensFresh: Boolean = true,         // token 数据是否新鲜
 
     // Compaction 指示器（参考 webchat renderCompactionIndicator）
-    val compactionActive: Boolean = false,        // 是否正在进行压缩
-    val compactionCompletedAt: Long? = null,      // 压缩完成时间戳
+    // v2026.4.8: 使用 CompactionStatus 替代 compactionActive + compactionCompletedAt
+    val compactionStatus: CompactionStatus? = null,
+
+    // Fallback 指示器（参考 webchat renderFallbackIndicator）
+    val fallbackStatus: FallbackStatus? = null,   // 模型切换状态
 
     // 工具流状态（1:1 对应 webchat ToolStreamHost）
     val toolStreamById: Map<String, ToolStreamEntry> = emptyMap(),
