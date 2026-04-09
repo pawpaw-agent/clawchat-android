@@ -32,7 +32,7 @@ import com.openclaw.clawchat.ui.state.MessageUi
 
 /**
  * Markdown 文本渲染组件
- * 
+ *
  * 支持的语法：
  * - 标题 (# ## ###)
  * - 粗体 (**text**)
@@ -42,6 +42,10 @@ import com.openclaw.clawchat.ui.state.MessageUi
  * - 列表 (- item 或 * item 或 1. item)
  * - 链接 [text](url)
  * - 表格
+ *
+ * 性能优化：
+ * - 流式模式：减少内容检测频率，避免频繁重组
+ * - 使用 remember 缓存解析结果
  */
 @Composable
 fun MarkdownText(
@@ -51,26 +55,32 @@ fun MarkdownText(
     textColor: Color = Color.Unspecified,
     isStreaming: Boolean = false  // 流式优化：标记是否在流式输出
 ) {
-    // 流式优化：减少检测频率
-    // 非流式：每次检测
-    // 流式：内容变化超过 50 字符才重新检测
-    val lastCheckedLength = remember { mutableStateOf(0) }
-    val shouldRecheck = !isStreaming || content.length - lastCheckedLength.value > 50
-    
-    if (shouldRecheck) {
-        lastCheckedLength.value = content.length
+    // 性能优化：缓存内容类型检测结果
+    // 流式模式：内容增长超过 100 字符才重新检测
+    // 非流式模式：每次都检测
+    var lastCheckedContent by remember { mutableStateOf("") }
+    var cachedHasCodeBlock by remember { mutableStateOf(false) }
+    var cachedHasTable by remember { mutableStateOf(false) }
+
+    val shouldRecheck = if (isStreaming) {
+        content.length - lastCheckedContent.length > 100
+    } else {
+        content != lastCheckedContent
     }
-    
-    val hasCodeBlock = if (shouldRecheck) content.contains("```") else remember { false }
-    val hasTable = if (shouldRecheck) {
-        val lines = content.lines()
-        val pipeLines = lines.count { it.trim().startsWith("|") && it.trim().endsWith("|") }
-        pipeLines >= 2
-    } else remember { false }
-    
+
+    if (shouldRecheck) {
+        lastCheckedContent = content
+        cachedHasCodeBlock = content.contains("```")
+        cachedHasTable = if (!cachedHasCodeBlock) {
+            val lines = content.lines()
+            val pipeLines = lines.count { it.trim().startsWith("|") && it.trim().endsWith("|") }
+            pipeLines >= 2
+        } else false
+    }
+
     when {
-        hasCodeBlock -> MarkdownWithCodeBlocks(content, fontSize, textColor, modifier, isStreaming)
-        hasTable -> MarkdownTableContent(content, fontSize, textColor, modifier)
+        cachedHasCodeBlock -> MarkdownWithCodeBlocks(content, fontSize, textColor, modifier, isStreaming)
+        cachedHasTable -> MarkdownTableContent(content, fontSize, textColor, modifier)
         else -> MarkdownRegularContent(content, fontSize, textColor, modifier, isStreaming)
     }
 }
@@ -219,6 +229,7 @@ private fun CodeBlockContent(
 
 /**
  * 普通文本渲染
+ * 性能优化：使用 remember 缓存解析结果，减少重复解析
  */
 @Composable
 private fun MarkdownRegularContent(
@@ -229,48 +240,43 @@ private fun MarkdownRegularContent(
     isStreaming: Boolean = false
 ) {
     val uriHandler = LocalUriHandler.current
-    // 流式优化：减少解析频率
-    // 非流式：每次解析
-    // 流式：内容变化超过 50 字符才重新解析
-    val lastParsedLength = remember { mutableStateOf(0) }
-    val shouldParse = !isStreaming || content.length - lastParsedLength.value > 50
 
-    if (shouldParse) {
-        lastParsedLength.value = content.length
-    }
-
-    // 在 @Composable 上下文中获取颜色
+    // 性能优化：在 Composable 外获取颜色，避免每次重组都获取
     val linkColor = MaterialTheme.colorScheme.primary
     val codeColor = MaterialTheme.colorScheme.tertiary
     val codeBgColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
 
-    val cachedAnnotatedString = remember(lastParsedLength.value) {
-        if (shouldParse) parseMarkdownToAnnotatedString(
-            content,
-            linkColor = linkColor,
-            codeColor = codeColor,
-            codeBgColor = codeBgColor
-        ) else null
+    // 性能优化：使用 remember 缓存解析结果
+    // 流式模式：只有内容增长超过阈值才重新解析
+    // 非流式模式：每次内容变化都解析
+    var lastParsedContent by remember { mutableStateOf("") }
+    var lastParsedResult by remember { mutableStateOf<AnnotatedString?>(null) }
+
+    val shouldReparse = if (isStreaming) {
+        // 流式模式：内容增长超过 100 字符才重新解析
+        content.length - lastParsedContent.length > 100
+    } else {
+        // 非流式模式：内容变化就重新解析
+        content != lastParsedContent
     }
 
-    // 流式时使用缓存的解析结果，最后 50 字符用原始文本显示
-    val annotatedString = if (isStreaming && cachedAnnotatedString != null && !shouldParse) {
-        buildAnnotatedString {
-            append(cachedAnnotatedString)
-            append(content.substring(lastParsedLength.value))
-        }
-    } else {
-        cachedAnnotatedString ?: parseMarkdownToAnnotatedString(
+    val annotatedString = if (shouldReparse || lastParsedResult == null) {
+        val result = parseMarkdownToAnnotatedString(
             content,
             linkColor = linkColor,
             codeColor = codeColor,
             codeBgColor = codeBgColor
         )
+        lastParsedContent = content
+        lastParsedResult = result
+        result
+    } else {
+        lastParsedResult!!
     }
-    
+
     // 检查是否有链接
     val hasLinks = annotatedString.getStringAnnotations(0, annotatedString.length).any { it.tag == "URL" }
-    
+
     if (hasLinks) {
         ClickableText(
             text = annotatedString,

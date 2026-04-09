@@ -281,6 +281,7 @@ private fun TypingDots() {
 
 /**
  * 消息分组列表
+ * 性能优化：使用 derivedStateOf 缓存反向列表，避免每次重组创建新对象
  */
 @Composable
 fun MessageGroupList(
@@ -305,6 +306,11 @@ fun MessageGroupList(
     onRetryMessage: (String) -> Unit = {},
     onContinueGeneration: () -> Unit = {}
 ) {
+    // 性能优化：缓存反向列表，避免每次重组创建新对象
+    val reversedGroups by remember { derivedStateOf { groups.asReversed() } }
+    val reversedToolMessages by remember { derivedStateOf { toolMessages.asReversed() } }
+    val reversedSegments by remember { derivedStateOf { streamSegments.asReversed() } }
+
     // 初始滚动：等待消息加载完成，然后滚动到底部（只执行一次）
     LaunchedEffect(groups.size, chatHasAutoScrolled) {
         if (chatHasAutoScrolled) return@LaunchedEffect
@@ -346,15 +352,13 @@ fun MessageGroupList(
     }
 
     // 流式输出到达时自动滚动（仅处理流式，不处理初始加载）
-    val streamKey = chatStream?.hashCode() ?: 0
-    LaunchedEffect(streamKey, toolMessages.size, streamSegments.size) {
-        // 仅处理流式更新，不处理初始加载
-        if (!chatHasAutoScrolled) return@LaunchedEffect
-        if (chatStream.isNullOrBlank() && toolMessages.isEmpty() && streamSegments.isEmpty()) return@LaunchedEffect
-
-        // 用户在底部时自动跟随流式输出
-        if (chatUserNearBottom) {
-            listState.animateScrollToItem(0)
+    // 性能优化：只在有实际内容时触发，减少不必要的 LaunchedEffect
+    val hasActiveStream = chatStream.isNullOrBlank().not() || toolMessages.isNotEmpty() || streamSegments.isNotEmpty()
+    if (hasActiveStream && chatHasAutoScrolled) {
+        LaunchedEffect(chatStream, toolMessages.size, streamSegments.size) {
+            if (chatUserNearBottom) {
+                listState.animateScrollToItem(0)
+            }
         }
     }
 
@@ -396,9 +400,9 @@ fun MessageGroupList(
         }
 
         // 2. 工具消息（与历史消息中的 toolResult 合并）
-        if (toolMessages.isNotEmpty()) {
+        if (reversedToolMessages.isNotEmpty()) {
             items(
-                items = toolMessages.reversed(),  // 反转以保持正确顺序
+                items = reversedToolMessages,  // 使用缓存的反向列表
                 key = { msg -> msg.toolCallId ?: msg.id },
                 contentType = { "tool_message" }
             ) { toolMessage ->
@@ -407,9 +411,9 @@ fun MessageGroupList(
         }
 
         // 3. 文本段（工具执行前提交的文本）
-        if (streamSegments.isNotEmpty()) {
+        if (reversedSegments.isNotEmpty()) {
             items(
-                items = streamSegments.reversed(),
+                items = reversedSegments,  // 使用缓存的反向列表
                 key = { "segment_${it.ts}" },
                 contentType = { "stream_segment" }
             ) { segment ->
@@ -429,7 +433,7 @@ fun MessageGroupList(
 
         // 4. 历史消息（显示在最上方）
         items(
-            items = groups.reversed(),
+            items = reversedGroups,  // 使用缓存的反向列表
             key = { it.messages.first().id },
             contentType = { "message_group" }
         ) { group ->

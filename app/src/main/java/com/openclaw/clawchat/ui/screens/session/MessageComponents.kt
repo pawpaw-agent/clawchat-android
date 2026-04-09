@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.*
 import androidx.compose.animation.animateColor
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandVertically
@@ -95,19 +96,23 @@ fun MessageContentCard(
             showCopiedToast = false
         }
     }
-    
-    // 流式输出脉冲动画
-    val infiniteTransition = rememberInfiniteTransition(label = "streaming")
-    val borderColor by infiniteTransition.animateColor(
-        initialValue = MaterialTheme.colorScheme.outline,
-        targetValue = MaterialTheme.colorScheme.primary,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = EaseInOut),
-            repeatMode = RepeatMode.Reverse
-        ),
+
+    // 性能优化：流式边框动画 - 使用 AnimatedVisibility 或条件渲染
+    // 只在流式时启动无限动画，非流式使用透明边框
+    val staticBorderColor = MaterialTheme.colorScheme.outline
+    val borderColor by animateColorAsState(
+        targetValue = if (isStreaming) MaterialTheme.colorScheme.primary else staticBorderColor,
+        animationSpec = if (isStreaming) {
+            infiniteRepeatable(
+                animation = tween(1500, easing = EaseInOut),
+                repeatMode = RepeatMode.Reverse
+            )
+        } else {
+            tween(0)  // 非流式时无动画
+        },
         label = "borderColor"
     )
-    
+
     Column(
         verticalArrangement = Arrangement.spacedBy(DesignTokens.space2)
     ) {
@@ -115,7 +120,7 @@ fun MessageContentCard(
         images.forEach { image ->
             MessageImageContent(image = image)
         }
-        
+
         // 渲染文本
         if (textContent.isNotBlank()) {
             Box(
@@ -163,7 +168,7 @@ fun MessageContentCard(
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
                 }
-                
+
                 if (showCopiedToast) {
             Surface(
                 modifier = Modifier.align(Alignment.BottomCenter),
