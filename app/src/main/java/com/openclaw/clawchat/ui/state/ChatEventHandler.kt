@@ -84,7 +84,7 @@ class ChatEventHandler(
      *   - assistant: { text, delta, mediaUrls? } - 通过 chat 事件处理，不需要额外处理
      *   - tool: { phase, name, toolCallId, args?, result?, partialResult?, isError? }
      *   - thinking: { text, delta } - 推理流
-     *   - compaction: { phase: "start"|"end" } - 内部事件
+     *   - compaction: { phase: "start"|"end", completed?, willRetry? } - v2026.4.8
      *   - error: { reason, expected, received } - 网关合成错误
      */
     private fun handleAgentEvent(payload: JsonObject, stream: String) {
@@ -92,8 +92,9 @@ class ChatEventHandler(
         when (stream) {
             "tool" -> onToolStreamEvent(payload)
             "lifecycle" -> handleLifecycleEvent(payload)
+            "compaction" -> handleCompactionEvent(payload)  // v2026.4.8
             "error" -> handleAgentErrorEvent(payload)
-            // assistant 通过 chat 事件处理，thinking/compaction 不需要 UI 处理
+            // assistant 通过 chat 事件处理，thinking 不需要 UI 处理
             else -> AppLog.d(TAG, "=== Ignoring agent event with stream=$stream")
         }
     }
@@ -102,14 +103,15 @@ class ChatEventHandler(
      * 处理 lifecycle 事件
      * lifecycle:end 到达时 JSONL 已包含本次 run 的全部消息
      * lifecycle:error 表示 run 出错
+     * lifecycle:fallback / fallback_cleared 表示模型切换（v2026.4.8）
      */
     private fun handleLifecycleEvent(payload: JsonObject) {
         val data = payload["data"]?.jsonObject
         val phase = data?.get("phase")?.jsonPrimitive?.content ?: return
         val runId = payload["runId"]?.jsonPrimitive?.content ?: return
-        
+
         AppLog.d(TAG, "=== Lifecycle event: runId=$runId, phase=$phase")
-        
+
         when (phase) {
             "error" -> {
                 // run 出错，清除状态
@@ -132,8 +134,160 @@ class ChatEventHandler(
                 // 触发 lifecycle:end 回调：清除工具流 + 刷新消息
                 onLifecycleEnd?.invoke()
             }
-            // start/fallback/fallback_cleared 不需要特殊处理
+            "fallback", "fallback_cleared" -> {
+                // v2026.4.8: 模型 fallback 事件
+                handleFallbackEvent(payload, phase)
+            }
+            // start 不需要特殊处理
             else -> AppLog.d(TAG, "=== Lifecycle phase=$phase, no action needed")
+        }
+    }
+
+    /**
+     * 处理 fallback 事件（v2026.4.8）
+     * 参考 webchat app-tool-stream.ts handleLifecycleFallbackEvent
+     */
+    private fun handleFallbackEvent(payload: JsonObject, phase: String) {
+        val data = payload["data"]?.jsonObject ?: return
+
+        // 提取模型信息
+        val selectedProvider = data["selectedProvider"]?.jsonPrimitive?.content
+        val selectedModel = data["selectedModel"]?.jsonPrimitive?.content
+        val activeProvider = data["activeProvider"]?.jsonPrimitive?.content
+        val activeModel = data["activeModel"]?.jsonPrimitive?.content
+        val previousProvider = data["previousActiveProvider"]?.jsonPrimitive?.content
+        val previousModel = data["previousActiveModel"]?.jsonPrimitive?.content
+        val reason = data["reasonSummary"]?.jsonPrimitive?.content ?: data["reason"]?.jsonPrimitive?.content
+
+        // 构建模型标签
+        val selected = if (!selectedProvider.isNullOrBlank() && !selectedModel.isNullOrBlank()) {
+            "$selectedProvider/$selectedModel"
+        } else if (!selectedModel.isNullOrBlank()) {
+            selectedModel
+        } else null
+
+        val active = if (!activeProvider.isNullOrBlank() && !activeModel.isNullOrBlank()) {
+            "$activeProvider/$activeModel"
+        } else if (!activeModel.isNullOrBlank()) {
+            activeModel
+        } else selected
+
+        val previous = if (!previousProvider.isNullOrBlank() && !previousModel.isNullOrBlank()) {
+            "$previousProvider/$previousModel"
+        } else previousModel
+
+        if (selected == null || active == null) {
+            AppLog.d(TAG, "=== Fallback event missing model info, ignoring")
+            return
+        }
+
+        // 如果 fallback 且 selected == active，忽略（没有实际切换）
+        if (phase == "fallback" && selected == active) {
+            return
+        }
+
+        AppLog.i(TAG, "=== Fallback event: phase=$phase, selected=$selected, active=$active, previous=$previous, reason=$reason")
+
+        // 提取 attempts
+        val attempts = data["attemptSummaries"]?.jsonArray?.mapNotNull { elem ->
+            elem.jsonObject.let { obj ->
+                val model = obj["model"]?.jsonPrimitive?.content
+                val attemptReason = obj["reason"]?.jsonPrimitive?.content
+                if (!model.isNullOrBlank()) "$model: ${attemptReason ?: "unknown"}" else null
+            }
+        } ?: data["attempts"]?.jsonArray?.mapNotNull { elem ->
+            elem.jsonObject.let { obj ->
+                val provider = obj["provider"]?.jsonPrimitive?.content
+                val model = obj["model"]?.jsonPrimitive?.content
+                val attemptReason = obj["reason"]?.jsonPrimitive?.content
+                if (!model.isNullOrBlank()) "${provider?.let { "$it/" } ?: ""}$model: ${attemptReason ?: "unknown"}" else null
+            }
+        } ?: emptyList()
+
+        state.update { currentState ->
+            currentState.copy(
+                fallbackStatus = FallbackStatus(
+                    phase = if (phase == "fallback_cleared") "cleared" else "active",
+                    selected = selected,
+                    active = if (phase == "fallback_cleared") selected else active,
+                    previous = if (phase == "fallback_cleared") previous else null,
+                    reason = reason,
+                    attempts = attempts,
+                    occurredAt = System.currentTimeMillis()
+                )
+            )
+        }
+    }
+
+    /**
+     * 处理 compaction 事件（v2026.4.8）
+     * 参考 webchat app-tool-stream.ts handleCompactionEvent
+     */
+    private fun handleCompactionEvent(payload: JsonObject) {
+        val data = payload["data"]?.jsonObject ?: return
+        val phase = data["phase"]?.jsonPrimitive?.content ?: return
+        val runId = payload["runId"]?.jsonPrimitive?.content
+        val completed = data["completed"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
+        val willRetry = data["willRetry"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
+
+        AppLog.d(TAG, "=== Compaction event: phase=$phase, runId=$runId, completed=$completed, willRetry=$willRetry")
+
+        when (phase) {
+            "start" -> {
+                state.update { currentState ->
+                    currentState.copy(
+                        compactionStatus = CompactionStatus(
+                            phase = "active",
+                            runId = runId,
+                            startedAt = System.currentTimeMillis(),
+                            completedAt = null
+                        )
+                    )
+                }
+            }
+            "end" -> {
+                if (willRetry && completed) {
+                    // Compaction 成功但会重试
+                    state.update { currentState ->
+                        currentState.copy(
+                            compactionStatus = CompactionStatus(
+                                phase = "retrying",
+                                runId = runId,
+                                startedAt = currentState.compactionStatus?.startedAt ?: System.currentTimeMillis(),
+                                completedAt = null
+                            )
+                        )
+                    }
+                } else if (completed) {
+                    // Compaction 完成
+                    state.update { currentState ->
+                        currentState.copy(
+                            compactionStatus = CompactionStatus(
+                                phase = "complete",
+                                runId = runId,
+                                startedAt = currentState.compactionStatus?.startedAt ?: System.currentTimeMillis(),
+                                completedAt = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                    // 5秒后自动清除
+                    scope.launch {
+                        kotlinx.coroutines.delay(5000)
+                        state.update { currentState ->
+                            if (currentState.compactionStatus?.phase == "complete") {
+                                currentState.copy(compactionStatus = null)
+                            } else {
+                                currentState
+                            }
+                        }
+                    }
+                } else {
+                    // Compaction 未完成，清除状态
+                    state.update { currentState ->
+                        currentState.copy(compactionStatus = null)
+                    }
+                }
+            }
         }
     }
 

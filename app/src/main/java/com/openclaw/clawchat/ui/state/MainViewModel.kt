@@ -296,13 +296,6 @@ class MainViewModel @Inject constructor(
                     }
                 }
 
-                // Debug: 检查 token 数据
-                uiSessions.forEach { session ->
-                    if (session.totalTokens != null) {
-                        AppLog.d(TAG, "Session ${session.id}: totalTokens=${session.totalTokens}, contextTokens=${session.contextTokens}")
-                    }
-                }
-
                 // 更新 UI
                 _uiState.update { it.copy(sessions = uiSessions) }
 
