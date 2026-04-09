@@ -51,7 +51,7 @@ fun SessionScreen(
     mainViewModel: MainViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val mainState by mainViewModel.state.collectAsStateWithLifecycle()
+    val mainState by mainViewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     val lifecycleOwner = LocalLifecycleOwner.current
