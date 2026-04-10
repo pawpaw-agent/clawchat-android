@@ -106,7 +106,7 @@ fun PairingBottomSheet(
                 isError = state.gatewayUrl.isNotBlank() && !urlValid,
                 supportingText = {
                     if (wsPreview != null) {
-                        Text("→ $wsPreview", fontFamily = FontFamily.Monospace)
+                        Text(stringResource(R.string.debug_ws_preview, wsPreview), fontFamily = FontFamily.Monospace)
                     }
                 }
             )

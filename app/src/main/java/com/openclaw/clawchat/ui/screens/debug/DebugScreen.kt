@@ -250,16 +250,20 @@ private fun LogViewerTab(
         }
 
         // 日志列表
+        val filteredLogs = remember(state.logLines, state.logSearchQuery) {
+            state.logLines.filter {
+                state.logSearchQuery.isBlank() ||
+                it.message.contains(state.logSearchQuery, ignoreCase = true)
+            }
+        }
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState,
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) {
             items(
-                items = state.logLines.filter {
-                    state.logSearchQuery.isBlank() || 
-                    it.message.contains(state.logSearchQuery, ignoreCase = true)
-                }
+                items = filteredLogs
             ) { logLine ->
                 Text(
                     text = "${logLine.timestamp} ${logLine.level.name.first()} ${logLine.message}",

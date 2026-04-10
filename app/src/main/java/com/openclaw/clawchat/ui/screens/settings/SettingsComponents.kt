@@ -168,7 +168,7 @@ fun ClickableSettingItem(
         trailingContent = {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
-                contentDescription = "进入",
+                contentDescription = stringResource(R.string.navigate_forward),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },

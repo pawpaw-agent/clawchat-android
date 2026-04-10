@@ -131,9 +131,7 @@ class DebugViewModel @Inject constructor(
                     is WebSocketConnectionState.Error -> "Error: ${state.throwable.message}"
                 }
 
-                val url = gateway.helloOkPayload?.let { 
-                    gateway.defaultSessionKey 
-                }.toString()
+                val url = gateway.connectedUrl
 
                 _state.update { 
                     it.copy(

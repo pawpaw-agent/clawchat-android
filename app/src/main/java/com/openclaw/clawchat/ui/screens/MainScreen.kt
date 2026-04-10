@@ -109,8 +109,7 @@ fun MainScreen(
                 onSettingsClick = { showSettings = true },
                 onCommandPaletteClick = { showCommandPalette = true }
             )
-        },
-        floatingActionButton = {}
+        }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -253,7 +252,7 @@ private fun ClawTopAppBar(
             IconButton(onClick = onSettingsClick) {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = "设置"
+                    contentDescription = stringResource(R.string.settings_label)
                 )
             }
         },

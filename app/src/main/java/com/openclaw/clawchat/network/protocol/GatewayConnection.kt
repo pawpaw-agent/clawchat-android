@@ -107,6 +107,9 @@ class GatewayConnection(
     private var reconnectJob: Job? = null
     private var heartbeatJob: Job? = null
     private var currentUrl: String? = null
+
+    /** Currently connected gateway URL */
+    val connectedUrl: String? get() = currentUrl
     private var currentToken: String? = null
     private var reconnectAttempt = 0
 

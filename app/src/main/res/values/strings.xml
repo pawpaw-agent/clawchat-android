@@ -598,4 +598,7 @@
     <string name="cron_added_success">Added: %s</string>
     <string name="cron_deleted">Deleted: %s</string>
     <string name="cron_delete_failed">Delete failed: %s</string>
+    <string name="settings_label">Settings</string>
+    <string name="navigate_forward">Navigate</string>
+    <string name="debug_ws_preview">→ %s</string>
 </resources>
