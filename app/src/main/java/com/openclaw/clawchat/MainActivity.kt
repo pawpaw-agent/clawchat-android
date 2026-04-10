@@ -99,21 +99,19 @@ class MainActivity : ComponentActivity() {
      */
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        
+
         when (level) {
             ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
                 // UI 不可见，释放 UI 相关资源
                 AppLog.d("MainActivity", "TRIM_MEMORY_UI_HIDDEN: Releasing UI resources")
             }
             ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
-                // 中等内存压力，释放缓存
-                AppLog.d("MainActivity", "TRIM_MEMORY_MODERATE: Clearing caches")
-                System.gc()
+                // 中等内存压力
+                AppLog.d("MainActivity", "TRIM_MEMORY_MODERATE: Moderate memory pressure")
             }
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
-                // 严重内存压力，释放所有可释放资源
-                AppLog.w("MainActivity", "TRIM_MEMORY_RUNNING_CRITICAL: Releasing all resources")
-                System.gc()
+                // 严重内存压力
+                AppLog.w("MainActivity", "TRIM_MEMORY_RUNNING_CRITICAL: Critical memory pressure")
             }
         }
     }

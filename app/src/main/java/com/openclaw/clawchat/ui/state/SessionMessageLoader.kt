@@ -157,6 +157,7 @@ class SessionMessageLoader(
         loadMessagesJob?.cancel()
         loadMessagesJob = null
         // 取消时重置加载状态
+        state.update { it.copy(isLoading = false) }
         onLoadingStateChanged?.invoke(false)
     }
 }

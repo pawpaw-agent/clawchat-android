@@ -376,7 +376,7 @@ class MainViewModel @Inject constructor(
         val sessionId = _uiState.value.currentSession?.id ?: return
         viewModelScope.launch(exceptionHandler) {
             try {
-                val response = gateway.sessionsReset(sessionId, "reset")
+                val response = gateway.sessionsReset(sessionId, "clear")
                 if (response.isSuccess()) {
                     _events.trySend(UiEvent.ShowSuccess("会话已清除"))
                 } else {
@@ -426,7 +426,7 @@ class MainViewModel @Inject constructor(
                     // 如果 sessions.create 不可用，尝试使用 sessions.reset
                     val sessionKey = gateway.defaultSessionKey
                     if (sessionKey != null) {
-                        gateway.sessionsReset(sessionKey, "new")
+                        gateway.sessionsReset(sessionKey, "clear")
                         refreshSessions()
                     }
                 }
@@ -552,7 +552,27 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun terminateSession(sessionId: String) { deleteSession(sessionId) }
+    fun terminateSession(sessionId: String) {
+        viewModelScope.launch(exceptionHandler) {
+            try {
+                // 先中止当前 run
+                gateway.chatAbort(sessionId)
+            } catch (e: Exception) {
+                AppLog.w(TAG, "Gateway abort exception: ${e.message}")
+            }
+
+            // 更新 UI 状态
+            _uiState.update {
+                it.copy(
+                    sessions = it.sessions.map { s ->
+                        if (s.id == sessionId) s.copy(status = SessionStatus.TERMINATED)
+                        else s
+                    }
+                )
+            }
+            _events.trySend(UiEvent.ShowSuccess("会话已终止"))
+        }
+    }
     fun clearError() { _uiState.update { it.copy(error = null) } }
     fun clearConnectionError() { _uiState.update { it.copy(connectionError = null) } }
     fun consumeEvent() { /* no-op: Channel events are consumed on receive */ }

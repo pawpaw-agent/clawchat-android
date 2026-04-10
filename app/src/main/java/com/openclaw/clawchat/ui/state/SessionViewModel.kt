@@ -525,14 +525,20 @@ class SessionViewModel @Inject constructor(
         if (trimmedText.isEmpty()) return
 
         viewModelScope.launch {
-            // 取消编辑状态
-            _state.update { it.copy(editingMessageId = null, editingMessageText = null) }
+            // 先删除原消息（数据库）
+            messageRepository.deleteMessage(sessionId, messageId)
 
-            // 删除原消息
-            deleteMessage(messageId)
+            // 原子性更新：删除消息 + 设置输入文本
+            _state.update { state ->
+                state.copy(
+                    editingMessageId = null,
+                    editingMessageText = null,
+                    chatMessages = state.chatMessages.filter { it.id != messageId },
+                    inputText = trimmedText
+                )
+            }
 
             // 发送编辑后的消息
-            _state.update { it.copy(inputText = trimmedText) }
             sendMessage(trimmedText)
         }
     }
@@ -625,33 +631,37 @@ class SessionViewModel @Inject constructor(
             return
         }
 
-        // 找到最后一条用户消息之后的第一条助手消息
-        val lastAssistantIndex = messages.indexOfFirst {
-            it.role == MessageRole.ASSISTANT && messages.indexOf(it) > lastUserIndex
-        }
+        // 找到最后一条用户消息之后的所有非用户消息（助手 + 工具消息）
+        val assistantIndices = messages.indices
+            .filter { it > lastUserIndex && it.role != MessageRole.USER }
+            .toList()
 
         viewModelScope.launch {
-            // 删除用户消息
-            val userMessageId = messages[lastUserIndex].id
-            messageRepository.deleteMessage(sessionId, userMessageId)
-
-            // 删除助手消息（如果有）
-            if (lastAssistantIndex >= 0) {
-                val assistantMessageId = messages[lastAssistantIndex].id
-                messageRepository.deleteMessage(sessionId, assistantMessageId)
+            // 收集所有要删除的消息 ID
+            val messageIdsToDelete = mutableListOf<String>()
+            messageIdsToDelete.add(messages[lastUserIndex].id)
+            for (idx in assistantIndices) {
+                messageIdsToDelete.add(messages[idx].id)
             }
 
-            // 更新状态
+            // 先从数据库删除（使用 gateway API 如果可用）
+            for (id in messageIdsToDelete) {
+                messageRepository.deleteMessage(sessionId, id)
+            }
+
+            // 从状态中移除（从后往前删除，避免索引偏移）
             _state.update { state ->
-                val newMessages = messages.toMutableList()
-                if (lastAssistantIndex >= 0) {
-                    newMessages.removeAt(lastAssistantIndex)
+                val newMessages = state.chatMessages.toMutableList()
+                // 先删除索引大的，再删索引小的，避免索引变化
+                (assistantIndices + lastUserIndex).sortedDescending().forEach { idx ->
+                    if (idx < newMessages.size) {
+                        newMessages.removeAt(idx)
+                    }
                 }
-                newMessages.removeAt(lastUserIndex)
                 state.copy(chatMessages = newMessages)
             }
 
-            AppLog.d(TAG, "Undid last conversation: userMessage=$userMessageId")
+            AppLog.d(TAG, "Undid last conversation: deleted ${messageIdsToDelete.size} messages")
         }
     }
 

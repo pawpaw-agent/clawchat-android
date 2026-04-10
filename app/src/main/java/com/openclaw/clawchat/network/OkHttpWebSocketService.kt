@@ -2,10 +2,8 @@ package com.openclaw.clawchat.network
 
 import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.protocol.GatewayConnection
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.withContext
 
 /**
  * WebSocketService 实现 — 委托给 GatewayConnection
@@ -33,11 +31,9 @@ class OkHttpWebSocketService(
     }
 
     override suspend fun sendRaw(json: String): Result<Unit> {
-        return withContext(Dispatchers.IO) {
-            val sent = gateway.sendFrame(json)
-            if (sent) Result.success(Unit)
-            else Result.failure(IllegalStateException("WebSocket not connected"))
-        }
+        val sent = gateway.sendFrame(json)
+        return if (sent) Result.success(Unit)
+        else Result.failure(IllegalStateException("WebSocket not connected"))
     }
 
     override suspend fun disconnect(): Result<Unit> {
