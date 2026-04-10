@@ -172,6 +172,9 @@ fun ClawChatNavHost(
                 },
                 onNavigateToDebug = {
                     navController.navigate("debug")
+                },
+                onNavigateToCron = {
+                    navController.navigate("cron")
                 }
             )
         }

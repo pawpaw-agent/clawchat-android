@@ -36,7 +36,8 @@ import com.openclaw.clawchat.ui.screens.settings.SettingsScreen
 fun MainScreen(
     viewModel: MainViewModel,
     onNavigateToSession: (String) -> Unit,
-    onNavigateToDebug: () -> Unit = {}
+    onNavigateToDebug: () -> Unit = {},
+    onNavigateToCron: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showSettings by remember { mutableStateOf(false) }
@@ -155,7 +156,8 @@ fun MainScreen(
     if (showSettings) {
         SettingsScreen(
             onNavigateBack = { showSettings = false },
-            onNavigateToDebug = onNavigateToDebug
+            onNavigateToDebug = onNavigateToDebug,
+            onNavigateToCron = onNavigateToCron
         )
     }
     
