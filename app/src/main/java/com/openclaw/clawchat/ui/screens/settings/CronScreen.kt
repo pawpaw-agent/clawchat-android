@@ -73,6 +73,16 @@ fun CronScreen(
 
     val unnamedText = stringResource(R.string.cron_unnamed)
     val loadFailedText = stringResource(R.string.cron_load_failed)
+    val toggleFailedText = stringResource(R.string.cron_toggle_failed)
+    val runSuccessText = stringResource(R.string.cron_run_success)
+    val runFailedText = stringResource(R.string.cron_run_failed)
+    val addedSuccessText = stringResource(R.string.cron_added_success)
+    val addFailedText = stringResource(R.string.cron_add_failed)
+    val deletedText = stringResource(R.string.cron_deleted)
+    val deleteFailedText = stringResource(R.string.cron_delete_failed)
+    val unknownErrorText = stringResource(R.string.error_unknown_message)
+    val retryText = stringResource(R.string.retry)
+    val cronAddTaskText = stringResource(R.string.cron_add_task)
 
     fun refreshCronJobs() {
         scope.launch {
@@ -142,7 +152,7 @@ fun CronScreen(
                         Button(onClick = { refreshCronJobs() }) {
                             Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.retry))
+                            Text(retryText)
                         }
                     }
                 }
@@ -193,18 +203,14 @@ fun CronScreen(
                                     scope.launch {
                                         try {
                                             val response = gateway.cronPatch(job.id, enabled = enabled)
-                                            if (response.isSuccess()) {
-                                                cronJobs = cronJobs.map {
-                                                    if (it.id == job.id) it.copy(enabled = enabled) else it
-                                                }
-                                            } else {
+                                            if (!response.isSuccess()) {
                                                 snackbarHostState.showSnackbar(
-                                                    stringResource(R.string.cron_toggle_failed, response.error?.message)
+                                                    "$toggleFailedText: ${response.error?.message}"
                                                 )
                                             }
                                         } catch (e: Exception) {
                                             snackbarHostState.showSnackbar(
-                                                stringResource(R.string.cron_toggle_failed, e.message)
+                                                "$toggleFailedText: ${e.message}"
                                             )
                                         }
                                     }
@@ -214,14 +220,14 @@ fun CronScreen(
                                         try {
                                             val response = gateway.cronRun(job.id)
                                             val msg = if (response.isSuccess()) {
-                                                stringResource(R.string.cron_run_success, job.name)
+                                                "$runSuccessText: ${job.name}"
                                             } else {
-                                                stringResource(R.string.cron_run_failed, response.error?.message ?: stringResource(R.string.error_unknown_message))
+                                                "$runFailedText: ${response.error?.message ?: unknownErrorText}"
                                             }
                                             snackbarHostState.showSnackbar(msg)
                                         } catch (e: Exception) {
                                             snackbarHostState.showSnackbar(
-                                                stringResource(R.string.cron_run_failed, e.message)
+                                                "$runFailedText: ${e.message}"
                                             )
                                         }
                                     }
@@ -248,17 +254,17 @@ fun CronScreen(
                         val response = gateway.cronAdd(name, cron, sessionKey, prompt)
                         if (response.isSuccess()) {
                             snackbarHostState.showSnackbar(
-                                stringResource(R.string.cron_added_success, name)
+                                "$addedSuccessText: $name"
                             )
                             refreshCronJobs()
                         } else {
                             snackbarHostState.showSnackbar(
-                                stringResource(R.string.cron_add_failed, response.error?.message ?: stringResource(R.string.error_unknown_message))
+                                "$addFailedText: ${response.error?.message ?: unknownErrorText}"
                             )
                         }
                     } catch (e: Exception) {
                         snackbarHostState.showSnackbar(
-                            stringResource(R.string.cron_add_failed, e.message)
+                            "$addFailedText: ${e.message}"
                         )
                     }
                 }
@@ -282,11 +288,11 @@ fun CronScreen(
                                 gateway.cronRemove(job.id)
                                 cronJobs = cronJobs.filter { it.id != job.id }
                                 snackbarHostState.showSnackbar(
-                                    stringResource(R.string.cron_deleted, job.name)
+                                    "$deletedText: ${job.name}"
                                 )
                             } catch (e: Exception) {
                                 snackbarHostState.showSnackbar(
-                                    stringResource(R.string.cron_delete_failed, e.message)
+                                    "$deleteFailedText: ${e.message}"
                                 )
                             }
                         }
