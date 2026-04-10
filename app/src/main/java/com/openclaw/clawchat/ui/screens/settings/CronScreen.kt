@@ -3,6 +3,9 @@ package com.openclaw.clawchat.ui.screens.settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -10,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.R
 import com.openclaw.clawchat.network.protocol.GatewayConnection
@@ -64,19 +69,24 @@ fun CronScreen(
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var jobToDelete by remember { mutableStateOf<CronJob?>(null) }
 
-    // Get localized strings outside of LaunchedEffect
     val unnamedText = stringResource(R.string.cron_unnamed)
     val loadFailedText = stringResource(R.string.cron_load_failed)
 
-    // 加载定时任务列表
-    LaunchedEffect(Unit) {
-        loadCronJobs(gateway, unnamedText).onSuccess { jobs ->
-            cronJobs = jobs
-        }.onFailure { err ->
-            error = err.message ?: loadFailedText
+    fun refreshCronJobs() {
+        scope.launch {
+            loadCronJobs(gateway, unnamedText).onSuccess { jobs ->
+                cronJobs = jobs
+            }.onFailure { err ->
+                error = err.message ?: loadFailedText
+            }
+            isLoading = false
         }
-        isLoading = false
+    }
+
+    LaunchedEffect(Unit) {
+        refreshCronJobs()
     }
 
     Scaffold(
@@ -128,6 +138,12 @@ fun CronScreen(
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.error
                         )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { refreshCronJobs() }) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.retry))
+                        }
                     }
                 }
                 cronJobs.isEmpty() -> {
@@ -156,6 +172,12 @@ fun CronScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedButton(onClick = { showAddDialog = true }) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.cron_add_task))
+                        }
                     }
                 }
                 else -> {
@@ -170,12 +192,20 @@ fun CronScreen(
                                 onToggle = { enabled ->
                                     scope.launch {
                                         try {
-                                            gateway.cronPatch(job.id, enabled = enabled)
-                                            cronJobs = cronJobs.map {
-                                                if (it.id == job.id) it.copy(enabled = enabled) else it
+                                            val response = gateway.cronPatch(job.id, enabled = enabled)
+                                            if (response.isSuccess()) {
+                                                cronJobs = cronJobs.map {
+                                                    if (it.id == job.id) it.copy(enabled = enabled) else it
+                                                }
+                                            } else {
+                                                snackbarHostState.showSnackbar(
+                                                    stringResource(R.string.cron_toggle_failed, response.error?.message)
+                                                )
                                             }
                                         } catch (e: Exception) {
-                                            snackbarHostState.showSnackbar("切换失败: ${e.message}")
+                                            snackbarHostState.showSnackbar(
+                                                stringResource(R.string.cron_toggle_failed, e.message)
+                                            )
                                         }
                                     }
                                 },
@@ -184,26 +214,20 @@ fun CronScreen(
                                         try {
                                             val response = gateway.cronRun(job.id)
                                             val msg = if (response.isSuccess()) {
-                                                "执行成功"
+                                                stringResource(R.string.cron_run_success, job.name)
                                             } else {
-                                                "执行失败: ${response.error?.message}"
+                                                stringResource(R.string.cron_run_failed, response.error?.message ?: stringResource(R.string.error_unknown_message))
                                             }
                                             snackbarHostState.showSnackbar(msg)
                                         } catch (e: Exception) {
-                                            snackbarHostState.showSnackbar("执行失败: ${e.message}")
+                                            snackbarHostState.showSnackbar(
+                                                stringResource(R.string.cron_run_failed, e.message)
+                                            )
                                         }
                                     }
                                 },
                                 onDelete = {
-                                    scope.launch {
-                                        try {
-                                            gateway.cronRemove(job.id)
-                                            cronJobs = cronJobs.filter { it.id != job.id }
-                                            snackbarHostState.showSnackbar("已删除: ${job.name}")
-                                        } catch (e: Exception) {
-                                            snackbarHostState.showSnackbar("删除失败: ${e.message}")
-                                        }
-                                    }
+                                    jobToDelete = job
                                 }
                             )
                         }
@@ -212,29 +236,70 @@ fun CronScreen(
             }
         }
     }
-    
+
     // 添加任务对话框
     if (showAddDialog) {
         AddCronJobDialog(
+            defaultSessionKey = gateway.defaultSessionKey,
             onDismiss = { showAddDialog = false },
             onAdd = { name, cron, sessionKey, prompt ->
                 scope.launch {
                     try {
                         val response = gateway.cronAdd(name, cron, sessionKey, prompt)
                         if (response.isSuccess()) {
-                            snackbarHostState.showSnackbar("添加成功: $name")
-                            // 刷新列表
-                            loadCronJobs(gateway).onSuccess { jobs -> cronJobs = jobs }
-                                .onFailure { err -> error = err.message }
-                            isLoading = false
+                            snackbarHostState.showSnackbar(
+                                stringResource(R.string.cron_added_success, name)
+                            )
+                            refreshCronJobs()
                         } else {
-                            snackbarHostState.showSnackbar("添加失败: ${response.error?.message}")
+                            snackbarHostState.showSnackbar(
+                                stringResource(R.string.cron_add_failed, response.error?.message ?: stringResource(R.string.error_unknown_message))
+                            )
                         }
                     } catch (e: Exception) {
-                        error = e.message
+                        snackbarHostState.showSnackbar(
+                            stringResource(R.string.cron_add_failed, e.message)
+                        )
                     }
                 }
                 showAddDialog = false
+            }
+        )
+    }
+
+    // 删除确认对话框
+    jobToDelete?.let { job ->
+        AlertDialog(
+            onDismissRequest = { jobToDelete = null },
+            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text(stringResource(R.string.cron_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.cron_delete_confirm_message, job.name)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                gateway.cronRemove(job.id)
+                                cronJobs = cronJobs.filter { it.id != job.id }
+                                snackbarHostState.showSnackbar(
+                                    stringResource(R.string.cron_deleted, job.name)
+                                )
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar(
+                                    stringResource(R.string.cron_delete_failed, e.message)
+                                )
+                            }
+                        }
+                        jobToDelete = null
+                    }
+                ) {
+                    Text(stringResource(R.string.cron_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { jobToDelete = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
             }
         )
     }
@@ -265,7 +330,8 @@ private fun CronJobItem(
             ) {
                 Text(
                     text = job.name,
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
                 )
                 Switch(
                     checked = job.enabled,
@@ -276,19 +342,34 @@ private fun CronJobItem(
             Text(
                 text = "Cron: ${job.cron}",
                 style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = stringResource(R.string.cron_prompt, "${job.prompt.take(50)}${if (job.prompt.length > 50) "..." else ""}"),
+                text = stringResource(R.string.cron_prompt, job.prompt),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2
             )
+            if (job.sessionKey.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.cron_session_label, job.sessionKey),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+            }
             Spacer(modifier = Modifier.height(12.dp))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(onClick = onRun) {
+                OutlinedButton(
+                    onClick = onRun,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(stringResource(R.string.cron_execute))
@@ -297,7 +378,8 @@ private fun CronJobItem(
                     onClick = onDelete,
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
-                    )
+                    ),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
@@ -313,12 +395,13 @@ private fun CronJobItem(
  */
 @Composable
 private fun AddCronJobDialog(
+    defaultSessionKey: String?,
     onDismiss: () -> Unit,
     onAdd: (name: String, cron: String, sessionKey: String, prompt: String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var cron by remember { mutableStateOf("") }
-    var sessionKey by remember { mutableStateOf("") }
+    var sessionKey by remember { mutableStateOf(defaultSessionKey ?: "") }
     var prompt by remember { mutableStateOf("") }
 
     AlertDialog(
@@ -326,26 +409,39 @@ private fun AddCronJobDialog(
         title = { Text(stringResource(R.string.cron_add_dialog_title)) },
         text = {
             Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.cron_task_name)) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                 )
                 OutlinedTextField(
                     value = cron,
                     onValueChange = { cron = it },
                     label = { Text(stringResource(R.string.cron_expression)) },
-                    placeholder = { Text(stringResource(R.string.cron_expression_hint)) },
-                    modifier = Modifier.fillMaxWidth()
+                    placeholder = {
+                        Text(
+                            stringResource(R.string.cron_expression_hint),
+                            fontFamily = FontFamily.Monospace
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    singleLine = true
                 )
                 OutlinedTextField(
                     value = sessionKey,
                     onValueChange = { sessionKey = it },
                     label = { Text(stringResource(R.string.cron_session_key)) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    singleLine = true
                 )
                 OutlinedTextField(
                     value = prompt,
@@ -353,17 +449,15 @@ private fun AddCronJobDialog(
                     label = { Text(stringResource(R.string.cron_task_prompt)) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
-                    maxLines = 4
+                    maxLines = 4,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
                 )
             }
         },
         confirmButton = {
             TextButton(
-                onClick = {
-                    if (name.isNotBlank() && cron.isNotBlank() && prompt.isNotBlank()) {
-                        onAdd(name, cron, sessionKey, prompt)
-                    }
-                }
+                enabled = name.isNotBlank() && cron.isNotBlank() && prompt.isNotBlank(),
+                onClick = { onAdd(name, cron, sessionKey, prompt) }
             ) {
                 Text(stringResource(R.string.cron_add_button))
             }

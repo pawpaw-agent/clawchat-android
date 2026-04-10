@@ -586,6 +586,16 @@
     <string name="cron_expression">Cron expression</string>
     <string name="cron_expression_hint">0 9 * * *</string>
     <string name="cron_session_key">Session Key</string>
+    <string name="cron_session_label">Session: %s</string>
     <string name="cron_task_prompt">Prompt</string>
     <string name="cron_add_button">Add</string>
+    <string name="cron_delete_confirm_title">Delete task</string>
+    <string name="cron_delete_confirm_message">Are you sure you want to delete \"%s\"?</string>
+    <string name="cron_run_success">Executed: %s</string>
+    <string name="cron_run_failed">Execution failed: %s</string>
+    <string name="cron_toggle_failed">Toggle failed: %s</string>
+    <string name="cron_add_failed">Add failed: %s</string>
+    <string name="cron_added_success">Added: %s</string>
+    <string name="cron_deleted">Deleted: %s</string>
+    <string name="cron_delete_failed">Delete failed: %s</string>
 </resources>
