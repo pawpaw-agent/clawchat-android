@@ -633,7 +633,7 @@ class SessionViewModel @Inject constructor(
 
         // 找到最后一条用户消息之后的所有非用户消息（助手 + 工具消息）
         val assistantIndices = messages.indices
-            .filter { it > lastUserIndex && it.role != MessageRole.USER }
+            .filter { it > lastUserIndex && messages[it].role != MessageRole.USER }
             .toList()
 
         viewModelScope.launch {
