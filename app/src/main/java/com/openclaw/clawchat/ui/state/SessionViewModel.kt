@@ -154,9 +154,11 @@ class SessionViewModel @Inject constructor(
             // 如果未连接，Gateway 连接恢复后会自动刷新（见 observeConnectionState）
             if (gateway.connectionState.value is WebSocketConnectionState.Connected) {
                 isLoadingHistory = true
+                hasRestoredFromSavedState = true
                 messageLoader.loadMessageHistory(savedSessionId)
             } else {
                 AppLog.d(TAG, "=== restoreFromSavedState: Gateway not connected, showing cached messages")
+                hasRestoredFromSavedState = true
             }
         }
     }
@@ -197,6 +199,8 @@ class SessionViewModel @Inject constructor(
 
     // 记录上次连接状态，用于判断是否是从断开恢复到已连接
     private var wasDisconnected = false
+    // 标记是否已经从 restoreFromSavedState 加载过消息
+    private var hasRestoredFromSavedState = false
 
     private fun observeConnectionState() {
         viewModelScope.launch(exceptionHandler) {
@@ -207,9 +211,16 @@ class SessionViewModel @Inject constructor(
                 if (connectionState is WebSocketConnectionState.Connected) {
                     val sessionId = _state.value.sessionId
                     if (sessionId != null) {
-                        // 如果之前是断开的（进程死亡后恢复或网络恢复），刷新消息
-                        if (wasDisconnected || _state.value.chatMessages.isEmpty()) {
-                            AppLog.d(TAG, "=== Gateway reconnected, refreshing messages for $sessionId")
+                        // 只在以下情况刷新消息：
+                        // 1. 之前是断开的（网络恢复）
+                        // 2. 消息为空且还没有从 restoreFromSavedState 加载过
+                        // 注意：restoreFromSavedState 已经处理了进程死亡后的恢复
+                        if (wasDisconnected) {
+                            AppLog.d(TAG, "=== Gateway reconnected after disconnect, refreshing messages for $sessionId")
+                            isLoadingHistory = true
+                            messageLoader.loadMessageHistory(sessionId)
+                        } else if (_state.value.chatMessages.isEmpty() && !hasRestoredFromSavedState) {
+                            AppLog.d(TAG, "=== Gateway connected with empty messages, loading history for $sessionId")
                             isLoadingHistory = true
                             messageLoader.loadMessageHistory(sessionId)
                         }
