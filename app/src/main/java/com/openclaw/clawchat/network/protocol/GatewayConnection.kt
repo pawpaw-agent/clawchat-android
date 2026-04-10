@@ -872,6 +872,26 @@ class GatewayConnection(
         return call("cron.remove", params)
     }
 
+    /** cron.patch — 更新定时任务属性（如 enabled） */
+    suspend fun cronPatch(
+        cronId: String,
+        enabled: Boolean? = null,
+        name: String? = null,
+        cron: String? = null,
+        sessionKey: String? = null,
+        prompt: String? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "id" to JsonPrimitive(cronId)
+        )
+        if (enabled != null) params["enabled"] = JsonPrimitive(enabled)
+        if (name != null) params["name"] = JsonPrimitive(name)
+        if (cron != null) params["cron"] = JsonPrimitive(cron)
+        if (sessionKey != null) params["sessionKey"] = JsonPrimitive(sessionKey)
+        if (prompt != null) params["prompt"] = JsonPrimitive(prompt)
+        return call("cron.patch", params)
+    }
+
     /** cron.run — 立即执行定时任务 */
     suspend fun cronRun(cronId: String): ResponseFrame {
         val params = mapOf("id" to JsonPrimitive(cronId))

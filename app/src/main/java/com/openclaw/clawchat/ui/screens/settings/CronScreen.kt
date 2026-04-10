@@ -14,10 +14,40 @@ import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.R
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.jsonArray
+
+/**
+ * 加载定时任务列表
+ */
+private suspend fun loadCronJobs(
+    gateway: GatewayConnection,
+    unnamedText: String = "未命名"
+): Result<List<CronJob>> {
+    return try {
+        val response = gateway.cronList()
+        if (response.isSuccess()) {
+            val jobsArray = response.payload?.jsonObject?.get("jobs")?.jsonArray
+            val jobs = jobsArray?.mapIndexed { index, element ->
+                val obj = element.jsonObject
+                CronJob(
+                    id = obj["id"]?.jsonPrimitive?.content ?: index.toString(),
+                    name = obj["name"]?.jsonPrimitive?.content ?: unnamedText,
+                    cron = obj["cron"]?.jsonPrimitive?.content ?: "",
+                    sessionKey = obj["sessionKey"]?.jsonPrimitive?.content ?: "",
+                    prompt = obj["prompt"]?.jsonPrimitive?.content ?: "",
+                    enabled = obj["enabled"]?.jsonPrimitive?.content?.toBoolean() ?: true
+                )
+            } ?: emptyList()
+            Result.success(jobs)
+        } else {
+            Result.failure(Exception(response.error?.message ?: "加载失败"))
+        }
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
 
 /**
  * 定时任务页面
@@ -29,6 +59,7 @@ fun CronScreen(
     onNavigateBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     var cronJobs by remember { mutableStateOf<List<CronJob>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -40,34 +71,16 @@ fun CronScreen(
 
     // 加载定时任务列表
     LaunchedEffect(Unit) {
-        scope.launch {
-            try {
-                val response = gateway.cronList()
-                if (response.isSuccess()) {
-                    val jobsArray = response.payload?.jsonObject?.get("jobs")?.jsonArray
-                    cronJobs = jobsArray?.mapIndexed { index, element ->
-                        val obj = element.jsonObject
-                        CronJob(
-                            id = obj["id"]?.jsonPrimitive?.content ?: index.toString(),
-                            name = obj["name"]?.jsonPrimitive?.content ?: unnamedText,
-                            cron = obj["cron"]?.jsonPrimitive?.content ?: "",
-                            sessionKey = obj["sessionKey"]?.jsonPrimitive?.content ?: "",
-                            prompt = obj["prompt"]?.jsonPrimitive?.content ?: "",
-                            enabled = obj["enabled"]?.jsonPrimitive?.content?.toBoolean() ?: true
-                        )
-                    } ?: emptyList()
-                } else {
-                    error = response.error?.message ?: loadFailedText
-                }
-            } catch (e: Exception) {
-                error = e.message ?: loadFailedText
-            } finally {
-                isLoading = false
-            }
+        loadCronJobs(gateway, unnamedText).onSuccess { jobs ->
+            cronJobs = jobs
+        }.onFailure { err ->
+            error = err.message ?: loadFailedText
         }
+        isLoading = false
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.cron_title)) },
@@ -154,12 +167,30 @@ fun CronScreen(
                         items(cronJobs, key = { it.id }) { job ->
                             CronJobItem(
                                 job = job,
+                                onToggle = { enabled ->
+                                    scope.launch {
+                                        try {
+                                            gateway.cronPatch(job.id, enabled = enabled)
+                                            cronJobs = cronJobs.map {
+                                                if (it.id == job.id) it.copy(enabled = enabled) else it
+                                            }
+                                        } catch (e: Exception) {
+                                            snackbarHostState.showSnackbar("切换失败: ${e.message}")
+                                        }
+                                    }
+                                },
                                 onRun = {
                                     scope.launch {
                                         try {
-                                            gateway.cronRun(job.id)
+                                            val response = gateway.cronRun(job.id)
+                                            val msg = if (response.isSuccess()) {
+                                                "执行成功"
+                                            } else {
+                                                "执行失败: ${response.error?.message}"
+                                            }
+                                            snackbarHostState.showSnackbar(msg)
                                         } catch (e: Exception) {
-                                            error = e.message
+                                            snackbarHostState.showSnackbar("执行失败: ${e.message}")
                                         }
                                     }
                                 },
@@ -168,8 +199,9 @@ fun CronScreen(
                                         try {
                                             gateway.cronRemove(job.id)
                                             cronJobs = cronJobs.filter { it.id != job.id }
+                                            snackbarHostState.showSnackbar("已删除: ${job.name}")
                                         } catch (e: Exception) {
-                                            error = e.message
+                                            snackbarHostState.showSnackbar("删除失败: ${e.message}")
                                         }
                                     }
                                 }
@@ -188,11 +220,15 @@ fun CronScreen(
             onAdd = { name, cron, sessionKey, prompt ->
                 scope.launch {
                     try {
-                        gateway.cronAdd(name, cron, sessionKey, prompt)
-                        // 刷新列表
-                        val response = gateway.cronList()
+                        val response = gateway.cronAdd(name, cron, sessionKey, prompt)
                         if (response.isSuccess()) {
-                            // 更新列表
+                            snackbarHostState.showSnackbar("添加成功: $name")
+                            // 刷新列表
+                            loadCronJobs(gateway).onSuccess { jobs -> cronJobs = jobs }
+                                .onFailure { err -> error = err.message }
+                            isLoading = false
+                        } else {
+                            snackbarHostState.showSnackbar("添加失败: ${response.error?.message}")
                         }
                     } catch (e: Exception) {
                         error = e.message
@@ -210,6 +246,7 @@ fun CronScreen(
 @Composable
 private fun CronJobItem(
     job: CronJob,
+    onToggle: (Boolean) -> Unit,
     onRun: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -232,7 +269,7 @@ private fun CronJobItem(
                 )
                 Switch(
                     checked = job.enabled,
-                    onCheckedChange = null
+                    onCheckedChange = onToggle
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
