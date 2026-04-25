@@ -48,7 +48,7 @@ internal sealed class MarkdownBlock {
     data class Table(val headers: List<String>, val rows: List<List<String>>) : MarkdownBlock()
     data class Blockquote(val text: String) : MarkdownBlock()
     data class TaskItem(val checked: Boolean, val text: String) : MarkdownBlock()
-    data class HorizontalRule : MarkdownBlock()
+    object HorizontalRule : MarkdownBlock()
     data class Image(val alt: String, val url: String) : MarkdownBlock()
     data class Heading(val level: Int, val text: String) : MarkdownBlock()
     data class UnorderedListItem(val text: String) : MarkdownBlock()

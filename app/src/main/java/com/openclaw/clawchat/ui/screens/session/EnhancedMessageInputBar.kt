@@ -16,8 +16,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.key.*
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.nativeKeyCode
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -276,8 +274,8 @@ fun EnhancedMessageInputBar(
                             .fillMaxWidth()
                             .focusRequester(focusRequester)
                             .onKeyEvent { keyEvent ->
-                                if (keyEvent.nativeKeyCode == android.view.KeyEvent.KEYCODE_DPAD_UP &&
-                                    keyEvent.type == android.view.KeyEvent.ACTION_DOWN) {
+                                if (keyEvent.key == Key.DirectionUp &&
+                                    keyEvent.type == KeyEventType.KeyDown) {
                                     // 上箭头：浏览历史
                                     if (inputHistory.isNotEmpty()) {
                                         if (historyIndex == -1) {
@@ -292,8 +290,8 @@ fun EnhancedMessageInputBar(
                                         }
                                     }
                                     true
-                                } else if (keyEvent.nativeKeyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                                    keyEvent.type == android.view.KeyEvent.ACTION_DOWN) {
+                                } else if (keyEvent.key == Key.DirectionDown &&
+                                    keyEvent.type == KeyEventType.KeyDown) {
                                     // 下箭头：返回当前输入
                                     if (historyIndex != -1) {
                                         if (historyIndex > 0) {
