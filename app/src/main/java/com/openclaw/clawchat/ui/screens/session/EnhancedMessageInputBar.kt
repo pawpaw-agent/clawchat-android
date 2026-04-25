@@ -157,6 +157,11 @@ fun EnhancedMessageInputBar(
     // 附件菜单状态
     var showAttachmentMenu by remember { mutableStateOf(false) }
 
+    // 输入历史记录（参考 Web UI 的 input history 功能）
+    var inputHistory by remember { mutableStateOf<List<String>>(emptyList()) }
+    var historyIndex by remember { mutableIntStateOf(-1) }
+    var savedDraft by remember { mutableStateOf("") }
+
     Surface(
         tonalElevation = DesignTokens.elevationSm,
         color = MaterialTheme.colorScheme.surfaceContainerLow
@@ -259,10 +264,51 @@ fun EnhancedMessageInputBar(
                 Column(modifier = Modifier.weight(1f)) {
                     OutlinedTextField(
                         value = value,
-                        onValueChange = onValueChange,
+                        onValueChange = { newText ->
+                            onValueChange(newText)
+                            // 用户开始编辑时清除历史记录位置
+                            if (historyIndex != -1 && newText != savedDraft) {
+                                historyIndex = -1
+                                savedDraft = ""
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .focusRequester(focusRequester)
+                            .onKeyEvent { keyEvent ->
+                                if (keyEvent.nativeKeyCode == android.view.KeyEvent.KEYCODE_DPAD_UP &&
+                                    keyEvent.type == android.view.KeyEvent.ACTION_DOWN) {
+                                    // 上箭头：浏览历史
+                                    if (inputHistory.isNotEmpty()) {
+                                        if (historyIndex == -1) {
+                                            // 第一次按上箭头：保存当前草稿
+                                            savedDraft = value
+                                            historyIndex = 0
+                                        } else if (historyIndex < inputHistory.size - 1) {
+                                            historyIndex++
+                                        }
+                                        if (historyIndex >= 0 && historyIndex < inputHistory.size) {
+                                            onValueChange(inputHistory[historyIndex])
+                                        }
+                                    }
+                                    true
+                                } else if (keyEvent.nativeKeyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                    keyEvent.type == android.view.KeyEvent.ACTION_DOWN) {
+                                    // 下箭头：返回当前输入
+                                    if (historyIndex != -1) {
+                                        if (historyIndex > 0) {
+                                            historyIndex--
+                                            onValueChange(inputHistory[historyIndex])
+                                        } else {
+                                            historyIndex = -1
+                                            onValueChange(savedDraft)
+                                        }
+                                    }
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
                             .heightIn(min = 48.dp, max = 120.dp),
                         placeholder = { Text(stringResource(R.string.input_placeholder)) },
                         enabled = enabled,
@@ -296,6 +342,12 @@ fun EnhancedMessageInputBar(
                 IconButton(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        // 保存输入到历史
+                        if (value.isNotBlank()) {
+                            inputHistory = (listOf(value) + inputHistory).take(50)
+                        }
+                        historyIndex = -1
+                        savedDraft = ""
                         onSend()
                     },
                     enabled = enabled && (value.isNotBlank() || attachments.isNotEmpty())

@@ -39,13 +39,161 @@ internal fun getInlineCodeColors(): Pair<Color, Color> {
 /**
  * 解析 Markdown 段落
  */
+/**
+ * Markdown 段落类型（块级元素）
+ */
+internal sealed class MarkdownBlock {
+    data class Text(val text: String) : MarkdownBlock()
+    data class CodeBlock(val code: String, val language: String) : MarkdownBlock()
+    data class Table(val headers: List<String>, val rows: List<List<String>>) : MarkdownBlock()
+    data class Blockquote(val text: String) : MarkdownBlock()
+    data class TaskItem(val checked: Boolean, val text: String) : MarkdownBlock()
+    data class HorizontalRule : MarkdownBlock()
+    data class Image(val alt: String, val url: String) : MarkdownBlock()
+    data class Heading(val level: Int, val text: String) : MarkdownBlock()
+    data class UnorderedListItem(val text: String) : MarkdownBlock()
+    data class OrderListItem(val number: Int, val text: String) : MarkdownBlock()
+}
+
+/**
+ * 解析 Markdown 段落（块级元素）
+ * 支持：代码块、普通文本、表格、块引用、任务列表、分割线、图片、标题、列表
+ */
+internal fun parseMarkdownBlocks(content: String): List<MarkdownBlock> {
+    val blocks = mutableListOf<MarkdownBlock>()
+    val lines = content.lines()
+    var i = 0
+
+    while (i < lines.size) {
+        val line = lines[i]
+
+        // 代码块
+        if (line.trim().startsWith("```")) {
+            val lang = line.trim().removePrefix("```").trim()
+            val codeLines = mutableListOf<String>()
+            i++
+            while (i < lines.size && !lines[i].trim().startsWith("```")) {
+                codeLines.add(lines[i])
+                i++
+            }
+            blocks.add(MarkdownBlock.CodeBlock(codeLines.joinToString("\n"), lang))
+            i++ // skip closing ```
+            continue
+        }
+
+        // 标题
+        val headingMatch = Regex("^(#{1,6})\\s+(.*)").find(line)
+        if (headingMatch != null) {
+            blocks.add(MarkdownBlock.Heading(headingMatch.groupValues[1].length, headingMatch.groupValues[2]))
+            i++
+            continue
+        }
+
+        // 水平分割线
+        if (line.trim().matches(Regex("^(-{3,}|\\*{3,}|_{3,})$"))) {
+            blocks.add(MarkdownBlock.HorizontalRule)
+            i++
+            continue
+        }
+
+        // 块引用
+        if (line.startsWith("> ")) {
+            val quoteLines = mutableListOf<String>()
+            while (i < lines.size && lines[i].startsWith("> ")) {
+                quoteLines.add(lines[i].removePrefix("> "))
+                i++
+            }
+            blocks.add(MarkdownBlock.Blockquote(quoteLines.joinToString(" ")))
+            continue
+        }
+
+        // 任务列表
+        val taskMatch = Regex("^\\s*[-*+]\\s+\\[([ xX])\\]\\s+(.*)").find(line)
+        if (taskMatch != null) {
+            val checked = taskMatch.groupValues[1].lowercase() == "x"
+            blocks.add(MarkdownBlock.TaskItem(checked, taskMatch.groupValues[2]))
+            i++
+            continue
+        }
+
+        // 无序列表项
+        val listMatch = Regex("^\\s*[-*+]\\s+(.*)").find(line)
+        if (listMatch != null) {
+            blocks.add(MarkdownBlock.UnorderedListItem(listMatch.groupValues[1]))
+            i++
+            continue
+        }
+
+        // 有序列表项
+        val orderedMatch = Regex("^\\s*(\\d+)\\.\\s+(.*)").find(line)
+        if (orderedMatch != null) {
+            blocks.add(MarkdownBlock.OrderListItem(orderedMatch.groupValues[1].toInt(), orderedMatch.groupValues[2]))
+            i++
+            continue
+        }
+
+        // 图片 ![alt](url)
+        val imageMatch = Regex("^!\\[([^\\]]*)\\]\\(([^)]+)\\)").find(line)
+        if (imageMatch != null) {
+            blocks.add(MarkdownBlock.Image(imageMatch.groupValues[1], imageMatch.groupValues[2]))
+            i++
+            continue
+        }
+
+        // 表格检测
+        if (line.contains("|") && i + 1 < lines.size && lines[i + 1].contains("|") &&
+            Regex("^\\s*\\|?\\s*:?-+:?\\s*(\\|\\s*:?-+:?\\s*)*\\|?\\s*$").matches(lines[i + 1])) {
+            val headerLine = line.trim().removePrefix("|").removeSuffix("|")
+            val headers = headerLine.split("|").map { it.trim() }
+            i += 2 // skip header and separator
+            val rows = mutableListOf<List<String>>()
+            while (i < lines.size && lines[i].contains("|")) {
+                val rowLine = lines[i].trim().removePrefix("|").removeSuffix("|")
+                rows.add(rowLine.split("|").map { it.trim() })
+                i++
+            }
+            blocks.add(MarkdownBlock.Table(headers, rows))
+            continue
+        }
+
+        // 空行
+        if (line.isBlank()) {
+            i++
+            continue
+        }
+
+        // 普通文本：收集连续的非空行
+        val textLines = mutableListOf<String>()
+        while (i < lines.size && lines[i].isNotBlank() && !lines[i].trim().startsWith("```") &&
+               !Regex("^(#{1,6})\\s+").matches(lines[i]) &&
+               !lines[i].trim().matches(Regex("^(-{3,}|\\*{3,}|_{3,})$")) &&
+               !lines[i].startsWith("> ") &&
+               !Regex("^\\s*[-*+]\\s+").matches(lines[i]) &&
+               !Regex("^\\s*\\d+\\.\\s+").matches(lines[i]) &&
+               !Regex("^!\\[").matches(lines[i]) &&
+               !(lines[i].contains("|") && i + 1 < lines.size && lines[i + 1].contains("|"))) {
+            textLines.add(lines[i])
+            i++
+        }
+        if (textLines.isNotEmpty()) {
+            blocks.add(MarkdownBlock.Text(textLines.joinToString(" ")))
+        }
+    }
+
+    return blocks
+}
+
+/**
+ * 解析 Markdown 段落
+ * @deprecated Use parseMarkdownBlocks instead
+ */
 internal sealed class MarkdownSegment {
     data class Text(val text: String) : MarkdownSegment()
     data class CodeBlock(val code: String, val language: String) : MarkdownSegment()
 }
 
 /**
- * 解析 Markdown 内容为段落列表
+ * @deprecated Use parseMarkdownBlocks instead
  */
 internal fun parseMarkdownSegments(content: String): List<MarkdownSegment> {
     val segments = mutableListOf<MarkdownSegment>()

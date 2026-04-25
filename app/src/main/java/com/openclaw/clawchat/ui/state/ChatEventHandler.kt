@@ -38,7 +38,11 @@ class ChatEventHandler(
     private val onSessionMessage: ((JsonObject) -> Unit)? = null,
     private val onSessionTool: ((JsonObject) -> Unit)? = null,
     private val onGatewayShutdown: (() -> Unit)? = null,
-    private val onApprovalRequested: ((String, JsonObject) -> Unit)? = null
+    private val onApprovalRequested: ((String, JsonObject) -> Unit)? = null,
+    private val onUpdateAvailable: ((JsonObject) -> Unit)? = null,
+    private val onTalkModeChanged: ((JsonObject) -> Unit)? = null,
+    private val onHealthUpdate: ((JsonObject) -> Unit)? = null,
+    private val onDevicePairEvent: ((String, JsonObject) -> Unit)? = null
 ) {
     companion object {
         private const val TAG = "ChatEventHandler"
@@ -98,6 +102,27 @@ class ChatEventHandler(
                         "plugin.approval.requested" -> {
                             AppLog.d(TAG, "=== Approval requested event: $event")
                             onApprovalRequested?.invoke(event, payload)
+                        }
+                        "update.available" -> {
+                            AppLog.d(TAG, "=== update.available event: gateway update available")
+                            onUpdateAvailable?.invoke(payload)
+                        }
+                        "talk.mode" -> {
+                            AppLog.d(TAG, "=== talk.mode event: talk mode changed")
+                            onTalkModeChanged?.invoke(payload)
+                        }
+                        "health" -> {
+                            AppLog.d(TAG, "=== health event: gateway health update")
+                            onHealthUpdate?.invoke(payload)
+                        }
+                        "exec.approval.resolved",
+                        "plugin.approval.resolved" -> {
+                            AppLog.d(TAG, "=== Approval resolved event: $event")
+                        }
+                        "device.pair.requested",
+                        "device.pair.resolved" -> {
+                            AppLog.d(TAG, "=== Device pair event: $event")
+                            onDevicePairEvent?.invoke(event, payload)
                         }
                     }
                 }

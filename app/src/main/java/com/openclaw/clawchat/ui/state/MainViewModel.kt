@@ -575,6 +575,35 @@ class MainViewModel @Inject constructor(
     }
     fun clearError() { _uiState.update { it.copy(error = null) } }
     fun clearConnectionError() { _uiState.update { it.copy(connectionError = null) } }
+
+    /**
+     * 触发 Gateway 更新
+     */
+    fun runUpdate() {
+        viewModelScope.launch {
+            try {
+                gateway.updateRun()
+                _uiState.update { it.copy(updateAvailable = null) }
+                _events.trySend(UiEvent.ShowSuccess("更新已触发，请稍候..."))
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "更新失败: ${e.message}") }
+            }
+        }
+    }
+
+    /**
+     * 关闭更新通知
+     */
+    fun dismissUpdate() {
+        _uiState.update { it.copy(updateAvailable = null) }
+    }
+
+    /**
+     * 显示更新通知（从 update.available 事件）
+     */
+    fun showUpdate(version: String = "", message: String = "") {
+        _uiState.update { it.copy(updateAvailable = UpdateInfo(version, message)) }
+    }
     
     /**
      * 重试连接

@@ -1,5 +1,7 @@
 package com.openclaw.clawchat.ui.components
 
+import com.openclaw.clawchat.ui.components.MarkdownBlock.*
+import coil.compose.AsyncImage
 import com.openclaw.clawchat.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +25,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -544,6 +547,230 @@ private fun RenderTable(
                         modifier = Modifier
                             .weight(1f)
                             .border(1.dp, borderColor)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = cell,
+                            fontSize = (fontSize.value - 1).sp,
+                            color = textColor
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 基于块级解析的完整 Markdown 渲染
+ * 支持：代码块、表格、块引用、任务列表、分割线、图片、标题、列表
+ */
+@Composable
+fun MarkdownBlockRenderer(
+    content: String,
+    modifier: Modifier = Modifier,
+    fontSize: androidx.compose.ui.unit.TextUnit = 13.sp,
+    textColor: Color = Color.Unspecified,
+    isStreaming: Boolean = false,
+    onImageClick: ((String) -> Unit)? = null
+) {
+    val blocks = remember(content) { parseMarkdownBlocks(content) }
+    val linkColor = MaterialTheme.colorScheme.primary
+    val codeColor = MaterialTheme.colorScheme.tertiary
+    val codeBgColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        blocks.forEach { block ->
+            when (block) {
+                is CodeBlock -> {
+                    CodeBlockContent(
+                        code = block.code,
+                        language = block.language,
+                        fontSize = fontSize
+                    )
+                }
+                is Text -> {
+                    if (block.text.isNotBlank()) {
+                        MarkdownRegularContent(
+                            content = block.text,
+                            fontSize = fontSize,
+                            textColor = textColor,
+                            isStreaming = isStreaming
+                        )
+                    }
+                }
+                is Table -> {
+                    RenderStructuredTable(
+                        headers = block.headers,
+                        rows = block.rows,
+                        fontSize = fontSize,
+                        textColor = textColor
+                    )
+                }
+                is Blockquote -> {
+                    val quoteColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    val borderColor = MaterialTheme.colorScheme.primary
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .fillMaxHeight()
+                                .background(borderColor, RoundedCornerShape(2.dp))
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = block.text,
+                            fontSize = fontSize,
+                            color = quoteColor.copy(alpha = 0.85f),
+                            fontStyle = FontStyle.Italic,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                is TaskItem -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = block.checked,
+                            onCheckedChange = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = block.text,
+                            fontSize = fontSize,
+                            color = textColor,
+                            textDecoration = if (block.checked) TextDecoration.LineThrough else null
+                        )
+                    }
+                }
+                is HorizontalRule -> {
+                    Divider(
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+                is Image -> {
+                    AsyncImage(
+                        model = block.url,
+                        contentDescription = block.alt,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                    )
+                }
+                is Heading -> {
+                    val headingStyle = when (block.level) {
+                        1 -> MaterialTheme.typography.headlineLarge
+                        2 -> MaterialTheme.typography.headlineMedium
+                        3 -> MaterialTheme.typography.headlineSmall
+                        4 -> MaterialTheme.typography.titleLarge
+                        5 -> MaterialTheme.typography.titleMedium
+                        else -> MaterialTheme.typography.titleSmall
+                    }
+                    Text(
+                        text = block.text,
+                        style = headingStyle,
+                        color = textColor
+                    )
+                }
+                is UnorderedListItem -> {
+                    Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp)) {
+                        Text(
+                            text = "\u2022 ",
+                            fontSize = fontSize,
+                            color = textColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = block.text,
+                            fontSize = fontSize,
+                            color = textColor
+                        )
+                    }
+                }
+                is OrderListItem -> {
+                    Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp)) {
+                        Text(
+                            text = "${block.number}. ",
+                            fontSize = fontSize,
+                            color = textColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = block.text,
+                            fontSize = fontSize,
+                            color = textColor
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 渲染结构化的表格（从 MarkdownBlock.Table 数据）
+ */
+@Composable
+private fun RenderStructuredTable(
+    headers: List<String>,
+    rows: List<List<String>>,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    textColor: Color
+) {
+    val columnCount = headers.size
+    val borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    val headerBgColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+    val evenRowBgColor = MaterialTheme.colorScheme.surface
+    val oddRowBgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(4.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(4.dp))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(headerBgColor)
+        ) {
+            headers.forEachIndexed { index, header ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = header,
+                        fontSize = (fontSize.value - 1).sp,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        rows.forEachIndexed { rowIndex, cells ->
+            val paddedCells = cells + List(maxOf(0, columnCount - cells.size)) { "" }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(if (rowIndex % 2 == 0) evenRowBgColor else oddRowBgColor)
+            ) {
+                paddedCells.take(columnCount).forEachIndexed { colIndex, cell ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(

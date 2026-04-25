@@ -551,7 +551,8 @@ class GatewayConnection(
     suspend fun chatSend(
         sessionKey: String,
         message: String,
-        attachments: List<com.openclaw.clawchat.ui.components.ApiAttachment>? = null
+        attachments: List<com.openclaw.clawchat.ui.components.ApiAttachment>? = null,
+        mediaUrls: List<String>? = null
     ): ResponseFrame {
         val params = mutableMapOf<String, JsonElement>(
             "sessionKey" to JsonPrimitive(sessionKey),
@@ -567,6 +568,10 @@ class GatewayConnection(
                     "content" to JsonPrimitive(att.content)
                 ))
             })
+        }
+
+        if (!mediaUrls.isNullOrEmpty()) {
+            params["mediaUrls"] = JsonArray(mediaUrls.map { JsonPrimitive(it) })
         }
 
         return call("chat.send", params)
@@ -980,11 +985,16 @@ class GatewayConnection(
     // ==================== Sessions Extensions ====================
 
     /** sessions.send — 向会话发送消息（非 chat 上下文） */
-    suspend fun sessionsSend(sessionKey: String, message: String): ResponseFrame {
-        val params = mapOf(
+    suspend fun sessionsSend(
+        sessionKey: String,
+        message: String,
+        idempotencyKey: String? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
             "sessionKey" to JsonPrimitive(sessionKey),
             "message" to JsonPrimitive(message)
         )
+        if (idempotencyKey != null) params["idempotencyKey"] = JsonPrimitive(idempotencyKey)
         return call("sessions.send", params)
     }
 
@@ -1048,6 +1058,116 @@ class GatewayConnection(
     suspend fun deviceTokenRevoke(token: String? = null): ResponseFrame {
         val params = if (token != null) mapOf("token" to JsonPrimitive(token)) else null
         return call("device.token.revoke", params)
+    }
+
+    // ==================== System / Identity API ====================
+
+    /** health — 获取网关健康状态快照 */
+    suspend fun health(): ResponseFrame {
+        return call("health", null)
+    }
+
+    /** status — 获取网关状态信息 */
+    suspend fun status(): ResponseFrame {
+        return call("status", null)
+    }
+
+    /** gateway.identity.get — 获取网关身份标识 */
+    suspend fun gatewayIdentityGet(): ResponseFrame {
+        return call("gateway.identity.get", null)
+    }
+
+    // ==================== Usage API ====================
+
+    /** sessions.usage.timeseries — 获取会话使用时序数据 */
+    suspend fun sessionsUsageTimeseries(hours: Int? = null): ResponseFrame {
+        val params = if (hours != null) mapOf("hours" to JsonPrimitive(hours)) else null
+        return call("sessions.usage.timeseries", params)
+    }
+
+    /** usage.status — 获取模型使用状态 */
+    suspend fun usageStatus(): ResponseFrame {
+        return call("usage.status", null)
+    }
+
+    /** usage.cost — 获取使用成本统计 */
+    suspend fun usageCost(): ResponseFrame {
+        return call("usage.cost", null)
+    }
+
+    // ==================== TTS / Talk API ====================
+
+    /** talk.config — 获取语音对话配置 */
+    suspend fun talkConfig(): ResponseFrame {
+        return call("talk.config", null)
+    }
+
+    /** talk.speak — 发送文本到语音合成 */
+    suspend fun talkSpeak(
+        text: String,
+        provider: String? = null,
+        voice: String? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>("text" to JsonPrimitive(text))
+        if (provider != null) params["provider"] = JsonPrimitive(provider)
+        if (voice != null) params["voice"] = JsonPrimitive(voice)
+        return call("talk.speak", params)
+    }
+
+    // ==================== Device Pairing API ====================
+
+    /** device.pair.list — 获取待配对设备列表 */
+    suspend fun devicePairList(): ResponseFrame {
+        return call("device.pair.list", null)
+    }
+
+    /** device.pair.approve — 批准设备配对 */
+    suspend fun devicePairApprove(deviceId: String): ResponseFrame {
+        return call("device.pair.approve", mapOf("deviceId" to JsonPrimitive(deviceId)))
+    }
+
+    /** device.pair.reject — 拒绝设备配对 */
+    suspend fun devicePairReject(deviceId: String): ResponseFrame {
+        return call("device.pair.reject", mapOf("deviceId" to JsonPrimitive(deviceId)))
+    }
+
+    /** device.pair.remove — 移除已配对设备 */
+    suspend fun devicePairRemove(deviceId: String): ResponseFrame {
+        return call("device.pair.remove", mapOf("deviceId" to JsonPrimitive(deviceId)))
+    }
+
+    // ==================== Wizard / Update API ====================
+
+    /** wizard.start — 开始设置向导 */
+    suspend fun wizardStart(): ResponseFrame {
+        return call("wizard.start", null)
+    }
+
+    /** wizard.next — 进行向导下一步 */
+    suspend fun wizardNext(step: String, data: JsonObject? = null): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>("step" to JsonPrimitive(step))
+        if (data != null) params["data"] = data
+        return call("wizard.next", params)
+    }
+
+    /** wizard.cancel — 取消设置向导 */
+    suspend fun wizardCancel(): ResponseFrame {
+        return call("wizard.cancel", null)
+    }
+
+    /** update.run — 触发更新检查和执行 */
+    suspend fun updateRun(): ResponseFrame {
+        return call("update.run", null)
+    }
+
+    // ==================== Logs API ====================
+
+    /** logs.tail — 获取最近的日志条目 */
+    suspend fun logsTail(limit: Int? = null, level: String? = null): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>()
+        if (limit != null) params["limit"] = JsonPrimitive(limit)
+        if (level != null) params["level"] = JsonPrimitive(level)
+        return call("logs.tail", if (params.isNotEmpty()) params else null)
     }
 
     // ── Heartbeat / Reconnect ──

@@ -20,7 +20,9 @@ import com.openclaw.clawchat.ui.state.MainViewModel
 import com.openclaw.clawchat.ui.state.SessionStatus
 import com.openclaw.clawchat.ui.state.SessionUi
 import com.openclaw.clawchat.ui.state.UiEvent
+import com.openclaw.clawchat.ui.state.UpdateInfo
 import com.openclaw.clawchat.ui.screens.settings.SettingsScreen
+import com.openclaw.clawchat.ui.theme.DesignTokens
 
 /**
  * 主界面屏幕
@@ -147,6 +149,15 @@ fun MainScreen(
                     onDismiss = { viewModel.clearConnectionError() }
                 )
             }
+
+            // 更新通知 Banner
+            state.updateAvailable?.let { updateInfo ->
+                UpdateNotificationBanner(
+                    updateInfo = updateInfo,
+                    onUpdate = { viewModel.runUpdate() },
+                    onDismiss = { viewModel.dismissUpdate() }
+                )
+            }
         }
     }
 
@@ -261,4 +272,60 @@ private fun ClawTopAppBar(
             actionIconContentColor = MaterialTheme.colorScheme.onSurface
         )
     )
+}
+
+/**
+ * 更新通知提示条
+ */
+@Composable
+private fun UpdateNotificationBanner(
+    updateInfo: UpdateInfo,
+    onUpdate: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(DesignTokens.space2),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        shape = RoundedCornerShape(DesignTokens.radiusMd),
+        shadowElevation = DesignTokens.elevationSm
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(DesignTokens.space3),
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.space2),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.SystemUpdate,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.update_available_title),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if (updateInfo.version.isNotEmpty()) stringResource(R.string.update_available_version, updateInfo.version)
+                    else stringResource(R.string.update_available_message),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            TextButton(onClick = onUpdate) {
+                Text(stringResource(R.string.update_run))
+            }
+            IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.close),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
 }

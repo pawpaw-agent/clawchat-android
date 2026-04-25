@@ -82,7 +82,18 @@ data class MainUiState(
     val agents: List<com.openclaw.clawchat.ui.components.AgentItem> = emptyList(),
     val models: List<com.openclaw.clawchat.ui.components.ModelItem> = emptyList(),
     val isLoadingAgentsModels: Boolean = false,
-    val showCreateDialog: Boolean = false
+    val showCreateDialog: Boolean = false,
+    // 更新通知
+    val updateAvailable: UpdateInfo? = null
+)
+
+/**
+ * Gateway 更新信息
+ */
+@Stable
+data class UpdateInfo(
+    val version: String = "",
+    val message: String = ""
 )
 
 /**

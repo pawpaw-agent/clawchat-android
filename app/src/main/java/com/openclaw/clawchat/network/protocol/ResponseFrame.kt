@@ -3,7 +3,9 @@ package com.openclaw.clawchat.network.protocol
 import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 
 /**
  * Response 帧定义 (Gateway 协议 v3)
@@ -66,6 +68,27 @@ data class ResponseFrame(
         } catch (e: Exception) {
             null
         }
+    }
+
+    /**
+     * 获取 payload 为 JsonObject
+     */
+    fun getPayloadAsJsonObject(): JsonObject? {
+        return payload as? JsonObject
+    }
+
+    /**
+     * 获取 payload 为 JsonArray
+     */
+    fun getPayloadAsList(): JsonArray? {
+        return payload as? JsonArray
+    }
+
+    /**
+     * 获取错误消息字符串
+     */
+    fun errorMessage(): String {
+        return error?.message ?: "Unknown error"
     }
 }
 

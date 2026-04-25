@@ -604,4 +604,9 @@
     <string name="settings_label">Settings</string>
     <string name="navigate_forward">Navigate</string>
     <string name="debug_ws_preview">→ %s</string>
+    <!-- Update notification -->
+    <string name="update_available_title">OpenClaw Update Available</string>
+    <string name="update_available_version">Version %s is ready to install</string>
+    <string name="update_available_message">A new version is available</string>
+    <string name="update_run">Update</string>
 </resources>
