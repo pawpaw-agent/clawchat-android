@@ -360,12 +360,15 @@
     <string name="slash_error_verbose_no_session">Cannot set verbose mode: Please select a session first</string>
     <string name="slash_error_export_no_session">Cannot export: Please select a session first</string>
     <string name="slash_error_exec_no_session">Cannot execute command: Please select a session first</string>
+    <string name="slash_error_stop_no_session">Cannot stop: Please select a session first</string>
+    <string name="slash_error_stop_failed">Failed to stop session: %s. Please check network and retry.</string>
     <string name="slash_success_reset">Session reset successfully</string>
     <string name="slash_success_think_set">Thinking level set to: %s</string>
     <string name="slash_success_reasoning_on">Reasoning mode enabled</string>
     <string name="slash_success_reasoning_off">Reasoning mode disabled</string>
     <string name="slash_success_verbose_set">Verbose mode set to: %s</string>
     <string name="slash_success_export_triggered">Export triggered. Check message content.</string>
+    <string name="slash_success_stop">Session stopped</string>
     <string name="slash_error_reset_failed">Failed to reset session: %s. Please check network and retry.</string>
     <string name="slash_error_think_failed">Failed to set thinking level: %s. Please check network and retry.</string>
     <string name="slash_error_reasoning_failed">Failed to toggle reasoning: %s. Please check network and retry.</string>

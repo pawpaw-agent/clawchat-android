@@ -78,6 +78,7 @@ class SlashCommandExecutor(
             "reasoning" -> executeReasoning(sessionId, args)
             "verbose" -> executeVerbose(sessionId, args)
             "export" -> executeExport(sessionId)
+            "stop", "esc", "abort" -> executeStop(sessionId)
             else -> executeDefault(command, args, sessionId)
         }
     }
@@ -184,6 +185,34 @@ class SlashCommandExecutor(
     private fun executeUndo(sessionId: String?) {
         onUndo()
         onStateUpdate { copy(inputText = "") }
+    }
+
+    /**
+     * 中止当前会话的 agent 运行
+     */
+    private fun executeStop(sessionId: String?) {
+        scope.launch {
+            if (sessionId == null) {
+                showError(strings.getString(R.string.slash_error_stop_no_session))
+                return@launch
+            }
+            try {
+                gateway.chatAbort(sessionId)
+                onStateUpdate {
+                    copy(
+                        isSending = false,
+                        isLoading = false,
+                        chatRunId = null,
+                        chatStream = null,
+                        chatStreamSegments = chatStreamSegments + StreamSegment("(stopped by user)", System.currentTimeMillis())
+                    )
+                }
+                showSuccess(strings.getString(R.string.slash_success_stop))
+            } catch (e: Exception) {
+                AppLog.e(TAG, "Failed to abort session", e)
+                showError(strings.getString(R.string.slash_error_stop_failed, e.message ?: ""))
+            }
+        }
     }
 
     private fun executeThink(sessionId: String?, args: String) {

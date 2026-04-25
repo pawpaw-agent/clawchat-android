@@ -91,6 +91,15 @@ interface MessageDao {
         )
     """)
     suspend fun trimOldMessages(sessionId: String, keepCount: Int)
+
+    /**
+     * 原子操作：清空并批量插入消息（Room 事务）
+     */
+    @Transaction
+    suspend fun clearAndInsertMessages(sessionId: String, messages: List<MessageEntity>) {
+        clearMessages(sessionId)
+        insertMessages(messages)
+    }
 }
 
 /**

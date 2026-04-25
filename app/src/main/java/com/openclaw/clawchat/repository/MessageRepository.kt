@@ -53,4 +53,14 @@ interface MessageRepository {
      * 搜索消息
      */
     suspend fun searchMessages(query: String, limit: Int): List<MessageUi>
+
+    /**
+     * 批量保存消息（用于加载历史）
+     */
+    suspend fun saveMessages(sessionId: String, messages: List<MessageUi>)
+
+    /**
+     * 原子操作：清空并批量保存消息（用于加载历史，避免 clear-then-save 之间的数据丢失）
+     */
+    suspend fun clearAndSaveMessages(sessionId: String, messages: List<MessageUi>)
 }

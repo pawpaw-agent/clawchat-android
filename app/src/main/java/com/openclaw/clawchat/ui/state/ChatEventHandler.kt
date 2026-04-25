@@ -32,7 +32,13 @@ class ChatEventHandler(
     private val state: MutableStateFlow<SessionUiState>,
     private val onToolStreamEvent: (JsonObject) -> Unit,
     private val onChatComplete: (() -> Unit)? = null,
-    private val onLifecycleEnd: (() -> Unit)? = null
+    private val onLifecycleEnd: (() -> Unit)? = null,
+    // 新增回调
+    private val onSessionsChanged: (() -> Unit)? = null,
+    private val onSessionMessage: ((JsonObject) -> Unit)? = null,
+    private val onSessionTool: ((JsonObject) -> Unit)? = null,
+    private val onGatewayShutdown: (() -> Unit)? = null,
+    private val onApprovalRequested: ((String, JsonObject) -> Unit)? = null
 ) {
     companion object {
         private const val TAG = "ChatEventHandler"
@@ -68,6 +74,30 @@ class ChatEventHandler(
                         "chat" -> {
                             val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content ?: return
                             handleChatEvent(payload, sessionKey)
+                        }
+                        // 新增事件处理
+                        "sessions.changed" -> {
+                            AppLog.d(TAG, "=== sessions.changed event: sessions list changed on gateway")
+                            onSessionsChanged?.invoke()
+                        }
+                        "session.message" -> {
+                            val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
+                            AppLog.d(TAG, "=== session.message event: sessionKey=$sessionKey")
+                            onSessionMessage?.invoke(payload)
+                        }
+                        "session.tool" -> {
+                            val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
+                            AppLog.d(TAG, "=== session.tool event: sessionKey=$sessionKey")
+                            onSessionTool?.invoke(payload)
+                        }
+                        "shutdown" -> {
+                            AppLog.w(TAG, "=== shutdown event: gateway is shutting down")
+                            onGatewayShutdown?.invoke()
+                        }
+                        "exec.approval.requested",
+                        "plugin.approval.requested" -> {
+                            AppLog.d(TAG, "=== Approval requested event: $event")
+                            onApprovalRequested?.invoke(event, payload)
                         }
                     }
                 }

@@ -134,7 +134,7 @@ class MessageRepositoryImpl @Inject constructor(
     /**
      * 批量保存消息（用于加载历史）
      */
-    suspend fun saveMessages(sessionId: String, messages: List<MessageUi>) {
+    override suspend fun saveMessages(sessionId: String, messages: List<MessageUi>) {
         val entities = messages.map { message ->
             val contentJson = json.encodeToString(
                 kotlinx.serialization.json.JsonElement.serializer(),
@@ -152,6 +152,33 @@ class MessageRepositoryImpl @Inject constructor(
             )
         }
         messageDao.insertMessages(entities)
+    }
+
+    /**
+     * 原子操作：清空并批量保存消息（用于加载历史，避免 clear-then-save 之间的数据丢失）
+     */
+    override suspend fun clearAndSaveMessages(sessionId: String, messages: List<MessageUi>) {
+        val entities = messages.map { message ->
+            val contentJson = json.encodeToString(
+                kotlinx.serialization.json.JsonElement.serializer(),
+                message.content.map { it.toJsonElement() }.let { JsonArray(it) }
+            )
+            MessageEntity(
+                id = message.id,
+                sessionId = sessionId,
+                role = message.role.name,
+                content = contentJson,
+                timestamp = message.timestamp,
+                toolCallId = message.toolCallId,
+                toolName = message.toolName,
+                status = message.status.name
+            )
+        }
+        messageDao.clearAndInsertMessages(sessionId, entities)
+
+        // 更新会话消息计数
+        val count = messageDao.getMessageCount(sessionId)
+        database.sessionDao().updateMessageCount(sessionId, count, System.currentTimeMillis())
     }
 
     // ─────────────────────────────────────────────────────────────

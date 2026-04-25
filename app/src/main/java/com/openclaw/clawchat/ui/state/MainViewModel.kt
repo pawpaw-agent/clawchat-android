@@ -575,7 +575,6 @@ class MainViewModel @Inject constructor(
     }
     fun clearError() { _uiState.update { it.copy(error = null) } }
     fun clearConnectionError() { _uiState.update { it.copy(connectionError = null) } }
-    fun consumeEvent() { /* no-op: Channel events are consumed on receive */ }
     
     /**
      * 重试连接

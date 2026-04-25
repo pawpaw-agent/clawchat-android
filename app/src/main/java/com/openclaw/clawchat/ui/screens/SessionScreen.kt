@@ -395,7 +395,9 @@ private fun ErrorSnackbar(
     // 自动关闭
     LaunchedEffect(message) {
         kotlinx.coroutines.delay(8000)
-        onDismiss()
+        if (isActive) {
+            onDismiss()
+        }
     }
 
     Surface(

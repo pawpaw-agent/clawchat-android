@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclaw.clawchat.data.UserPreferences
 import com.openclaw.clawchat.network.WebSocketConnectionState
-import com.openclaw.clawchat.network.protocol.ChatAttachmentData
+import com.openclaw.clawchat.ui.components.ApiAttachment
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -447,7 +447,8 @@ class SessionViewModel @Inject constructor(
         val apiAttachments = attachments.mapNotNull { att ->
             val dataUrl = att.dataUrl ?: return@mapNotNull null
             val base64Content = extractBase64FromDataUrl(dataUrl)
-            ChatAttachmentData(
+            ApiAttachment(
+                type = "base64",
                 mimeType = att.mimeType,
                 content = base64Content
             )
@@ -587,28 +588,28 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch {
             val sessionId = _state.value.sessionId ?: return@launch
             val messages = _state.value.chatMessages
-            
+
             val lastUserMessage = messages.lastOrNull { it.role == MessageRole.USER }
             if (lastUserMessage == null) {
                 AppLog.w(TAG, "No user message to regenerate from")
                 return@launch
             }
-            
-            // 移除最后一条助手消息
-            val lastAssistantIndex = messages.indexOfLast { it.role == MessageRole.ASSISTANT }
-            if (lastAssistantIndex >= 0) {
-                val messageId = messages[lastAssistantIndex].id
-                messageRepository.deleteMessage(sessionId, messageId)
-            }
-            
+
+            // 保存最后一条助手消息的 ID 用于成功后删除
+            val lastAssistantId = messages.lastOrNull { it.role == MessageRole.ASSISTANT }?.id
+
             // 重新发送最后一条用户消息
             val userText = lastUserMessage.content.filterIsInstance<MessageContentItem.Text>()
                 .firstOrNull()?.text ?: return@launch
-            
+
             _state.update { it.copy(isSending = true, isLoading = true) }
-            
+
             try {
                 gateway.chatSend(sessionId, userText)
+                // 成功后再删除旧的助手消息，避免发送失败后 DB 数据丢失
+                if (!lastAssistantId.isNullOrBlank()) {
+                    messageRepository.deleteMessage(sessionId, lastAssistantId)
+                }
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to regenerate message", e)
                 _state.update { it.copy(error = "重发失败：${e.message}，请检查网络连接后重试", isLoading = false, isSending = false) }

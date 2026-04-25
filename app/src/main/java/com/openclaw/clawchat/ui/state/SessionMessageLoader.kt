@@ -19,17 +19,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
- * 消息保存数据（用于批量处理历史消息）
- */
-private data class MessageSaveData(
-    val content: String,
-    val role: String,
-    val timestamp: Long,
-    val toolCallId: String? = null,
-    val toolName: String? = null
-)
-
-/**
  * 会话消息加载器
  *
  * 负责加载历史消息：
@@ -101,10 +90,7 @@ class SessionMessageLoader(
                 val messagesArray = payload["messages"]?.jsonArray
 
                 // 收集所有消息，批量处理（包含 toolCallId 和 toolName）
-                val messagesToSave = mutableListOf<MessageSaveData>()
-
-                // 先清除该会话的旧消息，避免重复
-                messageRepository.clearMessages(sessionId)
+                val messagesToSave = mutableListOf<MessageUi>()
 
                 messagesArray?.forEach { msgElement ->
                     try {
@@ -117,23 +103,23 @@ class SessionMessageLoader(
                         val toolCallId = msgObj["toolCallId"]?.jsonPrimitive?.content
                         val toolName = msgObj["name"]?.jsonPrimitive?.content ?: msgObj["toolName"]?.jsonPrimitive?.content
 
-                        messagesToSave.add(MessageSaveData(content, role, timestamp, toolCallId, toolName))
+                        val contentList = listOf(MessageContentItem.Text(content))
+                        messagesToSave.add(MessageUi(
+                            id = msgObj["id"]?.jsonPrimitive?.content ?: java.util.UUID.randomUUID().toString(),
+                            content = contentList,
+                            role = MessageRole.fromString(role),
+                            timestamp = timestamp,
+                            toolCallId = toolCallId,
+                            toolName = toolName,
+                            status = MessageStatus.SENT
+                        ))
                     } catch (e: Exception) {
                         AppLog.w(TAG, "Failed to parse history message: ${e.message}")
                     }
                 }
 
-                // 批量保存消息（传递 toolCallId 和 toolName）
-                messagesToSave.forEach { data ->
-                    messageRepository.saveMessage(
-                        sessionId = sessionId,
-                        role = MessageRole.fromString(data.role),
-                        content = data.content,
-                        timestamp = data.timestamp,
-                        toolCallId = data.toolCallId,
-                        toolName = data.toolName
-                    )
-                }
+                // 原子操作：清空并批量保存，避免 clear-then-save 之间的数据丢失
+                messageRepository.clearAndSaveMessages(sessionId, messagesToSave)
 
                 AppLog.d(TAG, "Loaded ${messagesToSave.size} messages for session $sessionId")
             } catch (e: Exception) {

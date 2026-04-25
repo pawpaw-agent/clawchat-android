@@ -321,8 +321,27 @@ class GatewayConnection(
                     _incomingMessages.emit(rawText)
                     AppLog.d(TAG, "=== Agent event emitted successfully")
                 }
-                // chat / tick / all other events → forward to upstream
-                else -> _incomingMessages.emit(rawText)
+                "shutdown" -> {
+                    AppLog.i(TAG, "Gateway shutdown event received, disconnecting")
+                    _incomingMessages.emit(rawText)
+                }
+                // 以下事件透传给上游处理
+                "sessions.changed",
+                "session.message",
+                "session.tool",
+                "cron",
+                "exec.approval.requested",
+                "exec.approval.resolved",
+                "plugin.approval.requested",
+                "plugin.approval.resolved",
+                "device.pair.requested",
+                "device.pair.resolved",
+                "presence",
+                "tick",
+                "voicewake.changed",
+                "health",
+                "heartbeat",
+                "chat" -> _incomingMessages.emit(rawText)
             }
 
             sequenceManager.acknowledge(seq)
@@ -525,37 +544,11 @@ class GatewayConnection(
         return withTimeout(GatewayConfig.REQUEST_TIMEOUT_MS) { deferred.await() }
     }
 
-    /** chat.send — with required idempotencyKey and optional attachments */
+    /**
+     * chat.send — 发送消息（支持附件）
+     * 参考 webchat chat.ts sendChatMessage
+     */
     suspend fun chatSend(
-        sessionKey: String, 
-        message: String, 
-        attachments: List<ChatAttachmentData>? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "sessionKey" to JsonPrimitive(sessionKey),
-            "message" to JsonPrimitive(message),
-            "idempotencyKey" to JsonPrimitive(UUID.randomUUID().toString())
-        )
-        
-        // 添加附件（如果有）
-        if (!attachments.isNullOrEmpty()) {
-            val attachmentsArray = JsonArray(
-                attachments.map { att ->
-                    buildJsonObject {
-                        put("type", "image")
-                        put("mimeType", att.mimeType)
-                        put("content", att.content)
-                    }
-                }
-            )
-            params["attachments"] = attachmentsArray
-        }
-        
-        return call("chat.send", params)
-    }
-
-    /** chat.send — with attachments support (1:1 复刻 webchat) */
-    suspend fun chatSendWithAttachments(
         sessionKey: String,
         message: String,
         attachments: List<com.openclaw.clawchat.ui.components.ApiAttachment>? = null
@@ -565,8 +558,7 @@ class GatewayConnection(
             "message" to JsonPrimitive(message),
             "idempotencyKey" to JsonPrimitive(UUID.randomUUID().toString())
         )
-        
-        // 添加 attachments 参数（参考 webchat chat.ts sendChatMessage）
+
         if (!attachments.isNullOrEmpty()) {
             params["attachments"] = JsonArray(attachments.map { att ->
                 JsonObject(mapOf(
@@ -576,7 +568,7 @@ class GatewayConnection(
                 ))
             })
         }
-        
+
         return call("chat.send", params)
     }
 
@@ -833,6 +825,12 @@ class GatewayConnection(
         return call("config.schema", params)
     }
 
+    /** config.apply — 应用配置变更 */
+    suspend fun configApply(key: String? = null): ResponseFrame {
+        val params = if (key != null) mapOf("key" to JsonPrimitive(key)) else null
+        return call("config.apply", params)
+    }
+
     // ==================== Channels API ====================
 
     /** channels.status — 获取渠道状态 */
@@ -901,6 +899,102 @@ class GatewayConnection(
         return call("cron.run", params)
     }
 
+    /** cron.status — 获取定时任务状态 */
+    suspend fun cronStatus(): ResponseFrame {
+        return call("cron.status", null)
+    }
+
+    /** cron.update — 更新定时任务 */
+    suspend fun cronUpdate(cronId: String, enabled: Boolean? = null, name: String? = null, cron: String? = null, sessionKey: String? = null, prompt: String? = null): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>("id" to JsonPrimitive(cronId))
+        if (enabled != null) params["enabled"] = JsonPrimitive(enabled)
+        if (name != null) params["name"] = JsonPrimitive(name)
+        if (cron != null) params["cron"] = JsonPrimitive(cron)
+        if (sessionKey != null) params["sessionKey"] = JsonPrimitive(sessionKey)
+        if (prompt != null) params["prompt"] = JsonPrimitive(prompt)
+        return call("cron.update", params)
+    }
+
+    /** cron.runs — 获取定时任务执行历史 */
+    suspend fun cronRuns(cronId: String? = null): ResponseFrame {
+        val params = if (cronId != null) mapOf("id" to JsonPrimitive(cronId)) else null
+        return call("cron.runs", params)
+    }
+
+    // ==================== Compaction API ====================
+
+    /** sessions.compaction.list — 列出会话的压缩检查点 */
+    suspend fun sessionsCompactionList(sessionKey: String): ResponseFrame {
+        val params = mapOf("key" to JsonPrimitive(sessionKey))
+        return call("sessions.compaction.list", params)
+    }
+
+    /** sessions.compaction.get — 获取单个压缩检查点详情 */
+    suspend fun sessionsCompactionGet(sessionKey: String, checkpointId: String): ResponseFrame {
+        val params = mapOf("key" to JsonPrimitive(sessionKey), "checkpointId" to JsonPrimitive(checkpointId))
+        return call("sessions.compaction.get", params)
+    }
+
+    /** sessions.compaction.branch — 从压缩检查点创建新会话分支 */
+    suspend fun sessionsCompactionBranch(
+        sessionKey: String,
+        checkpointId: String,
+        newKey: String? = null,
+        label: String? = null
+    ): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>(
+            "key" to JsonPrimitive(sessionKey),
+            "checkpointId" to JsonPrimitive(checkpointId)
+        )
+        if (newKey != null) params["newKey"] = JsonPrimitive(newKey)
+        if (label != null) params["label"] = JsonPrimitive(label)
+        return call("sessions.compaction.branch", params)
+    }
+
+    /** sessions.compaction.restore — 从压缩检查点恢复会话 */
+    suspend fun sessionsCompactionRestore(sessionKey: String, checkpointId: String): ResponseFrame {
+        val params = mapOf("key" to JsonPrimitive(sessionKey), "checkpointId" to JsonPrimitive(checkpointId))
+        return call("sessions.compaction.restore", params)
+    }
+
+    /** sessions.compact — 手动触发会话压缩 */
+    suspend fun sessionsCompact(sessionKey: String, reason: String? = null): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>("key" to JsonPrimitive(sessionKey))
+        if (reason != null) params["reason"] = JsonPrimitive(reason)
+        return call("sessions.compact", params)
+    }
+
+    // ==================== Tools API ====================
+
+    /** tools.catalog — 获取所有可用工具目录 */
+    suspend fun toolsCatalog(): ResponseFrame {
+        return call("tools.catalog", null)
+    }
+
+    /** tools.effective — 获取会话当前生效的工具集 */
+    suspend fun toolsEffective(sessionKey: String? = null): ResponseFrame {
+        val params = if (sessionKey != null) mapOf("sessionKey" to JsonPrimitive(sessionKey)) else null
+        return call("tools.effective", params)
+    }
+
+    // ==================== Sessions Extensions ====================
+
+    /** sessions.send — 向会话发送消息（非 chat 上下文） */
+    suspend fun sessionsSend(sessionKey: String, message: String): ResponseFrame {
+        val params = mapOf(
+            "sessionKey" to JsonPrimitive(sessionKey),
+            "message" to JsonPrimitive(message)
+        )
+        return call("sessions.send", params)
+    }
+
+    /** sessions.abort — 中止会话当前运行的 agent */
+    suspend fun sessionsAbort(sessionKey: String, runId: String? = null): ResponseFrame {
+        val params = mutableMapOf<String, JsonElement>("sessionKey" to JsonPrimitive(sessionKey))
+        if (runId != null) params["runId"] = JsonPrimitive(runId)
+        return call("sessions.abort", params)
+    }
+
     /** ping */
     suspend fun ping(): Result<Long> {
         return try {
@@ -924,7 +1018,7 @@ class GatewayConnection(
         sessionKey: String,
         role: String,
         content: String,
-        attachments: List<ChatAttachmentData>? = null
+        attachments: List<com.openclaw.clawchat.ui.components.ApiAttachment>? = null
     ): ResponseFrame {
         val params = mutableMapOf<String, JsonElement>(
             "sessionKey" to JsonPrimitive(sessionKey),
@@ -932,15 +1026,13 @@ class GatewayConnection(
             "content" to JsonPrimitive(content)
         )
         if (!attachments.isNullOrEmpty()) {
-            params["attachments"] = JsonArray(
-                attachments.map { att ->
-                    buildJsonObject {
-                        put("type", "image")
-                        put("mimeType", att.mimeType)
-                        put("content", att.content)
-                    }
-                }
-            )
+            params["attachments"] = JsonArray(attachments.map { att ->
+                JsonObject(mapOf(
+                    "type" to JsonPrimitive(att.type),
+                    "mimeType" to JsonPrimitive(att.mimeType),
+                    "content" to JsonPrimitive(att.content)
+                ))
+            })
         }
         return call("chat.inject", params)
     }
