@@ -558,6 +558,7 @@ fun ConnectionStatus.toUiStatus(): ConnectionStatusUi {
     return when (this) {
         is ConnectionStatus.Disconnected -> ConnectionStatusUi.Disconnected
         is ConnectionStatus.Connecting -> ConnectionStatusUi.Connecting
+        is ConnectionStatus.Stale -> ConnectionStatusUi.Connecting
         is ConnectionStatus.Disconnecting -> ConnectionStatusUi.Disconnecting
         is ConnectionStatus.Connected -> ConnectionStatusUi.Connected(latency ?: 0)
         is ConnectionStatus.Error -> ConnectionStatusUi.Error(message)

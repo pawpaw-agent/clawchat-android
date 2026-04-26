@@ -516,8 +516,9 @@ fun MessageImageContent(image: MessageContentItem.Image) {
                 modifier = Modifier.fillMaxWidth().height(150.dp)
             )
         } else if (bitmap != null) {
+            val bmp = bitmap
             androidx.compose.foundation.Image(
-                bitmap = bitmap.asImageBitmap(),
+                bitmap = bmp.asImageBitmap(),
                 contentDescription = stringResource(R.string.action_image),
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = ContentScale.FillWidth

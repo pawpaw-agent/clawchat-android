@@ -102,6 +102,7 @@ class SettingsViewModel @Inject constructor(
                         ConnectionStatus.Connected(latency = latency)
                     }
                     is WebSocketConnectionState.Connecting -> ConnectionStatus.Connecting
+                    is WebSocketConnectionState.Stale -> ConnectionStatus.Stale
                     is WebSocketConnectionState.Disconnecting -> ConnectionStatus.Disconnecting
                     is WebSocketConnectionState.Disconnected -> ConnectionStatus.Disconnected
                     is WebSocketConnectionState.Error -> ConnectionStatus.Error(

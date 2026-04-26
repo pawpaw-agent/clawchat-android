@@ -824,6 +824,7 @@ sealed class SessionEvent {
 private fun WebSocketConnectionState.toStatus(): ConnectionStatus = when (this) {
     is WebSocketConnectionState.Connected -> ConnectionStatus.Connected()
     is WebSocketConnectionState.Connecting -> ConnectionStatus.Connecting
+    is WebSocketConnectionState.Stale -> ConnectionStatus.Stale
     is WebSocketConnectionState.Disconnecting -> ConnectionStatus.Disconnecting
     is WebSocketConnectionState.Disconnected -> ConnectionStatus.Disconnected
     is WebSocketConnectionState.Error -> ConnectionStatus.Error(this.throwable.message ?: "Unknown error", this.throwable)
