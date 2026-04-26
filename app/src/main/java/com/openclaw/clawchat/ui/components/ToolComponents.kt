@@ -202,16 +202,41 @@ fun CompactToolCard(
                 RunningProgressBar(color = statusColor)
             }
 
-            // 展开内容 - 仅显示分割线
+            // 展开内容 - 显示参数和结果，但不显示"参数"/"结果"标签
             AnimatedVisibility(
                 visible = expanded && hasContent,
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 6.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant
-                )
+                Column(modifier = Modifier.padding(top = 8.dp)) {
+                    // 参数内容
+                    if (!toolCard.args.isNullOrBlank()) {
+                        Text(
+                            text = toolCard.args,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+
+                    // 分割线
+                    if (!toolCard.args.isNullOrBlank() && !toolCard.result.isNullOrBlank()) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 6.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
+
+                    // 结果内容
+                    if (!toolCard.result.isNullOrBlank()) {
+                        Text(
+                            text = toolCard.result,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                }
             }
         } // Column 结束
         } // Row 结束
