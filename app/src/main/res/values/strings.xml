@@ -23,6 +23,7 @@
     <string name="redo">Redo</string>
     <string name="clear">Clear</string>
     <string name="save">Save</string>
+    <string name="search">Search</string>
     <string name="discard">Discard</string>
 
     <!-- Connection Status -->
