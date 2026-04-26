@@ -82,9 +82,20 @@ fun CompactToolCard(
     val hasError = toolCard.isError
     val hasContent = !toolCard.args.isNullOrBlank() || !toolCard.result.isNullOrBlank()
 
-    // 运行中默认展开，完成后折叠
-    var expanded by remember(toolCard.callId, isRunning) {
-        mutableStateOf(isRunning)
+    // 展开状态管理：
+    // - 首次出现时根据 isRunning 决定初始值
+    // - 运行中保持用户手动折叠的状态（不强制重置）
+    // - 完成时自动折叠（除非用户已手动展开）
+    var expanded by remember(toolCard.callId) { mutableStateOf(isRunning) }
+    var wasRunning by remember(toolCard.callId) { mutableStateOf(isRunning) }
+
+    // 状态转换时调整：运行→完成时折叠，完成→运行时展开
+    if (isRunning && !wasRunning) {
+        expanded = true
+        wasRunning = true
+    } else if (!isRunning && wasRunning) {
+        expanded = false
+        wasRunning = false
     }
 
     // 状态颜色：运行中红色，完成蓝色，错误保持红色

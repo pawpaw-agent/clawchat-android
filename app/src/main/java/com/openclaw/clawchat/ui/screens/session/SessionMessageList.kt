@@ -564,22 +564,23 @@ fun MessageGroupItem(
 
                         // ASSISTANT 消息后面立即显示其工具卡片
                         if (message.role == MessageRole.ASSISTANT) {
-                            val toolCards = remember(message, group.messages, toolStreamById) {
+                            // 分离：pairToolCards 只依赖消息数据，不依赖实时流状态
+                            val baseToolCards = remember(message.id, group.messages.size) {
                                 pairToolCards(message, group.messages)
                                     .distinctBy { it.callId }
-                                    .map { card ->
-                                        // 合并实时工具流状态
-                                        val streamEntry = toolStreamById[card.callId]
-                                        if (streamEntry != null) {
-                                            card.copy(
-                                                phase = streamEntry.phase,
-                                                result = streamEntry.output ?: card.result,
-                                                isError = streamEntry.isError
-                                            )
-                                        } else {
-                                            card
-                                        }
-                                    }
+                            }
+                            // 合并实时工具流状态（轻量 copy，不重新 pair）
+                            val toolCards = baseToolCards.map { card ->
+                                val streamEntry = toolStreamById[card.callId]
+                                if (streamEntry != null) {
+                                    card.copy(
+                                        phase = streamEntry.phase,
+                                        result = streamEntry.output ?: card.result,
+                                        isError = streamEntry.isError
+                                    )
+                                } else {
+                                    card
+                                }
                             }
                             if (toolCards.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(DesignTokens.space1))
