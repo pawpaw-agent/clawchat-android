@@ -145,7 +145,7 @@ class ChatEventHandler(
     private fun handleAgentEvent(payload: JsonObject, stream: String) {
         // Session filtering - only process events for current session
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
-        val currentSessionKey = state.value.currentSessionKey
+        val currentSessionKey = state.value.sessionKey
         if (sessionKey != null && sessionKey != currentSessionKey) {
             AppLog.d(TAG, "=== Ignoring agent event for session $sessionKey (current: $currentSessionKey)")
             return
