@@ -143,6 +143,14 @@ class ChatEventHandler(
      *   - error: { reason, expected, received } - 网关合成错误
      */
     private fun handleAgentEvent(payload: JsonObject, stream: String) {
+        // Session filtering - only process events for current session
+        val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
+        val currentSessionKey = state.value.currentSessionKey
+        if (sessionKey != null && sessionKey != currentSessionKey) {
+            AppLog.d(TAG, "=== Ignoring agent event for session $sessionKey (current: $currentSessionKey)")
+            return
+        }
+
         AppLog.d(TAG, "=== handleAgentEvent: stream=$stream, payload keys=${payload.keys}")
         when (stream) {
             "tool" -> onToolStreamEvent(payload)
