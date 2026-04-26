@@ -88,6 +88,18 @@ class GatewayConnection(
     private val _toolStreamOrder = MutableStateFlow<List<String>>(emptyList())
     val toolStreamOrder: StateFlow<List<String>> = _toolStreamOrder.asStateFlow()
 
+    /** Plan stream events for multi-step work tracking (OpenClaw v2026.4.24+) */
+    private val _planStreamEvents = MutableStateFlow<PlanStreamEvent?>(null)
+    val planStreamEvents: StateFlow<PlanStreamEvent?> = _planStreamEvents.asStateFlow()
+
+    /** Item stream events for work items/tasks (OpenClaw v2026.4.24+) */
+    private val _itemStreamEvents = MutableStateFlow<Map<String, ItemStreamEvent>>(emptyMap())
+    val itemStreamEvents: StateFlow<Map<String, ItemStreamEvent>> = _itemStreamEvents.asStateFlow()
+
+    /** Patch stream events for context changes (OpenClaw v2026.4.24+) */
+    private val _patchStreamEvents = MutableStateFlow<Map<String, PatchStreamEvent>>(emptyMap())
+    val patchStreamEvents: StateFlow<Map<String, PatchStreamEvent>> = _patchStreamEvents.asStateFlow()
+
     /** hello-ok snapshot (available after connect) */
     var helloOkPayload: JsonObject? = null
         private set
@@ -441,13 +453,39 @@ class GatewayConnection(
     private suspend fun handleAgentEvent(obj: JsonObject) {
         val payload = obj["payload"]?.jsonObject ?: return
         val stream = payload["stream"]?.jsonPrimitive?.content
-        
-        // 只处理 tool stream 事件
-        if (stream != "tool") return
-        
-        // 工具信息在 payload.data 里
+
+        // Handle tool stream events
+        if (stream == "tool") {
+            handleToolStreamEvent(payload)
+            return
+        }
+
+        // Handle plan stream events (OpenClaw v2026.4.24+)
+        if (stream == "plan") {
+            handlePlanStreamEvent(payload)
+            return
+        }
+
+        // Handle item stream events (OpenClaw v2026.4.24+)
+        if (stream == "item") {
+            handleItemStreamEvent(payload)
+            return
+        }
+
+        // Handle patch stream events (OpenClaw v2026.4.24+)
+        if (stream == "patch") {
+            handlePatchStreamEvent(payload)
+            return
+        }
+    }
+
+    /**
+     * Handle stream == "tool" agent events
+     * Tool execution streaming with phase: start, update, result
+     */
+    private suspend fun handleToolStreamEvent(payload: JsonObject) {
         val data = payload["data"]?.jsonObject ?: return
-        
+
         val toolCallId = data["toolCallId"]?.jsonPrimitive?.content ?: return
         val name = data["name"]?.jsonPrimitive?.content ?: "unknown"
         val phase = data["phase"]?.jsonPrimitive?.content ?: "start"
@@ -455,11 +493,11 @@ class GatewayConnection(
         val partialResultContent = data["partialResult"]?.jsonPrimitive?.content
         val isError = data["isError"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
         val args = data["args"]?.jsonObject
-        
+
         // 获取当前事件（用于追加流式内容）
         val currentEvent = _toolStreamEvents.value[toolCallId]
         val currentOutput = currentEvent?.output ?: ""
-        
+
         // 处理流式内容：partialResult 是增量，result 是最终结果
         val finalOutput = when {
             // phase=result 表示完成：使用最终 result
@@ -471,7 +509,7 @@ class GatewayConnection(
             // 保持当前内容
             else -> currentOutput
         }
-        
+
         val event = ToolStreamEvent(
             toolCallId = toolCallId,
             name = name,
@@ -497,6 +535,124 @@ class GatewayConnection(
         }
 
         AppLog.d(TAG, "Tool stream event: ${event.name} [${event.status}] partialResult=${partialResultContent?.take(50)} output=${finalOutput.take(50)}")
+    }
+
+    /**
+     * Handle stream == "plan" agent events (OpenClaw v2026.4.24+)
+     * Plan/progress events showing multi-step work tracking
+     * data: { phase, title, explanation, steps, source }
+     */
+    private suspend fun handlePlanStreamEvent(payload: JsonObject) {
+        val data = payload["data"]?.jsonObject ?: return
+
+        val phase = data["phase"]?.jsonPrimitive?.content ?: "update"
+        val title = data["title"]?.jsonPrimitive?.content ?: "Assistant proposed a plan"
+        val explanation = data["explanation"]?.jsonPrimitive?.content
+        val stepsElement = data["steps"]
+        val steps = if (stepsElement is JsonArray) {
+            stepsElement.mapNotNull { it.jsonPrimitive?.content }
+        } else null
+        val source = data["source"]?.jsonPrimitive?.content
+
+        val event = PlanStreamEvent(
+            phase = phase,
+            title = title,
+            explanation = explanation,
+            steps = steps,
+            source = source,
+            timestamp = System.currentTimeMillis()
+        )
+
+        _planStreamEvents.value = event
+
+        AppLog.d(TAG, "Plan stream event: [${event.phase}] ${event.title}, steps=${event.steps?.size ?: 0}")
+    }
+
+    /**
+     * Handle stream == "item" agent events (OpenClaw v2026.4.24+)
+     * Work items, tasks, or checkpoints
+     * data: { itemId, kind, title, name, phase, status, summary, progressText, approvalId, approvalSlug }
+     */
+    private suspend fun handleItemStreamEvent(payload: JsonObject) {
+        val data = payload["data"]?.jsonObject ?: return
+
+        val itemId = data["itemId"]?.jsonPrimitive?.content ?: return
+        val kind = data["kind"]?.jsonPrimitive?.content
+        val title = data["title"]?.jsonPrimitive?.content
+        val name = data["name"]?.jsonPrimitive?.content
+        val phase = data["phase"]?.jsonPrimitive?.content
+        val status = data["status"]?.jsonPrimitive?.content
+        val summary = data["summary"]?.jsonPrimitive?.content
+        val progressText = data["progressText"]?.jsonPrimitive?.content
+        val approvalId = data["approvalId"]?.jsonPrimitive?.content
+        val approvalSlug = data["approvalSlug"]?.jsonPrimitive?.content
+
+        val event = ItemStreamEvent(
+            itemId = itemId,
+            kind = kind,
+            title = title,
+            name = name,
+            phase = phase,
+            status = status,
+            summary = summary,
+            progressText = progressText,
+            approvalId = approvalId,
+            approvalSlug = approvalSlug,
+            timestamp = System.currentTimeMillis()
+        )
+
+        _itemStreamEvents.update { events ->
+            events.toMutableMap().apply { this[itemId] = event }
+        }
+
+        AppLog.d(TAG, "Item stream event: ${event.itemId} [${event.phase}/${event.status}] ${event.title}")
+    }
+
+    /**
+     * Handle stream == "patch" agent events (OpenClaw v2026.4.24+)
+     * Context/session state changes
+     * data: { itemId, phase, title, toolCallId, name, added, modified, deleted, summary }
+     */
+    private suspend fun handlePatchStreamEvent(payload: JsonObject) {
+        val data = payload["data"]?.jsonObject ?: return
+
+        val itemId = data["itemId"]?.jsonPrimitive?.content ?: return
+        val phase = data["phase"]?.jsonPrimitive?.content
+        val title = data["title"]?.jsonPrimitive?.content
+        val toolCallId = data["toolCallId"]?.jsonPrimitive?.content
+        val name = data["name"]?.jsonPrimitive?.content
+        val addedElement = data["added"]
+        val added = if (addedElement is JsonArray) {
+            addedElement.mapNotNull { it.jsonPrimitive?.content }
+        } else null
+        val modifiedElement = data["modified"]
+        val modified = if (modifiedElement is JsonArray) {
+            modifiedElement.mapNotNull { it.jsonPrimitive?.content }
+        } else null
+        val deletedElement = data["deleted"]
+        val deleted = if (deletedElement is JsonArray) {
+            deletedElement.mapNotNull { it.jsonPrimitive?.content }
+        } else null
+        val summary = data["summary"]?.jsonPrimitive?.content
+
+        val event = PatchStreamEvent(
+            itemId = itemId,
+            phase = phase,
+            title = title,
+            toolCallId = toolCallId,
+            name = name,
+            added = added,
+            modified = modified,
+            deleted = deleted,
+            summary = summary,
+            timestamp = System.currentTimeMillis()
+        )
+
+        _patchStreamEvents.update { events ->
+            events.toMutableMap().apply { this[itemId] = event }
+        }
+
+        AppLog.d(TAG, "Patch stream event: ${event.itemId} [${event.phase}] ${event.title}, +${added?.size ?: 0}/~${modified?.size ?: 0}/-${deleted?.size ?: 0}")
     }
 
     /** Parse hello-ok response */
