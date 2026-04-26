@@ -81,7 +81,7 @@ fun CommandPalette(
                         .padding(16.dp)
                         .focusRequester(focusRequester),
                     placeholder = { Text(stringResource(R.string.command_palette_search_placeholder)) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search)) },
                     trailingIcon = {
                         if (query.isNotBlank()) {
                             IconButton(onClick = { onQueryChange("") }) {
@@ -194,19 +194,22 @@ sealed class CommandPaletteItem {
     abstract val id: String
     abstract val title: String
     abstract val icon: ImageVector
-    
+    abstract val contentDescription: String?
+
     data class SessionItem(
         override val id: String,
         override val title: String,
         override val icon: ImageVector = Icons.Default.Chat,
+        override val contentDescription: String? = null,
         val lastMessage: String? = null,
         val timestamp: Long? = null
     ) : CommandPaletteItem()
-    
+
     data class CommandItem(
         override val id: String,
         override val title: String,
         override val icon: ImageVector = Icons.Default.Terminal,
+        override val contentDescription: String? = null,
         val description: String? = null
     ) : CommandPaletteItem()
 }
@@ -234,7 +237,7 @@ private fun CommandPaletteItemRow(
         ) {
             Icon(
                 imageVector = item.icon,
-                contentDescription = null,
+                contentDescription = item.contentDescription,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )

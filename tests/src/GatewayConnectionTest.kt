@@ -1,8 +1,6 @@
 package com.openclaw.clawchat.tests
 
 import android.util.Log
-import com.openclaw.clawchat.network.GatewayMessage
-import com.openclaw.clawchat.network.MessageParser
 import com.openclaw.clawchat.security.SecurityModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,12 +19,15 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Gateway 连接测试
- * 
+ *
  * 验证：
  * - WebSocket 连接
  * - Challenge-Response 认证
  * - 消息收发
  * - Device Token 存储
+ *
+ * 注意：此测试需要在 Android 设备/模拟器上运行
+ * 因为 SecurityModule 依赖 Android Context
  */
 class GatewayConnectionTest(
     private val gatewayUrl: String = "ws://localhost:18789/ws",
@@ -189,13 +190,7 @@ class GatewayConnectionTest(
             return false
         }
 
-        val message = GatewayMessage.UserMessage(
-            sessionId = "test-session",
-            content = "测试消息",
-            timestamp = System.currentTimeMillis()
-        )
-
-        val json = MessageParser.serialize(message)
+        val json = """{"type":"req","id":"test-${System.currentTimeMillis()}","method":"ping","params":{}}"""
         val success = webSocket?.send(json) ?: false
 
         Log.d(TAG, "发送消息：$json")

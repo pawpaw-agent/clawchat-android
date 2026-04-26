@@ -8,6 +8,7 @@ import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.SessionRepository
 import com.openclaw.clawchat.security.EncryptedStorage
 import com.openclaw.clawchat.util.AppLog
+import com.openclaw.clawchat.util.ConnectionStatusMapper.toStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.async
@@ -170,14 +171,7 @@ class MainViewModel @Inject constructor(
                         loadSessionsFromGateway()
                         ConnectionStatus.Connected(latency = gateway.measureLatency())
                     }
-                    is WebSocketConnectionState.Connecting -> ConnectionStatus.Connecting
-                    is WebSocketConnectionState.Stale -> ConnectionStatus.Stale
-                    is WebSocketConnectionState.Disconnecting -> ConnectionStatus.Disconnecting
-                    is WebSocketConnectionState.Disconnected -> ConnectionStatus.Disconnected
-                    is WebSocketConnectionState.Error -> ConnectionStatus.Error(
-                        message = connectionState.throwable.message ?: "连接错误",
-                        throwable = connectionState.throwable
-                    )
+                    else -> connectionState.toStatus()
                 }
 
                 _uiState.update { it.copy(connectionStatus = connectionStatus) }

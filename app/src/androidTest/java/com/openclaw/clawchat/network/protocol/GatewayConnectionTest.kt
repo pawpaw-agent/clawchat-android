@@ -4,8 +4,6 @@ import android.content.Context
 import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.openclaw.clawchat.network.GatewayMessage
-import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.security.SecurityModule
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -19,9 +17,9 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Gateway 连接集成测试
- * 
+ *
  * 使用本地 Gateway (端口 18789) 验证协议 v3 兼容性
- * 
+ *
  * 测试流程:
  * 1. WebSocket 连接建立
  * 2. 接收 connect.challenge (服务器 nonce)
@@ -169,15 +167,11 @@ class GatewayConnectionIntegrationTest {
         }
         
         // 发送测试消息
-        val testMessage = GatewayMessage.UserMessage(
-            sessionId = "test-session",
-            content = "测试消息",
-            timestamp = System.currentTimeMillis()
-        )
-        
-        val sendResult = connection.send(testMessage)
-        
-        assertTrue("消息发送应该成功", sendResult.isSuccess)
+        val json = """{"type":"req","id":"test-${System.currentTimeMillis()}","method":"ping","params":{}}"""
+
+        val sendResult = connection.sendFrame(json)
+
+        assertTrue("消息发送应该成功", sendResult)
         
         Log.d(TAG, "消息发送成功")
         
@@ -213,8 +207,9 @@ class GatewayConnectionIntegrationTest {
         assertNotNull("deviceToken 不应为空", deviceToken)
         
         // 5. 发送心跳
-        val pingResult = connection.send(GatewayMessage.Ping(System.currentTimeMillis()))
-        assertTrue("心跳发送应该成功", pingResult.isSuccess)
+        val pingJson = """{"type":"req","id":"ping-${System.currentTimeMillis()}","method":"ping","params":{}}"""
+        val pingResult = connection.sendFrame(pingJson)
+        assertTrue("心跳发送应该成功", pingResult)
         
         // 6. 断开连接
         val disconnectResult = connection.disconnect()

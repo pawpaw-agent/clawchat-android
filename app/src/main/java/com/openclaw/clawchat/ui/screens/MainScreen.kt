@@ -184,6 +184,7 @@ fun MainScreen(
             com.openclaw.clawchat.ui.components.CommandPaletteItem.SessionItem(
                 id = session.id,
                 title = session.getDisplayName(),
+                contentDescription = session.getDisplayName(),
                 lastMessage = session.lastMessage,
                 timestamp = session.lastActivityAt
             )

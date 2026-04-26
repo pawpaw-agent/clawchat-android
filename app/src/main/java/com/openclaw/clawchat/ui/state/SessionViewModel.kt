@@ -1,6 +1,7 @@
 package com.openclaw.clawchat.ui.state
 
 import com.openclaw.clawchat.util.AppLog
+import com.openclaw.clawchat.util.ConnectionStatusMapper.toStatus
 import com.openclaw.clawchat.util.StringResourceProvider
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -817,15 +818,4 @@ sealed class SessionEvent {
     data class MessageReceived(val message: MessageUi) : SessionEvent()
     data class Error(val message: String) : SessionEvent()
     data object MessageSent : SessionEvent()
-}
-
-// ── 扩展函数 ──
-
-private fun WebSocketConnectionState.toStatus(): ConnectionStatus = when (this) {
-    is WebSocketConnectionState.Connected -> ConnectionStatus.Connected()
-    is WebSocketConnectionState.Connecting -> ConnectionStatus.Connecting
-    is WebSocketConnectionState.Stale -> ConnectionStatus.Stale
-    is WebSocketConnectionState.Disconnecting -> ConnectionStatus.Disconnecting
-    is WebSocketConnectionState.Disconnected -> ConnectionStatus.Disconnected
-    is WebSocketConnectionState.Error -> ConnectionStatus.Error(this.throwable.message ?: "Unknown error", this.throwable)
 }
