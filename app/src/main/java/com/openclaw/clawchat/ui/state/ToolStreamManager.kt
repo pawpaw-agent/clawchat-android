@@ -37,9 +37,19 @@ class ToolStreamManager(
         val toolCallId = data["toolCallId"]?.jsonPrimitive?.content ?: return
         val name = data["name"]?.jsonPrimitive?.content ?: "tool"
         val phase = data["phase"]?.jsonPrimitive?.content ?: "start"
-        val resultContent = data["result"]?.jsonPrimitive?.content
-        val partialResultContent = data["partialResult"]?.jsonPrimitive?.content
         val isError = data["isError"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
+
+        // result 和 partialResult 是对象结构: { content: [{ type: "text", text: "..." }] }
+        val resultContent = data["result"]?.jsonObject
+            ?.get("content")?.jsonArray
+            ?.filterIsInstance<JsonObject>()
+            ?.firstOrNull()
+            ?.get("text")?.jsonPrimitive?.content
+        val partialResultContent = data["partialResult"]?.jsonObject
+            ?.get("content")?.jsonArray
+            ?.filterIsInstance<JsonObject>()
+            ?.firstOrNull()
+            ?.get("text")?.jsonPrimitive?.content
 
         val runId = payload["runId"]?.jsonPrimitive?.content ?: ""
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content

@@ -489,10 +489,21 @@ class GatewayConnection(
         val toolCallId = data["toolCallId"]?.jsonPrimitive?.content ?: return
         val name = data["name"]?.jsonPrimitive?.content ?: "unknown"
         val phase = data["phase"]?.jsonPrimitive?.content ?: "start"
-        val resultContent = data["result"]?.jsonPrimitive?.content
-        val partialResultContent = data["partialResult"]?.jsonPrimitive?.content
         val isError = data["isError"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
         val args = data["args"]?.jsonObject
+
+        // result 和 partialResult 是对象结构: { content: [{ type: "text", text: "..." }] }
+        // 需要从 content 数组中提取 text
+        val resultContent = data["result"]?.jsonObject
+            ?.get("content")?.jsonArray
+            ?.filterIsInstance<JsonObject>()
+            ?.firstOrNull()
+            ?.get("text")?.jsonPrimitive?.content
+        val partialResultContent = data["partialResult"]?.jsonObject
+            ?.get("content")?.jsonArray
+            ?.filterIsInstance<JsonObject>()
+            ?.firstOrNull()
+            ?.get("text")?.jsonPrimitive?.content
 
         // 获取当前事件（用于追加流式内容）
         val currentEvent = _toolStreamEvents.value[toolCallId]
@@ -513,7 +524,7 @@ class GatewayConnection(
         val event = ToolStreamEvent(
             toolCallId = toolCallId,
             name = name,
-            status = phase,  // 用 phase 替代 status
+            status = phase,
             title = null,
             output = finalOutput,
             error = if (isError) "Error" else null,
@@ -521,12 +532,10 @@ class GatewayConnection(
             timestamp = System.currentTimeMillis()
         )
 
-        // P0-2: 使用 update{} 原子操作，避免竞态条件
         _toolStreamEvents.update { events ->
             events.toMutableMap().apply { this[toolCallId] = event }
         }
 
-        // P0-2: 同样使用 update{} 原子操作更新顺序
         _toolStreamOrder.update { order ->
             order.toMutableList().apply {
                 remove(toolCallId)
