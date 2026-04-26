@@ -105,8 +105,12 @@ class GatewayConnection(
 
     private var webSocket: WebSocket? = null
     private var reconnectJob: Job? = null
-    private var heartbeatJob: Job? = null
+    private var tickMonitorJob: Job? = null
     private var currentUrl: String? = null
+
+    /** Last seen tick timestamp (ms since epoch), used for stale detection */
+    @Volatile
+    private var lastTickTimestamp: Long = 0L
 
     /** Currently connected gateway URL */
     val connectedUrl: String? get() = currentUrl
@@ -213,7 +217,7 @@ class GatewayConnection(
                     DynamicTrustManager.clearCurrentHostname()
                     _connectionState.value = WebSocketConnectionState.Disconnected
                     this@GatewayConnection.webSocket = null
-                    heartbeatJob?.cancel()
+                    tickMonitorJob?.cancel()
                 }
 
                 override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
@@ -229,7 +233,7 @@ class GatewayConnection(
             }
 
             if (finalState is WebSocketConnectionState.Connected) {
-                startHeartbeat()
+                startTickMonitor()
                 Result.success(Unit)
             } else {
                 // 更新状态为 Error（超时或认证失败）
@@ -246,7 +250,7 @@ class GatewayConnection(
 
     suspend fun disconnect(): Result<Unit> = withContext(Dispatchers.IO) {
         reconnectJob?.cancel(); reconnectJob = null
-        heartbeatJob?.cancel(); heartbeatJob = null
+        tickMonitorJob?.cancel(); tickMonitorJob = null
         requestTracker.cancelAllRequests("Disconnecting")
         sequenceManager.reset()
         eventDeduplicator.clear()
@@ -337,7 +341,13 @@ class GatewayConnection(
                 "device.pair.requested",
                 "device.pair.resolved",
                 "presence",
-                "tick",
+                "tick" -> {
+                    // Track tick timestamp for stale connection detection
+                    val ts = obj["payload"]?.jsonObject?.get("ts")?.jsonPrimitive?.content?.toLongOrNull()
+                        ?: System.currentTimeMillis()
+                    lastTickTimestamp = ts
+                    _incomingMessages.emit(rawText)
+                }
                 "voicewake.changed",
                 "health",
                 "heartbeat",
@@ -1005,20 +1015,22 @@ class GatewayConnection(
         return call("sessions.abort", params)
     }
 
-    /** ping */
-    suspend fun ping(): Result<Long> {
+    /**
+     * Measure latency using health RPC call.
+     * Returns round-trip time in ms, or null on failure.
+     */
+    suspend fun measureLatency(): Long? {
         return try {
             val start = System.currentTimeMillis()
-            call("ping", mapOf("timestamp" to JsonPrimitive(start)))
-            Result.success(System.currentTimeMillis() - start)
+            val response = health()
+            if (response.isSuccess()) {
+                System.currentTimeMillis() - start
+            } else {
+                null
+            }
         } catch (e: Exception) {
-            Result.failure(e)
+            null
         }
-    }
-
-    /** Measure latency (alias for ping) */
-    suspend fun measureLatency(): Long? {
-        return ping().getOrNull()
     }
 
     // ==================== Chat Extensions ====================
@@ -1170,14 +1182,26 @@ class GatewayConnection(
         return call("logs.tail", if (params.isNotEmpty()) params else null)
     }
 
-    // ── Heartbeat / Reconnect ──
+    // ── Tick Monitor / Reconnect ──
 
-    private fun startHeartbeat() {
-        heartbeatJob?.cancel()
-        heartbeatJob = appScope.launch {
+    /**
+     * 基于 tick 事件的连接监控
+     * 服务器每 30 秒发送 tick 事件，如果超过 2 倍间隔未收到 tick，认为连接已失效并重连。
+     */
+    private fun startTickMonitor() {
+        tickMonitorJob?.cancel()
+        lastTickTimestamp = System.currentTimeMillis()
+        tickMonitorJob = appScope.launch {
             while (_connectionState.value is WebSocketConnectionState.Connected) {
-                try { ping() } catch (_: Exception) {}
-                delay(GatewayConfig.HEARTBEAT_INTERVAL_MS)
+                delay(GatewayConfig.TICK_STALE_CHECK_INTERVAL_MS)
+                val now = System.currentTimeMillis()
+                val timeSinceLastTick = now - lastTickTimestamp
+                if (timeSinceLastTick > GatewayConfig.TICK_STALE_THRESHOLD_MS) {
+                    AppLog.w(TAG, "No tick received for ${timeSinceLastTick}ms, connection likely stale, reconnecting")
+                    _connectionState.value = WebSocketConnectionState.Disconnected
+                    currentUrl?.let { scheduleReconnect(it, currentToken) }
+                    break
+                }
             }
         }
     }

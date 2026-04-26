@@ -7,7 +7,10 @@ object GatewayConfig {
     // 超时配置
     const val AUTH_TIMEOUT_MS = 60_000L
     const val REQUEST_TIMEOUT_MS = 30_000L
-    const val HEARTBEAT_INTERVAL_MS = 30_000L
+
+    // Tick 监控配置（服务器每 ~30 秒发送 tick 事件）
+    const val TICK_STALE_CHECK_INTERVAL_MS = 15_000L
+    const val TICK_STALE_THRESHOLD_MS = 90_000L  // 2.5x tick interval
 
     // 重连配置
     const val INITIAL_RECONNECT_DELAY_MS = 1000L
