@@ -40,16 +40,21 @@ class ToolStreamManager(
         val isError = data["isError"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
 
         // result 和 partialResult 是对象结构: { content: [{ type: "text", text: "..." }] }
-        val resultContent = data["result"]?.jsonObject
-            ?.get("content")?.jsonArray
-            ?.filter { it is JsonObject }
-            ?.firstOrNull()
-            ?.let { (it as? JsonObject)?.get("text")?.jsonPrimitive?.content }
-        val partialResultContent = data["partialResult"]?.jsonObject
-            ?.get("content")?.jsonArray
-            ?.filter { it is JsonObject }
-            ?.firstOrNull()
-            ?.let { (it as? JsonObject)?.get("text")?.jsonPrimitive?.content }
+        // 直接遍历 jsonArray 提取 text
+        fun extractTextFromContent(jsonArray: JsonArray?): String? {
+            if (jsonArray == null) return null
+            for (element in jsonArray) {
+                if (element is JsonObject) {
+                    val textElement = element.get("text")
+                    if (textElement is JsonPrimitive) {
+                        return textElement.content
+                    }
+                }
+            }
+            return null
+        }
+        val resultContent = extractTextFromContent(data["result"]?.jsonObject?.get("content")?.jsonArray)
+        val partialResultContent = extractTextFromContent(data["partialResult"]?.jsonObject?.get("content")?.jsonArray)
 
         val runId = payload["runId"]?.jsonPrimitive?.content ?: ""
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content

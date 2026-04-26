@@ -493,17 +493,21 @@ class GatewayConnection(
         val args = data["args"]?.jsonObject
 
         // result 和 partialResult 是对象结构: { content: [{ type: "text", text: "..." }] }
-        // 需要从 content 数组中提取 text
-        val resultContent = data["result"]?.jsonObject
-            ?.get("content")?.jsonArray
-            ?.filter { it is JsonObject }
-            ?.firstOrNull()
-            ?.let { (it as? JsonObject)?.get("text")?.jsonPrimitive?.content }
-        val partialResultContent = data["partialResult"]?.jsonObject
-            ?.get("content")?.jsonArray
-            ?.filter { it is JsonObject }
-            ?.firstOrNull()
-            ?.let { (it as? JsonObject)?.get("text")?.jsonPrimitive?.content }
+        // 直接遍历 jsonArray 提取 text
+        fun extractTextFromContent(jsonArray: JsonArray?): String? {
+            if (jsonArray == null) return null
+            for (element in jsonArray) {
+                if (element is JsonObject) {
+                    val textElement = element.get("text")
+                    if (textElement is JsonPrimitive) {
+                        return textElement.content
+                    }
+                }
+            }
+            return null
+        }
+        val resultContent = extractTextFromContent(data["result"]?.jsonObject?.get("content")?.jsonArray)
+        val partialResultContent = extractTextFromContent(data["partialResult"]?.jsonObject?.get("content")?.jsonArray)
 
         // 获取当前事件（用于追加流式内容）
         val currentEvent = _toolStreamEvents.value[toolCallId]
