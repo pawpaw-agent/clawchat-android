@@ -146,6 +146,7 @@ class ChatEventHandler(
         AppLog.d(TAG, "=== handleAgentEvent: stream=$stream, payload keys=${payload.keys}")
         when (stream) {
             "tool" -> onToolStreamEvent(payload)
+            "command_output" -> onToolStreamEvent(payload)  // Legacy rasp gateway compatibility
             "lifecycle" -> handleLifecycleEvent(payload)
             "compaction" -> handleCompactionEvent(payload)  // v2026.4.8
             "error" -> handleAgentErrorEvent(payload)

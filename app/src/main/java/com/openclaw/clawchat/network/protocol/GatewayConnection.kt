@@ -477,6 +477,65 @@ class GatewayConnection(
             handlePatchStreamEvent(payload)
             return
         }
+
+        // Handle command_output stream events (legacy rasp gateway compatibility)
+        // Legacy gateway sends stream="command_output" instead of stream="tool"
+        if (stream == "command_output") {
+            handleCommandOutputStreamEvent(payload)
+            return
+        }
+    }
+
+    /**
+     * Handle stream == "command_output" agent events (legacy rasp gateway compatibility)
+     * Legacy gateway uses stream="command_output" instead of stream="tool"
+     * These events have a similar structure but use different field names:
+     *   - itemId instead of toolCallId
+     *   - output instead of partialResult
+     */
+    private suspend fun handleCommandOutputStreamEvent(payload: JsonObject) {
+        val data = payload["data"]?.jsonObject ?: return
+
+        val itemId = data["itemId"]?.jsonPrimitive?.content ?: return
+        val name = data["name"]?.jsonPrimitive?.content ?: "unknown"
+        val phase = data["phase"]?.jsonPrimitive?.content ?: "start"
+        val isError = data["isError"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
+        val output = data["output"]?.jsonPrimitive?.content
+
+        // 获取当前事件（用于追加流式内容）
+        val currentEvent = _toolStreamEvents.value[itemId]
+        val currentOutput = currentEvent?.output ?: ""
+
+        // 处理流式内容：phase=delta 表示增量，phase=end 表示完成
+        val finalOutput = when {
+            phase == "end" -> output ?: currentOutput
+            output != null -> currentOutput + output
+            else -> currentOutput
+        }
+
+        val event = ToolStreamEvent(
+            toolCallId = itemId,
+            name = name,
+            status = phase,
+            title = data["title"]?.jsonPrimitive?.content,
+            output = finalOutput,
+            error = if (isError) "Error" else null,
+            stream = output,
+            timestamp = System.currentTimeMillis()
+        )
+
+        _toolStreamEvents.update { events ->
+            events.toMutableMap().apply { this[itemId] = event }
+        }
+
+        _toolStreamOrder.update { order ->
+            order.toMutableList().apply {
+                remove(itemId)
+                add(itemId)
+            }
+        }
+
+        AppLog.d(TAG, "CommandOutput stream event (legacy compat): ${event.name} [${event.status}] output=${finalOutput.take(50)}")
     }
 
     /**
