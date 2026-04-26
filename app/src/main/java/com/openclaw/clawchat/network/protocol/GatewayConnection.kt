@@ -1198,7 +1198,7 @@ class GatewayConnection(
                 val timeSinceLastTick = now - lastTickTimestamp
                 if (timeSinceLastTick > GatewayConfig.TICK_STALE_THRESHOLD_MS) {
                     AppLog.w(TAG, "No tick received for ${timeSinceLastTick}ms, connection likely stale, reconnecting")
-                    _connectionState.value = WebSocketConnectionState.Disconnected
+                    _connectionState.value = WebSocketConnectionState.Stale
                     currentUrl?.let { scheduleReconnect(it, currentToken) }
                     break
                 }

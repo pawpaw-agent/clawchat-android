@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -75,6 +77,7 @@ class MainViewModel @Inject constructor(
     init {
         loadSessionsFromCache()
         observeConnectionState()
+        observeGatewayEvents()
         autoConnectIfNeeded()
     }
 
@@ -168,6 +171,7 @@ class MainViewModel @Inject constructor(
                         ConnectionStatus.Connected(latency = gateway.measureLatency())
                     }
                     is WebSocketConnectionState.Connecting -> ConnectionStatus.Connecting
+                    is WebSocketConnectionState.Stale -> ConnectionStatus.Stale
                     is WebSocketConnectionState.Disconnecting -> ConnectionStatus.Disconnecting
                     is WebSocketConnectionState.Disconnected -> ConnectionStatus.Disconnected
                     is WebSocketConnectionState.Error -> ConnectionStatus.Error(
@@ -181,6 +185,30 @@ class MainViewModel @Inject constructor(
                 if (connectionState is WebSocketConnectionState.Disconnected ||
                     connectionState is WebSocketConnectionState.Error) {
                     _events.trySend(UiEvent.ConnectionLost)
+                }
+            }
+        }
+    }
+
+    /**
+     * 监听 Gateway 事件（如 update.available）
+     */
+    private fun observeGatewayEvents() {
+        viewModelScope.launch {
+            gateway.incomingMessages.collect { rawJson ->
+                try {
+                    val obj = Json.decodeFromString<JsonObject>(rawJson)
+                    val type = obj["type"]?.jsonPrimitive?.content
+                    val event = obj["event"]?.jsonPrimitive?.content
+                    if (type == "event" && event == "update.available") {
+                        val payload = obj["payload"]?.jsonObject
+                        val version = payload?.get("version")?.jsonPrimitive?.content ?: ""
+                        val message = payload?.get("message")?.jsonPrimitive?.content ?: ""
+                        AppLog.i(TAG, "Update available: version=$version")
+                        showUpdate(version = version, message = message)
+                    }
+                } catch (e: Exception) {
+                    // 忽略非 JSON 消息
                 }
             }
         }

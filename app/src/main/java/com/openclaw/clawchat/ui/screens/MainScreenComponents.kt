@@ -169,6 +169,7 @@ fun ConnectionStatusIcon(status: com.openclaw.clawchat.ui.state.ConnectionStatus
     val (icon, color) = when (status) {
         is com.openclaw.clawchat.ui.state.ConnectionStatus.Connected -> Icons.Default.CheckCircle to MaterialTheme.colorScheme.primary
         is com.openclaw.clawchat.ui.state.ConnectionStatus.Connecting, is com.openclaw.clawchat.ui.state.ConnectionStatus.Disconnecting -> Icons.Default.Sync to MaterialTheme.colorScheme.error
+        is com.openclaw.clawchat.ui.state.ConnectionStatus.Stale -> Icons.Default.Warning to MaterialTheme.colorScheme.tertiary
         is com.openclaw.clawchat.ui.state.ConnectionStatus.Disconnected -> Icons.Default.CloudOff to MaterialTheme.colorScheme.onSurfaceVariant
         is com.openclaw.clawchat.ui.state.ConnectionStatus.Error -> Icons.Default.Error to MaterialTheme.colorScheme.error
         else -> Icons.Default.Help to MaterialTheme.colorScheme.onSurfaceVariant

@@ -26,7 +26,7 @@ import com.openclaw.clawchat.ui.state.AttachmentUi
 /**
  * 计算图片采样率
  */
-private fun calculateSampleSize(width: Int, height: Int, maxSize: Int): Int {
+fun calculateSampleSize(width: Int, height: Int, maxSize: Int): Int {
     var sampleSize = 1
     val halfWidth = width / 2
     val halfHeight = height / 2
@@ -80,10 +80,8 @@ fun AttachmentPreview(
                         }
                         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, loadOptions)
                     } else {
-                        val inputStream = context.contentResolver.openInputStream(attachment.uri)
-                        val bytes = inputStream?.readBytes()
-                        inputStream?.close()
-                        if (bytes != null) {
+                        context.contentResolver.openInputStream(attachment.uri)?.use { inputStream ->
+                            val bytes = inputStream.readBytes()
                             // 采样解码
                             val options = BitmapFactory.Options().apply {
                                 inJustDecodeBounds = true
@@ -97,8 +95,6 @@ fun AttachmentPreview(
                                 inSampleSize = sampleSize
                             }
                             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, loadOptions)
-                        } else {
-                            null
                         }
                     }
                 } catch (e: Exception) {

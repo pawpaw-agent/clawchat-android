@@ -176,6 +176,11 @@ private fun ConnectionStatusIcon(status: ConnectionStatus) {
             MaterialTheme.colorScheme.tertiary,
             null
         )
+        is ConnectionStatus.Stale -> Triple(
+            Icons.Default.Warning,
+            MaterialTheme.colorScheme.tertiary,
+            null
+        )
         is ConnectionStatus.Disconnected -> Triple(
             Icons.Default.CloudOff,
             MaterialTheme.colorScheme.onSurfaceVariant,

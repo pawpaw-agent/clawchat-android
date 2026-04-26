@@ -502,17 +502,19 @@ enum class ToolCardKind {
 sealed class ConnectionStatus {
     data object Disconnected : ConnectionStatus()
     data object Connecting : ConnectionStatus()
+    data object Stale : ConnectionStatus()
     data class Connected(val latency: Long? = null) : ConnectionStatus()
     data object Disconnecting : ConnectionStatus()
     data class Error(val message: String, val throwable: Throwable? = null) : ConnectionStatus()
 
     val isConnected: Boolean get() = this is Connected
-    val isConnecting: Boolean get() = this is Connecting || this is Disconnecting
-    
+    val isConnecting: Boolean get() = this is Connecting || this is Disconnecting || this is Stale
+
     val displayText: String
         get() = when (this) {
             is Disconnected -> "未连接"
             is Connecting -> "连接中..."
+            is Stale -> "连接超时，重连中..."
             is Disconnecting -> "断开中..."
             is Connected -> if (latency != null && latency > 0) "已连接 · ${latency}ms" else "已连接"
             is Error -> "错误：$message"

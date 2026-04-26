@@ -29,7 +29,6 @@ import com.openclaw.clawchat.R
 import com.openclaw.clawchat.data.FontSize
 import com.openclaw.clawchat.ui.components.MarkdownText
 import com.openclaw.clawchat.ui.components.ToolCardRow
-import com.openclaw.clawchat.ui.components.ToolDetailCard
 import com.openclaw.clawchat.ui.state.*
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import com.openclaw.clawchat.ui.theme.ChatTokens

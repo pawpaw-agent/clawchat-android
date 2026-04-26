@@ -64,6 +64,9 @@ sealed class WebSocketConnectionState {
     /** 正在断开 */
     data class Disconnecting(val reason: String) : WebSocketConnectionState()
 
+    /** 连接超时（长时间无 tick，正在尝试重连） */
+    data object Stale : WebSocketConnectionState()
+
     /** 错误状态 */
     data class Error(val throwable: Throwable) : WebSocketConnectionState()
 }

@@ -637,7 +637,22 @@ class SessionViewModel @Inject constructor(
             .filter { it > lastUserIndex && messages[it].role != MessageRole.USER }
             .toList()
 
+        // 检查 agent 是否正在运行（最后一条助手消息是 SENDING 状态）
+        val isAgentRunning = assistantIndices.lastOrNull()?.let { idx ->
+            messages[idx].status == MessageStatus.SENDING
+        } ?: false
+
         viewModelScope.launch {
+            // 如果 agent 正在运行，先调用 Gateway API 中止
+            if (isAgentRunning) {
+                try {
+                    gateway.chatAbort(sessionId)
+                    AppLog.d(TAG, "chat.abort called before undo")
+                } catch (e: Exception) {
+                    AppLog.w(TAG, "chat.abort failed: ${e.message}")
+                }
+            }
+
             // 收集所有要删除的消息 ID
             val messageIdsToDelete = mutableListOf<String>()
             messageIdsToDelete.add(messages[lastUserIndex].id)
@@ -659,7 +674,7 @@ class SessionViewModel @Inject constructor(
                         newMessages.removeAt(idx)
                     }
                 }
-                state.copy(chatMessages = newMessages)
+                state.copy(chatMessages = newMessages, isSending = false)
             }
 
             AppLog.d(TAG, "Undid last conversation: deleted ${messageIdsToDelete.size} messages")

@@ -274,7 +274,7 @@ private fun MarkdownRegularContent(
         lastParsedResult = result
         result
     } else {
-        lastParsedResult!!
+        lastParsedResult ?: parseMarkdownToAnnotatedString(content, linkColor, codeColor, codeBgColor)
     }
 
     // 检查是否有链接
@@ -312,105 +312,6 @@ private fun MarkdownRegularContent(
     }
 }
 
-
-/**
- * 处理行内样式（粗体、斜体、行内代码）
- * 注意：此函数未使用，保留作为备用
- */
-@Suppress("unused")
-private fun AnnotatedString.Builder.appendStyledText(text: String) {
-    var i = 0
-    while (i < text.length) {
-        when {
-            // 粗体 **text**
-            i + 1 < text.length && text[i] == '*' && text[i + 1] == '*' -> {
-                val end = text.indexOf("**", i + 2)
-                if (end != -1) {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append(text.substring(i + 2, end))
-                    }
-                    i = end + 2
-                } else {
-                    append(text.substring(i, i + 1))
-                    i++
-                }
-            }
-            // 斜体 *text* 或 _text_
-            text[i] == '*' && (i == 0 || text[i - 1] != '*') -> {
-                val end = text.indexOf('*', i + 1)
-                if (end != -1 && end > i + 1) {
-                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        append(text.substring(i + 1, end))
-                    }
-                    i = end + 1
-                } else {
-                    append(text.substring(i, i + 1))
-                    i++
-                }
-            }
-            text[i] == '_' && i + 1 < text.length -> {
-                val end = text.indexOf('_', i + 1)
-                if (end != -1 && end > i + 1) {
-                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        append(text.substring(i + 1, end))
-                    }
-                    i = end + 1
-                } else {
-                    append(text.substring(i, i + 1))
-                    i++
-                }
-            }
-            // 行内代码 `code`
-            text[i] == '`' -> {
-                val end = text.indexOf('`', i + 1)
-                if (end != -1 && end > i + 1) {
-                    // 使用固定颜色（此函数未使用，保留作为备用）
-                    withStyle(SpanStyle(
-                        fontFamily = FontFamily.Monospace,
-                        color = Color(0xFF60A5FA),
-                        background = Color(0x1A60A5FA)
-                    )) {
-                        append(text.substring(i + 1, end))
-                    }
-                    i = end + 1
-                } else {
-                    append(text.substring(i, i + 1))
-                    i++
-                }
-            }
-            // 链接 [text](url)
-            text[i] == '[' -> {
-                val textEnd = text.indexOf(']', i + 1)
-                if (textEnd != -1 && textEnd + 1 < text.length && text[textEnd + 1] == '(') {
-                    val urlEnd = text.indexOf(')', textEnd + 2)
-                    if (urlEnd != -1) {
-                        val linkText = text.substring(i + 1, textEnd)
-                        val url = text.substring(textEnd + 2, urlEnd)
-                        pushStringAnnotation(tag = "URL", annotation = url)
-                        withStyle(SpanStyle(
-                            color = Color(0xFF2196F3),
-                            fontWeight = FontWeight.Medium
-                        )) {
-                            append(linkText)
-                        }
-                        pop()
-                        i = urlEnd + 1
-                    } else {
-                        append(text.substring(i, i + 1))
-                        i++
-                    }
-                } else {
-                    append(text.substring(i, i + 1))
-                    i++
-                }
-            }
-            else -> {
-                append(text.substring(i, i + 1))
-                i++
-            }
-        }
-    }
-}
 
 /**
  * Markdown 表格渲染

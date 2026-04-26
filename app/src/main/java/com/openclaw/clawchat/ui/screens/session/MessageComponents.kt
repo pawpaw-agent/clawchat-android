@@ -517,7 +517,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
             )
         } else if (bitmap != null) {
             androidx.compose.foundation.Image(
-                bitmap = bitmap!!.asImageBitmap(),
+                bitmap = bitmap.asImageBitmap(),
                 contentDescription = stringResource(R.string.action_image),
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = ContentScale.FillWidth
@@ -539,21 +539,6 @@ fun MessageImageContent(image: MessageContentItem.Image) {
             }
         }
     }
-}
-
-/**
- * 计算图片采样率
- */
-private fun calculateSampleSize(width: Int, height: Int, maxSize: Int): Int {
-    var sampleSize = 1
-    val halfWidth = width / 2
-    val halfHeight = height / 2
-    
-    while (halfWidth / sampleSize >= maxSize || halfHeight / sampleSize >= maxSize) {
-        sampleSize *= 2
-    }
-    
-    return sampleSize
 }
 
 /**

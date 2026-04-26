@@ -67,22 +67,16 @@ class SessionMessageLoader(
         onLoadingStateChanged?.invoke(true)
 
         loadMessagesJob = scope.launch(exceptionHandler) {
-            // 从 Gateway 加载历史消息
             try {
-
                 val response = gateway.chatHistory(sessionId, limit = 100)
 
                 if (!response.isSuccess()) {
                     AppLog.w(TAG, "Gateway request failed: ${response.error?.message}")
-                    state.update { it.copy(isLoading = false) }
-                    onLoadingStateChanged?.invoke(false)
                     return@launch
                 }
 
                 if (response.payload !is JsonObject) {
                     AppLog.w(TAG, "Invalid response payload type")
-                    state.update { it.copy(isLoading = false) }
-                    onLoadingStateChanged?.invoke(false)
                     return@launch
                 }
 
@@ -126,15 +120,15 @@ class SessionMessageLoader(
                 AppLog.d(TAG, "Loaded ${messagesToSave.size} messages for session $sessionId")
             } catch (e: Exception) {
                 AppLog.w(TAG, "Failed to load chat history: ${e.message}")
+            } finally {
+                // 无论成功、失败还是异常，都重置加载状态
+                val loadedMessages = messageRepository.observeMessages(sessionId).first()
+                state.update { it.copy(
+                    isLoading = false,
+                    chatMessages = loadedMessages
+                )}
+                onLoadingStateChanged?.invoke(false)
             }
-
-            // 加载完成，一次性更新状态
-            val loadedMessages = messageRepository.observeMessages(sessionId).first()
-            state.update { it.copy(
-                isLoading = false,
-                chatMessages = loadedMessages
-            )}
-            onLoadingStateChanged?.invoke(false)
         }
     }
 

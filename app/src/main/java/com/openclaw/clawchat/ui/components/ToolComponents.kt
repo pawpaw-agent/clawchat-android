@@ -5,8 +5,6 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -252,69 +250,6 @@ fun ToolDetailCard(
     modifier: Modifier = Modifier
 ) {
     CompactToolCard(toolCard = toolCard, modifier = modifier)
-}
-
-/**
- * 检查字符串是否为JSON格式
- */
-fun isJsonString(str: String): Boolean {
-    val trimmed = str.trim()
-    return (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
-           (trimmed.startsWith("[") && trimmed.endsWith("]"))
-}
-
-/**
- * 格式化工具结果，提取关键内容
- */
-private fun formatToolResult(toolName: String, result: String): String {
-    val json = result.trim()
-    if (!json.startsWith("{")) {
-        return result.take(300) + if (result.length > 300) "..." else ""
-    }
-
-    // 尝试提取关键内容
-    return try {
-        when (toolName) {
-            "web_search" -> {
-                // 提取 results 数组或 externalContent
-                val resultsMatch = Regex("\"results\"\\s*:\\s*\\[").find(json)
-                val contentMatch = Regex("\"externalContent\"\\s*:").find(json)
-                if (resultsMatch != null || contentMatch != null) {
-                    // 找到 results 开始位置，截取显示
-                    val startIdx = resultsMatch?.range?.first ?: contentMatch!!.range.first
-                    json.drop(startIdx).take(300) + "..."
-                } else {
-                    json.take(300) + if (json.length > 300) "..." else ""
-                }
-            }
-            "web_fetch" -> {
-                // 提取 content 或 text 字段
-                val contentMatch = Regex("\"content\"\\s*:\\s*\"").find(json)
-                if (contentMatch != null) {
-                    val startIdx = contentMatch.range.last
-                    json.drop(startIdx).take(300).removeSuffix("\"").removeSuffix("}").trim() + "..."
-                } else {
-                    json.take(300) + if (json.length > 300) "..." else ""
-                }
-            }
-            else -> json.take(300) + if (json.length > 300) "..." else ""
-        }
-    } catch (e: Exception) {
-        result.take(300) + if (result.length > 300) "..." else ""
-    }
-}
-
-/**
- * 格式化工具名称
- */
-private fun formatToolName(name: String): String {
-    return name
-        .replace("_", " ")
-        .replace(Regex("([a-z])([A-Z])")) { "${it.groupValues[1]} ${it.groupValues[2]}" }
-        .split(" ")
-        .joinToString(" ") { word ->
-            word.lowercase().replaceFirstChar { it.uppercase() }
-        }
 }
 
 /**

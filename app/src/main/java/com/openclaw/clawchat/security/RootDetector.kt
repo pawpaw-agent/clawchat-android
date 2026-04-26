@@ -172,9 +172,12 @@ object RootDetector {
         for ((prop, expectedValue) in DANGEROUS_PROPS) {
             try {
                 val process = Runtime.getRuntime().exec("getprop $prop")
-                val reader = BufferedReader(InputStreamReader(process.inputStream))
-                val value = reader.readLine()?.trim()
-                reader.close()
+                val value = process.inputStream.use { stream ->
+                    BufferedReader(InputStreamReader(stream)).use { reader ->
+                        reader.readLine()?.trim()
+                    }
+                }
+                process.destroy()
 
                 if (value == expectedValue) {
                     return Pair(true, "$prop=$value")

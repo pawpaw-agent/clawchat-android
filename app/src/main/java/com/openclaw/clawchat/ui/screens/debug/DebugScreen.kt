@@ -150,7 +150,7 @@ private fun ConnectionDiagnosticsTab(state: DebugUiState) {
 
         if (state.lastConnectedTime != null) {
             item {
-                val timeStr = java.text.SimpleDateFormat("HH:mm:ss").format(java.util.Date(state.lastConnectedTime!!))
+                val timeStr = java.text.SimpleDateFormat("HH:mm:ss").format(java.util.Date(state.lastConnectedTime))
                 Text(
                     text = stringResource(R.string.debug_last_connection, timeStr),
                     style = MaterialTheme.typography.bodySmall
@@ -446,13 +446,13 @@ private fun CrashReportTab(viewModel: DebugViewModel) {
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
                             Text(
-                                crashReport!!.formattedTime,
+                                crashReport?.formattedTime ?: "",
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            crashReport!!.message,
+                            crashReport?.message ?: "",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -472,7 +472,7 @@ private fun CrashReportTab(viewModel: DebugViewModel) {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            text = crashReport!!.stackTrace,
+                            text = crashReport?.stackTrace ?: "",
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = FontFamily.Monospace
                         )
