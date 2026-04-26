@@ -473,7 +473,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
     // 异步加载图片
     LaunchedEffect(image.base64) {
         isLoading = true
-        bitmap = try {
+        val loadedBitmap = try {
             val base64Data = image.base64
             if (base64Data.isNullOrBlank()) {
                 null
@@ -499,6 +499,7 @@ fun MessageImageContent(image: MessageContentItem.Image) {
         } catch (e: Exception) {
             null
         }
+        bitmap = loadedBitmap
         isLoading = false
     }
 
@@ -515,28 +516,29 @@ fun MessageImageContent(image: MessageContentItem.Image) {
                 type = SkeletonType.THUMBNAIL,
                 modifier = Modifier.fillMaxWidth().height(150.dp)
             )
-        } else if (bitmap != null) {
-            val bmp = bitmap
-            androidx.compose.foundation.Image(
-                bitmap = bmp.asImageBitmap(),
-                contentDescription = stringResource(R.string.action_image),
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.FillWidth
-            )
         } else {
-            // 加载失败占位
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.BrokenImage,
-                    contentDescription = stringResource(R.string.action_load_failed),
-                    tint = MaterialTheme.colorScheme.error
+            bitmap?.let { bmp ->
+                androidx.compose.foundation.Image(
+                    bitmap = bmp.asImageBitmap(),
+                    contentDescription = stringResource(R.string.action_image),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.FillWidth
                 )
+            } ?: run {
+                // 加载失败占位
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.BrokenImage,
+                        contentDescription = stringResource(R.string.action_load_failed),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
