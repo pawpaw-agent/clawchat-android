@@ -278,21 +278,16 @@ class GatewayConnection(
     // ── Frame dispatch ──
 
     private fun handleIncomingFrame(text: String) {
-        // Parse JSON on Default dispatcher (CPU-bound), then process on appScope
-        appScope.launch {
-            try {
-                val obj = withContext(Dispatchers.Default) {
-                    json.parseToJsonElement(text).jsonObject
-                }
-                when (obj["type"]?.jsonPrimitive?.content) {
-                    "res" -> handleResFrame(text)
-                    "event" -> handleEventFrame(obj, text)
-                    else -> _incomingMessages.emit(text)
-                }
-            } catch (e: Exception) {
-                AppLog.w(TAG, "Frame parse error: ${e.message}")
-                _incomingMessages.emit(text)
+        try {
+            val obj = json.parseToJsonElement(text).jsonObject
+            when (obj["type"]?.jsonPrimitive?.content) {
+                "res" -> handleResFrame(text)
+                "event" -> handleEventFrame(obj, text)
+                else -> appScope.launch { _incomingMessages.emit(text) }
             }
+        } catch (e: Exception) {
+            AppLog.w(TAG, "Frame parse error: ${e.message}")
+            appScope.launch { _incomingMessages.emit(text) }
         }
     }
 
