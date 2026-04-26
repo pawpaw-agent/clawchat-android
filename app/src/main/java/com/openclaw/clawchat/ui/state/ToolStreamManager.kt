@@ -42,14 +42,14 @@ class ToolStreamManager(
         // result 和 partialResult 是对象结构: { content: [{ type: "text", text: "..." }] }
         val resultContent = data["result"]?.jsonObject
             ?.get("content")?.jsonArray
-            ?.filterIsInstance<JsonObject>()
+            ?.filter { it is JsonObject }
             ?.firstOrNull()
-            ?.get("text")?.jsonPrimitive?.content
+            ?.let { (it as? JsonObject)?.get("text")?.jsonPrimitive?.content }
         val partialResultContent = data["partialResult"]?.jsonObject
             ?.get("content")?.jsonArray
-            ?.filterIsInstance<JsonObject>()
+            ?.filter { it is JsonObject }
             ?.firstOrNull()
-            ?.get("text")?.jsonPrimitive?.content
+            ?.let { (it as? JsonObject)?.get("text")?.jsonPrimitive?.content }
 
         val runId = payload["runId"]?.jsonPrimitive?.content ?: ""
         val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content

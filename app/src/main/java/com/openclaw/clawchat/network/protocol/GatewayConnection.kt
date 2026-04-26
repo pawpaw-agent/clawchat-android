@@ -496,14 +496,14 @@ class GatewayConnection(
         // 需要从 content 数组中提取 text
         val resultContent = data["result"]?.jsonObject
             ?.get("content")?.jsonArray
-            ?.filterIsInstance<JsonObject>()
+            ?.filter { it is JsonObject }
             ?.firstOrNull()
-            ?.get("text")?.jsonPrimitive?.content
+            ?.let { (it as? JsonObject)?.get("text")?.jsonPrimitive?.content }
         val partialResultContent = data["partialResult"]?.jsonObject
             ?.get("content")?.jsonArray
-            ?.filterIsInstance<JsonObject>()
+            ?.filter { it is JsonObject }
             ?.firstOrNull()
-            ?.get("text")?.jsonPrimitive?.content
+            ?.let { (it as? JsonObject)?.get("text")?.jsonPrimitive?.content }
 
         // 获取当前事件（用于追加流式内容）
         val currentEvent = _toolStreamEvents.value[toolCallId]
