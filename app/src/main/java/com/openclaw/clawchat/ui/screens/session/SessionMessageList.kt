@@ -593,16 +593,6 @@ fun MessageGroupItem(
                         }
                     }
 
-                    // 时间戳
-                    group.lastMessage?.let { msg: MessageUi ->
-                        Spacer(modifier = Modifier.height(DesignTokens.space1))
-                        Text(
-                            text = formatTimestamp(msg.timestamp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
                     // 流式指示器
                     if (group.isStreaming) {
                         Spacer(modifier = Modifier.height(DesignTokens.space2))
