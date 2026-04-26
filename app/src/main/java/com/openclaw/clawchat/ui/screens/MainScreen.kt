@@ -144,22 +144,27 @@ fun MainScreen(
                 }
             }
             
-            // 连接错误 Banner - 放在 Box 最上层，确保始终可见
-            if (state.connectionError != null) {
-                ConnectionErrorBanner(
-                    error = state.connectionError!!,
-                    onRetry = { viewModel.retryConnection() },
-                    onDismiss = { viewModel.clearConnectionError() }
-                )
-            }
+            // 连接错误 Banner + 更新通知 Banner - 垂直堆叠避免重叠
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+            ) {
+                state.connectionError?.let { error ->
+                    ConnectionErrorBanner(
+                        error = error,
+                        onRetry = { viewModel.retryConnection() },
+                        onDismiss = { viewModel.clearConnectionError() }
+                    )
+                }
 
-            // 更新通知 Banner
-            state.updateAvailable?.let { updateInfo ->
-                UpdateNotificationBanner(
-                    updateInfo = updateInfo,
-                    onUpdate = { viewModel.runUpdate() },
-                    onDismiss = { viewModel.dismissUpdate() }
-                )
+                state.updateAvailable?.let { updateInfo ->
+                    UpdateNotificationBanner(
+                        updateInfo = updateInfo,
+                        onUpdate = { viewModel.runUpdate() },
+                        onDismiss = { viewModel.dismissUpdate() }
+                    )
+                }
             }
         }
     }

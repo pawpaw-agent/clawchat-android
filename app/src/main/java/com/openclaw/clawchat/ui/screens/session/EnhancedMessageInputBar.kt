@@ -288,8 +288,10 @@ fun EnhancedMessageInputBar(
                                         if (historyIndex >= 0 && historyIndex < inputHistory.size) {
                                             onValueChange(inputHistory[historyIndex])
                                         }
+                                        true // 有历史记录时消费事件
+                                    } else {
+                                        false // 无历史记录时不消费，交由系统处理（如光标移动）
                                     }
-                                    true
                                 } else if (keyEvent.key == Key.DirectionDown &&
                                     keyEvent.type == KeyEventType.KeyDown) {
                                     // 下箭头：返回当前输入
@@ -301,8 +303,10 @@ fun EnhancedMessageInputBar(
                                             historyIndex = -1
                                             onValueChange(savedDraft)
                                         }
+                                        true
+                                    } else {
+                                        false
                                     }
-                                    true
                                 } else {
                                     false
                                 }
