@@ -2,7 +2,6 @@ package com.openclaw.clawchat.util
 
 import android.content.ContentResolver
 import android.content.Context
-import android.database.Cursor
 import android.net.Uri
 import android.provider.OpenableColumns
 import java.io.ByteArrayOutputStream

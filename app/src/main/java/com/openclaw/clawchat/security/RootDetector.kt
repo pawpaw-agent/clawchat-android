@@ -1,7 +1,6 @@
 package com.openclaw.clawchat.security
 
 import android.content.Context
-import android.content.pm.ApplicationInfo
 import com.openclaw.clawchat.util.AppLog
 import java.io.BufferedReader
 import java.io.File
