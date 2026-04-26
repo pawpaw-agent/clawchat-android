@@ -15,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -81,7 +80,6 @@ fun CompactToolCard(
     toolCard: ToolCard,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val isRunning = toolCard.phase != "result"
     val hasError = toolCard.isError
     val hasContent = !toolCard.args.isNullOrBlank() || !toolCard.result.isNullOrBlank()
@@ -204,53 +202,16 @@ fun CompactToolCard(
                 RunningProgressBar(color = statusColor)
             }
 
-            // 展开内容
+            // 展开内容 - 仅显示分割线
             AnimatedVisibility(
                 visible = expanded && hasContent,
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
-                Column(modifier = Modifier.padding(top = 8.dp)) {
-                    // 参数
-                    if (!toolCard.args.isNullOrBlank()) {
-                        Text(
-                            text = context.getString(R.string.tool_args),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = toolCard.args,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-
-                    // 分割线
-                    if (!toolCard.args.isNullOrBlank() && !toolCard.result.isNullOrBlank()) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 6.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant
-                        )
-                    }
-
-                    // 结果
-                    if (!toolCard.result.isNullOrBlank()) {
-                        Text(
-                            text = if (hasError) context.getString(R.string.tool_error) else context.getString(R.string.tool_result),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = toolCard.result,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                            color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                }
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 6.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
             }
         } // Column 结束
         } // Row 结束
