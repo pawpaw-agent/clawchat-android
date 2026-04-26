@@ -3,7 +3,10 @@ package com.openclaw.clawchat.ui.state
 import com.openclaw.clawchat.util.AppLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -43,7 +46,9 @@ class ToolStreamManager(
         // 直接遍历 jsonArray 提取 text
         fun extractTextFromContent(jsonArray: JsonArray?): String? {
             if (jsonArray == null) return null
-            for (element in jsonArray) {
+            // Use indices and get() instead of for-loop since JsonArray doesn't have iterator()
+            for (i in 0 until jsonArray.size) {
+                val element = jsonArray[i]
                 if (element is JsonObject) {
                     val textElement = element.get("text")
                     if (textElement is JsonPrimitive) {
