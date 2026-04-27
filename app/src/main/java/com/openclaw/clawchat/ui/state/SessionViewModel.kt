@@ -115,7 +115,6 @@ class SessionViewModel @Inject constructor(
         restoreFromSavedState()
         observeConnectionState()
         observeIncomingMessages()
-        observeToolStreamEvents()
     }
 
     /**
@@ -244,15 +243,6 @@ class SessionViewModel @Inject constructor(
             gateway.events.collect { event ->
                 AppLog.d(TAG, "=== observeIncomingMessages: received event=${event.name}")
                 chatEventHandler.handleEvent(event)
-            }
-        }
-    }
-
-    private fun observeToolStreamEvents() {
-        viewModelScope.launch(exceptionHandler) {
-            gateway.toolStreamEvents.collect { eventMap ->
-                // Gateway 已经处理了工具流事件
-                // 这里只需要更新状态
             }
         }
     }

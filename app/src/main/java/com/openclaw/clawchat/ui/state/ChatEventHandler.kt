@@ -207,22 +207,9 @@ class ChatEventHandler(
         val previousModel = data["previousActiveModel"]?.jsonPrimitive?.content
         val reason = data["reasonSummary"]?.jsonPrimitive?.content ?: data["reason"]?.jsonPrimitive?.content
 
-        // 构建模型标签
-        val selected = if (!selectedProvider.isNullOrBlank() && !selectedModel.isNullOrBlank()) {
-            "$selectedProvider/$selectedModel"
-        } else if (!selectedModel.isNullOrBlank()) {
-            selectedModel
-        } else null
-
-        val active = if (!activeProvider.isNullOrBlank() && !activeModel.isNullOrBlank()) {
-            "$activeProvider/$activeModel"
-        } else if (!activeModel.isNullOrBlank()) {
-            activeModel
-        } else selected
-
-        val previous = if (!previousProvider.isNullOrBlank() && !previousModel.isNullOrBlank()) {
-            "$previousProvider/$previousModel"
-        } else previousModel
+        val selected = formatModelLabel(selectedProvider, selectedModel)
+        val active = formatModelLabel(activeProvider, activeModel) ?: selected
+        val previous = formatModelLabel(previousProvider, previousModel)
 
         if (selected == null || active == null) {
             AppLog.d(TAG, "=== Fallback event missing model info, ignoring")
@@ -592,5 +579,10 @@ class ChatEventHandler(
             }
             else -> null
         }
+    }
+
+    private fun formatModelLabel(provider: String?, model: String?): String? {
+        return if (!provider.isNullOrBlank() && !model.isNullOrBlank()) "$provider/$model"
+        else model?.takeIf { it.isNotBlank() }
     }
 }

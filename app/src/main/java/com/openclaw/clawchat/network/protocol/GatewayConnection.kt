@@ -84,25 +84,12 @@ class GatewayConnection(
     private val _certificateEvent = MutableSharedFlow<CertificateEvent>(replay = 0)
     val certificateEvent: SharedFlow<CertificateEvent> = _certificateEvent.asSharedFlow()
 
-    /** Tool stream events for real-time tool card updates */
+    // Internal stream state tracking (updated by handleXxxStreamEvent methods)
     private val _toolStreamEvents = MutableStateFlow<Map<String, ToolStreamEvent>>(emptyMap())
-    val toolStreamEvents: StateFlow<Map<String, ToolStreamEvent>> = _toolStreamEvents.asStateFlow()
-
-    /** Tool stream order for UI rendering */
     private val _toolStreamOrder = MutableStateFlow<List<String>>(emptyList())
-    val toolStreamOrder: StateFlow<List<String>> = _toolStreamOrder.asStateFlow()
-
-    /** Plan stream events for multi-step work tracking (OpenClaw v2026.4.24+) */
     private val _planStreamEvents = MutableStateFlow<PlanStreamEvent?>(null)
-    val planStreamEvents: StateFlow<PlanStreamEvent?> = _planStreamEvents.asStateFlow()
-
-    /** Item stream events for work items/tasks (OpenClaw v2026.4.24+) */
     private val _itemStreamEvents = MutableStateFlow<Map<String, ItemStreamEvent>>(emptyMap())
-    val itemStreamEvents: StateFlow<Map<String, ItemStreamEvent>> = _itemStreamEvents.asStateFlow()
-
-    /** Patch stream events for context changes (OpenClaw v2026.4.24+) */
     private val _patchStreamEvents = MutableStateFlow<Map<String, PatchStreamEvent>>(emptyMap())
-    val patchStreamEvents: StateFlow<Map<String, PatchStreamEvent>> = _patchStreamEvents.asStateFlow()
 
     /** hello-ok snapshot (available after connect) */
     var helloOkPayload: JsonObject? = null
@@ -1058,6 +1045,4 @@ class GatewayConnection(
         }
     }
 
-    // ── Certificate handling (moved to GatewayUtils.kt) ──
-// ── Data types moved to GatewayTypes.kt ──
 }

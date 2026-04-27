@@ -552,26 +552,15 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun pauseSession(sessionId: String) {
-        _uiState.update { state ->
-            val idx = state.sessions.indexOfFirst { it.id == sessionId }
-            if (idx >= 0) {
-                val updated = state.sessions.toMutableList()
-                updated[idx] = updated[idx].copy(status = SessionStatus.PAUSED)
-                state.copy(sessions = updated)
-            } else state
-        }
-    }
+    fun pauseSession(sessionId: String) = updateSessionStatus(sessionId, SessionStatus.PAUSED)
 
     fun resumeSession(sessionId: String) {
-        _uiState.update { state ->
-            val idx = state.sessions.indexOfFirst { it.id == sessionId }
-            if (idx >= 0) {
-                val updated = state.sessions.toMutableList()
-                updated[idx] = updated[idx].copy(status = SessionStatus.RUNNING, lastActivityAt = System.currentTimeMillis())
-                state.copy(sessions = updated)
-            } else state
-        }
+        updateSessionStatus(sessionId, SessionStatus.RUNNING)
+        _uiState.updateSessionInList(sessionId) { it.copy(lastActivityAt = System.currentTimeMillis()) }
+    }
+
+    private fun updateSessionStatus(sessionId: String, status: SessionStatus) {
+        _uiState.updateSessionInList(sessionId) { it.copy(status = status) }
     }
 
     fun terminateSession(sessionId: String) {
@@ -672,15 +661,7 @@ class MainViewModel @Inject constructor(
                     "key" to JsonPrimitive(sessionId),
                     "label" to JsonPrimitive(newLabel)
                 ))
-                _uiState.update { state ->
-                    state.copy(
-                        sessions = state.sessions.map { session ->
-                            if (session.id == sessionId) {
-                                session.copy(label = newLabel)
-                            } else session
-                        }
-                    )
-                }
+                _uiState.updateSessionInList(sessionId) { it.copy(label = newLabel) }
                 _events.trySend(UiEvent.ShowSuccess("会话已重命名"))
             } catch (e: Exception) {
                 _events.trySend(UiEvent.ShowError("重命名失败：${e.message}"))
@@ -736,6 +717,17 @@ class MainViewModel @Inject constructor(
 // ─────────────────────────────────────────────────────────────
 // UI Events
 // ─────────────────────────────────────────────────────────────
+
+private inline fun MutableStateFlow<MainUiState>.updateSessionInList(
+    sessionId: String,
+    crossinline transform: (SessionUi) -> SessionUi
+) {
+    update { state ->
+        state.copy(
+            sessions = state.sessions.map { if (it.id == sessionId) transform(it) else it }
+        )
+    }
+}
 
 sealed class UiEvent {
     data class NavigateToSession(val sessionId: String) : UiEvent()
