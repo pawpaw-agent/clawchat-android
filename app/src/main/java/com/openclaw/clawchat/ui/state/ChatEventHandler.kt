@@ -2,6 +2,7 @@ package com.openclaw.clawchat.ui.state
 
 import com.openclaw.clawchat.util.AppLog
 import com.openclaw.clawchat.network.protocol.GatewayConnection
+import com.openclaw.clawchat.network.protocol.GatewayEvent
 import com.openclaw.clawchat.repository.MessageRepository
 import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.coroutines.CoroutineScope
@@ -19,7 +20,7 @@ import kotlinx.serialization.json.jsonPrimitive
  * 聊天事件处理器
  * 
  * 负责处理所有来自 Gateway 的聊天事件：
- * - handleIncomingFrame
+ * - handleEvent (typed GatewayEvent, no JSON re-parsing)
  * - handleAgentEvent
  * - handleToolStreamEvent
  * - handleChatEvent
@@ -49,86 +50,69 @@ class ChatEventHandler(
     }
 
     /**
-     * 处理传入的 JSON 帧
+     * Handle a typed [GatewayEvent] — no JSON re-parsing needed.
      */
-    fun handleIncomingFrame(rawJson: String) {
+    fun handleEvent(event: GatewayEvent) {
         try {
-            val json = JsonUtils.json.parseToJsonElement(rawJson) as JsonObject
-            val type = json["type"]?.jsonPrimitive?.content ?: return
-
-            AppLog.d(TAG, "=== Received frame type=$type")
-
-            when (type) {
-                "event" -> {
-                    val event = json["event"]?.jsonPrimitive?.content ?: return
-                    val payload = json["payload"]?.jsonObject ?: return
-
-                    AppLog.d(TAG, "=== Event: $event, payload keys: ${payload.keys}")
-
-                    when (event) {
-                        "agent" -> {
-                            // payload.stream 决定事件类型：tool / assistant / lifecycle / error
-                            val stream = payload["stream"]?.jsonPrimitive?.content ?: "unknown"
-                            AppLog.d(TAG, "=== Agent event: stream=$stream, sessionKey=${payload["sessionKey"]?.jsonPrimitive?.content}, payload keys=${payload.keys}")
-                            handleAgentEvent(payload, stream)
-                        }
-                        "tool.stream" -> {
-                            onToolStreamEvent(payload)
-                        }
-                        "chat" -> {
-                            val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content ?: return
-                            handleChatEvent(payload, sessionKey)
-                        }
-                        // 新增事件处理
-                        "sessions.changed" -> {
-                            AppLog.d(TAG, "=== sessions.changed event: sessions list changed on gateway")
-                            onSessionsChanged?.invoke()
-                        }
-                        "session.message" -> {
-                            val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
-                            AppLog.d(TAG, "=== session.message event: sessionKey=$sessionKey")
-                            onSessionMessage?.invoke(payload)
-                        }
-                        "session.tool" -> {
-                            val sessionKey = payload["sessionKey"]?.jsonPrimitive?.content
-                            AppLog.d(TAG, "=== session.tool event: sessionKey=$sessionKey")
-                            onSessionTool?.invoke(payload)
-                        }
-                        "shutdown" -> {
-                            AppLog.w(TAG, "=== shutdown event: gateway is shutting down")
-                            onGatewayShutdown?.invoke()
-                        }
-                        "exec.approval.requested",
-                        "plugin.approval.requested" -> {
-                            AppLog.d(TAG, "=== Approval requested event: $event")
-                            onApprovalRequested?.invoke(event, payload)
-                        }
-                        "update.available" -> {
-                            AppLog.d(TAG, "=== update.available event: gateway update available")
-                            onUpdateAvailable?.invoke(payload)
-                        }
-                        "talk.mode" -> {
-                            AppLog.d(TAG, "=== talk.mode event: talk mode changed")
-                            onTalkModeChanged?.invoke(payload)
-                        }
-                        "health" -> {
-                            AppLog.d(TAG, "=== health event: gateway health update")
-                            onHealthUpdate?.invoke(payload)
-                        }
-                        "exec.approval.resolved",
-                        "plugin.approval.resolved" -> {
-                            AppLog.d(TAG, "=== Approval resolved event: $event")
-                        }
-                        "device.pair.requested",
-                        "device.pair.resolved" -> {
-                            AppLog.d(TAG, "=== Device pair event: $event")
-                            onDevicePairEvent?.invoke(event, payload)
-                        }
-                    }
+            when (event) {
+                is GatewayEvent.Agent -> {
+                    AppLog.d(TAG, "=== Agent event: stream=${event.stream}")
+                    handleAgentEvent(event.payload, event.stream)
+                }
+                is GatewayEvent.ToolStream -> {
+                    onToolStreamEvent(event.payload)
+                }
+                is GatewayEvent.Chat -> {
+                    val sessionKey = event.payload["sessionKey"]?.jsonPrimitive?.content ?: return
+                    handleChatEvent(event.payload, sessionKey)
+                }
+                is GatewayEvent.SessionsChanged -> {
+                    AppLog.d(TAG, "=== sessions.changed event")
+                    onSessionsChanged?.invoke()
+                }
+                is GatewayEvent.SessionMessage -> {
+                    val sessionKey = event.payload["sessionKey"]?.jsonPrimitive?.content
+                    AppLog.d(TAG, "=== session.message event: sessionKey=$sessionKey")
+                    onSessionMessage?.invoke(event.payload)
+                }
+                is GatewayEvent.SessionTool -> {
+                    val sessionKey = event.payload["sessionKey"]?.jsonPrimitive?.content
+                    AppLog.d(TAG, "=== session.tool event: sessionKey=$sessionKey")
+                    onSessionTool?.invoke(event.payload)
+                }
+                is GatewayEvent.Shutdown -> {
+                    AppLog.w(TAG, "=== shutdown event: gateway is shutting down")
+                    onGatewayShutdown?.invoke()
+                }
+                is GatewayEvent.ApprovalRequested -> {
+                    AppLog.d(TAG, "=== Approval requested event: ${event.approvalType}")
+                    onApprovalRequested?.invoke(event.approvalType, event.payload)
+                }
+                is GatewayEvent.ApprovalResolved -> {
+                    AppLog.d(TAG, "=== Approval resolved event: ${event.approvalType}")
+                }
+                is GatewayEvent.DevicePairEvent -> {
+                    AppLog.d(TAG, "=== Device pair event: ${event.pairEvent}")
+                    onDevicePairEvent?.invoke(event.pairEvent, event.payload)
+                }
+                is GatewayEvent.UpdateAvailable -> {
+                    AppLog.d(TAG, "=== update.available event")
+                    onUpdateAvailable?.invoke(event.payload)
+                }
+                is GatewayEvent.TalkMode -> {
+                    AppLog.d(TAG, "=== talk.mode event")
+                    onTalkModeChanged?.invoke(event.payload)
+                }
+                is GatewayEvent.Health -> {
+                    AppLog.d(TAG, "=== health event")
+                    onHealthUpdate?.invoke(event.payload)
+                }
+                is GatewayEvent.Passthrough -> {
+                    // cron, tick, presence etc. — no action needed
                 }
             }
         } catch (e: Exception) {
-            AppLog.e(TAG, "Failed to parse incoming frame: ${e.message}")
+            AppLog.e(TAG, "Failed to handle event: ${e.message}")
         }
     }
 

@@ -29,7 +29,7 @@ import com.openclaw.clawchat.ui.components.ContextNotice
 import com.openclaw.clawchat.ui.components.CompactionIndicator
 import com.openclaw.clawchat.ui.components.FallbackIndicator
 import com.openclaw.clawchat.ui.components.NetworkStatusBanner
-import com.openclaw.clawchat.ui.state.*
+import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.theme.DesignTokens
 import com.openclaw.clawchat.ui.theme.ChatTokens
 import com.openclaw.clawchat.ui.screens.session.*

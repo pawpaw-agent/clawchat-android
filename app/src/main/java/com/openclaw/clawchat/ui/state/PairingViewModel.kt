@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import com.openclaw.clawchat.util.JsonUtils
@@ -75,53 +76,41 @@ class PairingViewModel @Inject constructor(
         observeCertificateEvents()
     }
 
-    /**
-     * 加载保存的 Gateway 配置
-     */
     private fun loadSavedConfig() {
         val savedUrl = securityModule.getGatewayUrl()
         if (!savedUrl.isNullOrBlank()) {
-            // 提取显示用的地址（不含协议和路径）
             val displayUrl = GatewayUrlUtil.extractDisplayAddress(savedUrl)
-            _state.value = _state.value.copy(gatewayUrl = displayUrl)
+            _state.update { it.copy(gatewayUrl = displayUrl) }
         }
-        // 加载保存的 Gateway 名称
         val savedName = securityModule.getGatewayName()
         if (!savedName.isNullOrBlank()) {
-            _state.value = _state.value.copy(gatewayName = savedName)
+            _state.update { it.copy(gatewayName = savedName) }
         }
-        // 加载保存的 token
         val savedToken = securityModule.getGatewayAuthToken()
         if (!savedToken.isNullOrBlank()) {
-            _state.value = _state.value.copy(token = savedToken)
+            _state.update { it.copy(token = savedToken) }
         }
     }
 
-    /**
-     * 监听证书事件（TOFU 流程）
-     */
     private fun observeCertificateEvents() {
         viewModelScope.launch {
             gateway.certificateEvent.collect { event ->
                 AppLog.i(TAG, "Certificate event received: ${event.hostname}, mismatch=${event.isMismatch}")
-                _state.value = _state.value.copy(certificateEvent = event)
+                _state.update { it.copy(certificateEvent = event) }
             }
         }
     }
 
-    /**
-     * 监听 device.pairing.approved/rejected 事件
-     */
     private fun observePairingEvents() {
         viewModelScope.launch {
             gateway.incomingMessages.collect { rawJson ->
                 try {
                     val json = JsonUtils.json
                     val obj = json.parseToJsonElement(rawJson).jsonObject
-                    
+
                     val type = obj["type"]?.jsonPrimitive?.content
                     val event = obj["event"]?.jsonPrimitive?.content
-                    
+
                     if (type == "event" && event?.startsWith("device.pairing.") == true) {
                         handlePairingEvent(event, obj)
                     }
@@ -132,17 +121,11 @@ class PairingViewModel @Inject constructor(
         }
     }
 
-    /**
-     * 处理配对事件
-     */
     private fun handlePairingEvent(event: String, obj: kotlinx.serialization.json.JsonObject) {
         when (event) {
             "device.pairing.approved" -> {
                 AppLog.i(TAG, "Pairing approved by gateway")
-                _state.value = _state.value.copy(
-                    isPairing = false,
-                    status = PairingStatus.Approved
-                )
+                _state.update { it.copy(isPairing = false, status = PairingStatus.Approved) }
                 viewModelScope.launch {
                     _events.emit(PairingEvent.PairingSuccess)
                 }
@@ -151,10 +134,7 @@ class PairingViewModel @Inject constructor(
                 val payload = obj["payload"]?.jsonObject
                 val reason = payload?.get("reason")?.jsonPrimitive?.content ?: "Unknown reason"
                 AppLog.w(TAG, "Pairing rejected: $reason")
-                _state.value = _state.value.copy(
-                    isPairing = false,
-                    status = PairingStatus.Rejected
-                )
+                _state.update { it.copy(isPairing = false, status = PairingStatus.Rejected) }
                 viewModelScope.launch {
                     _events.emit(PairingEvent.PairingRejected)
                 }
@@ -163,24 +143,21 @@ class PairingViewModel @Inject constructor(
     }
 
     fun setGatewayUrl(url: String) {
-        _state.value = _state.value.copy(gatewayUrl = url)
+        _state.update { it.copy(gatewayUrl = url) }
     }
 
     fun setGatewayName(name: String) {
-        _state.value = _state.value.copy(gatewayName = name)
+        _state.update { it.copy(gatewayName = name) }
     }
 
     fun setConnectMode(mode: ConnectMode) {
-        _state.value = _state.value.copy(connectMode = mode)
+        _state.update { it.copy(connectMode = mode) }
     }
 
     fun setToken(token: String) {
-        _state.value = _state.value.copy(token = token)
+        _state.update { it.copy(token = token) }
     }
 
-    /**
-     * Token 直连
-     */
     fun connectWithToken() {
         val url = _state.value.gatewayUrl.trim()
         val token = _state.value.token.trim()
@@ -189,7 +166,7 @@ class PairingViewModel @Inject constructor(
         if (token.isEmpty()) { emitError("请输入 Token"); return }
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(isPairing = true, status = PairingStatus.Initializing)
+            _state.update { it.copy(isPairing = true, status = PairingStatus.Initializing) }
             try {
                 val wsUrl = GatewayUrlUtil.normalizeToWebSocketUrl(url)
                 securityModule.saveGatewayConfig(wsUrl)
@@ -197,29 +174,21 @@ class PairingViewModel @Inject constructor(
                 val result = gateway.connect(wsUrl, token)
 
                 result.onSuccess {
-                    // 保存 token（用于自动重连）
                     securityModule.saveGatewayAuthToken(token)
-                    // 保存 Gateway 名称
                     val name = _state.value.gatewayName.ifBlank { "Gateway" }
                     securityModule.saveGatewayName(name)
-                    _state.value = _state.value.copy(isPairing = false, status = PairingStatus.Approved)
+                    _state.update { it.copy(isPairing = false, status = PairingStatus.Approved) }
                     _events.emit(PairingEvent.PairingSuccess)
                 }
 
                 result.onFailure { e ->
                     AppLog.e(TAG, "Token 连接失败", e)
-                    _state.value = _state.value.copy(
-                        isPairing = false,
-                        status = PairingStatus.Error(e.message ?: "连接失败")
-                    )
+                    _state.update { it.copy(isPairing = false, status = PairingStatus.Error(e.message ?: "连接失败")) }
                     _events.emit(PairingEvent.PairingError(e.message ?: "连接失败"))
                 }
             } catch (e: Exception) {
                 AppLog.e(TAG, "Token 连接异常", e)
-                _state.value = _state.value.copy(
-                    isPairing = false,
-                    status = PairingStatus.Error(e.message ?: "连接失败")
-                )
+                _state.update { it.copy(isPairing = false, status = PairingStatus.Error(e.message ?: "连接失败")) }
                 _events.emit(PairingEvent.PairingError(e.message ?: "连接失败"))
             }
         }
@@ -227,24 +196,21 @@ class PairingViewModel @Inject constructor(
 
     fun initializePairing() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isInitializing = true)
+            _state.update { it.copy(isInitializing = true) }
             try {
                 val status = securityModule.initialize()
                 val deviceId = status.deviceId
                     ?: securityModule.getSecurityStatus().deviceId ?: "unknown"
                 val publicKey = securityModule.getPublicKeyBase64Url()
 
-                _state.value = _state.value.copy(
+                _state.update { it.copy(
                     deviceId = deviceId,
                     publicKey = publicKey,
                     isInitializing = false,
                     status = PairingStatus.WaitingForApproval
-                )
+                ) }
             } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isInitializing = false,
-                    status = PairingStatus.Error(e.message ?: "初始化失败")
-                )
+                _state.update { it.copy(isInitializing = false, status = PairingStatus.Error(e.message ?: "初始化失败")) }
                 _events.emit(PairingEvent.PairingError(e.message ?: "初始化失败"))
             }
         }
@@ -255,7 +221,7 @@ class PairingViewModel @Inject constructor(
             val url = _state.value.gatewayUrl.trim()
             if (url.isEmpty()) { emitError("请输入 Gateway 地址"); return@launch }
 
-            _state.value = _state.value.copy(isPairing = true)
+            _state.update { it.copy(isPairing = true) }
             try {
                 val wsUrl = GatewayUrlUtil.normalizeToWebSocketUrl(url)
                 securityModule.saveGatewayConfig(wsUrl)
@@ -263,24 +229,15 @@ class PairingViewModel @Inject constructor(
                 val result = gateway.connect(wsUrl, token = null)
 
                 result.onSuccess {
-                    _state.value = _state.value.copy(
-                        isPairing = false,
-                        status = PairingStatus.WaitingForApproval
-                    )
+                    _state.update { it.copy(isPairing = false, status = PairingStatus.WaitingForApproval) }
                 }
 
                 result.onFailure { e ->
-                    _state.value = _state.value.copy(
-                        isPairing = false,
-                        status = PairingStatus.Error(e.message ?: "配对失败")
-                    )
+                    _state.update { it.copy(isPairing = false, status = PairingStatus.Error(e.message ?: "配对失败")) }
                     _events.emit(PairingEvent.PairingError(e.message ?: "配对失败"))
                 }
             } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isPairing = false,
-                    status = PairingStatus.Error(e.message ?: "配对失败")
-                )
+                _state.update { it.copy(isPairing = false, status = PairingStatus.Error(e.message ?: "配对失败")) }
                 _events.emit(PairingEvent.PairingError(e.message ?: "配对失败"))
             }
         }
@@ -289,19 +246,15 @@ class PairingViewModel @Inject constructor(
     fun cancelPairing() {
         viewModelScope.launch {
             gateway.disconnect()
-            _state.value = _state.value.copy(isPairing = false, status = PairingStatus.Initializing)
+            _state.update { it.copy(isPairing = false, status = PairingStatus.Initializing) }
         }
     }
 
-    /**
-     * 用户确认信任证书
-     */
     fun confirmCertificateTrust() {
         val event = _state.value.certificateEvent ?: return
 
         viewModelScope.launch {
             try {
-                // 保存用户信任的证书指纹
                 fingerprintManager.trustCertificate(
                     gatewayId = event.hostname,
                     fingerprint = event.fingerprint,
@@ -309,42 +262,35 @@ class PairingViewModel @Inject constructor(
                 )
                 AppLog.i(TAG, "User confirmed certificate trust for ${event.hostname}")
 
-                // 清除证书事件，继续连接
-                _state.value = _state.value.copy(certificateEvent = null)
+                _state.update { it.copy(certificateEvent = null) }
 
-                // 重试连接
                 when (_state.value.connectMode) {
                     ConnectMode.TOKEN -> connectWithToken()
                     ConnectMode.PAIRING -> startPairing()
                 }
             } catch (e: Exception) {
                 AppLog.e(TAG, "Failed to save certificate trust", e)
-                _state.value = _state.value.copy(
+                _state.update { it.copy(
                     certificateEvent = null,
                     status = PairingStatus.Error("保存证书信任失败：${e.message}")
-                )
+                ) }
             }
         }
     }
 
-    /**
-     * 用户拒绝证书
-     */
     fun rejectCertificate() {
         val event = _state.value.certificateEvent ?: return
 
         viewModelScope.launch {
             AppLog.w(TAG, "User rejected certificate for ${event.hostname}")
 
-            // 清除证书事件
-            _state.value = _state.value.copy(certificateEvent = null)
+            _state.update { it.copy(certificateEvent = null) }
 
-            // 断开连接并返回错误状态
             gateway.disconnect()
-            _state.value = _state.value.copy(
+            _state.update { it.copy(
                 isPairing = false,
                 status = PairingStatus.Error("用户拒绝证书：${event.hostname}")
-            )
+            ) }
             _events.emit(PairingEvent.PairingError("证书不被信任"))
         }
     }

@@ -12,6 +12,7 @@ import com.openclaw.clawchat.ui.state.MessageUi
 import com.openclaw.clawchat.ui.state.SessionStatus
 import com.openclaw.clawchat.ui.state.SessionUi
 import com.openclaw.clawchat.util.AppLog
+import com.openclaw.clawchat.util.ContentParser
 import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -191,7 +192,7 @@ class MessageRepositoryImpl @Inject constructor(
     private fun MessageEntity.toMessageUi(): MessageUi {
         return MessageUi(
             id = id,
-            content = parseContent(content),
+            content = ContentParser.parseContent(content),
             role = MessageRole.fromString(role),
             timestamp = timestamp,
             toolCallId = toolCallId,
@@ -200,43 +201,6 @@ class MessageRepositoryImpl @Inject constructor(
         )
     }
 
-    /**
-     * 解析存储的 JSON 内容为 MessageContentItem 列表
-     */
-    private fun parseContent(content: String): List<MessageContentItem> {
-        return try {
-            val array = json.parseToJsonElement(content) as? JsonArray
-            array?.mapNotNull { element ->
-                val obj = element as? JsonObject ?: return@mapNotNull null
-                val type = obj["type"]?.jsonPrimitive?.content
-                when (type) {
-                    "text" -> MessageContentItem.Text(
-                        text = obj["text"]?.jsonPrimitive?.content ?: ""
-                    )
-                    "tool_call", "tool_use", "toolCall", "toolUse" -> MessageContentItem.ToolCall(
-                        id = obj["id"]?.jsonPrimitive?.content,
-                        name = obj["name"]?.jsonPrimitive?.content ?: "unknown",
-                        args = obj["arguments"]?.jsonObject ?: obj["args"]?.jsonObject,
-                        phase = obj["phase"]?.jsonPrimitive?.content ?: "result"
-                    )
-                    "tool_result", "toolResult" -> MessageContentItem.ToolResult(
-                        toolCallId = obj["toolCallId"]?.jsonPrimitive?.content
-                            ?: obj["tool_call_id"]?.jsonPrimitive?.content,
-                        name = obj["name"]?.jsonPrimitive?.content,
-                        args = obj["args"]?.jsonObject,
-                        text = obj["text"]?.jsonPrimitive?.content ?: "",
-                        isError = obj["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
-                    )
-                    "image" -> MessageContentItem.Image(
-                        url = obj["url"]?.jsonPrimitive?.content
-                    )
-                    else -> null
-                }
-            } ?: listOf(MessageContentItem.Text(content))
-        } catch (e: Exception) {
-            listOf(MessageContentItem.Text(content))
-        }
-    }
 }
 
 /**

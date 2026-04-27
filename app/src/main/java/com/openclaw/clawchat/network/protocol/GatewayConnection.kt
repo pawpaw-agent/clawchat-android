@@ -72,9 +72,13 @@ class GatewayConnection(
     private val _connectionState = MutableStateFlow<WebSocketConnectionState>(WebSocketConnectionState.Disconnected)
     val connectionState: StateFlow<WebSocketConnectionState> = _connectionState.asStateFlow()
 
-    /** All non-auth frames forwarded as raw JSON */
+    /** All non-auth frames forwarded as raw JSON (legacy — prefer [events] for new consumers) */
     private val _incomingMessages = MutableSharedFlow<String>(replay = 1)
     val incomingMessages: SharedFlow<String> = _incomingMessages.asSharedFlow()
+
+    /** Typed events parsed from incoming frames — use instead of re-parsing [incomingMessages] */
+    private val _events = MutableSharedFlow<GatewayEvent>(replay = 0, extraBufferCapacity = 64)
+    val events: SharedFlow<GatewayEvent> = _events.asSharedFlow()
 
     /** Certificate events for TOFU flow */
     private val _certificateEvent = MutableSharedFlow<CertificateEvent>(replay = 0)
@@ -114,6 +118,14 @@ class GatewayConnection(
     private val requestTracker = RequestTracker(timeoutMs = GatewayConfig.REQUEST_TIMEOUT_MS, scope = appScope)
     private val sequenceManager = SequenceManager()
     private val eventDeduplicator = EventDeduplicator()
+
+    // ── RPC service delegates ──
+    private val chatRpc = ChatRpcService(::call)
+    private val sessionRpc = SessionRpcService(::call)
+    private val agentRpc = AgentRpcService(::call)
+    private val configRpc = ConfigRpcService(::call)
+    private val cronRpc = CronRpcService(::call)
+    private val sysRpc = SystemRpcService(::call)
 
     private var webSocket: WebSocket? = null
     private var reconnectJob: Job? = null
@@ -328,42 +340,82 @@ class GatewayConnection(
             }
             if (eventDeduplicator.isAlreadySeen(eventId, seq)) return@launch
 
+            val payload = obj["payload"]?.jsonObject
+
             when (event) {
                 "connect.challenge" -> handleConnectChallenge(obj)
+
                 "agent" -> {
-                    AppLog.d(TAG, "=== Agent event received, emitting to incomingMessages")
                     handleAgentEvent(obj)
-                    // 也透传给 ChatEventHandler 处理
+                    val stream = payload?.get("stream")?.jsonPrimitive?.content ?: "unknown"
+                    payload?.let { _events.emit(GatewayEvent.Agent(it, stream)) }
                     _incomingMessages.emit(rawText)
-                    AppLog.d(TAG, "=== Agent event emitted successfully")
+                }
+                "tool.stream" -> {
+                    payload?.let { _events.emit(GatewayEvent.ToolStream(it)) }
+                    _incomingMessages.emit(rawText)
+                }
+                "chat" -> {
+                    payload?.let { _events.emit(GatewayEvent.Chat(it)) }
+                    _incomingMessages.emit(rawText)
+                }
+                "sessions.changed" -> {
+                    _events.emit(GatewayEvent.SessionsChanged(payload ?: JsonObject(emptyMap())))
+                    _incomingMessages.emit(rawText)
+                }
+                "session.message" -> {
+                    payload?.let { _events.emit(GatewayEvent.SessionMessage(it)) }
+                    _incomingMessages.emit(rawText)
+                }
+                "session.tool" -> {
+                    payload?.let { _events.emit(GatewayEvent.SessionTool(it)) }
+                    _incomingMessages.emit(rawText)
                 }
                 "shutdown" -> {
                     AppLog.i(TAG, "Gateway shutdown event received, disconnecting")
+                    _events.emit(GatewayEvent.Shutdown(payload ?: JsonObject(emptyMap())))
                     _incomingMessages.emit(rawText)
                 }
-                // 以下事件透传给上游处理
-                "sessions.changed",
-                "session.message",
-                "session.tool",
-                "cron",
                 "exec.approval.requested",
+                "plugin.approval.requested" -> {
+                    payload?.let { _events.emit(GatewayEvent.ApprovalRequested(it, event)) }
+                    _incomingMessages.emit(rawText)
+                }
                 "exec.approval.resolved",
-                "plugin.approval.requested",
-                "plugin.approval.resolved",
+                "plugin.approval.resolved" -> {
+                    payload?.let { _events.emit(GatewayEvent.ApprovalResolved(it, event)) }
+                    _incomingMessages.emit(rawText)
+                }
                 "device.pair.requested",
-                "device.pair.resolved",
-                "presence",
+                "device.pair.resolved" -> {
+                    payload?.let { _events.emit(GatewayEvent.DevicePairEvent(it, event)) }
+                    _incomingMessages.emit(rawText)
+                }
+                "update.available" -> {
+                    payload?.let { _events.emit(GatewayEvent.UpdateAvailable(it)) }
+                    _incomingMessages.emit(rawText)
+                }
+                "talk.mode" -> {
+                    payload?.let { _events.emit(GatewayEvent.TalkMode(it)) }
+                    _incomingMessages.emit(rawText)
+                }
+                "health" -> {
+                    payload?.let { _events.emit(GatewayEvent.Health(it)) }
+                    _incomingMessages.emit(rawText)
+                }
+                "cron", "presence" -> {
+                    _events.emit(GatewayEvent.Passthrough(event, payload ?: JsonObject(emptyMap())))
+                    _incomingMessages.emit(rawText)
+                }
                 "tick" -> {
-                    // Track tick timestamp for stale connection detection
-                    val ts = obj["payload"]?.jsonObject?.get("ts")?.jsonPrimitive?.content?.toLongOrNull()
+                    val ts = payload?.get("ts")?.jsonPrimitive?.content?.toLongOrNull()
                         ?: System.currentTimeMillis()
                     lastTickTimestamp = ts
+                    _events.emit(GatewayEvent.Passthrough(event, payload ?: JsonObject(emptyMap())))
                     _incomingMessages.emit(rawText)
                 }
-                "voicewake.changed",
-                "health",
-                "heartbeat",
-                "chat" -> _incomingMessages.emit(rawText)
+                "voicewake.changed", "heartbeat" ->
+                    _incomingMessages.emit(rawText)
             }
 
             sequenceManager.acknowledge(seq)
@@ -784,633 +836,180 @@ class GatewayConnection(
         return withTimeout(GatewayConfig.REQUEST_TIMEOUT_MS) { deferred.await() }
     }
 
-    /**
-     * chat.send — 发送消息（支持附件）
-     * 参考 webchat chat.ts sendChatMessage
-     */
+    // ── Delegated RPC methods ──
+
+    // Chat
     suspend fun chatSend(
-        sessionKey: String,
-        message: String,
+        sessionKey: String, message: String,
         attachments: List<com.openclaw.clawchat.ui.components.ApiAttachment>? = null,
         mediaUrls: List<String>? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "sessionKey" to JsonPrimitive(sessionKey),
-            "message" to JsonPrimitive(message),
-            "idempotencyKey" to JsonPrimitive(UUID.randomUUID().toString())
-        )
+    ): ResponseFrame = chatRpc.chatSend(sessionKey, message, attachments, mediaUrls)
 
-        if (!attachments.isNullOrEmpty()) {
-            params["attachments"] = JsonArray(attachments.map { att ->
-                JsonObject(mapOf(
-                    "type" to JsonPrimitive(att.type),
-                    "mimeType" to JsonPrimitive(att.mimeType),
-                    "content" to JsonPrimitive(att.content)
-                ))
-            })
-        }
+    suspend fun chatHistory(sessionKey: String, limit: Int? = null): ResponseFrame =
+        chatRpc.chatHistory(sessionKey, limit)
 
-        if (!mediaUrls.isNullOrEmpty()) {
-            params["mediaUrls"] = JsonArray(mediaUrls.map { JsonPrimitive(it) })
-        }
+    suspend fun chatAbort(sessionKey: String, runId: String? = null): ResponseFrame =
+        chatRpc.chatAbort(sessionKey, runId)
 
-        return call("chat.send", params)
-    }
-
-    /** chat.history */
-    suspend fun chatHistory(sessionKey: String, limit: Int? = null): ResponseFrame {
-        AppLog.d("GatewayConnection", "=== chatHistory called: sessionKey='$sessionKey', length=${sessionKey.length}, limit=$limit")
-        val params = mutableMapOf<String, JsonElement>(
-            "sessionKey" to JsonPrimitive(sessionKey)
-        )
-        if (limit != null) params["limit"] = JsonPrimitive(limit)
-        AppLog.d("GatewayConnection", "=== chatHistory: calling 'chat.history' with params=$params")
-        val response = call("chat.history", params)
-        AppLog.d("GatewayConnection", "=== chatHistory response: ok=${response.isSuccess()}, error=${response.error}, payload type=${response.payload?.javaClass?.simpleName}")
-        if (response.payload is JsonObject) {
-            val messagesArray = (response.payload as JsonObject)["messages"]?.jsonArray
-            AppLog.d("GatewayConnection", "=== chatHistory: messages count=${messagesArray?.size ?: 0}")
-        }
-        return response
-    }
-
-    /** chat.abort */
-    suspend fun chatAbort(sessionKey: String, runId: String? = null): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "sessionKey" to JsonPrimitive(sessionKey)
-        )
-        if (runId != null) params["runId"] = JsonPrimitive(runId)
-        return call("chat.abort", params)
-    }
-
-    /** sessions.list */
-    suspend fun sessionsList(
-        limit: Int? = null,
-        activeMinutes: Int? = null,
-        includeDerivedTitles: Boolean = true,
-        includeLastMessage: Boolean = true
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>()
-        if (limit != null) params["limit"] = JsonPrimitive(limit)
-        if (activeMinutes != null) params["activeMinutes"] = JsonPrimitive(activeMinutes)
-        params["includeDerivedTitles"] = JsonPrimitive(includeDerivedTitles)
-        params["includeLastMessage"] = JsonPrimitive(includeLastMessage)
-        return call("sessions.list", params.ifEmpty { null })
-    }
-
-    /** sessions.patch — 设置会话属性如 verboseLevel */
-    suspend fun sessionsPatch(sessionKey: String, verboseLevel: String? = null): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "key" to JsonPrimitive(sessionKey)
-        )
-        if (verboseLevel != null) params["verboseLevel"] = JsonPrimitive(verboseLevel)
-        return call("sessions.patch", params)
-    }
-
-    /** sessions.steer — 向运行中的会话发送引导消息 */
-    suspend fun sessionsSteer(sessionKey: String, text: String): ResponseFrame {
-        val params = mapOf(
-            "sessionKey" to JsonPrimitive(sessionKey),
-            "text" to JsonPrimitive(text)
-        )
-        return call("sessions.steer", params)
-    }
-
-    /** sessions.create — 创建新会话 */
-    suspend fun sessionsCreate(
-        key: String? = null,
-        agentId: String? = null,
-        label: String? = null,
-        model: String? = null,
-        message: String? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>()
-        if (key != null) params["key"] = JsonPrimitive(key)
-        if (agentId != null) params["agentId"] = JsonPrimitive(agentId)
-        if (label != null) params["label"] = JsonPrimitive(label)
-        if (model != null) params["model"] = JsonPrimitive(model)
-        if (message != null) params["message"] = JsonPrimitive(message)
-        return call("sessions.create", params.ifEmpty { null })
-    }
-
-    /** sessions.delete — 删除会话 */
-    suspend fun sessionsDelete(
-        sessionKey: String,
-        deleteTranscript: Boolean = true
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "key" to JsonPrimitive(sessionKey)
-        )
-        if (deleteTranscript) params["deleteTranscript"] = JsonPrimitive(true)
-        return call("sessions.delete", params)
-    }
-
-    /** sessions.reset — 重置会话 */
-    suspend fun sessionsReset(
-        sessionKey: String,
-        reason: String = "reset"
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "key" to JsonPrimitive(sessionKey),
-            "reason" to JsonPrimitive(reason)
-        )
-        return call("sessions.reset", params)
-    }
-
-    /** sessions.preview — 获取会话预览 */
-    suspend fun sessionsPreview(
-        keys: List<String>,
-        limit: Int? = null,
-        maxChars: Int? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "keys" to JsonArray(keys.map { JsonPrimitive(it) })
-        )
-        if (limit != null) params["limit"] = JsonPrimitive(limit)
-        if (maxChars != null) params["maxChars"] = JsonPrimitive(maxChars)
-        return call("sessions.preview", params)
-    }
-
-    /** sessions.usage — 获取会话用量统计 */
-    suspend fun sessionsUsage(
-        sessionKey: String? = null,
-        startDate: String? = null,
-        endDate: String? = null,
-        limit: Int? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>()
-        if (sessionKey != null) params["key"] = JsonPrimitive(sessionKey)
-        if (startDate != null) params["startDate"] = JsonPrimitive(startDate)
-        if (endDate != null) params["endDate"] = JsonPrimitive(endDate)
-        if (limit != null) params["limit"] = JsonPrimitive(limit)
-        return call("sessions.usage", params.ifEmpty { null })
-    }
-
-    /** models.list — 获取可用模型列表 */
-    suspend fun modelsList(): ResponseFrame {
-        return call("models.list", null)
-    }
-
-    /** sessions.messages.subscribe — 订阅会话消息 */
-    suspend fun sessionsMessagesSubscribe(sessionKey: String): ResponseFrame {
-        val params = mapOf("key" to JsonPrimitive(sessionKey))
-        return call("sessions.messages.subscribe", params)
-    }
-
-    /** sessions.messages.unsubscribe — 取消订阅会话消息 */
-    suspend fun sessionsMessagesUnsubscribe(sessionKey: String): ResponseFrame {
-        val params = mapOf("key" to JsonPrimitive(sessionKey))
-        return call("sessions.messages.unsubscribe", params)
-    }
-
-    /** sessions.subscribe — 订阅会话变更事件 */
-    suspend fun sessionsSubscribe(): ResponseFrame {
-        return call("sessions.subscribe", null)
-    }
-
-    /** sessions.unsubscribe — 取消订阅会话变更 */
-    suspend fun sessionsUnsubscribe(): ResponseFrame {
-        return call("sessions.unsubscribe", null)
-    }
-
-    /** sessions.resolve — 解析会话 */
-    suspend fun sessionsResolve(
-        key: String? = null,
-        sessionId: String? = null,
-        label: String? = null,
-        agentId: String? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>()
-        if (key != null) params["key"] = JsonPrimitive(key)
-        if (sessionId != null) params["sessionId"] = JsonPrimitive(sessionId)
-        if (label != null) params["label"] = JsonPrimitive(label)
-        if (agentId != null) params["agentId"] = JsonPrimitive(agentId)
-        return call("sessions.resolve", params.ifEmpty { null })
-    }
-
-    // ==================== Agents API ====================
-
-    /** agents.list — 列出所有 Agent */
-    suspend fun agentsList(): ResponseFrame {
-        return call("agents.list", null)
-    }
-
-    /** agents.create — 创建新 Agent */
-    suspend fun agentsCreate(
-        name: String,
-        workspace: String,
-        emoji: String? = null,
-        avatar: String? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "name" to JsonPrimitive(name),
-            "workspace" to JsonPrimitive(workspace)
-        )
-        if (emoji != null) params["emoji"] = JsonPrimitive(emoji)
-        if (avatar != null) params["avatar"] = JsonPrimitive(avatar)
-        return call("agents.create", params)
-    }
-
-    /** agents.update — 更新 Agent */
-    suspend fun agentsUpdate(
-        agentId: String,
-        name: String? = null,
-        workspace: String? = null,
-        model: String? = null,
-        avatar: String? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "agentId" to JsonPrimitive(agentId)
-        )
-        if (name != null) params["name"] = JsonPrimitive(name)
-        if (workspace != null) params["workspace"] = JsonPrimitive(workspace)
-        if (model != null) params["model"] = JsonPrimitive(model)
-        if (avatar != null) params["avatar"] = JsonPrimitive(avatar)
-        return call("agents.update", params)
-    }
-
-    /** agents.delete — 删除 Agent */
-    suspend fun agentsDelete(
-        agentId: String,
-        deleteFiles: Boolean = false
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "agentId" to JsonPrimitive(agentId)
-        )
-        if (deleteFiles) params["deleteFiles"] = JsonPrimitive(true)
-        return call("agents.delete", params)
-    }
-
-    // ==================== Config API ====================
-
-    /** config.get — 获取配置 */
-    suspend fun configGet(key: String? = null): ResponseFrame {
-        val params = if (key != null) mapOf("key" to JsonPrimitive(key)) else null
-        return call("config.get", params)
-    }
-
-    /** config.set — 设置配置 */
-    suspend fun configSet(key: String, value: String): ResponseFrame {
-        val params = mapOf(
-            "key" to JsonPrimitive(key),
-            "value" to JsonPrimitive(value)
-        )
-        return call("config.set", params)
-    }
-
-    /** config.patch — 部分更新配置 */
-    suspend fun configPatch(patches: Map<String, String>): ResponseFrame {
-        val params = patches.mapValues { JsonPrimitive(it.value) }
-        return call("config.patch", params)
-    }
-
-    /** config.schema — 获取配置 Schema */
-    suspend fun configSchema(key: String? = null): ResponseFrame {
-        val params = if (key != null) mapOf("key" to JsonPrimitive(key)) else null
-        return call("config.schema", params)
-    }
-
-    /** config.apply — 应用配置变更 */
-    suspend fun configApply(key: String? = null): ResponseFrame {
-        val params = if (key != null) mapOf("key" to JsonPrimitive(key)) else null
-        return call("config.apply", params)
-    }
-
-    // ==================== Channels API ====================
-
-    /** channels.status — 获取渠道状态 */
-    suspend fun channelsStatus(): ResponseFrame {
-        return call("channels.status", null)
-    }
-
-    /** channels.logout — 登出渠道 */
-    suspend fun channelsLogout(channelId: String? = null): ResponseFrame {
-        val params = if (channelId != null) mapOf("channelId" to JsonPrimitive(channelId)) else null
-        return call("channels.logout", params)
-    }
-
-    /** cron.list — 列出定时任务 */
-    suspend fun cronList(): ResponseFrame {
-        return call("cron.list", null)
-    }
-
-    /** cron.add — 创建定时任务 */
-    suspend fun cronAdd(
-        name: String,
-        cron: String,
-        sessionKey: String,
-        prompt: String,
-        enabled: Boolean = true
-    ): ResponseFrame {
-        val params = mapOf(
-            "name" to JsonPrimitive(name),
-            "cron" to JsonPrimitive(cron),
-            "sessionKey" to JsonPrimitive(sessionKey),
-            "prompt" to JsonPrimitive(prompt),
-            "enabled" to JsonPrimitive(enabled)
-        )
-        return call("cron.add", params)
-    }
-
-    /** cron.remove — 删除定时任务 */
-    suspend fun cronRemove(cronId: String): ResponseFrame {
-        val params = mapOf("id" to JsonPrimitive(cronId))
-        return call("cron.remove", params)
-    }
-
-    /** cron.patch — 更新定时任务属性（如 enabled） */
-    suspend fun cronPatch(
-        cronId: String,
-        enabled: Boolean? = null,
-        name: String? = null,
-        cron: String? = null,
-        sessionKey: String? = null,
-        prompt: String? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "id" to JsonPrimitive(cronId)
-        )
-        if (enabled != null) params["enabled"] = JsonPrimitive(enabled)
-        if (name != null) params["name"] = JsonPrimitive(name)
-        if (cron != null) params["cron"] = JsonPrimitive(cron)
-        if (sessionKey != null) params["sessionKey"] = JsonPrimitive(sessionKey)
-        if (prompt != null) params["prompt"] = JsonPrimitive(prompt)
-        return call("cron.patch", params)
-    }
-
-    /** cron.run — 立即执行定时任务 */
-    suspend fun cronRun(cronId: String): ResponseFrame {
-        val params = mapOf("id" to JsonPrimitive(cronId))
-        return call("cron.run", params)
-    }
-
-    /** cron.status — 获取定时任务状态 */
-    suspend fun cronStatus(): ResponseFrame {
-        return call("cron.status", null)
-    }
-
-    /** cron.update — 更新定时任务 */
-    suspend fun cronUpdate(cronId: String, enabled: Boolean? = null, name: String? = null, cron: String? = null, sessionKey: String? = null, prompt: String? = null): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>("id" to JsonPrimitive(cronId))
-        if (enabled != null) params["enabled"] = JsonPrimitive(enabled)
-        if (name != null) params["name"] = JsonPrimitive(name)
-        if (cron != null) params["cron"] = JsonPrimitive(cron)
-        if (sessionKey != null) params["sessionKey"] = JsonPrimitive(sessionKey)
-        if (prompt != null) params["prompt"] = JsonPrimitive(prompt)
-        return call("cron.update", params)
-    }
-
-    /** cron.runs — 获取定时任务执行历史 */
-    suspend fun cronRuns(cronId: String? = null): ResponseFrame {
-        val params = if (cronId != null) mapOf("id" to JsonPrimitive(cronId)) else null
-        return call("cron.runs", params)
-    }
-
-    // ==================== Compaction API ====================
-
-    /** sessions.compaction.list — 列出会话的压缩检查点 */
-    suspend fun sessionsCompactionList(sessionKey: String): ResponseFrame {
-        val params = mapOf("key" to JsonPrimitive(sessionKey))
-        return call("sessions.compaction.list", params)
-    }
-
-    /** sessions.compaction.get — 获取单个压缩检查点详情 */
-    suspend fun sessionsCompactionGet(sessionKey: String, checkpointId: String): ResponseFrame {
-        val params = mapOf("key" to JsonPrimitive(sessionKey), "checkpointId" to JsonPrimitive(checkpointId))
-        return call("sessions.compaction.get", params)
-    }
-
-    /** sessions.compaction.branch — 从压缩检查点创建新会话分支 */
-    suspend fun sessionsCompactionBranch(
-        sessionKey: String,
-        checkpointId: String,
-        newKey: String? = null,
-        label: String? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "key" to JsonPrimitive(sessionKey),
-            "checkpointId" to JsonPrimitive(checkpointId)
-        )
-        if (newKey != null) params["newKey"] = JsonPrimitive(newKey)
-        if (label != null) params["label"] = JsonPrimitive(label)
-        return call("sessions.compaction.branch", params)
-    }
-
-    /** sessions.compaction.restore — 从压缩检查点恢复会话 */
-    suspend fun sessionsCompactionRestore(sessionKey: String, checkpointId: String): ResponseFrame {
-        val params = mapOf("key" to JsonPrimitive(sessionKey), "checkpointId" to JsonPrimitive(checkpointId))
-        return call("sessions.compaction.restore", params)
-    }
-
-    /** sessions.compact — 手动触发会话压缩 */
-    suspend fun sessionsCompact(sessionKey: String, reason: String? = null): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>("key" to JsonPrimitive(sessionKey))
-        if (reason != null) params["reason"] = JsonPrimitive(reason)
-        return call("sessions.compact", params)
-    }
-
-    // ==================== Tools API ====================
-
-    /** tools.catalog — 获取所有可用工具目录 */
-    suspend fun toolsCatalog(): ResponseFrame {
-        return call("tools.catalog", null)
-    }
-
-    /** tools.effective — 获取会话当前生效的工具集 */
-    suspend fun toolsEffective(sessionKey: String? = null): ResponseFrame {
-        val params = if (sessionKey != null) mapOf("sessionKey" to JsonPrimitive(sessionKey)) else null
-        return call("tools.effective", params)
-    }
-
-    // ==================== Sessions Extensions ====================
-
-    /** sessions.send — 向会话发送消息（非 chat 上下文） */
-    suspend fun sessionsSend(
-        sessionKey: String,
-        message: String,
-        idempotencyKey: String? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "sessionKey" to JsonPrimitive(sessionKey),
-            "message" to JsonPrimitive(message)
-        )
-        if (idempotencyKey != null) params["idempotencyKey"] = JsonPrimitive(idempotencyKey)
-        return call("sessions.send", params)
-    }
-
-    /** sessions.abort — 中止会话当前运行的 agent */
-    suspend fun sessionsAbort(sessionKey: String, runId: String? = null): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>("sessionKey" to JsonPrimitive(sessionKey))
-        if (runId != null) params["runId"] = JsonPrimitive(runId)
-        return call("sessions.abort", params)
-    }
-
-    /**
-     * Measure latency using health RPC call.
-     * Returns round-trip time in ms, or null on failure.
-     */
-    suspend fun measureLatency(): Long? {
-        return try {
-            val start = System.currentTimeMillis()
-            val response = health()
-            if (response.isSuccess()) {
-                System.currentTimeMillis() - start
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    // ==================== Chat Extensions ====================
-
-    /** chat.inject — 注入消息到会话历史（不触发 AI 回复） */
     suspend fun chatInject(
-        sessionKey: String,
-        role: String,
-        content: String,
+        sessionKey: String, role: String, content: String,
         attachments: List<com.openclaw.clawchat.ui.components.ApiAttachment>? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>(
-            "sessionKey" to JsonPrimitive(sessionKey),
-            "role" to JsonPrimitive(role),
-            "content" to JsonPrimitive(content)
-        )
-        if (!attachments.isNullOrEmpty()) {
-            params["attachments"] = JsonArray(attachments.map { att ->
-                JsonObject(mapOf(
-                    "type" to JsonPrimitive(att.type),
-                    "mimeType" to JsonPrimitive(att.mimeType),
-                    "content" to JsonPrimitive(att.content)
-                ))
-            })
-        }
-        return call("chat.inject", params)
-    }
+    ): ResponseFrame = chatRpc.chatInject(sessionKey, role, content, attachments)
 
-    // ==================== Device Token API ====================
+    // Sessions
+    suspend fun sessionsList(
+        limit: Int? = null, activeMinutes: Int? = null,
+        includeDerivedTitles: Boolean = true, includeLastMessage: Boolean = true
+    ): ResponseFrame = sessionRpc.sessionsList(limit, activeMinutes, includeDerivedTitles, includeLastMessage)
 
-    /** device.token.rotate — 新设备 Token */
-    suspend fun deviceTokenRotate(): ResponseFrame {
-        return call("device.token.rotate", null)
-    }
+    suspend fun sessionsPatch(sessionKey: String, verboseLevel: String? = null): ResponseFrame =
+        sessionRpc.sessionsPatch(sessionKey, verboseLevel)
 
-    /** device.token.revoke — 撤销设备 Token */
-    suspend fun deviceTokenRevoke(token: String? = null): ResponseFrame {
-        val params = if (token != null) mapOf("token" to JsonPrimitive(token)) else null
-        return call("device.token.revoke", params)
-    }
+    suspend fun sessionsSteer(sessionKey: String, text: String): ResponseFrame =
+        sessionRpc.sessionsSteer(sessionKey, text)
 
-    // ==================== System / Identity API ====================
+    suspend fun sessionsCreate(
+        key: String? = null, agentId: String? = null, label: String? = null,
+        model: String? = null, message: String? = null
+    ): ResponseFrame = sessionRpc.sessionsCreate(key, agentId, label, model, message)
 
-    /** health — 获取网关健康状态快照 */
-    suspend fun health(): ResponseFrame {
-        return call("health", null)
-    }
+    suspend fun sessionsDelete(sessionKey: String, deleteTranscript: Boolean = true): ResponseFrame =
+        sessionRpc.sessionsDelete(sessionKey, deleteTranscript)
 
-    /** status — 获取网关状态信息 */
-    suspend fun status(): ResponseFrame {
-        return call("status", null)
-    }
+    suspend fun sessionsReset(sessionKey: String, reason: String = "reset"): ResponseFrame =
+        sessionRpc.sessionsReset(sessionKey, reason)
 
-    /** gateway.identity.get — 获取网关身份标识 */
-    suspend fun gatewayIdentityGet(): ResponseFrame {
-        return call("gateway.identity.get", null)
-    }
+    suspend fun sessionsPreview(keys: List<String>, limit: Int? = null, maxChars: Int? = null): ResponseFrame =
+        sessionRpc.sessionsPreview(keys, limit, maxChars)
 
-    // ==================== Usage API ====================
+    suspend fun sessionsUsage(
+        sessionKey: String? = null, startDate: String? = null,
+        endDate: String? = null, limit: Int? = null
+    ): ResponseFrame = sessionRpc.sessionsUsage(sessionKey, startDate, endDate, limit)
 
-    /** sessions.usage.timeseries — 获取会话使用时序数据 */
-    suspend fun sessionsUsageTimeseries(hours: Int? = null): ResponseFrame {
-        val params = if (hours != null) mapOf("hours" to JsonPrimitive(hours)) else null
-        return call("sessions.usage.timeseries", params)
-    }
+    suspend fun sessionsMessagesSubscribe(sessionKey: String): ResponseFrame =
+        sessionRpc.sessionsMessagesSubscribe(sessionKey)
 
-    /** usage.status — 获取模型使用状态 */
-    suspend fun usageStatus(): ResponseFrame {
-        return call("usage.status", null)
-    }
+    suspend fun sessionsMessagesUnsubscribe(sessionKey: String): ResponseFrame =
+        sessionRpc.sessionsMessagesUnsubscribe(sessionKey)
 
-    /** usage.cost — 获取使用成本统计 */
-    suspend fun usageCost(): ResponseFrame {
-        return call("usage.cost", null)
-    }
+    suspend fun sessionsSubscribe(): ResponseFrame = sessionRpc.sessionsSubscribe()
+    suspend fun sessionsUnsubscribe(): ResponseFrame = sessionRpc.sessionsUnsubscribe()
 
-    // ==================== TTS / Talk API ====================
+    suspend fun sessionsResolve(
+        key: String? = null, sessionId: String? = null, label: String? = null, agentId: String? = null
+    ): ResponseFrame = sessionRpc.sessionsResolve(key, sessionId, label, agentId)
 
-    /** talk.config — 获取语音对话配置 */
-    suspend fun talkConfig(): ResponseFrame {
-        return call("talk.config", null)
-    }
+    suspend fun sessionsSend(sessionKey: String, message: String, idempotencyKey: String? = null): ResponseFrame =
+        sessionRpc.sessionsSend(sessionKey, message, idempotencyKey)
 
-    /** talk.speak — 发送文本到语音合成 */
-    suspend fun talkSpeak(
-        text: String,
-        provider: String? = null,
-        voice: String? = null
-    ): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>("text" to JsonPrimitive(text))
-        if (provider != null) params["provider"] = JsonPrimitive(provider)
-        if (voice != null) params["voice"] = JsonPrimitive(voice)
-        return call("talk.speak", params)
-    }
+    suspend fun sessionsAbort(sessionKey: String, runId: String? = null): ResponseFrame =
+        sessionRpc.sessionsAbort(sessionKey, runId)
 
-    // ==================== Device Pairing API ====================
+    // Compaction
+    suspend fun sessionsCompactionList(sessionKey: String): ResponseFrame =
+        sessionRpc.sessionsCompactionList(sessionKey)
 
-    /** device.pair.list — 获取待配对设备列表 */
-    suspend fun devicePairList(): ResponseFrame {
-        return call("device.pair.list", null)
-    }
+    suspend fun sessionsCompactionGet(sessionKey: String, checkpointId: String): ResponseFrame =
+        sessionRpc.sessionsCompactionGet(sessionKey, checkpointId)
 
-    /** device.pair.approve — 批准设备配对 */
-    suspend fun devicePairApprove(deviceId: String): ResponseFrame {
-        return call("device.pair.approve", mapOf("deviceId" to JsonPrimitive(deviceId)))
-    }
+    suspend fun sessionsCompactionBranch(
+        sessionKey: String, checkpointId: String, newKey: String? = null, label: String? = null
+    ): ResponseFrame = sessionRpc.sessionsCompactionBranch(sessionKey, checkpointId, newKey, label)
 
-    /** device.pair.reject — 拒绝设备配对 */
-    suspend fun devicePairReject(deviceId: String): ResponseFrame {
-        return call("device.pair.reject", mapOf("deviceId" to JsonPrimitive(deviceId)))
-    }
+    suspend fun sessionsCompactionRestore(sessionKey: String, checkpointId: String): ResponseFrame =
+        sessionRpc.sessionsCompactionRestore(sessionKey, checkpointId)
 
-    /** device.pair.remove — 移除已配对设备 */
-    suspend fun devicePairRemove(deviceId: String): ResponseFrame {
-        return call("device.pair.remove", mapOf("deviceId" to JsonPrimitive(deviceId)))
-    }
+    suspend fun sessionsCompact(sessionKey: String, reason: String? = null): ResponseFrame =
+        sessionRpc.sessionsCompact(sessionKey, reason)
 
-    // ==================== Wizard / Update API ====================
+    // Agents
+    suspend fun agentsList(): ResponseFrame = agentRpc.agentsList()
 
-    /** wizard.start — 开始设置向导 */
-    suspend fun wizardStart(): ResponseFrame {
-        return call("wizard.start", null)
-    }
+    suspend fun agentsCreate(name: String, workspace: String, emoji: String? = null, avatar: String? = null): ResponseFrame =
+        agentRpc.agentsCreate(name, workspace, emoji, avatar)
 
-    /** wizard.next — 进行向导下一步 */
-    suspend fun wizardNext(step: String, data: JsonObject? = null): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>("step" to JsonPrimitive(step))
-        if (data != null) params["data"] = data
-        return call("wizard.next", params)
-    }
+    suspend fun agentsUpdate(
+        agentId: String, name: String? = null, workspace: String? = null,
+        model: String? = null, avatar: String? = null
+    ): ResponseFrame = agentRpc.agentsUpdate(agentId, name, workspace, model, avatar)
 
-    /** wizard.cancel — 取消设置向导 */
-    suspend fun wizardCancel(): ResponseFrame {
-        return call("wizard.cancel", null)
-    }
+    suspend fun agentsDelete(agentId: String, deleteFiles: Boolean = false): ResponseFrame =
+        agentRpc.agentsDelete(agentId, deleteFiles)
 
-    /** update.run — 触发更新检查和执行 */
-    suspend fun updateRun(): ResponseFrame {
-        return call("update.run", null)
-    }
+    // Config
+    suspend fun configGet(key: String? = null): ResponseFrame = configRpc.configGet(key)
+    suspend fun configSet(key: String, value: String): ResponseFrame = configRpc.configSet(key, value)
+    suspend fun configPatch(patches: Map<String, String>): ResponseFrame = configRpc.configPatch(patches)
+    suspend fun configSchema(key: String? = null): ResponseFrame = configRpc.configSchema(key)
+    suspend fun configApply(key: String? = null): ResponseFrame = configRpc.configApply(key)
 
-    // ==================== Logs API ====================
+    // Cron
+    suspend fun cronList(): ResponseFrame = cronRpc.cronList()
 
-    /** logs.tail — 获取最近的日志条目 */
-    suspend fun logsTail(limit: Int? = null, level: String? = null): ResponseFrame {
-        val params = mutableMapOf<String, JsonElement>()
-        if (limit != null) params["limit"] = JsonPrimitive(limit)
-        if (level != null) params["level"] = JsonPrimitive(level)
-        return call("logs.tail", if (params.isNotEmpty()) params else null)
-    }
+    suspend fun cronAdd(name: String, cron: String, sessionKey: String, prompt: String, enabled: Boolean = true): ResponseFrame =
+        cronRpc.cronAdd(name, cron, sessionKey, prompt, enabled)
+
+    suspend fun cronRemove(cronId: String): ResponseFrame = cronRpc.cronRemove(cronId)
+
+    suspend fun cronPatch(
+        cronId: String, enabled: Boolean? = null, name: String? = null,
+        cron: String? = null, sessionKey: String? = null, prompt: String? = null
+    ): ResponseFrame = cronRpc.cronPatch(cronId, enabled, name, cron, sessionKey, prompt)
+
+    suspend fun cronRun(cronId: String): ResponseFrame = cronRpc.cronRun(cronId)
+    suspend fun cronStatus(): ResponseFrame = cronRpc.cronStatus()
+
+    suspend fun cronUpdate(
+        cronId: String, enabled: Boolean? = null, name: String? = null,
+        cron: String? = null, sessionKey: String? = null, prompt: String? = null
+    ): ResponseFrame = cronRpc.cronUpdate(cronId, enabled, name, cron, sessionKey, prompt)
+
+    suspend fun cronRuns(cronId: String? = null): ResponseFrame = cronRpc.cronRuns(cronId)
+
+    // System (health, status, update, wizard, logs, models, tools, channels, device, usage, talk)
+    suspend fun health(): ResponseFrame = sysRpc.health()
+    suspend fun status(): ResponseFrame = sysRpc.status()
+    suspend fun gatewayIdentityGet(): ResponseFrame = sysRpc.gatewayIdentityGet()
+    suspend fun measureLatency(): Long? = sysRpc.measureLatency()
+    suspend fun wizardStart(): ResponseFrame = sysRpc.wizardStart()
+    suspend fun wizardNext(step: String, data: JsonObject? = null): ResponseFrame = sysRpc.wizardNext(step, data)
+    suspend fun wizardCancel(): ResponseFrame = sysRpc.wizardCancel()
+    suspend fun updateRun(): ResponseFrame = sysRpc.updateRun()
+
+    suspend fun logsTail(limit: Int? = null, level: String? = null): ResponseFrame =
+        sysRpc.logsTail(limit, level)
+
+    suspend fun modelsList(): ResponseFrame = sysRpc.modelsList()
+    suspend fun toolsCatalog(): ResponseFrame = sysRpc.toolsCatalog()
+
+    suspend fun toolsEffective(sessionKey: String? = null): ResponseFrame =
+        sysRpc.toolsEffective(sessionKey)
+
+    suspend fun channelsStatus(): ResponseFrame = sysRpc.channelsStatus()
+
+    suspend fun channelsLogout(channelId: String? = null): ResponseFrame =
+        sysRpc.channelsLogout(channelId)
+
+    suspend fun deviceTokenRotate(): ResponseFrame = sysRpc.deviceTokenRotate()
+
+    suspend fun deviceTokenRevoke(token: String? = null): ResponseFrame =
+        sysRpc.deviceTokenRevoke(token)
+
+    suspend fun devicePairList(): ResponseFrame = sysRpc.devicePairList()
+    suspend fun devicePairApprove(deviceId: String): ResponseFrame = sysRpc.devicePairApprove(deviceId)
+    suspend fun devicePairReject(deviceId: String): ResponseFrame = sysRpc.devicePairReject(deviceId)
+    suspend fun devicePairRemove(deviceId: String): ResponseFrame = sysRpc.devicePairRemove(deviceId)
+
+    suspend fun sessionsUsageTimeseries(hours: Int? = null): ResponseFrame =
+        sysRpc.sessionsUsageTimeseries(hours)
+
+    suspend fun usageStatus(): ResponseFrame = sysRpc.usageStatus()
+    suspend fun usageCost(): ResponseFrame = sysRpc.usageCost()
+    suspend fun talkConfig(): ResponseFrame = sysRpc.talkConfig()
+
+    suspend fun talkSpeak(text: String, provider: String? = null, voice: String? = null): ResponseFrame =
+        sysRpc.talkSpeak(text, provider, voice)
 
     // ── Tick Monitor / Reconnect ──
 

@@ -5,12 +5,10 @@ import androidx.room.Room
 import com.openclaw.clawchat.data.local.ClawChatDatabase
 import com.openclaw.clawchat.data.local.MessageDao
 import com.openclaw.clawchat.data.local.SessionDao
-import com.openclaw.clawchat.data.local.PendingMessageDao
 import com.openclaw.clawchat.repository.MessageRepository
 import com.openclaw.clawchat.repository.MessageRepositoryImpl
 import com.openclaw.clawchat.repository.SessionRepository
 import com.openclaw.clawchat.repository.SessionRepositoryImpl
-import com.openclaw.clawchat.repository.PendingMessageRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -47,11 +45,6 @@ object AppModule {
     }
 
     @Provides
-    fun providePendingMessageDao(database: ClawChatDatabase): PendingMessageDao {
-        return database.pendingMessageDao()
-    }
-
-    @Provides
     @Singleton
     fun provideSessionRepository(database: ClawChatDatabase): SessionRepository {
         return SessionRepositoryImpl(database)
@@ -63,9 +56,4 @@ object AppModule {
         return MessageRepositoryImpl(database)
     }
 
-    @Provides
-    @Singleton
-    fun providePendingMessageRepository(database: ClawChatDatabase): PendingMessageRepository {
-        return PendingMessageRepository(database)
-    }
 }

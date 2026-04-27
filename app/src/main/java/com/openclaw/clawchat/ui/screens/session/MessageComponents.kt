@@ -43,7 +43,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openclaw.clawchat.R
 import com.openclaw.clawchat.data.FontSize
-import com.openclaw.clawchat.ui.state.*
+import com.openclaw.clawchat.ui.state.MessageContentItem
+import com.openclaw.clawchat.ui.state.MessageStatus
+import com.openclaw.clawchat.ui.state.MessageUi
 import com.openclaw.clawchat.ui.theme.DesignTokens
 
 /**

@@ -4,6 +4,7 @@ import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.repository.MessageRepository
 import com.openclaw.clawchat.util.AppLog
+import com.openclaw.clawchat.util.ContentParser
 import com.openclaw.clawchat.util.JsonUtils
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -94,7 +95,7 @@ class SessionMessageLoader(
 
                         // 解析 content 数组为 MessageContentItem 列表
                         val contentElement = msgObj["content"]
-                        val contentList = parseContentArray(contentElement)
+                        val contentList = ContentParser.parseContentElement(contentElement)
 
                         // 提取 toolCallId 和 toolName（TOOL 消息特有）
                         val toolCallId = msgObj["toolCallId"]?.jsonPrimitive?.content
@@ -144,94 +145,3 @@ class SessionMessageLoader(
     }
 }
 
-/**
- * 解析 Gateway 返回的 content 数组为 MessageContentItem 列表
- * Gateway content 格式: [{"type":"text","text":"..."},{"type":"thinking","thinking":"..."},{"type":"toolCall","name":"...","arguments":"..."},...]
- */
-private fun parseContentArray(contentElement: JsonElement?): List<MessageContentItem> {
-    val items = mutableListOf<MessageContentItem>()
-
-    // 兼容纯文本格式
-    if (contentElement is kotlinx.serialization.json.JsonPrimitive) {
-        val text = contentElement.content
-        if (text.isNotBlank()) {
-            items.add(MessageContentItem.Text(text))
-        }
-        return items
-    }
-
-    // 解析 JSON 数组
-    val array = contentElement?.jsonArray ?: return items
-
-    array.forEach { element ->
-        try {
-            val obj = element.jsonObject
-            val type = obj["type"]?.jsonPrimitive?.content ?: "text"
-
-            when (type) {
-                "text" -> {
-                    val text = obj["text"]?.jsonPrimitive?.content
-                    if (!text.isNullOrBlank()) {
-                        items.add(MessageContentItem.Text(text))
-                    }
-                }
-                "thinking" -> {
-                    val thinking = obj["thinking"]?.jsonPrimitive?.content
-                    if (!thinking.isNullOrBlank()) {
-                        items.add(MessageContentItem.Text(thinking))
-                    }
-                }
-                "toolCall", "tool_call" -> {
-                    val id = obj["id"]?.jsonPrimitive?.content
-                    val name = obj["name"]?.jsonPrimitive?.content ?: ""
-                    val argsJson = obj["arguments"]
-                    items.add(MessageContentItem.ToolCall(
-                        id = id,
-                        name = name,
-                        args = argsJson as? kotlinx.serialization.json.JsonObject,
-                        phase = "result"
-                    ))
-                }
-                "tool_result" -> {
-                    val toolCallId = obj["toolCallId"]?.jsonPrimitive?.content
-                    val name = obj["name"]?.jsonPrimitive?.content
-                    val text = obj["text"]?.jsonPrimitive?.content ?: ""
-                    val isError = obj["isError"]?.jsonPrimitive?.content?.toBoolean() ?: false
-                    items.add(MessageContentItem.ToolResult(
-                        toolCallId = toolCallId,
-                        name = name,
-                        text = text,
-                        isError = isError
-                    ))
-                }
-                "image" -> {
-                    val url = obj["url"]?.jsonPrimitive?.content
-                    val base64 = obj["data"]?.jsonPrimitive?.content
-                    val mimeType = obj["mimeType"]?.jsonPrimitive?.content
-                    items.add(MessageContentItem.Image(
-                        url = url,
-                        base64 = base64,
-                        mimeType = mimeType
-                    ))
-                }
-                else -> {
-                    // 未知类型，尝试作为文本处理
-                    val text = obj["text"]?.jsonPrimitive?.content ?: element.toString()
-                    if (text.isNotBlank()) {
-                        items.add(MessageContentItem.Text(text))
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            // 解析单个元素失败不影响其他元素
-            AppLog.w("SessionMessageLoader", "Failed to parse content element: ${e.message}")
-        }
-    }
-
-    // 如果解析后为空，返回一个空文本项避免消息完全丢失
-    if (items.isEmpty()) {
-        items.add(MessageContentItem.Text(""))
-    }
-
-    return items
-}

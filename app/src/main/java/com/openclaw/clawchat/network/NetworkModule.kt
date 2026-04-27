@@ -105,17 +105,6 @@ object NetworkModule {
         return GatewayConnection(okHttpClient, securityModule, appScope)
     }
 
-    /**
-     * WebSocketService — 薄代理，委托给 GatewayConnection
-     */
-    @Provides
-    @Singleton
-    fun provideWebSocketService(
-        gateway: GatewayConnection
-    ): WebSocketService {
-        return OkHttpWebSocketService(gateway)
-    }
-
     @Provides
     @Singleton
     fun provideTailscaleManager(
