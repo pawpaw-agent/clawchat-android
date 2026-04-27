@@ -72,8 +72,11 @@ class SessionViewModel @Inject constructor(
         onUndo = { undoLastConversation() }
     )
     
-    // 工具流管理器（不刷新消息，提高 UI 平滑性）
-    private val toolStreamManager = ToolStreamManager(state = _state)
+    // 工具流管理器（80ms节流批量更新）
+    private val toolStreamManager = ToolStreamManager(
+        state = _state,
+        scope = viewModelScope
+    )
     
     // 消息加载器
     private val messageLoader = SessionMessageLoader(
