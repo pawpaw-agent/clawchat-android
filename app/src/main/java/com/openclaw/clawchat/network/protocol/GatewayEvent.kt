@@ -30,6 +30,21 @@ sealed class GatewayEvent {
         override val name = "tool.stream"
     }
 
+    /** Plan stream event — multi-step work tracking (v4.24+) */
+    data class PlanStream(override val payload: JsonObject) : GatewayEvent() {
+        override val name = "plan.stream"
+    }
+
+    /** Item stream event — work items, tasks, checkpoints (v4.24+) */
+    data class ItemStream(override val payload: JsonObject) : GatewayEvent() {
+        override val name = "item.stream"
+    }
+
+    /** Patch stream event — context/session state changes (v4.24+) */
+    data class PatchStream(override val payload: JsonObject) : GatewayEvent() {
+        override val name = "patch.stream"
+    }
+
     data class Chat(override val payload: JsonObject) : GatewayEvent() {
         override val name = "chat"
     }
