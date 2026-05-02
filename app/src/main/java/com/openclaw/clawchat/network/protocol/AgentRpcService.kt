@@ -59,4 +59,28 @@ class AgentRpcService(
         if (deleteFiles) params["deleteFiles"] = JsonPrimitive(true)
         return rpc("agents.delete", params)
     }
+
+    // ── Agents Files ──
+
+    /** agents.files.list */
+    suspend fun agentsFilesList(agentId: String): ResponseFrame {
+        return rpc("agents.files.list", mapOf("agentId" to JsonPrimitive(agentId)))
+    }
+
+    /** agents.files.get */
+    suspend fun agentsFilesGet(agentId: String, name: String): ResponseFrame {
+        return rpc("agents.files.get", mapOf(
+            "agentId" to JsonPrimitive(agentId),
+            "name" to JsonPrimitive(name)
+        ))
+    }
+
+    /** agents.files.set */
+    suspend fun agentsFilesSet(agentId: String, name: String, content: String): ResponseFrame {
+        return rpc("agents.files.set", mapOf(
+            "agentId" to JsonPrimitive(agentId),
+            "name" to JsonPrimitive(name),
+            "content" to JsonPrimitive(content)
+        ))
+    }
 }

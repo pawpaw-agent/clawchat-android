@@ -390,6 +390,16 @@ class GatewayConnection(
                     payload?.let { _events.emit(GatewayEvent.Health(it)) }
                     _incomingMessages.emit(rawText)
                 }
+                "agent.internal.task_completion" -> {
+                    payload?.let { _events.emit(GatewayEvent.AgentInternal(it, "task_completion")) }
+                    _incomingMessages.emit(rawText)
+                }
+                "agent.internal" -> {
+                    // Generic agent.internal event - extract sub-type from payload if available
+                    val subType = payload?.get("type")?.jsonPrimitive?.content ?: "unknown"
+                    payload?.let { _events.emit(GatewayEvent.AgentInternal(it, subType)) }
+                    _incomingMessages.emit(rawText)
+                }
                 "cron", "presence" -> {
                     _events.emit(GatewayEvent.Passthrough(event, payload ?: JsonObject(emptyMap())))
                     _incomingMessages.emit(rawText)

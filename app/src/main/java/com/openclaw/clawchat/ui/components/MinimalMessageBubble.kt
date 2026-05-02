@@ -105,18 +105,29 @@ fun MinimalMessageBubble(
                             }
                         }
                         is MessageContentItem.ToolResult -> {
+                            var expanded by remember { mutableStateOf(false) }
+                            val isTruncated = item.text.length > 150
+
                             Text(
-                                text = item.text,
+                                text = if (expanded || !isTruncated) item.text else item.text.take(150) + "...",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = if (item.isError) {
                                     MaterialTheme.colorScheme.error
                                 } else {
                                     MaterialTheme.colorScheme.onSurfaceVariant
                                 },
-                                maxLines = 3,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(top = MinimalTokens.space1)
+                                modifier = Modifier
+                                    .padding(top = MinimalTokens.space1)
+                                    .clickable { if (isTruncated) expanded = !expanded }
                             )
+                            if (isTruncated) {
+                                Text(
+                                    text = if (expanded) "Show less" else "Show more",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(top = MinimalTokens.space1)
+                                )
+                            }
                         }
                         is MessageContentItem.Image -> {
                             // TODO: Image display

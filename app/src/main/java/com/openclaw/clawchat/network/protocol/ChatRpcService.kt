@@ -13,12 +13,17 @@ import java.util.UUID
 class ChatRpcService(
     private val rpc: suspend (String, Map<String, JsonElement>?) -> ResponseFrame
 ) {
-    /** chat.send — 发送消息（支持附件） */
+    /** chat.send — 发送消息（支持附件和扩展参数） */
     suspend fun chatSend(
         sessionKey: String,
         message: String,
         attachments: List<ApiAttachment>? = null,
-        mediaUrls: List<String>? = null
+        mediaUrls: List<String>? = null,
+        thinking: String? = null,
+        deliver: Boolean? = null,
+        originatingChannel: String? = null,
+        originatingTo: String? = null,
+        timeoutMs: Int? = null
     ): ResponseFrame {
         val params = mutableMapOf<String, JsonElement>(
             "sessionKey" to JsonPrimitive(sessionKey),
@@ -37,6 +42,11 @@ class ChatRpcService(
         if (!mediaUrls.isNullOrEmpty()) {
             params["mediaUrls"] = JsonArray(mediaUrls.map { JsonPrimitive(it) })
         }
+        if (thinking != null) params["thinking"] = JsonPrimitive(thinking)
+        if (deliver != null) params["deliver"] = JsonPrimitive(deliver)
+        if (originatingChannel != null) params["originatingChannel"] = JsonPrimitive(originatingChannel)
+        if (originatingTo != null) params["originatingTo"] = JsonPrimitive(originatingTo)
+        if (timeoutMs != null) params["timeoutMs"] = JsonPrimitive(timeoutMs)
         return rpc("chat.send", params)
     }
 

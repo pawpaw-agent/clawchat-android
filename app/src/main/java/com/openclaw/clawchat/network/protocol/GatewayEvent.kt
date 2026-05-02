@@ -18,6 +18,14 @@ sealed class GatewayEvent {
         override val name = "agent"
     }
 
+    /** agent.internal events (e.g., task_completion from subagents/cron) */
+    data class AgentInternal(
+        override val payload: JsonObject,
+        val eventType: String  // "task_completion" etc.
+    ) : GatewayEvent() {
+        override val name = "agent.internal.$eventType"
+    }
+
     data class ToolStream(override val payload: JsonObject) : GatewayEvent() {
         override val name = "tool.stream"
     }

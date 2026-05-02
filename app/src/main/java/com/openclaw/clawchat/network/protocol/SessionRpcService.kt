@@ -27,12 +27,27 @@ class SessionRpcService(
         return rpc("sessions.list", params.ifEmpty { null })
     }
 
-    /** sessions.patch */
-    suspend fun sessionsPatch(sessionKey: String, verboseLevel: String? = null): ResponseFrame {
+    /** sessions.patch - Update session settings */
+    suspend fun sessionsPatch(
+        sessionKey: String,
+        verboseLevel: String? = null,
+        thinkingLevel: String? = null,
+        fastMode: Boolean? = null,
+        reasoningLevel: String? = null,
+        responseUsage: String? = null,
+        model: String? = null,
+        label: String? = null
+    ): ResponseFrame {
         val params = mutableMapOf<String, JsonElement>(
             "key" to JsonPrimitive(sessionKey)
         )
         if (verboseLevel != null) params["verboseLevel"] = JsonPrimitive(verboseLevel)
+        if (thinkingLevel != null) params["thinkingLevel"] = JsonPrimitive(thinkingLevel)
+        if (fastMode != null) params["fastMode"] = JsonPrimitive(fastMode)
+        if (reasoningLevel != null) params["reasoningLevel"] = JsonPrimitive(reasoningLevel)
+        if (responseUsage != null) params["responseUsage"] = JsonPrimitive(responseUsage)
+        if (model != null) params["model"] = JsonPrimitive(model)
+        if (label != null) params["label"] = JsonPrimitive(label)
         return rpc("sessions.patch", params)
     }
 
@@ -100,18 +115,24 @@ class SessionRpcService(
         return rpc("sessions.preview", params)
     }
 
-    /** sessions.usage */
+    /** sessions.usage - Get usage statistics */
     suspend fun sessionsUsage(
-        sessionKey: String? = null,
+        key: String? = null,
         startDate: String? = null,
         endDate: String? = null,
-        limit: Int? = null
+        mode: String? = null,
+        utcOffset: String? = null,
+        limit: Int? = null,
+        includeContextWeight: Boolean? = null
     ): ResponseFrame {
         val params = mutableMapOf<String, JsonElement>()
-        if (sessionKey != null) params["key"] = JsonPrimitive(sessionKey)
+        if (key != null) params["key"] = JsonPrimitive(key)
         if (startDate != null) params["startDate"] = JsonPrimitive(startDate)
         if (endDate != null) params["endDate"] = JsonPrimitive(endDate)
+        if (mode != null) params["mode"] = JsonPrimitive(mode)
+        if (utcOffset != null) params["utcOffset"] = JsonPrimitive(utcOffset)
         if (limit != null) params["limit"] = JsonPrimitive(limit)
+        if (includeContextWeight != null) params["includeContextWeight"] = JsonPrimitive(includeContextWeight)
         return rpc("sessions.usage", params.ifEmpty { null })
     }
 
@@ -150,16 +171,22 @@ class SessionRpcService(
         return rpc("sessions.resolve", params.ifEmpty { null })
     }
 
-    /** sessions.send */
+    /** sessions.send - Send a message to a session */
     suspend fun sessionsSend(
         sessionKey: String,
         message: String,
+        thinking: String? = null,
+        attachments: List<JsonElement>? = null,
+        timeoutMs: Int? = null,
         idempotencyKey: String? = null
     ): ResponseFrame {
         val params = mutableMapOf<String, JsonElement>(
             "sessionKey" to JsonPrimitive(sessionKey),
             "message" to JsonPrimitive(message)
         )
+        if (thinking != null) params["thinking"] = JsonPrimitive(thinking)
+        if (attachments != null) params["attachments"] = JsonArray(attachments)
+        if (timeoutMs != null) params["timeoutMs"] = JsonPrimitive(timeoutMs)
         if (idempotencyKey != null) params["idempotencyKey"] = JsonPrimitive(idempotencyKey)
         return rpc("sessions.send", params)
     }
