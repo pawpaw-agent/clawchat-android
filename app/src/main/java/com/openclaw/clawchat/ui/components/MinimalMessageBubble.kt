@@ -61,8 +61,8 @@ fun MinimalMessageBubble(
         ) {
             Column(
                 modifier = Modifier
-                    .widthIn(max = 320.dp)
-                    .padding(horizontal = MinimalTokens.space3, vertical = MinimalTokens.space2)
+                    .widthIn(max = 280.dp)
+                    .padding(horizontal = MinimalTokens.space2, vertical = MinimalTokens.space1)
             ) {
                 // Message content
                 message.content.forEach { item ->
@@ -70,7 +70,7 @@ fun MinimalMessageBubble(
                         is MessageContentItem.Text -> {
                             Text(
                                 text = item.text,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = if (isUser) {
                                     MaterialTheme.colorScheme.onPrimaryContainer
                                 } else {

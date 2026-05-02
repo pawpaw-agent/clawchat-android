@@ -57,17 +57,17 @@ object MinimalTokens {
 
     // ── Spacing ─────────────────────────────────────────────────────
     val space1 = 4.dp
-    val space2 = 8.dp
-    val space3 = 12.dp
-    val space4 = 16.dp
-    val space5 = 20.dp
-    val space6 = 24.dp
-    val space8 = 32.dp
+    val space2 = 6.dp
+    val space3 = 8.dp
+    val space4 = 12.dp
+    val space5 = 16.dp
+    val space6 = 20.dp
+    val space8 = 24.dp
 
     // ── Radius ─────────────────────────────────────────────────────
-    val radiusSm = 8.dp
-    val radiusMd = 12.dp
-    val radiusLg = 16.dp
+    val radiusSm = 6.dp
+    val radiusMd = 8.dp
+    val radiusLg = 12.dp
     val radiusFull = 9999.dp
 
     // ── Typography ──────────────────────────────────────────────────
@@ -90,12 +90,12 @@ object MinimalTokens {
     const val durationSlow = 300
 
     // ── Component Sizes ─────────────────────────────────────────────
-    val bottomNavHeight = 64.dp
-    val inputBarHeight = 56.dp
-    val avatarSizeSm = 32.dp
-    val avatarSizeMd = 40.dp
-    val avatarSizeLg = 48.dp
-    val iconSizeSm = 18.dp
-    val iconSizeMd = 24.dp
-    val iconSizeLg = 32.dp
+    val bottomNavHeight = 56.dp
+    val inputBarHeight = 52.dp
+    val avatarSizeSm = 28.dp
+    val avatarSizeMd = 36.dp
+    val avatarSizeLg = 44.dp
+    val iconSizeSm = 16.dp
+    val iconSizeMd = 20.dp
+    val iconSizeLg = 28.dp
 }

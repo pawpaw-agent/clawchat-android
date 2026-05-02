@@ -52,23 +52,23 @@ fun MinimalSessionItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(MinimalTokens.space4),
+                .padding(horizontal = MinimalTokens.space3, vertical = MinimalTokens.space2),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Avatar
             MinimalAvatar(
                 emoji = session.agentEmoji,
                 icon = Icons.Default.Chat,
-                size = MinimalTokens.avatarSizeMd
+                size = MinimalTokens.avatarSizeSm
             )
 
-            Spacer(modifier = Modifier.width(MinimalTokens.space3))
+            Spacer(modifier = Modifier.width(MinimalTokens.space2))
 
             // Content
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = session.getDisplayName(),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -77,16 +77,16 @@ fun MinimalSessionItem(
                 if (!session.lastMessage.isNullOrBlank()) {
                     Text(
                         text = session.lastMessage,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = MinimalTokens.space1)
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(MinimalTokens.space2))
+            Spacer(modifier = Modifier.width(MinimalTokens.space1))
 
             // Timestamp
             Text(
@@ -99,8 +99,8 @@ fun MinimalSessionItem(
             if (session.thinking) {
                 Box(
                     modifier = Modifier
-                        .padding(start = MinimalTokens.space2)
-                        .size(8.dp)
+                        .padding(start = MinimalTokens.space1)
+                        .size(6.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
                 )

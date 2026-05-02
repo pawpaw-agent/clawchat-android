@@ -42,7 +42,7 @@ fun MinimalInputBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = MinimalTokens.space4, vertical = MinimalTokens.space2),
+                .padding(horizontal = MinimalTokens.space3, vertical = MinimalTokens.space1),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
@@ -52,7 +52,7 @@ fun MinimalInputBar(
                 placeholder = {
                     Text(
                         text = placeholder,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
@@ -64,13 +64,13 @@ fun MinimalInputBar(
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                 ),
                 shape = RoundedCornerShape(MinimalTokens.radiusMd),
-                maxLines = 4
+                maxLines = 3
             )
 
             IconButton(
                 onClick = onSend,
                 enabled = enabled && value.isNotBlank(),
-                modifier = Modifier.padding(start = MinimalTokens.space2)
+                modifier = Modifier.padding(start = MinimalTokens.space1)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
@@ -80,7 +80,7 @@ fun MinimalInputBar(
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     },
-                    modifier = Modifier.size(MinimalTokens.iconSizeMd)
+                    modifier = Modifier.size(MinimalTokens.iconSizeSm)
                 )
             }
         }
