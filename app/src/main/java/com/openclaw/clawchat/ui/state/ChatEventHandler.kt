@@ -107,6 +107,22 @@ class ChatEventHandler(
                     AppLog.d(TAG, "=== health event")
                     onHealthUpdate?.invoke(event.payload)
                 }
+                is GatewayEvent.AgentInternal -> {
+                    // agent.internal events (task_completion from subagents/cron) — no action needed
+                    AppLog.d(TAG, "=== agent.internal event: ${event.eventType}")
+                }
+                is GatewayEvent.PlanStream -> {
+                    // Plan stream events (multi-step work tracking) — handled by agent event handler
+                    AppLog.d(TAG, "=== plan.stream event")
+                }
+                is GatewayEvent.ItemStream -> {
+                    // Item stream events (work items, tasks, checkpoints) — handled by agent event handler
+                    AppLog.d(TAG, "=== item.stream event")
+                }
+                is GatewayEvent.PatchStream -> {
+                    // Patch stream events (context/session state changes) — handled by agent event handler
+                    AppLog.d(TAG, "=== patch.stream event")
+                }
                 is GatewayEvent.Passthrough -> {
                     // cron, tick, presence etc. — no action needed
                 }

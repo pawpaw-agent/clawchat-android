@@ -126,6 +126,7 @@ class DebugViewModel @Inject constructor(
                 val stateName = when (state) {
                     is WebSocketConnectionState.Connected -> "Connected"
                     is WebSocketConnectionState.Connecting -> "Connecting"
+                    is WebSocketConnectionState.Authenticating -> "Authenticating"
                     is WebSocketConnectionState.Stale -> "Stale"
                     is WebSocketConnectionState.Disconnecting -> "Disconnecting"
                     is WebSocketConnectionState.Disconnected -> "Disconnected"
