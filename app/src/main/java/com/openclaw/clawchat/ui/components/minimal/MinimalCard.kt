@@ -23,14 +23,14 @@ fun MinimalCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        onClick = onClick,
+        onClick = onClick ?: {},
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = MinimalTokens.elevationNone),
         shape = RoundedCornerShape(MinimalTokens.radiusMd)
     ) {
-        androidx.compose.foundation.layout.Column(
+        Column(
             modifier = Modifier.padding(MinimalTokens.space4),
             content = content
         )
