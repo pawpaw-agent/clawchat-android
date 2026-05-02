@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.openclaw.clawchat.ui.components.MinimalInputBar
 import com.openclaw.clawchat.ui.components.MinimalMessageBubble
+import com.openclaw.clawchat.ui.state.ConnectionStatus
 import com.openclaw.clawchat.ui.state.SessionUiState
 import com.openclaw.clawchat.ui.state.SessionViewModel
 import com.openclaw.clawchat.ui.theme.MinimalTokens
@@ -36,7 +37,7 @@ fun MinimalSessionScreen(
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(sessionId) {
-        viewModel.loadSession(sessionId)
+        viewModel.setSessionId(sessionId)
     }
 
     Column(
@@ -44,13 +45,13 @@ fun MinimalSessionScreen(
             .fillMaxSize()
             .padding(bottom = MinimalTokens.inputBarHeight)
     ) {
-        if (state.isLoading && state.messageGroups.isEmpty()) {
+        if (state.isLoading && state.chatMessages.isEmpty()) {
             MinimalSessionLoadingState()
-        } else if (state.messageGroups.isEmpty()) {
+        } else if (state.chatMessages.isEmpty()) {
             MinimalSessionEmptyState()
         } else {
             MinimalMessageList(
-                messageGroups = state.messageGroups,
+                messages = state.chatMessages,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -59,7 +60,7 @@ fun MinimalSessionScreen(
             value = state.inputText,
             onValueChange = { viewModel.updateInputText(it) },
             onSend = { viewModel.sendMessage() },
-            enabled = state.isConnected && !state.isSending,
+            enabled = state.connectionStatus.isConnected && !state.isSending,
             placeholder = "Type a message..."
         )
     }
@@ -67,7 +68,7 @@ fun MinimalSessionScreen(
 
 @Composable
 private fun MinimalMessageList(
-    messageGroups: List<com.openclaw.clawchat.ui.state.MessageGroup>,
+    messages: List<com.openclaw.clawchat.ui.state.MessageUi>,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -82,21 +83,19 @@ private fun MinimalMessageList(
         verticalArrangement = Arrangement.spacedBy(MinimalTokens.space2)
     ) {
         items(
-            items = messageGroups,
-            key = { it.timestamp }
-        ) { group ->
-            group.messages.forEach { message ->
-                MinimalMessageBubble(
-                    message = message,
-                    showTimestamp = true
-                )
-            }
+            items = messages,
+            key = { it.id }
+        ) { message ->
+            MinimalMessageBubble(
+                message = message,
+                showTimestamp = true
+            )
         }
     }
 
-    LaunchedEffect(messageGroups.size) {
-        if (messageGroups.isNotEmpty()) {
-            listState.animateScrollToItem(messageGroups.size - 1)
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
         }
     }
 }

@@ -16,7 +16,6 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -29,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.openclaw.clawchat.data.ThemeMode
 import com.openclaw.clawchat.ui.components.minimal.MinimalCard
 import com.openclaw.clawchat.ui.theme.MinimalTokens
 
@@ -40,6 +40,8 @@ fun MinimalSettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+
+    val isDarkMode = state.themeMode == ThemeMode.DARK
 
     Column(
         modifier = modifier
@@ -53,7 +55,7 @@ fun MinimalSettingsScreen(
             MinimalSettingsItem(
                 icon = Icons.Default.Link,
                 title = "Gateway",
-                subtitle = state.gatewayUrl ?: "Not connected",
+                subtitle = state.currentGateway?.host ?: "Not connected",
                 onClick = { /* TODO */ }
             )
         }
@@ -65,22 +67,8 @@ fun MinimalSettingsScreen(
                 title = "Dark Mode",
                 trailing = {
                     Switch(
-                        checked = state.isDarkMode,
-                        onCheckedChange = { viewModel.setDarkMode(it) }
-                    )
-                }
-            )
-        }
-
-        // Notifications Section
-        MinimalSettingsSection(title = "Notifications") {
-            MinimalSettingsItem(
-                icon = Icons.Default.Notifications,
-                title = "Push Notifications",
-                trailing = {
-                    Switch(
-                        checked = state.notificationsEnabled,
-                        onCheckedChange = { viewModel.setNotifications(it) }
+                        checked = isDarkMode,
+                        onCheckedChange = { viewModel.setThemeMode(if (it) ThemeMode.DARK else ThemeMode.LIGHT) }
                     )
                 }
             )
@@ -91,7 +79,7 @@ fun MinimalSettingsScreen(
             MinimalSettingsItem(
                 icon = Icons.Default.Info,
                 title = "Version",
-                subtitle = "1.0.0",
+                subtitle = state.appVersion,
                 onClick = { }
             )
         }

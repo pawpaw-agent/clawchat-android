@@ -1,12 +1,10 @@
 package com.openclaw.clawchat.ui.screens.main
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,13 +21,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.openclaw.clawchat.ui.components.MinimalSessionItem
 import com.openclaw.clawchat.ui.state.MainUiState
 import com.openclaw.clawchat.ui.state.MainViewModel
-import com.openclaw.clawchat.ui.state.UiEvent
 import com.openclaw.clawchat.ui.theme.MinimalTokens
 
 @Composable
@@ -45,7 +41,7 @@ fun MinimalMainScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    viewModel.events.tryEmit(UiEvent.CreateSession)
+                    viewModel.createSession()
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -93,8 +89,7 @@ private fun MinimalSessionList(
         ) { session ->
             MinimalSessionItem(
                 session = session,
-                onClick = { onSessionClick(session.id) },
-                isSelected = session.id == sessions.selectedSessionId
+                onClick = { onSessionClick(session.id) }
             )
         }
     }
