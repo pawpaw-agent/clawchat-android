@@ -881,8 +881,15 @@ class GatewayConnection(
 
     suspend fun sessionsUsage(
         sessionKey: String? = null, startDate: String? = null,
-        endDate: String? = null, limit: Int? = null
-    ): ResponseFrame = sessionRpc.sessionsUsage(sessionKey, startDate, endDate, limit)
+        endDate: String? = null, mode: String? = null,
+        limit: Int? = null
+    ): ResponseFrame = sessionRpc.sessionsUsage(
+        key = sessionKey,
+        startDate = startDate,
+        endDate = endDate,
+        mode = mode,
+        limit = limit
+    )
 
     suspend fun sessionsMessagesSubscribe(sessionKey: String): ResponseFrame =
         sessionRpc.sessionsMessagesSubscribe(sessionKey)
