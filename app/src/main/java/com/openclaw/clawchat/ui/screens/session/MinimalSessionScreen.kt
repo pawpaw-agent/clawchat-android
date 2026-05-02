@@ -59,7 +59,7 @@ fun MinimalSessionScreen(
         MinimalInputBar(
             value = state.inputText,
             onValueChange = { viewModel.updateInputText(it) },
-            onSend = { viewModel.sendMessage() },
+            onSend = { viewModel.sendMessage(state.inputText) },
             enabled = state.connectionStatus.isConnected && !state.isSending,
             placeholder = "Type a message..."
         )
