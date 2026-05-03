@@ -94,7 +94,7 @@ fun CommandPalette(
                     keyboardActions = KeyboardActions(onSearch = {
                         // 执行第一个结果
                         if (filteredSessions.isNotEmpty()) {
-                            onSessionSelect(filteredSessions.first().key)
+                            onSessionSelect(filteredSessions.first().id)
                         } else if (filteredCommands.isNotEmpty()) {
                             onCommandExecute(filteredCommands.first().id)
                         }
@@ -122,10 +122,10 @@ fun CommandPalette(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
-                        items(filteredSessions, key = { "session-${it.key}" }) { session ->
+                        items(filteredSessions, key = { "session-${it.id}" }) { session ->
                             CommandPaletteItemRow(
                                 item = session,
-                                onClick = { onSessionSelect(session.key) }
+                                onClick = { onSessionSelect(session.id) }
                             )
                         }
                     }
