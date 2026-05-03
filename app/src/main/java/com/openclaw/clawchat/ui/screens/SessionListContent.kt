@@ -134,12 +134,12 @@ private fun SessionList(
             // 该日期下的会话
             items(
                 items = sessionsInGroup,
-                key = { session -> session.id }
+                key = { session -> session.key }
             ) { session ->
                 SessionItem(
                     session = session,
-                    isSelected = currentSession?.id == session.id,
-                    onSelect = { onSelectSession(session.id) },
+                    isSelected = currentSession?.key == session.key,
+                    onSelect = { onSelectSession(session.key) },
                     onSessionLongPress = { onSessionLongPress(session) },
                     onDelete = { id -> onDeleteSession(id) },
                     onSteer = onSteerSession,
@@ -262,7 +262,7 @@ private fun SessionItem(
                 TextButton(
                     onClick = {
                         if (steerText.isNotBlank() && onSteer != null) {
-                            onSteer(session.id, steerText)
+                            onSteer(session.key, steerText)
                             steerText = ""
                         }
                         showSteerDialog = false
@@ -297,7 +297,7 @@ private fun SessionItem(
                 TextButton(
                     onClick = {
                         if (renameText.isNotBlank() && onRename != null) {
-                            onRename(session.id, renameText)
+                            onRename(session.key, renameText)
                         }
                         showRenameDialog = false
                     }
@@ -322,7 +322,7 @@ private fun SessionItem(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onDelete(session.id)
+                        onDelete(session.key)
                         showDeleteConfirm = false
                     }
                 ) {
@@ -527,7 +527,7 @@ private fun SessionItem(
                 },
                 onClick = {
                     showMenu = false
-                    onTogglePin?.invoke(session.id, session.isPinned)
+                    onTogglePin?.invoke(session.key, session.isPinned)
                 }
             )
 

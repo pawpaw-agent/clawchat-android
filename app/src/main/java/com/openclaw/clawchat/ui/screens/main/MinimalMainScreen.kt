@@ -89,11 +89,11 @@ private fun MinimalSessionList(
     ) {
         items(
             items = sessions.sessions,
-            key = { it.id }
+            key = { it.key }
         ) { session ->
             MinimalSessionItem(
                 session = session,
-                onClick = { onSessionClick(session.id) }
+                onClick = { onSessionClick(session.key) }
             )
         }
     }

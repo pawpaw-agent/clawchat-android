@@ -419,12 +419,16 @@ class GatewayConnection(
         }
     }
 
-    // ── Auth handshake ──
+    // Auth handshake ──
 
     /**
      * Handle connect.challenge: sign → send connect req → await res via RequestTracker
+     * OpenClaw v2026.4.29: transition to Authenticating immediately on challenge
      */
     private suspend fun handleConnectChallenge(obj: JsonObject) {
+        // Mark as Authenticating (等待 hello-ok)
+        _connectionState.value = WebSocketConnectionState.Authenticating
+
         try {
             val payload = obj["payload"]?.jsonObject ?: return
             val nonce = payload["nonce"]?.jsonPrimitive?.content
@@ -1050,9 +1054,16 @@ class GatewayConnection(
             return
         }
 
-        val delayMs = (GatewayConfig.INITIAL_RECONNECT_DELAY_MS * Math.pow(GatewayConfig.RECONNECT_BACKOFF_FACTOR, reconnectAttempt.toDouble()))
+        // OpenClaw v2026.4.29: backoff starts at 800ms, cap at 15s, multiplier 1.7x
+        val delayMs = (GatewayConfig.INITIAL_RECONNECT_DELAY_MS *
+            Math.pow(GatewayConfig.RECONNECT_BACKOFF_FACTOR, reconnectAttempt.toDouble()))
             .toLong().coerceAtMost(GatewayConfig.MAX_RECONNECT_DELAY_MS)
+
+        // Mark state as Reconnecting before the delay (like OpenClaw)
+        _connectionState.value = WebSocketConnectionState.Reconnecting
         reconnectAttempt++
+
+        AppLog.d(TAG, "Scheduling reconnect in ${delayMs}ms (attempt $reconnectAttempt)")
 
         reconnectJob = appScope.launch {
             delay(delayMs)

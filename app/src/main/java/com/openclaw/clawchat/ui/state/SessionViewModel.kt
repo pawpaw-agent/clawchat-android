@@ -138,7 +138,8 @@ class SessionViewModel @Inject constructor(
 
             if (savedLabel != null || savedModel != null || savedAgentId != null) {
                 val savedSession = SessionUi(
-                    id = savedSessionId,
+                    key = savedSessionId,
+                    kind = "direct",
                     label = savedLabel,
                     model = savedModel,
                     agentId = savedAgentId,
@@ -299,7 +300,7 @@ class SessionViewModel @Inject constructor(
      */
     fun setSession(session: SessionUi) {
         // 保存 session 基本信息 到 SavedStateHandle（只保存非空值）
-        savedStateHandle[KEY_SESSION_ID] = session.id
+        savedStateHandle[KEY_SESSION_ID] = session.key
         session.label?.let { savedStateHandle[KEY_SESSION_LABEL] = it }
         session.model?.let { savedStateHandle[KEY_SESSION_MODEL] = it }
         session.agentId?.let { savedStateHandle[KEY_SESSION_AGENT_ID] = it }
@@ -316,6 +317,37 @@ class SessionViewModel @Inject constructor(
 
     fun refreshMessages() {
         messageLoader.refreshMessages()
+    }
+
+    /**
+     * OpenClaw v2026.4.29: 设置会话 key（代替 sessionId）
+     */
+    fun setSessionKey(sessionKey: String) {
+        setSessionId(sessionKey)
+    }
+
+    /**
+     * OpenClaw v2026.4.29: 切换到指定会话
+     */
+    fun switchSession(sessionKey: String) {
+        setSessionId(sessionKey)
+    }
+
+    /**
+     * OpenClaw v2026.4.29: 设置 thinking level
+     */
+    fun setThinkingLevel(level: String) {
+        _state.update { it.copy(thinkingLevel = level) }
+    }
+
+    /**
+     * OpenClaw v2026.4.29: 更新可用会话列表（用于 thread selector）
+     */
+    fun updateAvailableSessions(sessions: List<SessionUi>, mainSessionKey: String?) {
+        _state.update { it.copy(
+            availableSessions = sessions,
+            mainSessionKey = mainSessionKey
+        ) }
     }
 
     /**

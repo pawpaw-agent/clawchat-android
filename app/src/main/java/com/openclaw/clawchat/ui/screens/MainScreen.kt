@@ -83,23 +83,23 @@ fun MainScreen(
             session = session,
             onDismiss = { showSessionOptions = null },
             onRename = { newName ->
-                viewModel.renameSession(session.id, newName)
+                viewModel.renameSession(session.key, newName)
                 showSessionOptions = null
             },
             onPauseResume = {
                 if (session.status == SessionStatus.RUNNING) {
-                    viewModel.pauseSession(session.id)
+                    viewModel.pauseSession(session.key)
                 } else {
-                    viewModel.resumeSession(session.id)
+                    viewModel.resumeSession(session.key)
                 }
                 showSessionOptions = null
             },
             onTerminate = {
-                viewModel.terminateSession(session.id)
+                viewModel.terminateSession(session.key)
                 showSessionOptions = null
             },
             onDelete = {
-                viewModel.deleteSession(session.id)
+                viewModel.deleteSession(session.key)
                 showSessionOptions = null
             }
         )
@@ -182,7 +182,7 @@ fun MainScreen(
     if (showCommandPalette) {
         val sessionItems = state.sessions.map { session ->
             com.openclaw.clawchat.ui.components.CommandPaletteItem.SessionItem(
-                id = session.id,
+                id = session.key,
                 title = session.getDisplayName(),
                 contentDescription = session.getDisplayName(),
                 lastMessage = session.lastMessage,

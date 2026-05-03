@@ -12,10 +12,10 @@ object GatewayConfig {
     const val TICK_STALE_CHECK_INTERVAL_MS = 15_000L
     const val TICK_STALE_THRESHOLD_MS = 90_000L  // 2.5x tick interval
 
-    // 重连配置
-    const val INITIAL_RECONNECT_DELAY_MS = 1000L
-    const val MAX_RECONNECT_DELAY_MS = 30_000L
-    const val RECONNECT_BACKOFF_FACTOR = 2.0
+    // 重连配置（对齐 OpenClaw v2026.4.29）
+    const val INITIAL_RECONNECT_DELAY_MS = 800L
+    const val MAX_RECONNECT_DELAY_MS = 15_000L
+    const val RECONNECT_BACKOFF_FACTOR = 1.7
     const val MAX_RECONNECT_ATTEMPTS = 15
 
     // 日志配置

@@ -122,10 +122,10 @@ fun CommandPalette(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
-                        items(filteredSessions, key = { "session-${it.id}" }) { session ->
+                        items(filteredSessions, key = { "session-${it.key}" }) { session ->
                             CommandPaletteItemRow(
                                 item = session,
-                                onClick = { onSessionSelect(session.id) }
+                                onClick = { onSessionSelect(session.key) }
                             )
                         }
                     }

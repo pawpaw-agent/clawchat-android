@@ -104,12 +104,31 @@ data class SessionUiState(
     val slashCommandCompletion: SlashCommandCompletion = SlashCommandCompletion(),
 
     val inputText: String = "",
+    val thinkingLevel: String = "medium",  // OpenClaw v2026.4.29: off/low/medium/high
 
     val editingMessageId: String? = null,
-    val editingMessageText: String? = null
+    val editingMessageText: String? = null,
+
+    // OpenClaw v2026.4.29 streaming state
+    val pendingRunCount: Int = 0,  // Number of pending runs (for typing indicator)
+    val pendingToolCalls: List<PendingToolCallUi> = emptyList(),  // Pending tool calls for tools bubble
+
+    // Available sessions for thread selector (OpenClaw v2026.4.29)
+    val availableSessions: List<SessionUi> = emptyList(),
+    val mainSessionKey: String? = null
 ) {
     fun clearSession(): SessionUiState = SessionUiState(
         connectionStatus = connectionStatus,
         sessionId = sessionId
     )
 }
+
+/**
+ * Pending tool call UI (OpenClaw v2026.4.29)
+ */
+@Stable
+data class PendingToolCallUi(
+    val id: String,
+    val name: String,
+    val args: String? = null
+)

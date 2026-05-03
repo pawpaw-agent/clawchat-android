@@ -295,22 +295,31 @@ class MainViewModel @Inject constructor(
                             ?: obj["displayName"]?.jsonPrimitive?.content
 
                         SessionUi(
-                            id = sessionKey,
+                            key = sessionKey,
+                            kind = obj["kind"]?.jsonPrimitive?.content ?: "unknown",
                             label = displayLabel,
+                            displayName = obj["displayName"]?.jsonPrimitive?.content,
+                            surface = obj["surface"]?.jsonPrimitive?.content,
+                            subject = obj["subject"]?.jsonPrimitive?.content,
+                            updatedAt = obj["updatedAt"]?.jsonPrimitive?.long,
+                            sessionId = obj["sessionId"]?.jsonPrimitive?.content,
                             model = obj["model"]?.jsonPrimitive?.content,
+                            modelProvider = obj["modelProvider"]?.jsonPrimitive?.content,
+                            status = SessionStatus.RUNNING,
+                            runtimeMs = obj["runtimeMs"]?.jsonPrimitive?.long,
+                            inputTokens = obj["inputTokens"]?.jsonPrimitive?.content?.toIntOrNull(),
+                            outputTokens = obj["outputTokens"]?.jsonPrimitive?.content?.toIntOrNull(),
+                            totalTokens = obj["totalTokens"]?.jsonPrimitive?.content?.toIntOrNull(),
+                            totalTokensFresh = obj["totalTokensFresh"]?.jsonPrimitive?.content?.toBooleanStrictOrNull(),
+                            thinkingLevel = obj["thinkingLevel"]?.jsonPrimitive?.content,
+                            reasoningLevel = obj["reasoningLevel"]?.jsonPrimitive?.content,
+                            fastMode = obj["fastMode"]?.jsonPrimitive?.content?.toBooleanStrictOrNull(),
                             agentId = agentId,
                             agentName = agentName,
                             agentEmoji = agentEmoji,
-                            status = SessionStatus.RUNNING,
-                            lastActivityAt = obj["lastActivityAt"]?.jsonPrimitive?.long
-                                ?: System.currentTimeMillis(),
-                            messageCount = 0,
                             lastMessage = obj["lastMessage"]?.jsonPrimitive?.content,
-                            thinking = false,
-                            // Context token 用量
-                            totalTokens = obj["totalTokens"]?.jsonPrimitive?.content?.toIntOrNull(),
-                            contextTokens = obj["contextTokens"]?.jsonPrimitive?.content?.toIntOrNull(),
-                            totalTokensFresh = obj["totalTokensFresh"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: true
+                            lastActivityAt = obj["updatedAt"]?.jsonPrimitive?.long
+                                ?: System.currentTimeMillis()
                         )
                     } catch (e: Exception) {
                         AppLog.w(TAG, "Failed to parse session: ${e.message}")
@@ -383,8 +392,8 @@ class MainViewModel @Inject constructor(
             // 更新 UI 状态
             _uiState.update {
                 it.copy(
-                    sessions = it.sessions.filter { s -> s.id != sessionId },
-                    currentSession = if (it.currentSession?.id == sessionId) null else it.currentSession
+                    sessions = it.sessions.filter { s -> s.key != sessionId },
+                    currentSession = if (it.currentSession?.key == sessionId) null else it.currentSession
                 )
             }
             _events.trySend(UiEvent.ShowSuccess("会话已删除"))
@@ -395,7 +404,7 @@ class MainViewModel @Inject constructor(
      * 清除当前会话的所有消息
      */
     fun clearCurrentSession() {
-        val sessionId = _uiState.value.currentSession?.id ?: return
+        val sessionId = _uiState.value.currentSession?.key ?: return
         viewModelScope.launch(exceptionHandler) {
             try {
                 val response = gateway.sessionsReset(sessionId, "clear")
@@ -576,7 +585,7 @@ class MainViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     sessions = it.sessions.map { s ->
-                        if (s.id == sessionId) s.copy(status = SessionStatus.TERMINATED)
+                        if (s.key == sessionId) s.copy(status = SessionStatus.TERMINATED)
                         else s
                     }
                 )
@@ -679,7 +688,7 @@ class MainViewModel @Inject constructor(
                 _uiState.update { state ->
                     state.copy(
                         sessions = state.sessions.map { session ->
-                            if (session.id == sessionId) {
+                            if (session.key == sessionId) {
                                 session.copy(isPinned = !currentPinned)
                             } else session
                         }.sortedByDescending { it.isPinned }  // 置顶的排前面
