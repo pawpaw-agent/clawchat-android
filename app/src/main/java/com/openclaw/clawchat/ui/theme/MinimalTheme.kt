@@ -18,10 +18,10 @@ private val DarkColorScheme = darkColorScheme(
     primaryContainer = MinimalTokens.Legacy.primarySubtle,
     onPrimaryContainer = MinimalTokens.Legacy.textPrimary,
 
-    secondary = MinimalTokens.Dark.surfaceVariant,
-    onSecondary = MinimalTokens.Dark.textPrimary,
-    secondaryContainer = MinimalTokens.Dark.surfaceVariant,
-    onSecondaryContainer = MinimalTokens.Dark.textPrimary,
+    secondary = MinimalTokens.Legacy.surfaceVariant,
+    onSecondary = MinimalTokens.Legacy.textPrimary,
+    secondaryContainer = MinimalTokens.Legacy.surfaceVariant,
+    onSecondaryContainer = MinimalTokens.Legacy.textPrimary,
 
     tertiary = MinimalTokens.Legacy.primary,
     onTertiary = MinimalTokens.Legacy.onPrimary,
@@ -31,22 +31,22 @@ private val DarkColorScheme = darkColorScheme(
     background = MinimalTokens.Legacy.background,
     onBackground = MinimalTokens.Legacy.textPrimary,
 
-    surface = MinimalTokens.Dark.surface,
-    onSurface = MinimalTokens.Dark.text,
-    surfaceVariant = MinimalTokens.Dark.surfaceStrong,
-    onSurfaceVariant = MinimalTokens.Dark.textSecondary,
+    surface = MinimalTokens.Legacy.surface,
+    onSurface = MinimalTokens.Legacy.textPrimary,
+    surfaceVariant = MinimalTokens.Legacy.surfaceVariant,
+    onSurfaceVariant = MinimalTokens.Legacy.textSecondary,
 
     error = MinimalTokens.Legacy.error,
     onError = Color.White,
-    errorContainer = MinimalTokens.Dark.dangerSoft,
-    onErrorContainer = MinimalTokens.Dark.danger,
+    errorContainer = MinimalTokens.Legacy.error.copy(alpha = 0.1f),
+    onErrorContainer = MinimalTokens.Legacy.error,
 
-    outline = MinimalTokens.Dark.border,
-    outlineVariant = MinimalTokens.Dark.borderStrong,
+    outline = MinimalTokens.Legacy.border,
+    outlineVariant = MinimalTokens.Legacy.borderSubtle,
 
-    inverseSurface = MinimalTokens.Light.background,
-    inverseOnSurface = MinimalTokens.Light.textPrimary,
-    inversePrimary = MinimalTokens.Light.primary,
+    inverseSurface = MinimalTokens.Legacy.surface,
+    inverseOnSurface = MinimalTokens.Legacy.textPrimary,
+    inversePrimary = MinimalTokens.Legacy.primary,
 
     scrim = Color.Black.copy(alpha = 0.32f)
 )
@@ -57,18 +57,18 @@ private val LightColorScheme = lightColorScheme(
     primaryContainer = MinimalTokens.Legacy.primarySubtle,
     onPrimaryContainer = MinimalTokens.Legacy.primary,
 
-    secondary = MinimalTokens.Light.surfaceVariant,
-    onSecondary = MinimalTokens.Light.textPrimary,
-    secondaryContainer = MinimalTokens.Light.surfaceVariant,
-    onSecondaryContainer = MinimalTokens.Light.textPrimary,
+    secondary = MinimalTokens.Light.surface,
+    onSecondary = MinimalTokens.Light.text,
+    secondaryContainer = MinimalTokens.Light.surfaceStrong,
+    onSecondaryContainer = MinimalTokens.Light.textSecondary,
 
     tertiary = MinimalTokens.Legacy.primary,
     onTertiary = MinimalTokens.Legacy.onPrimary,
     tertiaryContainer = MinimalTokens.Legacy.primarySubtle,
     onTertiaryContainer = MinimalTokens.Legacy.primary,
 
-    background = MinimalTokens.Legacy.background,
-    onBackground = MinimalTokens.Legacy.textPrimary,
+    background = MinimalTokens.Light.surface,
+    onBackground = MinimalTokens.Light.text,
 
     surface = MinimalTokens.Light.surface,
     onSurface = MinimalTokens.Light.text,
@@ -83,9 +83,9 @@ private val LightColorScheme = lightColorScheme(
     outline = MinimalTokens.Light.border,
     outlineVariant = MinimalTokens.Light.borderStrong,
 
-    inverseSurface = MinimalTokens.Dark.background,
-    inverseOnSurface = MinimalTokens.Dark.textPrimary,
-    inversePrimary = MinimalTokens.Dark.primary,
+    inverseSurface = MinimalTokens.Legacy.surface,
+    inverseOnSurface = MinimalTokens.Legacy.textPrimary,
+    inversePrimary = MinimalTokens.Legacy.primary,
 
     scrim = Color.Black.copy(alpha = 0.32f)
 )
