@@ -20,7 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.state.ConnectionStatus
-import com.openclaw.clawchat.ui.theme.DesignTokens
+import com.openclaw.clawchat.ui.theme.MinimalTokens
 
 /**
  * 网络状态横幅
@@ -71,20 +71,20 @@ private fun DisconnectedBanner(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = DesignTokens.space4, vertical = DesignTokens.space2),
+            .padding(horizontal = MinimalTokens.space4, vertical = MinimalTokens.space2),
         color = MaterialTheme.colorScheme.errorContainer,
         contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        shape = RoundedCornerShape(DesignTokens.radiusMd)
+        shape = RoundedCornerShape(MinimalTokens.radiusMd)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = DesignTokens.space3, vertical = DesignTokens.space2),
+                .padding(horizontal = MinimalTokens.space3, vertical = MinimalTokens.space2),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(DesignTokens.space2),
+                horizontalArrangement = Arrangement.spacedBy(MinimalTokens.space2),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -123,21 +123,21 @@ private fun ErrorBanner(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = DesignTokens.space4, vertical = DesignTokens.space2),
+            .padding(horizontal = MinimalTokens.space4, vertical = MinimalTokens.space2),
         color = MaterialTheme.colorScheme.errorContainer,
         contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        shape = RoundedCornerShape(DesignTokens.radiusMd)
+        shape = RoundedCornerShape(MinimalTokens.radiusMd)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = DesignTokens.space3, vertical = DesignTokens.space2),
+                .padding(horizontal = MinimalTokens.space3, vertical = MinimalTokens.space2),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
                 modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(DesignTokens.space2),
+                horizontalArrangement = Arrangement.spacedBy(MinimalTokens.space2),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -185,16 +185,16 @@ private fun ConnectingBanner() {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = DesignTokens.space4, vertical = DesignTokens.space2),
+            .padding(horizontal = MinimalTokens.space4, vertical = MinimalTokens.space2),
         color = MaterialTheme.colorScheme.tertiaryContainer,
         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-        shape = RoundedCornerShape(DesignTokens.radiusMd)
+        shape = RoundedCornerShape(MinimalTokens.radiusMd)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = DesignTokens.space3, vertical = DesignTokens.space2),
-            horizontalArrangement = Arrangement.spacedBy(DesignTokens.space2),
+                .padding(horizontal = MinimalTokens.space3, vertical = MinimalTokens.space2),
+            horizontalArrangement = Arrangement.spacedBy(MinimalTokens.space2),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 动画进度环

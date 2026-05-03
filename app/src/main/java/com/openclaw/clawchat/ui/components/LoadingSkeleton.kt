@@ -51,7 +51,7 @@ fun LoadingSkeleton(
         initialValue = 0f,
         targetValue = 1000f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
+            animation = tween(1500, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "shimmer"
