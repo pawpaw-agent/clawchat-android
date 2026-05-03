@@ -83,7 +83,7 @@ private fun MinimalSessionList(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             horizontal = MinimalTokens.space4,
-            vertical = MinimalTokens.space4
+            vertical = MinimalTokens.space3
         ),
         verticalArrangement = Arrangement.spacedBy(MinimalTokens.space2)
     ) {

@@ -7,15 +7,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,7 +23,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.openclaw.clawchat.ui.state.SessionUi
-import com.openclaw.clawchat.ui.theme.MinimalColors
 import com.openclaw.clawchat.ui.theme.MinimalTokens
 import com.openclaw.clawchat.ui.components.minimal.MinimalAvatar
 
@@ -36,43 +34,76 @@ fun MinimalSessionItem(
     isSelected: Boolean = false
 ) {
     val backgroundColor = if (isSelected) {
-        MaterialTheme.colorScheme.surfaceVariant
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
     } else {
         MaterialTheme.colorScheme.surface
     }
 
-    Surface(
+    val borderColor = if (isSelected) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+    } else {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+    }
+
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        color = backgroundColor,
-        shape = RoundedCornerShape(MinimalTokens.radiusMd),
-        shadowElevation = MinimalTokens.elevationNone
+            .background(
+                color = backgroundColor,
+                shape = MaterialTheme.shapes.medium
+            )
+            .padding(horizontal = MinimalTokens.space3, vertical = MinimalTokens.space3)
+            .clickable(onClick = onClick)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = MinimalTokens.space3, vertical = MinimalTokens.space2),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar
-            MinimalAvatar(
-                emoji = session.agentEmoji,
-                icon = Icons.Default.Chat,
-                size = MinimalTokens.avatarSizeSm
-            )
+            // Avatar with online indicator
+            Box {
+                MinimalAvatar(
+                    emoji = session.agentEmoji,
+                    icon = Icons.Default.Chat,
+                    size = MinimalTokens.avatarSizeMd
+                )
+                // Status dot
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .align(Alignment.BottomEnd)
+                        .clip(CircleShape)
+                        .background(
+                            if (session.thinking) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                        .padding(1.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface)
+                )
+            }
 
             Spacer(modifier = Modifier.width(MinimalTokens.space2))
 
             // Content
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = session.getDisplayName(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = session.getDisplayName(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = formatTimeAgo(session.lastActivityAt),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
                 if (!session.lastMessage.isNullOrBlank()) {
                     Text(
@@ -86,20 +117,11 @@ fun MinimalSessionItem(
                 }
             }
 
-            Spacer(modifier = Modifier.width(MinimalTokens.space1))
-
-            // Timestamp
-            Text(
-                text = formatTimeAgo(session.lastActivityAt),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            // Unread indicator
+            // Thinking indicator
             if (session.thinking) {
                 Box(
                     modifier = Modifier
-                        .padding(start = MinimalTokens.space1)
+                        .padding(start = MinimalTokens.space2)
                         .size(6.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
