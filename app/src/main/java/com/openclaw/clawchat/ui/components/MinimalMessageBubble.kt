@@ -101,7 +101,7 @@ fun MinimalMessageBubble(
                 message.content.forEach { item ->
                     when (item) {
                         is MessageContentItem.Text -> {
-                            MarkdownText(
+                            MarkdownBlockRenderer(
                                 content = item.text,
                                 fontSize = 14.sp,
                                 textColor = if (isUser) {
@@ -126,7 +126,13 @@ fun MinimalMessageBubble(
                             )
                         }
                         is MessageContentItem.Image -> {
-                            // TODO: Image display
+                            coil.compose.AsyncImage(
+                                model = item.url,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            )
                         }
                     }
                 }
@@ -202,11 +208,10 @@ private fun MinimalTextContent(
     text: String,
     textColor: Color
 ) {
-    MarkdownText(
+    MarkdownBlockRenderer(
         content = text,
         fontSize = 14.sp,
-        textColor = textColor,
-        isStreaming = false
+        textColor = textColor
     )
 }
 
@@ -284,13 +289,11 @@ private fun MinimalToolResultContent(
     val displayText = if (expanded || !isTruncated) text else text.take(200) + "..."
 
     Column(modifier = modifier.padding(top = 4.dp)) {
-        // Monospace font for tool output
-        Text(
-            text = displayText,
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-            ),
-            color = if (isError) {
+        // Markdown-rendered tool output
+        MarkdownBlockRenderer(
+            content = displayText,
+            fontSize = 12.sp,
+            textColor = if (isError) {
                 MaterialTheme.colorScheme.error
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
