@@ -68,10 +68,10 @@ data class SessionUi(
 ) {
     fun computeDisplayName(): String {
         return when {
-            !agentName.isNullOrBlank() -> agentName
             !displayName.isNullOrBlank() -> displayName
             !label.isNullOrBlank() -> label
             !subject.isNullOrBlank() -> subject
+            !agentName.isNullOrBlank() -> agentName
             !model.isNullOrBlank() -> model
             else -> "Unnamed session"
         }
@@ -80,10 +80,10 @@ data class SessionUi(
     @Composable
     fun getDisplayNameLocalized(): String {
         return when {
-            !agentName.isNullOrBlank() -> agentName
             !displayName.isNullOrBlank() -> displayName
             !label.isNullOrBlank() -> label
             !subject.isNullOrBlank() -> subject
+            !agentName.isNullOrBlank() -> agentName
             !model.isNullOrBlank() -> model
             else -> androidx.compose.ui.res.stringResource(com.openclaw.clawchat.R.string.session_unnamed)
         }
