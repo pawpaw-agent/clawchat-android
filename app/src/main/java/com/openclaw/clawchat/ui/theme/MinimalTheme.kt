@@ -12,17 +12,16 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// Dark theme - using Legacy colors for Material3 compatibility
 private val DarkColorScheme = darkColorScheme(
     primary = MinimalTokens.Legacy.primary,
     onPrimary = MinimalTokens.Legacy.onPrimary,
     primaryContainer = MinimalTokens.Legacy.primarySubtle,
     onPrimaryContainer = MinimalTokens.Legacy.textPrimary,
 
-    secondary = MinimalTokens.Legacy.surfaceVariant,
-    onSecondary = MinimalTokens.Legacy.textPrimary,
-    secondaryContainer = MinimalTokens.Legacy.surfaceVariant,
-    onSecondaryContainer = MinimalTokens.Legacy.textPrimary,
+    secondary = MinimalTokens.Dark.surfaceVariant,
+    onSecondary = MinimalTokens.Dark.textPrimary,
+    secondaryContainer = MinimalTokens.Dark.surfaceVariant,
+    onSecondaryContainer = MinimalTokens.Dark.textPrimary,
 
     tertiary = MinimalTokens.Legacy.primary,
     onTertiary = MinimalTokens.Legacy.onPrimary,
@@ -32,27 +31,26 @@ private val DarkColorScheme = darkColorScheme(
     background = MinimalTokens.Legacy.background,
     onBackground = MinimalTokens.Legacy.textPrimary,
 
-    surface = MinimalTokens.Legacy.surface,
-    onSurface = MinimalTokens.Legacy.textPrimary,
-    surfaceVariant = MinimalTokens.Legacy.surfaceVariant,
-    onSurfaceVariant = MinimalTokens.Legacy.textSecondary,
+    surface = MinimalTokens.Dark.surface,
+    onSurface = MinimalTokens.Dark.text,
+    surfaceVariant = MinimalTokens.Dark.surfaceStrong,
+    onSurfaceVariant = MinimalTokens.Dark.textSecondary,
 
     error = MinimalTokens.Legacy.error,
     onError = Color.White,
-    errorContainer = MinimalTokens.Legacy.error.copy(alpha = 0.1f),
-    onErrorContainer = MinimalTokens.Legacy.error,
+    errorContainer = MinimalTokens.Dark.dangerSoft,
+    onErrorContainer = MinimalTokens.Dark.danger,
 
-    outline = MinimalTokens.Legacy.border,
-    outlineVariant = MinimalTokens.Legacy.borderSubtle,
+    outline = MinimalTokens.Dark.border,
+    outlineVariant = MinimalTokens.Dark.borderStrong,
 
-    inverseSurface = MinimalTokens.Legacy.background,
-    inverseOnSurface = MinimalTokens.Legacy.textPrimary,
-    inversePrimary = MinimalTokens.Legacy.primary,
+    inverseSurface = MinimalTokens.Light.background,
+    inverseOnSurface = MinimalTokens.Light.textPrimary,
+    inversePrimary = MinimalTokens.Light.primary,
 
     scrim = Color.Black.copy(alpha = 0.32f)
 )
 
-// Light theme - using Legacy colors for Material3 compatibility
 private val LightColorScheme = lightColorScheme(
     primary = MinimalTokens.Legacy.primary,
     onPrimary = MinimalTokens.Legacy.onPrimary,
@@ -73,21 +71,21 @@ private val LightColorScheme = lightColorScheme(
     onBackground = MinimalTokens.Legacy.textPrimary,
 
     surface = MinimalTokens.Light.surface,
-    onSurface = MinimalTokens.Light.textPrimary,
-    surfaceVariant = MinimalTokens.Light.surfaceVariant,
+    onSurface = MinimalTokens.Light.text,
+    surfaceVariant = MinimalTokens.Light.surfaceStrong,
     onSurfaceVariant = MinimalTokens.Light.textSecondary,
 
     error = MinimalTokens.Legacy.error,
     onError = Color.White,
-    errorContainer = MinimalTokens.Legacy.error.copy(alpha = 0.1f),
-    onErrorContainer = MinimalTokens.Legacy.error,
+    errorContainer = MinimalTokens.Light.dangerSoft,
+    onErrorContainer = MinimalTokens.Light.danger,
 
     outline = MinimalTokens.Light.border,
-    outlineVariant = MinimalTokens.Light.borderSubtle,
+    outlineVariant = MinimalTokens.Light.borderStrong,
 
-    inverseSurface = MinimalTokens.Legacy.surface,
-    inverseOnSurface = MinimalTokens.Legacy.textPrimary,
-    inversePrimary = MinimalTokens.Legacy.primary,
+    inverseSurface = MinimalTokens.Dark.background,
+    inverseOnSurface = MinimalTokens.Dark.textPrimary,
+    inversePrimary = MinimalTokens.Dark.primary,
 
     scrim = Color.Black.copy(alpha = 0.32f)
 )
