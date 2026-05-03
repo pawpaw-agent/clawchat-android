@@ -89,7 +89,7 @@ fun SessionScreen(
 
     // 从 MainViewModel 获取当前会话数据（包含 token 信息）
     val currentSession = remember(sessionId, mainState.sessions) {
-        mainState.sessions.find { it.id == sessionId }
+        mainState.sessions.find { it.key == sessionId }
     }
 
     // 会话切换时更新 ViewModel

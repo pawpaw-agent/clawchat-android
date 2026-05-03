@@ -103,8 +103,8 @@ class SettingsViewModel @Inject constructor(
                     }
                     is WebSocketConnectionState.Connecting -> ConnectionStatus.Connecting
                     is WebSocketConnectionState.Authenticating -> ConnectionStatus.Connecting
+                    is WebSocketConnectionState.Reconnecting -> ConnectionStatus.Connecting
                     is WebSocketConnectionState.Stale -> ConnectionStatus.Stale
-                    is WebSocketConnectionState.Disconnecting -> ConnectionStatus.Disconnecting
                     is WebSocketConnectionState.Disconnected -> ConnectionStatus.Disconnected
                     is WebSocketConnectionState.Error -> ConnectionStatus.Error(
                         message = connectionState.throwable.message ?: "连接错误",

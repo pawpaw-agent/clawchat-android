@@ -13,36 +13,36 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = MinimalTokens.Dark.primary,
-    onPrimary = MinimalTokens.Dark.onPrimary,
-    primaryContainer = MinimalTokens.Dark.primarySubtle,
-    onPrimaryContainer = MinimalTokens.Dark.textPrimary,
+    primary = MinimalTokens.Legacy.primary,
+    onPrimary = MinimalTokens.Legacy.onPrimary,
+    primaryContainer = MinimalTokens.Legacy.primarySubtle,
+    onPrimaryContainer = MinimalTokens.Legacy.textPrimary,
 
     secondary = MinimalTokens.Dark.surfaceVariant,
     onSecondary = MinimalTokens.Dark.textPrimary,
     secondaryContainer = MinimalTokens.Dark.surfaceVariant,
     onSecondaryContainer = MinimalTokens.Dark.textPrimary,
 
-    tertiary = MinimalTokens.Dark.primary,
-    onTertiary = MinimalTokens.Dark.onPrimary,
-    tertiaryContainer = MinimalTokens.Dark.primarySubtle,
-    onTertiaryContainer = MinimalTokens.Dark.primary,
+    tertiary = MinimalTokens.Legacy.primary,
+    onTertiary = MinimalTokens.Legacy.onPrimary,
+    tertiaryContainer = MinimalTokens.Legacy.primarySubtle,
+    onTertiaryContainer = MinimalTokens.Legacy.primary,
 
-    background = MinimalTokens.Dark.background,
-    onBackground = MinimalTokens.Dark.textPrimary,
+    background = MinimalTokens.Legacy.background,
+    onBackground = MinimalTokens.Legacy.textPrimary,
 
     surface = MinimalTokens.Dark.surface,
-    onSurface = MinimalTokens.Dark.textPrimary,
-    surfaceVariant = MinimalTokens.Dark.surfaceVariant,
+    onSurface = MinimalTokens.Dark.text,
+    surfaceVariant = MinimalTokens.Dark.surfaceStrong,
     onSurfaceVariant = MinimalTokens.Dark.textSecondary,
 
-    error = MinimalTokens.Dark.error,
+    error = MinimalTokens.Legacy.error,
     onError = Color.White,
-    errorContainer = MinimalTokens.Dark.error.copy(alpha = 0.1f),
-    onErrorContainer = MinimalTokens.Dark.error,
+    errorContainer = MinimalTokens.Dark.dangerSoft,
+    onErrorContainer = MinimalTokens.Dark.danger,
 
     outline = MinimalTokens.Dark.border,
-    outlineVariant = MinimalTokens.Dark.borderSubtle,
+    outlineVariant = MinimalTokens.Dark.borderStrong,
 
     inverseSurface = MinimalTokens.Light.background,
     inverseOnSurface = MinimalTokens.Light.textPrimary,
@@ -52,36 +52,36 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = MinimalTokens.Light.primary,
-    onPrimary = MinimalTokens.Light.onPrimary,
-    primaryContainer = MinimalTokens.Light.primarySubtle,
-    onPrimaryContainer = MinimalTokens.Light.primary,
+    primary = MinimalTokens.Legacy.primary,
+    onPrimary = MinimalTokens.Legacy.onPrimary,
+    primaryContainer = MinimalTokens.Legacy.primarySubtle,
+    onPrimaryContainer = MinimalTokens.Legacy.primary,
 
     secondary = MinimalTokens.Light.surfaceVariant,
     onSecondary = MinimalTokens.Light.textPrimary,
     secondaryContainer = MinimalTokens.Light.surfaceVariant,
     onSecondaryContainer = MinimalTokens.Light.textPrimary,
 
-    tertiary = MinimalTokens.Light.primary,
-    onTertiary = MinimalTokens.Light.onPrimary,
-    tertiaryContainer = MinimalTokens.Light.primarySubtle,
-    onTertiaryContainer = MinimalTokens.Light.primary,
+    tertiary = MinimalTokens.Legacy.primary,
+    onTertiary = MinimalTokens.Legacy.onPrimary,
+    tertiaryContainer = MinimalTokens.Legacy.primarySubtle,
+    onTertiaryContainer = MinimalTokens.Legacy.primary,
 
-    background = MinimalTokens.Light.background,
-    onBackground = MinimalTokens.Light.textPrimary,
+    background = MinimalTokens.Legacy.background,
+    onBackground = MinimalTokens.Legacy.textPrimary,
 
     surface = MinimalTokens.Light.surface,
-    onSurface = MinimalTokens.Light.textPrimary,
-    surfaceVariant = MinimalTokens.Light.surfaceVariant,
+    onSurface = MinimalTokens.Light.text,
+    surfaceVariant = MinimalTokens.Light.surfaceStrong,
     onSurfaceVariant = MinimalTokens.Light.textSecondary,
 
-    error = MinimalTokens.Light.error,
+    error = MinimalTokens.Legacy.error,
     onError = Color.White,
-    errorContainer = MinimalTokens.Light.error.copy(alpha = 0.1f),
-    onErrorContainer = MinimalTokens.Light.error,
+    errorContainer = MinimalTokens.Light.dangerSoft,
+    onErrorContainer = MinimalTokens.Light.danger,
 
     outline = MinimalTokens.Light.border,
-    outlineVariant = MinimalTokens.Light.borderSubtle,
+    outlineVariant = MinimalTokens.Light.borderStrong,
 
     inverseSurface = MinimalTokens.Dark.background,
     inverseOnSurface = MinimalTokens.Dark.textPrimary,

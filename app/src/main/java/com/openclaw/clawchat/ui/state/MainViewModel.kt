@@ -367,7 +367,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun selectSession(sessionId: String) {
-        val session = _uiState.value.sessions.find { it.id == sessionId }
+        val session = _uiState.value.sessions.find { it.key == sessionId }
         _uiState.update { it.copy(currentSession = session) }
         _events.trySend(UiEvent.NavigateToSession(sessionId))
     }
@@ -733,7 +733,7 @@ private inline fun MutableStateFlow<MainUiState>.updateSessionInList(
 ) {
     update { state ->
         state.copy(
-            sessions = state.sessions.map { if (it.id == sessionId) transform(it) else it }
+            sessions = state.sessions.map { if (it.key == sessionId) transform(it) else it }
         )
     }
 }

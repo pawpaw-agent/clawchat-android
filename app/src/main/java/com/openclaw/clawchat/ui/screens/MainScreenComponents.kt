@@ -39,7 +39,7 @@ fun SessionOptionsDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.session_options_status, session.status.name),
+                    text = stringResource(R.string.session_options_status, session.status?.name ?: "UNKNOWN"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

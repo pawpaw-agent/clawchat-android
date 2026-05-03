@@ -311,7 +311,7 @@ class SessionViewModel @Inject constructor(
             session = session,
             totalTokens = session.totalTokens,
             contextTokensLimit = session.contextTokens,
-            totalTokensFresh = session.totalTokensFresh
+            totalTokensFresh = session.totalTokensFresh ?: true
         ) }
     }
 
@@ -539,6 +539,21 @@ class SessionViewModel @Inject constructor(
 
     fun executeSlashCommand(command: SlashCommandDef, args: String) {
         slashCommandExecutor.execute(command, args, _state.value.sessionId)
+    }
+
+    /**
+     * Abort current chat run (OpenClaw v2026.4.29 style)
+     */
+    fun abortChat() {
+        val sessionId = _state.value.sessionId ?: return
+        viewModelScope.launch {
+            try {
+                gateway.chatAbort(sessionId)
+                AppLog.d(TAG, "chat.abort called")
+            } catch (e: Exception) {
+                AppLog.w(TAG, "chat.abort failed: ${e.message}")
+            }
+        }
     }
 
     /**

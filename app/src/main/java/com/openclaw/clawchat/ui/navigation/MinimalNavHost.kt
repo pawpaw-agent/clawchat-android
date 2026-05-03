@@ -88,12 +88,12 @@ fun MinimalNavHost(
                 composable(
                     route = MinimalNavRoutes.SESSION,
                     arguments = listOf(
-                        navArgument("sessionId") { type = NavType.StringType }
+                        navArgument("sessionKey") { type = NavType.StringType }
                     )
                 ) { backStackEntry ->
-                    val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
+                    val sessionKey = backStackEntry.arguments?.getString("sessionKey") ?: return@composable
                     MinimalSessionScreen(
-                        sessionId = sessionId,
+                        sessionKey = sessionKey,
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }

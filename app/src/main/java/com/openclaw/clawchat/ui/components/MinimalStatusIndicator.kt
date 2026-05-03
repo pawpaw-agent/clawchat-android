@@ -32,11 +32,11 @@ fun MinimalStatusIndicator(
         WebSocketConnectionState.Authenticating -> {
             Color(0xFFF59E0B) to "Authenticating"
         }
+        WebSocketConnectionState.Reconnecting -> {
+            Color(0xFFF59E0B) to "Reconnecting"
+        }
         WebSocketConnectionState.Disconnected -> {
             Color(0xFF71717A) to "Disconnected"
-        }
-        is WebSocketConnectionState.Disconnecting -> {
-            Color(0xFFF59E0B) to "Disconnecting"
         }
         WebSocketConnectionState.Stale -> {
             Color(0xFF71717A) to "Disconnected"

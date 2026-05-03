@@ -127,8 +127,8 @@ class DebugViewModel @Inject constructor(
                     is WebSocketConnectionState.Connected -> "Connected"
                     is WebSocketConnectionState.Connecting -> "Connecting"
                     is WebSocketConnectionState.Authenticating -> "Authenticating"
+                    is WebSocketConnectionState.Reconnecting -> "Reconnecting"
                     is WebSocketConnectionState.Stale -> "Stale"
-                    is WebSocketConnectionState.Disconnecting -> "Disconnecting"
                     is WebSocketConnectionState.Disconnected -> "Disconnected"
                     is WebSocketConnectionState.Error -> "Error: ${state.throwable.message}"
                 }
