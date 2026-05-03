@@ -1,5 +1,11 @@
 package com.openclaw.clawchat.ui.screens.session
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -287,30 +294,56 @@ private fun MinimalMessageList(
 
 /**
  * Streaming assistant bubble (OpenClaw v2026.4.29 style)
+ * Border pulses between neutral and accent to indicate active streaming
  */
 @Composable
 private fun MinimalStreamingBubble(
     text: String,
     modifier: Modifier = Modifier
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "streaming")
+    val borderAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "borderPulse"
+    )
+
+    val borderColor = MaterialTheme.colorScheme.primary.copy(alpha = borderAlpha)
+
     Surface(
         modifier = modifier.fillMaxWidth(0.90f),
         color = MaterialTheme.colorScheme.primaryContainer,
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+        border = BorderStroke(1.5.dp, borderColor)
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            Text(
-                text = "OpenClaw · Live",
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.6.sp
-                ),
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Live indicator dot
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.primary)
+                )
+                Text(
+                    text = "OpenClaw · Live",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.6.sp
+                    ),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
             // Streaming text with markdown-like handling
             Text(
                 text = text,
@@ -372,6 +405,7 @@ private fun MinimalPendingToolsBubble(
 
 /**
  * Typing indicator bubble (OpenClaw v2026.4.29 style)
+ * 3 animated dots with staggered bounce animation
  */
 @Composable
 private fun MinimalTypingIndicatorBubble(
@@ -388,25 +422,12 @@ private fun MinimalTypingIndicatorBubble(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Dot pulse animation (simplified - dots at different opacity)
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(RoundedCornerShape(50))
-                    .padding(0.dp)
-            )
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(RoundedCornerShape(50))
-                    .padding(0.dp)
-            )
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(RoundedCornerShape(50))
-                    .padding(0.dp)
-            )
+            // Animated dot 1
+            AnimatedDot(delay = 0)
+            // Animated dot 2
+            AnimatedDot(delay = 150)
+            // Animated dot 3
+            AnimatedDot(delay = 300)
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = "Thinking...",
@@ -415,6 +436,40 @@ private fun MinimalTypingIndicatorBubble(
             )
         }
     }
+}
+
+@Composable
+private fun AnimatedDot(delay: Int) {
+    val infiniteTransition = rememberInfiniteTransition(label = "dot")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, delayMillis = delay, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dotAlpha"
+    )
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.7f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, delayMillis = delay, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dotScale"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(6.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha))
+    )
 }
 
 /**
