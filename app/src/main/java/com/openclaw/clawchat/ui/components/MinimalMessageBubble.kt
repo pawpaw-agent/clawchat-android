@@ -101,13 +101,15 @@ fun MinimalMessageBubble(
                 message.content.forEach { item ->
                     when (item) {
                         is MessageContentItem.Text -> {
-                            MinimalTextContent(
-                                text = item.text,
+                            MarkdownText(
+                                content = item.text,
+                                fontSize = 14.sp,
                                 textColor = if (isUser) {
                                     MaterialTheme.colorScheme.onPrimaryContainer
                                 } else {
                                     MaterialTheme.colorScheme.onSurface
-                                }
+                                },
+                                isStreaming = false
                             )
                         }
                         is MessageContentItem.ToolCall -> {
@@ -193,18 +195,18 @@ private fun roleLabelText(role: MessageRole): String {
 }
 
 /**
- * Text content (OpenClaw v2026.4.29 style - simple, no markdown)
+ * Text content — renders markdown via MarkdownText
  */
 @Composable
 private fun MinimalTextContent(
     text: String,
     textColor: Color
 ) {
-    // TODO: Add markdown rendering like OpenClaw's ChatMarkdown
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = textColor
+    MarkdownText(
+        content = text,
+        fontSize = 14.sp,
+        textColor = textColor,
+        isStreaming = false
     )
 }
 
