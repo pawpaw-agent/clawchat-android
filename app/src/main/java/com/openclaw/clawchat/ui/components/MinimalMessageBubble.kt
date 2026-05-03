@@ -114,7 +114,7 @@ fun MinimalMessageBubble(
                             MinimalToolCallContent(
                                 name = item.name,
                                 phase = item.phase,
-                                isStreaming = item.isStreaming
+                                isStreaming = false
                             )
                         }
                         is MessageContentItem.ToolResult -> {
