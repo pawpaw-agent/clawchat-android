@@ -4,9 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -22,8 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.openclaw.clawchat.ui.components.MinimalInputBar
 import com.openclaw.clawchat.ui.components.MinimalMessageBubble
-import com.openclaw.clawchat.ui.state.ConnectionStatus
-import com.openclaw.clawchat.ui.state.SessionUiState
 import com.openclaw.clawchat.ui.state.SessionViewModel
 import com.openclaw.clawchat.ui.theme.MinimalTokens
 
@@ -43,7 +45,8 @@ fun MinimalSessionScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(bottom = MinimalTokens.inputBarHeight)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .windowInsetsPadding(WindowInsets.ime)
     ) {
         if (state.isLoading && state.chatMessages.isEmpty()) {
             MinimalSessionLoadingState()
