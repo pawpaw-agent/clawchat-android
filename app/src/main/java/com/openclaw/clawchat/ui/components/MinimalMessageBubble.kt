@@ -1,5 +1,15 @@
 package com.openclaw.clawchat.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -74,72 +84,80 @@ fun MinimalMessageBubble(
             .clickable { showDetails = !showDetails },
         horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
-        Surface(
-            color = bubbleStyle.containerColor,
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, bubbleStyle.borderColor)
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn(animationSpec = tween(200)) + slideInVertically(
+                animationSpec = tween(200),
+                initialOffsetY = { it / 6 }
+            )
         ) {
-            Column(
-                modifier = Modifier
-                    .widthIn(max = 280.dp)
-                    .padding(horizontal = 11.dp, vertical = 8.dp)
+            Surface(
+                color = bubbleStyle.containerColor,
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, bubbleStyle.borderColor)
             ) {
-                // Role label (OpenClaw style)
-                if (showRoleLabel) {
-                    Text(
-                        text = roleLabelText(message.role),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.6.sp
-                        ),
-                        color = bubbleStyle.roleColor,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                }
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 280.dp)
+                        .padding(horizontal = 11.dp, vertical = 8.dp)
+                ) {
+                    // Role label (OpenClaw style)
+                    if (showRoleLabel) {
+                        Text(
+                            text = roleLabelText(message.role),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 0.6.sp
+                            ),
+                            color = bubbleStyle.roleColor,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
 
-                // Message content
-                message.content.forEach { item ->
-                    when (item) {
-                        is MessageContentItem.Text -> {
-                            MarkdownBlockRenderer(
-                                content = item.text,
-                                fontSize = 14.sp,
-                                textColor = if (isUser) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                                isStreaming = false
-                            )
-                        }
-                        is MessageContentItem.ToolCall -> {
-                            MinimalToolCallContent(
-                                name = item.name,
-                                phase = item.phase,
-                                isStreaming = false
-                            )
-                        }
-                        is MessageContentItem.ToolResult -> {
-                            MinimalToolResultContent(
-                                text = item.text,
-                                isError = item.isError
-                            )
-                        }
-                        is MessageContentItem.Image -> {
-                            coil.compose.AsyncImage(
-                                model = item.url,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
-                            )
+                    // Message content
+                    message.content.forEach { item ->
+                        when (item) {
+                            is MessageContentItem.Text -> {
+                                MarkdownBlockRenderer(
+                                    content = item.text,
+                                    fontSize = 14.sp,
+                                    textColor = if (isUser) {
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                                    isStreaming = false
+                                )
+                            }
+                            is MessageContentItem.ToolCall -> {
+                                MinimalToolCallContent(
+                                    name = item.name,
+                                    phase = item.phase,
+                                    isStreaming = false
+                                )
+                            }
+                            is MessageContentItem.ToolResult -> {
+                                MinimalToolResultContent(
+                                    text = item.text,
+                                    isError = item.isError
+                                )
+                            }
+                            is MessageContentItem.Image -> {
+                                coil.compose.AsyncImage(
+                                    model = item.url,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                )
+                            }
                         }
                     }
-                }
 
-                // Loading indicator
-                if (message.isLoading) {
-                    MinimalLoadingIndicator()
+                    // Loading indicator
+                    if (message.isLoading) {
+                        MinimalLoadingIndicator()
+                    }
                 }
             }
         }
@@ -315,7 +333,7 @@ private fun MinimalToolResultContent(
 }
 
 /**
- * Loading indicator (OpenClaw v2026.4.29 style - dot pulse)
+ * Loading indicator (OpenClaw v2026.4.29 style - animated dot pulse)
  */
 @Composable
 private fun MinimalLoadingIndicator(
@@ -325,29 +343,14 @@ private fun MinimalLoadingIndicator(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.padding(top = 8.dp)
     ) {
-        // Animated dot pulse (simplified - static dots)
+        // Animated dot pulse (OpenClaw style - staggered bounce)
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(5.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
-            )
-            Box(
-                modifier = Modifier
-                    .size(5.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
-            )
-            Box(
-                modifier = Modifier
-                    .size(5.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
-            )
+            listOf(0, 150, 300).forEach { delay ->
+                LoadingDot(delayMillis = delay)
+            }
         }
 
         Spacer(modifier = Modifier.width(8.dp))
@@ -358,6 +361,35 @@ private fun MinimalLoadingIndicator(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+@Composable
+private fun LoadingDot(delayMillis: Int) {
+    val infiniteTransition = rememberInfiniteTransition(label = "loadingDot")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, delayMillis = delayMillis),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "dotAlpha"
+    )
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, delayMillis = delayMillis),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "dotScale"
+    )
+    Box(
+        modifier = Modifier
+            .size(5.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha))
+    )
 }
 
 /**
