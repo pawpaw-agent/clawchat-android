@@ -5,9 +5,9 @@ package com.openclaw.clawchat.ui.navigation
  */
 object MinimalNavRoutes {
     const val HOME = "home"
-    const val SESSION = "session/{sessionId}"
+    const val SESSION = "session/{sessionKey}"
     const val SETTINGS = "settings"
     const val ONBOARDING = "onboarding"
 
-    fun session(sessionId: String) = "session/$sessionId"
+    fun session(sessionKey: String) = "session/$sessionKey"
 }
