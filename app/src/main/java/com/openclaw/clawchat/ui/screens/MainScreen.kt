@@ -183,8 +183,8 @@ fun MainScreen(
         val sessionItems = state.sessions.map { session ->
             com.openclaw.clawchat.ui.components.CommandPaletteItem.SessionItem(
                 id = session.key,
-                title = session.getDisplayName(),
-                contentDescription = session.getDisplayName(),
+                title = session.computeDisplayName(),
+                contentDescription = session.computeDisplayName(),
                 lastMessage = session.lastMessage,
                 timestamp = session.lastActivityAt
             )

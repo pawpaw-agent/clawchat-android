@@ -26,7 +26,7 @@ fun SessionOptionsDialog(
 ) {
     var showRenameDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    var newName by remember { mutableStateOf(session.label ?: session.getDisplayName()) }
+    var newName by remember { mutableStateOf(session.label ?: session.computeDisplayName()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -34,7 +34,7 @@ fun SessionOptionsDialog(
         text = {
             Column {
                 Text(
-                    text = session.getDisplayName(),
+                    text = session.computeDisplayName(),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -108,7 +108,7 @@ fun SessionOptionsDialog(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(stringResource(R.string.session_delete_title)) },
-            text = { Text(stringResource(R.string.session_delete_confirm_text, session.getDisplayName())) },
+            text = { Text(stringResource(R.string.session_delete_confirm_text, session.computeDisplayName())) },
             confirmButton = {
                 Button(
                     onClick = {

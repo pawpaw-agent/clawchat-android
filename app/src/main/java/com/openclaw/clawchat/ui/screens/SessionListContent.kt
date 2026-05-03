@@ -318,7 +318,7 @@ private fun SessionItem(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(stringResource(R.string.session_delete_title)) },
-            text = { Text(stringResource(R.string.session_delete_message, session.getDisplayName())) },
+            text = { Text(stringResource(R.string.session_delete_message, session.computeDisplayName())) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -426,7 +426,7 @@ private fun SessionItem(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = session.getDisplayName(),
+                        text = session.computeDisplayName(),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                         maxLines = 1,

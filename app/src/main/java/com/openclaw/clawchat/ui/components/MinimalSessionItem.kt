@@ -91,7 +91,7 @@ fun MinimalSessionItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = session.getDisplayName(),
+                        text = session.computeDisplayName(),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,

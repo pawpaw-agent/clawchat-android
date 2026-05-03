@@ -66,7 +66,7 @@ data class SessionUi(
     val agentName: String? = null,
     val agentEmoji: String? = null
 ) {
-    fun getDisplayName(): String {
+    fun computeDisplayName(): String {
         return when {
             !agentName.isNullOrBlank() -> agentName
             !displayName.isNullOrBlank() -> displayName

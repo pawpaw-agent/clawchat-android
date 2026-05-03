@@ -151,7 +151,7 @@ private fun SessionThreadSelector(
                 )
             ) {
                 Text(
-                    text = session.getDisplayName().take(12),
+                    text = session.computeDisplayName().take(12),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
                     ),
