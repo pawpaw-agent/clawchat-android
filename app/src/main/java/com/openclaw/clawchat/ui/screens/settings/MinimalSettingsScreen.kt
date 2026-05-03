@@ -1,5 +1,6 @@
 package com.openclaw.clawchat.ui.screens.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -115,7 +116,8 @@ private fun MinimalSettingsSection(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(MaterialTheme.colorScheme.surface)
+                .clip(RoundedCornerShape(MinimalTokens.radiusMd))
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(horizontal = MinimalTokens.space2),
             verticalArrangement = Arrangement.spacedBy(MinimalTokens.space1)
         ) {
