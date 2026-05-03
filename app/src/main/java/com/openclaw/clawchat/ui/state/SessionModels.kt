@@ -26,17 +26,12 @@ data class SessionUi(
     val totalTokensFresh: Boolean = true
 ) {
     fun getDisplayName(): String {
-        val baseName = when {
+        return when {
             !agentName.isNullOrBlank() -> agentName
             !agentId.isNullOrBlank() -> agentId.removePrefix("agent:").substringBefore(":")
             !label.isNullOrBlank() -> label
             !model.isNullOrBlank() -> model
-            else -> "Session"
-        }
-        return if (baseName == "Session" || baseName == "Unnamed session") {
-            "$baseName #${id.takeLast(4).uppercase()}"
-        } else {
-            baseName
+            else -> "Unnamed session"
         }
     }
 
