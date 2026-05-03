@@ -154,6 +154,8 @@ fun SessionScreen(
                 agentName = state.session?.agentName,
                 agentEmoji = state.session?.agentEmoji,
                 currentModel = state.session?.model,
+                thinkingLevel = state.session?.thinkingLevel,
+                startedAt = state.session?.startedAt,
                 messageCount = state.chatMessages.size
             )
         },

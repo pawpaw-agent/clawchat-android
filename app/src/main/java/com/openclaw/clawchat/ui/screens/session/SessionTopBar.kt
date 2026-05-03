@@ -18,6 +18,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.components.AgentItem
 import com.openclaw.clawchat.ui.components.ModelItem
@@ -41,9 +43,22 @@ fun SessionTopAppBar(
     agentName: String? = null,
     agentEmoji: String? = null,
     currentModel: String? = null,
+    thinkingLevel: String? = null,
+    startedAt: Long? = null,
     messageCount: Int = 0
 ) {
     var showSessionMenu by remember { mutableStateOf(false) }
+    var runtimeSeconds by remember { mutableStateOf(0L) }
+
+    // Runtime timer
+    LaunchedEffect(startedAt) {
+        if (startedAt != null) {
+            while (true) {
+                runtimeSeconds = (System.currentTimeMillis() - startedAt) / 1000
+                delay(1000)
+            }
+        }
+    }
 
     // 显示名称优先级：Agent Name > Agent ID > Model > Label > 默认
     val displayName = when {
@@ -53,6 +68,15 @@ fun SessionTopAppBar(
         !sessionLabel.isNullOrBlank() -> sessionLabel
         else -> stringResource(R.string.session_title)
     }
+
+    // Runtime display
+    val runtimeDisplay = if (runtimeSeconds > 0) {
+        when {
+            runtimeSeconds < 60 -> "${runtimeSeconds}s"
+            runtimeSeconds < 3600 -> "${runtimeSeconds / 60}m ${runtimeSeconds % 60}s"
+            else -> "${runtimeSeconds / 3600}h ${(runtimeSeconds % 3600) / 60}m"
+        }
+    } else null
 
     if (isSearchMode) {
         // 搜索模式
@@ -93,19 +117,46 @@ fun SessionTopAppBar(
         TopAppBar(
             title = {
                 Column {
-                    Text(
-                        text = displayName,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    // Model 副标题
-                    if (!currentModel.isNullOrBlank() && agentId.isNullOrBlank()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = formatModelName(currentModel),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1
+                            text = displayName,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
+                        // Thinking level badge
+                        if (!thinkingLevel.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    text = thinkingLevel,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
+                    }
+                    // Model + runtime subtitle
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (!currentModel.isNullOrBlank() && agentId.isNullOrBlank()) {
+                            Text(
+                                text = formatModelName(currentModel),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
+                            )
+                        }
+                        if (runtimeDisplay != null) {
+                            Text(
+                                text = "· $runtimeDisplay",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             },
