@@ -82,62 +82,87 @@ object MinimalTokens {
         letterSpacing = 0.4.sp
     )
 
-    // ── Dark Theme Colors (OpenClaw MobileColors aligned) ────────────
+    // ── Dark Theme Colors (OpenClaw claw theme aligned) ────────────
+    // Colors match openclaw-429 CSS: --bg, --bg-accent, --bg-elevated, --card, --accent
     object Dark {
-        val surface = Color(0xFF1A1C20)
-        val surfaceStrong = Color(0xFF24262B)
-        val cardSurface = Color(0xFF1E2024)
-        val border = Color(0xFF2E3038)
-        val borderStrong = Color(0xFF3A3D46)
+        // Surface colors
+        val surface = Color(0xFF0e1015)       // openclaw --bg: deepest canvas
+        val surfaceAccent = Color(0xFF13151b) // openclaw --bg-accent: slightly elevated
+        val surfaceElevated = Color(0xFF191c24) // openclaw --bg-elevated: cards/elevated
+        val cardSurface = Color(0xFF161920)    // openclaw --card: card surface
+        val hover = Color(0xFF1f2330)          // openclaw --bg-hover
 
-        val text = Color(0xFFE4E5EA)
-        val textSecondary = Color(0xFFA0A6B4)
-        val textTertiary = Color(0xFF6B7280)
+        // Borders
+        val border = Color(0xFF1e2028)         // openclaw --border: whisper-thin
+        val borderStrong = Color(0xFF2e3040)     // openclaw --border-strong
 
-        val accent = Color(0xFF6EA8FF)
-        val accentSoft = Color(0xFF1A2A44)
-        val accentBorderStrong = Color(0xFF5B93E8)
+        // Text
+        val text = Color(0xFFd4d4d8)           // openclaw --text: body
+        val textStrong = Color(0xFFf4f4f5)     // openclaw --text-strong
+        val muted = Color(0xFF838387)          // openclaw --muted
 
-        val success = Color(0xFF5FBB85)
-        val successSoft = Color(0xFF152E22)
-        val warning = Color(0xFFE8A844)
-        val warningSoft = Color(0xFF2E2212)
-        val danger = Color(0xFFE87070)
-        val dangerSoft = Color(0xFF2E1616)
+        // Accent — OpenClaw signature coral red
+        val accent = Color(0xFFff5c5c)
+        val accentHover = Color(0xFFff7070)
+        val accentSoft = Color(0xFF1a1414)       // subtle accent fill (10% opacity)
+        val accentForeground = Color(0xFFfafafa)
+        val accentGlow = Color(0x33ff5c5c)       // 20% opacity glow
 
+        // Secondary accent — teal
+        val accent2 = Color(0xFF14b8a6)
+
+        // Semantic
+        val success = Color(0xFF22c55e)
+        val successSoft = Color(0xFF0f1f16)
+        val warning = Color(0xFFf59e0b)
+        val warningSoft = Color(0xFF2e2212)
+        val danger = Color(0xFFef4444)
+        val dangerSoft = Color(0xFF2e1616)
+        val info = Color(0xFF3b82f6)
+
+        // Code
         val codeBg = Color(0xFF111317)
-        val codeText = Color(0xFFE8EAEE)
-        val codeBorder = Color(0xFF2B2E35)
-        val codeAccent = Color(0xFF3FC97A)
+        val codeText = Color(0xFFe8eaee)
+        val codeBorder = Color(0xFF2b2e35)
+        val codeAccent = Color(0xFF3fc97a)
     }
 
-    // ── Light Theme Colors (OpenClaw MobileColors aligned) ───────────
+    // ── Light Theme Colors ─────────────────────────────────────────
     object Light {
-        val surface = Color(0xFFF6F7FA)
-        val surfaceStrong = Color(0xFFECEEF3)
-        val cardSurface = Color(0xFFFFFFFF)
-        val border = Color(0xFFE5E7EC)
-        val borderStrong = Color(0xFFD6DAE2)
+        val surface = Color(0xFFf8f9fa)
+        val surfaceAccent = Color(0xFFffffff)
+        val surfaceElevated = Color(0xFFf1f3f5)
+        val cardSurface = Color(0xFFffffff)
+        val hover = Color(0xFFe8eaed)
 
-        val text = Color(0xFF17181C)
-        val textSecondary = Color(0xFF5D6472)
-        val textTertiary = Color(0xFF99A0AE)
+        val border = Color(0xFFd1d5db)
+        val borderStrong = Color(0xFF9ca3af)
 
-        val accent = Color(0xFF1D5DD8)
-        val accentSoft = Color(0xFFECF3FF)
-        val accentBorderStrong = Color(0xFF184DAF)
+        val text = Color(0xFF17181c)
+        val textStrong = Color(0xFF0a0a0b)
+        val muted = Color(0xFF6b7280)
 
-        val success = Color(0xFF2F8C5A)
-        val successSoft = Color(0xFFEEF9F3)
-        val warning = Color(0xFFC8841A)
-        val warningSoft = Color(0xFFFFF8EC)
-        val danger = Color(0xFFD04B4B)
-        val dangerSoft = Color(0xFFFFF2F2)
+        // Accent — coral red (darker on light for visibility)
+        val accent = Color(0xFFdc2626)
+        val accentHover = Color(0xFFef4444)
+        val accentSoft = Color(0xFFfef2f2)
+        val accentForeground = Color(0xFFffffff)
+        val accentGlow = Color(0x33dc2626)
 
-        val codeBg = Color(0xFF15171B)
-        val codeText = Color(0xFFE8EAEE)
-        val codeBorder = Color(0xFF2B2E35)
-        val codeAccent = Color(0xFF3FC97A)
+        val accent2 = Color(0xFF0d9488)
+
+        val success = Color(0xFF16a34a)
+        val successSoft = Color(0xFFf0fdf4)
+        val warning = Color(0xFFd97706)
+        val warningSoft = Color(0xFFfffbeb)
+        val danger = Color(0xFFdc2626)
+        val dangerSoft = Color(0xFFfef2f2)
+        val info = Color(0xFF2563eb)
+
+        val codeBg = Color(0xFF1f2937)
+        val codeText = Color(0xFFf9fafb)
+        val codeBorder = Color(0xFF374151)
+        val codeAccent = Color(0xFF34d399)
     }
 
     // ── Legacy Support ───────────────────────────────────────────────

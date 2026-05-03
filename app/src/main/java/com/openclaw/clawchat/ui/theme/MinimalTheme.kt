@@ -7,87 +7,101 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+// OpenClaw claw theme aligned color schemes
 private val DarkColorScheme = darkColorScheme(
-    primary = MinimalTokens.Legacy.primary,
-    onPrimary = MinimalTokens.Legacy.onPrimary,
-    primaryContainer = MinimalTokens.Legacy.primarySubtle,
-    onPrimaryContainer = MinimalTokens.Legacy.textPrimary,
+    // Primary — coral red accent
+    primary = MinimalTokens.Dark.accent,
+    onPrimary = MinimalTokens.Dark.accentForeground,
+    primaryContainer = MinimalTokens.Dark.accentSoft,
+    onPrimaryContainer = MinimalTokens.Dark.accent,
 
-    secondary = MinimalTokens.Legacy.surfaceVariant,
-    onSecondary = MinimalTokens.Legacy.textPrimary,
-    secondaryContainer = MinimalTokens.Legacy.surfaceVariant,
-    onSecondaryContainer = MinimalTokens.Legacy.textPrimary,
+    // Secondary — teal accent2
+    secondary = MinimalTokens.Dark.accent2,
+    onSecondary = MinimalTokens.Dark.accentForeground,
+    secondaryContainer = MinimalTokens.Dark.surfaceElevated,
+    onSecondaryContainer = MinimalTokens.Dark.text,
 
-    tertiary = MinimalTokens.Legacy.primary,
-    onTertiary = MinimalTokens.Legacy.onPrimary,
-    tertiaryContainer = MinimalTokens.Legacy.primarySubtle,
-    onTertiaryContainer = MinimalTokens.Legacy.primary,
+    // Tertiary — same as primary (coral red)
+    tertiary = MinimalTokens.Dark.accent,
+    onTertiary = MinimalTokens.Dark.accentForeground,
+    tertiaryContainer = MinimalTokens.Dark.accentSoft,
+    onTertiaryContainer = MinimalTokens.Dark.accent,
 
-    background = MinimalTokens.Legacy.background,
-    onBackground = MinimalTokens.Legacy.textPrimary,
+    // Background / Surface
+    background = MinimalTokens.Dark.surface,
+    onBackground = MinimalTokens.Dark.text,
 
-    surface = MinimalTokens.Legacy.surface,
-    onSurface = MinimalTokens.Legacy.textPrimary,
-    surfaceVariant = MinimalTokens.Legacy.surfaceVariant,
-    onSurfaceVariant = MinimalTokens.Legacy.textSecondary,
+    surface = MinimalTokens.Dark.surface,
+    onSurface = MinimalTokens.Dark.text,
+    surfaceVariant = MinimalTokens.Dark.cardSurface,
+    onSurfaceVariant = MinimalTokens.Dark.muted,
 
-    error = MinimalTokens.Legacy.error,
-    onError = Color.White,
-    errorContainer = MinimalTokens.Legacy.error.copy(alpha = 0.1f),
-    onErrorContainer = MinimalTokens.Legacy.error,
+    // Error
+    error = MinimalTokens.Dark.danger,
+    onError = MinimalTokens.Dark.accentForeground,
+    errorContainer = MinimalTokens.Dark.dangerSoft,
+    onErrorContainer = MinimalTokens.Dark.danger,
 
-    outline = MinimalTokens.Legacy.border,
-    outlineVariant = MinimalTokens.Legacy.borderSubtle,
+    // Borders
+    outline = MinimalTokens.Dark.border,
+    outlineVariant = MinimalTokens.Dark.borderStrong,
 
-    inverseSurface = MinimalTokens.Legacy.surface,
-    inverseOnSurface = MinimalTokens.Legacy.textPrimary,
-    inversePrimary = MinimalTokens.Legacy.primary,
+    // Inverse (for dialogs on dark surfaces)
+    inverseSurface = MinimalTokens.Dark.surfaceAccent,
+    inverseOnSurface = MinimalTokens.Dark.text,
+    inversePrimary = MinimalTokens.Dark.accent,
 
-    scrim = Color.Black.copy(alpha = 0.32f)
+    scrim = MinimalTokens.Dark.surface.copy(alpha = 0.32f)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = MinimalTokens.Legacy.primary,
-    onPrimary = MinimalTokens.Legacy.onPrimary,
-    primaryContainer = MinimalTokens.Legacy.primarySubtle,
-    onPrimaryContainer = MinimalTokens.Legacy.primary,
+    // Primary — coral red accent
+    primary = MinimalTokens.Light.accent,
+    onPrimary = MinimalTokens.Light.accentForeground,
+    primaryContainer = MinimalTokens.Light.accentSoft,
+    onPrimaryContainer = MinimalTokens.Light.accent,
 
-    secondary = MinimalTokens.Light.surface,
-    onSecondary = MinimalTokens.Light.text,
-    secondaryContainer = MinimalTokens.Light.surfaceStrong,
-    onSecondaryContainer = MinimalTokens.Light.textSecondary,
+    // Secondary — teal accent2
+    secondary = MinimalTokens.Light.accent2,
+    onSecondary = MinimalTokens.Light.accentForeground,
+    secondaryContainer = MinimalTokens.Light.surfaceElevated,
+    onSecondaryContainer = MinimalTokens.Light.text,
 
-    tertiary = MinimalTokens.Legacy.primary,
-    onTertiary = MinimalTokens.Legacy.onPrimary,
-    tertiaryContainer = MinimalTokens.Legacy.primarySubtle,
-    onTertiaryContainer = MinimalTokens.Legacy.primary,
+    // Tertiary — same as primary
+    tertiary = MinimalTokens.Light.accent,
+    onTertiary = MinimalTokens.Light.accentForeground,
+    tertiaryContainer = MinimalTokens.Light.accentSoft,
+    onTertiaryContainer = MinimalTokens.Light.accent,
 
+    // Background / Surface
     background = MinimalTokens.Light.surface,
     onBackground = MinimalTokens.Light.text,
 
     surface = MinimalTokens.Light.surface,
     onSurface = MinimalTokens.Light.text,
-    surfaceVariant = MinimalTokens.Light.surfaceStrong,
-    onSurfaceVariant = MinimalTokens.Light.textSecondary,
+    surfaceVariant = MinimalTokens.Light.cardSurface,
+    onSurfaceVariant = MinimalTokens.Light.muted,
 
-    error = MinimalTokens.Legacy.error,
-    onError = Color.White,
+    // Error
+    error = MinimalTokens.Light.danger,
+    onError = MinimalTokens.Light.accentForeground,
     errorContainer = MinimalTokens.Light.dangerSoft,
     onErrorContainer = MinimalTokens.Light.danger,
 
+    // Borders
     outline = MinimalTokens.Light.border,
     outlineVariant = MinimalTokens.Light.borderStrong,
 
-    inverseSurface = MinimalTokens.Legacy.surface,
-    inverseOnSurface = MinimalTokens.Legacy.textPrimary,
-    inversePrimary = MinimalTokens.Legacy.primary,
+    // Inverse
+    inverseSurface = MinimalTokens.Light.surfaceAccent,
+    inverseOnSurface = MinimalTokens.Light.text,
+    inversePrimary = MinimalTokens.Light.accent,
 
-    scrim = Color.Black.copy(alpha = 0.32f)
+    scrim = MinimalTokens.Light.surface.copy(alpha = 0.32f)
 )
 
 @Composable
