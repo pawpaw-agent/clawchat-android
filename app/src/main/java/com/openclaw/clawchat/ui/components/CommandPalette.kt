@@ -94,7 +94,7 @@ fun CommandPalette(
                     keyboardActions = KeyboardActions(onSearch = {
                         // 执行第一个结果
                         if (filteredSessions.isNotEmpty()) {
-                            onSessionSelect(filteredSessions.first().id)
+                            onSessionSelect(filteredSessions.first().key)
                         } else if (filteredCommands.isNotEmpty()) {
                             onCommandExecute(filteredCommands.first().id)
                         }

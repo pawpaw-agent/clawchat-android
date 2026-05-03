@@ -81,7 +81,8 @@ class SessionRepositoryImpl @Inject constructor(
      */
     private fun SessionEntity.toSessionUi(): SessionUi {
         return SessionUi(
-            id = id,
+            key = id,
+            kind = "direct",
             label = label,
             model = model,
             agentId = agentId,
@@ -102,13 +103,13 @@ class SessionRepositoryImpl @Inject constructor(
      */
     private fun SessionUi.toSessionEntity(): SessionEntity {
         return SessionEntity(
-            id = id,
+            id = key,
             label = label,
             model = model,
             agentId = agentId,
             agentName = agentName,
             agentEmoji = agentEmoji,
-            status = status.name,
+            status = status?.name ?: "RUNNING",
             lastActivityAt = lastActivityAt,
             messageCount = messageCount,
             lastMessage = lastMessage,

@@ -564,9 +564,7 @@ private fun MinimalThinkingSelector(
     enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
-    var expanded by androidx.compose.runtime.getValue(
-        androidx.compose.runtime.mutableStateOf(false)
-    )
+    var expanded by getValue(mutableStateOf(false))
 
     Surface(
         onClick = { if (enabled) expanded = true },

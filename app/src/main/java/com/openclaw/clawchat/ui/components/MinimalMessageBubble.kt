@@ -113,8 +113,7 @@ fun MinimalMessageBubble(
                         is MessageContentItem.ToolCall -> {
                             MinimalToolCallContent(
                                 name = item.name,
-                                phase = item.phase,
-                                isStreaming = item.isStreaming
+                                phase = item.phase
                             )
                         }
                         is MessageContentItem.ToolResult -> {
@@ -215,7 +214,6 @@ private fun MinimalTextContent(
 private fun MinimalToolCallContent(
     name: String,
     phase: String,
-    isStreaming: Boolean,
     modifier: Modifier = Modifier
 ) {
     Row(
