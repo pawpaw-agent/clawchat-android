@@ -145,7 +145,7 @@ private fun MinimalTopBar(
             if (currentRoute == MinimalNavRoutes.HOME) {
                 MinimalStatusIndicator(
                     status = connectionState,
-                    dotSize = 8.dp
+                    dotSize = 6.dp
                 )
                 if (latencyMs != null) {
                     Text(

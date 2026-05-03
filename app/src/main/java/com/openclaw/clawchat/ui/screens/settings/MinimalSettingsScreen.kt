@@ -4,18 +4,21 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -25,11 +28,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.openclaw.clawchat.data.ThemeMode
-import com.openclaw.clawchat.ui.components.minimal.MinimalCard
 import com.openclaw.clawchat.ui.theme.MinimalTokens
 
 @Composable
@@ -46,17 +50,18 @@ fun MinimalSettingsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.navigationBars)
             .verticalScroll(scrollState)
-            .padding(MinimalTokens.space4),
-        verticalArrangement = Arrangement.spacedBy(MinimalTokens.space4)
+            .padding(horizontal = MinimalTokens.space4)
+            .padding(top = MinimalTokens.space4, bottom = MinimalTokens.space8),
+        verticalArrangement = Arrangement.spacedBy(MinimalTokens.space3)
     ) {
         // Connection Section
         MinimalSettingsSection(title = "Connection") {
             MinimalSettingsItem(
                 icon = Icons.Default.Link,
                 title = "Gateway",
-                subtitle = state.currentGateway?.host ?: "Not connected",
-                onClick = { /* TODO */ }
+                subtitle = state.currentGateway?.host ?: "Not connected"
             )
         }
 
@@ -79,15 +84,17 @@ fun MinimalSettingsScreen(
             MinimalSettingsItem(
                 icon = Icons.Default.Info,
                 title = "Version",
-                subtitle = state.appVersion,
-                onClick = { }
+                subtitle = state.appVersion
             )
         }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = MinimalTokens.space2))
 
         // Disconnect
         MinimalSettingsItem(
             icon = Icons.AutoMirrored.Filled.ExitToApp,
             title = "Disconnect",
+            titleColor = MaterialTheme.colorScheme.error,
             onClick = { viewModel.disconnect() }
         )
     }
@@ -101,11 +108,17 @@ private fun MinimalSettingsSection(
     Column {
         Text(
             text = title,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = MinimalTokens.space2)
+            modifier = Modifier.padding(bottom = MinimalTokens.space1, start = MinimalTokens.space1)
         )
-        MinimalCard {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = MinimalTokens.space2),
+            verticalArrangement = Arrangement.spacedBy(MinimalTokens.space1)
+        ) {
             content()
         }
     }
@@ -117,6 +130,7 @@ private fun MinimalSettingsItem(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     subtitle: String? = null,
+    titleColor: Color = MaterialTheme.colorScheme.onSurface,
     trailing: @Composable (() -> Unit)? = null,
     onClick: (() -> Unit)? = null
 ) {
@@ -124,7 +138,7 @@ private fun MinimalSettingsItem(
         modifier = modifier
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(vertical = MinimalTokens.space3),
+            .padding(vertical = MinimalTokens.space2, horizontal = MinimalTokens.space2),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {
@@ -132,20 +146,20 @@ private fun MinimalSettingsItem(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(end = MinimalTokens.space3)
+                modifier = Modifier.padding(end = MinimalTokens.space2)
             )
         }
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.bodyMedium,
+                color = titleColor
             )
             if (subtitle != null) {
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -153,12 +167,6 @@ private fun MinimalSettingsItem(
 
         if (trailing != null) {
             trailing()
-        } else if (onClick != null) {
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
