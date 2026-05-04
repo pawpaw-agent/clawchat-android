@@ -26,7 +26,7 @@ import com.openclaw.clawchat.R
 import com.openclaw.clawchat.ui.components.*
 import com.openclaw.clawchat.ui.state.AttachmentUi
 import com.openclaw.clawchat.util.FileUtils
-import com.openclaw.clawchat.ui.theme.DesignTokens
+import com.openclaw.clawchat.ui.theme.MinimalTokens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -161,8 +161,10 @@ fun EnhancedMessageInputBar(
     var savedDraft by remember { mutableStateOf("") }
 
     Surface(
-        tonalElevation = DesignTokens.elevationSm,
-        color = MaterialTheme.colorScheme.surfaceContainerLow
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(MinimalTokens.radiusMd),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             if (slashMenu.isOpen) {
@@ -201,15 +203,15 @@ fun EnhancedMessageInputBar(
                     onRemove = onRemoveAttachment,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = DesignTokens.space2, vertical = DesignTokens.space1)
+                        .padding(horizontal = MinimalTokens.space2, vertical = MinimalTokens.space1)
                 )
             }
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(DesignTokens.space2),
-                horizontalArrangement = Arrangement.spacedBy(DesignTokens.space1),
+                    .padding(MinimalTokens.space2),
+                horizontalArrangement = Arrangement.spacedBy(MinimalTokens.space1),
                 verticalAlignment = Alignment.Bottom
             ) {
                 // 附加功能按钮（显示菜单）
@@ -415,14 +417,14 @@ private fun SlashCommandMenu(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = DesignTokens.space2, vertical = DesignTokens.space1),
+            .padding(horizontal = MinimalTokens.space2, vertical = MinimalTokens.space1),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
-        shape = RoundedCornerShape(DesignTokens.radiusMd),
-        shadowElevation = DesignTokens.elevationSm
+        shape = RoundedCornerShape(MinimalTokens.radiusMd),
+        shadowElevation = MinimalTokens.elevationSm
     ) {
         androidx.compose.foundation.lazy.LazyColumn(
             modifier = Modifier.heightIn(max = 240.dp),
-            contentPadding = PaddingValues(vertical = DesignTokens.space1)
+            contentPadding = PaddingValues(vertical = MinimalTokens.space1)
         ) {
             if (items.isNotEmpty()) {
                 items(items.size) { index ->
@@ -442,8 +444,8 @@ private fun SlashCommandMenu(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(
-                            horizontal = DesignTokens.space3,
-                            vertical = DesignTokens.space1
+                            horizontal = MinimalTokens.space3,
+                            vertical = MinimalTokens.space1
                         )
                     )
                 }
