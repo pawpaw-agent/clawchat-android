@@ -14,9 +14,12 @@ val testApiJson = Json {
  * Plain Kotlin utilities - no Ktor dependencies.
  */
 object JsonResponses {
-    fun <T> encode(body: T): String = testApiJson.encodeToString(body)
+    fun encode(body: Any): String = testApiJson.encodeToString(body)
 
-    inline fun <reified T> decode(text: String): T = testApiJson.decodeFromString(text)
+    fun decode(text: String): CreateSessionRequest = testApiJson.decodeFromString(text)
+    fun decodeMessage(text: String): MessageRequest = testApiJson.decodeFromString(text)
+    fun decodeInputText(text: String): InputTextRequest = testApiJson.decodeFromString(text)
+    fun decodeGatewayConnect(text: String): GatewayConnectRequest = testApiJson.decodeFromString(text)
 
     fun error(message: String, code: String? = null) = ErrorResponse(message, code)
 }
