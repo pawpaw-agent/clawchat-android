@@ -36,6 +36,9 @@ junit = "4.13.2"
 mockk = "1.13.14"
 turbine = "1.1.0"
 
+# Ktor
+ktor = "2.3.12"
+
 # Gradle Plugins
 agp = "8.7.3"
 ksp = "2.0.21-1.0.28"
@@ -101,6 +104,12 @@ turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine
 androidx-test-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-junit" }
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidx-test-espresso" }
 androidx-core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "androidx-core-testing" }
+
+# Ktor Server
+ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor" }
+ktor-server-netty = { group = "io.ktor", name = "ktor-server-netty", version.ref = "ktor" }
+ktor-server-content-negotiation = { group = "io.ktor", name = "ktor-server-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

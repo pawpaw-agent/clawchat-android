@@ -6,7 +6,7 @@ import dagger.hilt.android.HiltAndroidApp
 
 /**
  * ClawChat Application
- * 
+ *
  * Main application class for the ClawChat Android client.
  * Initializes Hilt dependency injection and crash handler.
  */

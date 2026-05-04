@@ -326,4 +326,10 @@ dependencies {
     
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    // Ktor Test API Server (debug only)
+    debugImplementation(libs.ktor.server.core)
+    debugImplementation(libs.ktor.server.netty)
+    debugImplementation(libs.ktor.server.content.negotiation)
+    debugImplementation(libs.ktor.serialization.kotlinx.json)
 }
