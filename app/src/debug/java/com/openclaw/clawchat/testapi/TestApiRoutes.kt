@@ -248,4 +248,3 @@ private fun SessionUi.toSessionResponse() = SessionResponse(
     key, kind, label, model, agentId, agentName, status, updatedAt,
     totalTokens, contextTokens, inputTokens, outputTokens, pinned, createdAt
 )
-}
