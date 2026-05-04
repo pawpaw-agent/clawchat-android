@@ -1,5 +1,6 @@
 package com.openclaw.clawchat.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -69,7 +70,8 @@ fun CommandPalette(
                 .fillMaxWidth(0.9f)
                 .fillMaxHeight(0.7f),
             shape = RoundedCornerShape(16.dp),
-            tonalElevation = 6.dp
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
         ) {
             Column {
                 // 搜索框
