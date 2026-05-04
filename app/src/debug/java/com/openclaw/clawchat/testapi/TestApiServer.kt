@@ -16,9 +16,9 @@ import javax.inject.Singleton
  */
 @Singleton
 class TestApiServer @Inject constructor(
-    private val mainViewModel: MainViewModel,
-    private val sessionViewModel: SessionViewModel,
-    private val gatewayConnection: GatewayConnection
+    @JvmField internal val mainViewModel: MainViewModel,
+    @JvmField internal val sessionViewModel: SessionViewModel,
+    @JvmField internal val gatewayConnection: GatewayConnection
 ) {
     private var engine: NettyApplicationEngine? = null
     private var lastRequestTime = System.currentTimeMillis()
