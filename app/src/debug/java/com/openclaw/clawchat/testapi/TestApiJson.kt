@@ -1,8 +1,6 @@
 package com.openclaw.clawchat.testapi
 
-import io.ktor.http.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 val testApiJson = Json {
@@ -11,36 +9,14 @@ val testApiJson = Json {
     ignoreUnknownKeys = true
 }
 
-suspend inline fun <reified T> ApplicationCall.respondJson(
-    status: HttpStatusCode = HttpStatusCode.OK,
-    body: T
-) {
-    respondText(
-        text = testApiJson.encodeToString(body),
-        contentType = ContentType.Application.Json,
-        status = status
-    )
-}
+/**
+ * JSON serialization helpers for Test API responses.
+ * Plain Kotlin utilities - no Ktor dependencies.
+ */
+object JsonResponses {
+    fun <T> encode(body: T): String = testApiJson.encodeToString(body)
 
-suspend inline fun <reified T> ApplicationCall.respondJsonOrNull(
-    status: HttpStatusCode = HttpStatusCode.OK,
-    body: T?
-) {
-    if (body == null) {
-        respondText(
-            text = testApiJson.encodeToString(ErrorResponse("Not found")),
-            contentType = ContentType.Application.Json,
-            status = HttpStatusCode.NotFound
-        )
-        return
-    }
-    respondJson(status, body)
-}
+    inline fun <reified T> decode(text: String): T = testApiJson.decodeFromString(text)
 
-suspend fun ApplicationCall.respondError(
-    status: HttpStatusCode = HttpStatusCode.BadRequest,
-    message: String,
-    code: String? = null
-) {
-    respondJson(status, ErrorResponse(error = message, code = code))
+    fun error(message: String, code: String? = null) = ErrorResponse(message, code)
 }

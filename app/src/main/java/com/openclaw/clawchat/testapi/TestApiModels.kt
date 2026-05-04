@@ -21,10 +21,7 @@ data class SessionResponse(
 )
 
 @Serializable
-data class SessionsResponse(
-    val sessions: List<SessionResponse>,
-    val currentSessionKey: String?
-)
+data class SessionsResponse(val sessions: List<SessionResponse>, val currentSessionKey: String?)
 
 @Serializable
 data class CreateSessionRequest(
@@ -36,45 +33,28 @@ data class CreateSessionRequest(
 )
 
 @Serializable
-data class CreateSessionResponse(
-    val key: String,
-    val label: String?
-)
+data class CreateSessionResponse(val key: String, val label: String?)
+@Serializable
+data class DeleteResponse(val deleted: Boolean)
+@Serializable
+data class ResetResponse(val success: Boolean)
 
 @Serializable
-data class DeleteResponse(
-    val deleted: Boolean
-)
-
-@Serializable
-data class ResetResponse(
-    val success: Boolean
-)
-
-@Serializable
-data class MessageRequest(
-    val text: String,
-    val attachments: List<AttachmentRequest>? = null
-)
+data class MessageRequest(val text: String, val attachments: List<AttachmentRequest>? = null)
 
 @Serializable
 data class AttachmentRequest(
-    val type: String, // "base64"
+    val type: String,
     val mimeType: String,
     val content: String,
     val fileName: String? = null
 )
 
 @Serializable
-data class MessageResponse(
-    val runId: String? = null,
-    val status: String
-)
+data class MessageResponse(val runId: String? = null, val status: String)
 
 @Serializable
-data class InputTextRequest(
-    val text: String
-)
+data class InputTextRequest(val text: String)
 
 @Serializable
 data class InputTextResponse(
@@ -83,58 +63,38 @@ data class InputTextResponse(
 )
 
 @Serializable
-data class AttachmentUiResponse(
-    val id: String,
-    val mimeType: String,
-    val fileName: String?
-)
+data class AttachmentUiResponse(val id: String, val mimeType: String, val fileName: String?)
 
 @Serializable
 data class GatewayStatusResponse(
     val state: String,
-    val url: String?,
+    val url: String? = null,
     val latencyMs: Long? = null,
     val connectedAt: Long? = null,
     val error: String? = null
 )
 
 @Serializable
-data class GatewayConnectRequest(
-    val url: String,
-    val token: String? = null
-)
+data class GatewayConnectRequest(val url: String, val token: String? = null)
+@Serializable
+data class GatewayConnectResponse(val connected: Boolean)
 
 @Serializable
-data class GatewayConnectResponse(
-    val connected: Boolean
-)
-
+data class AgentResponse(val id: String, val name: String, val emoji: String? = null, val model: String? = null)
 @Serializable
-data class AgentResponse(
-    val id: String,
-    val name: String,
-    val emoji: String?,
-    val model: String?
-)
-
-@Serializable
-data class AgentsResponse(
-    val agents: List<AgentResponse>
-)
+data class AgentsResponse(val agents: List<AgentResponse>)
 
 @Serializable
 data class ModelResponse(
     val id: String,
     val name: String,
-    val provider: String?,
+    val provider: String? = null,
     val supportsVision: Boolean = false,
     val contextWindow: Int? = null
 )
 
 @Serializable
-data class ModelsResponse(
-    val models: List<ModelResponse>
-)
+data class ModelsResponse(val models: List<ModelResponse>)
 
 @Serializable
 data class AppStateResponse(
@@ -144,10 +104,7 @@ data class AppStateResponse(
 )
 
 @Serializable
-data class SessionsSummary(
-    val count: Int,
-    val currentKey: String?
-)
+data class SessionsSummary(val count: Int, val currentKey: String?)
 
 @Serializable
 data class SessionStateResponse(
@@ -157,10 +114,10 @@ data class SessionStateResponse(
     val inputText: String,
     val attachments: List<AttachmentUiResponse>,
     val chatMessages: List<MessageUiResponse>,
-    val totalTokens: Int?,
-    val contextTokens: Int?,
-    val chatStream: String?,
-    val chatRunId: String?
+    val totalTokens: Int? = null,
+    val contextTokens: Int? = null,
+    val chatStream: String? = null,
+    val chatRunId: String? = null
 )
 
 @Serializable
@@ -168,19 +125,12 @@ data class MessageUiResponse(
     val id: String,
     val role: String,
     val content: String,
-    val createdAt: Long?,
-    val status: String?
+    val createdAt: Long? = null,
+    val status: String? = null
 )
 
 @Serializable
-data class HealthResponse(
-    val status: String,
-    val server: String,
-    val version: String = "1.0.0"
-)
+data class HealthResponse(val status: String, val server: String, val version: String = "1.0.0")
 
 @Serializable
-data class ErrorResponse(
-    val error: String,
-    val code: String? = null
-)
+data class ErrorResponse(val error: String, val code: String? = null)

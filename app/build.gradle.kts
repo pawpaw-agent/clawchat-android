@@ -126,6 +126,12 @@ android {
         buildConfig = true
     }
 
+    sourceSets {
+        getByName("debug") {
+            java.srcDirs("src/debug/java")
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"

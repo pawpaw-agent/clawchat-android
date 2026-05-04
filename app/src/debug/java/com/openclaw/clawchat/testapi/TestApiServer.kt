@@ -3,19 +3,18 @@ package com.openclaw.clawchat.testapi
 import com.openclaw.clawchat.network.protocol.GatewayConnection
 import com.openclaw.clawchat.ui.state.MainViewModel
 import com.openclaw.clawchat.ui.state.SessionViewModel
-import dagger.hilt.android.lifecycle.HiltViewModel
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.*
 import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
- * Embedded Ktor HTTP server for test API.
+ * Embedded Ktor HTTP server for test API (debug builds only).
  * Starts on ADB reverse detect, stops after idle timeout.
- * Hilt-managed singleton so it can access ViewModels and GatewayConnection.
  */
-@javax.inject.Singleton
+@Singleton
 class TestApiServer @Inject constructor(
     private val mainViewModel: MainViewModel,
     private val sessionViewModel: SessionViewModel,
@@ -23,14 +22,7 @@ class TestApiServer @Inject constructor(
 ) {
     private var engine: NettyApplicationEngine? = null
     private var lastRequestTime = System.currentTimeMillis()
-    private val idleTimeoutMs = 5 * 60 * 1000L // 5 minutes
-
-    val mainViewModel get() = _mainVm
-    val sessionViewModel get() = _sessionVm
-    val gatewayConnection get() = _gateway
-    private val _mainVm = mainViewModel
-    private val _sessionVm = sessionViewModel
-    private val _gateway = gatewayConnection
+    private val idleTimeoutMs = IDLE_TIMEOUT_MS
 
     val isRunning: Boolean
         get() = engine != null
@@ -66,6 +58,6 @@ class TestApiServer @Inject constructor(
 
     companion object {
         const val PORT = 18792
-        const val IDLE_TIMEOUT_MS = 5 * 60 * 1000L // 5 minutes
+        const val IDLE_TIMEOUT_MS = 5 * 60 * 1000L
     }
 }
