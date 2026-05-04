@@ -2,6 +2,7 @@ package com.openclaw.clawchat.ui.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -119,7 +120,8 @@ fun CompactToolCard(
             .clip(RoundedCornerShape(8.dp))
             .clickable(enabled = hasContent) { expanded = !expanded },
         color = bgColor,
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
             // 左侧状态指示条
