@@ -236,7 +236,7 @@ fun Routing.testApiRoutes(server: TestApiServer) {
             JsonResponses.encode(SessionStateResponse(
                 state.session?.key, state.isSending, state.isLoading, state.inputText,
                 state.attachments.map { AttachmentUiResponse(it.id, it.mimeType, it.fileName) },
-                state.chatMessages.map { MessageUiResponse(it.id, it.role, it.content, it.createdAt, it.status) },
+                state.chatMessages.map { MessageUiResponse(it.id, it.role.name, it.getTextContent(), null, it.status.name) },
                 state.totalTokens, state.contextTokensLimit, state.chatStream, state.chatRunId
             )),
             ContentType.Application.Json
