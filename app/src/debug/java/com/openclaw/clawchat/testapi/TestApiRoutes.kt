@@ -8,6 +8,7 @@ import com.openclaw.clawchat.ui.state.SessionUi
 import io.ktor.server.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
+import io.ktor.server.application.*
 import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -279,3 +280,39 @@ private fun SessionUi.toSessionResponse() = SessionResponse(
     key, kind, label, model, agentId, agentName, status?.name, updatedAt,
     totalTokens, contextTokens, inputTokens, outputTokens, isPinned, null
 )
+
+private suspend fun ApplicationCall.respondJsonText(status: HttpStatusCode, body: String) {
+    respondText(body, ContentType.Application.Json, status)
+}
+
+private suspend fun ApplicationCall.respondJsonTextError(status: HttpStatusCode, message: String) {
+    respondJsonText(status, JsonResponses.encode(ErrorResponse(message)))
+}
+
+private suspend fun ApplicationCall.receiveOrCreateSession(): CreateSessionRequest {
+    return try {
+        val text = receiveText()
+        if (text.isBlank()) CreateSessionRequest() else JsonResponses.decode(text)
+    } catch (e: Exception) { CreateSessionRequest() }
+}
+
+private suspend fun ApplicationCall.receiveOrMessage(): MessageRequest {
+    return try {
+        val text = receiveText()
+        if (text.isBlank()) MessageRequest("") else JsonResponses.decodeMessage(text)
+    } catch (e: Exception) { MessageRequest("") }
+}
+
+private suspend fun ApplicationCall.receiveOrInputText(): InputTextRequest {
+    return try {
+        val text = receiveText()
+        if (text.isBlank()) InputTextRequest("") else JsonResponses.decodeInputText(text)
+    } catch (e: Exception) { InputTextRequest("") }
+}
+
+private suspend fun ApplicationCall.receiveOrGatewayConnect(): GatewayConnectRequest {
+    return try {
+        val text = receiveText()
+        if (text.isBlank()) GatewayConnectRequest("") else JsonResponses.decodeGatewayConnect(text)
+    } catch (e: Exception) { GatewayConnectRequest("") }
+}
