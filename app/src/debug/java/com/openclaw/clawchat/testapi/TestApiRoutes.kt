@@ -14,9 +14,9 @@ import kotlinx.coroutines.withContext
 
 /**
  * All Test API route handlers installed via routing { testApiRoutes(server) }.
- * NOT inline to avoid Ktor receiver capture issues with Kotlin 2.0.
+ * Extension function on Routing so call receiver is correctly resolved.
  */
-fun testApiRoutes(server: TestApiServer): Routing.() -> Unit = {
+fun Routing.testApiRoutes(server: TestApiServer) {
     val mainVm = server.mainViewModel
     val sessionVm = server.sessionViewModel
     val gateway = server.gatewayConnection

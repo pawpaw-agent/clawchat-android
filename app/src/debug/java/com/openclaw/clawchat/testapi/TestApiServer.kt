@@ -35,7 +35,7 @@ class TestApiServer @Inject constructor(
 
         engine = embeddedServer(Netty) {
             routing {
-                testApiRoutes(this@TestApiServer)()
+                testApiRoutes(this@TestApiServer)
             }
         }.also {
             it.start(wait = false)
