@@ -245,6 +245,6 @@ fun testApiRoutes(server: TestApiServer): Routing.() -> Unit = {
 }
 
 private fun SessionUi.toSessionResponse() = SessionResponse(
-    key, kind, label, model, agentId, agentName, status, updatedAt,
-    totalTokens, contextTokens, inputTokens, outputTokens, pinned, createdAt
+    key, kind, label, model, agentId, agentName, status?.name, updatedAt,
+    totalTokens, contextTokens, inputTokens, outputTokens, isPinned, null
 )
