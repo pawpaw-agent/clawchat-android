@@ -13,8 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Route handler installer for Test API (standalone function).
- * Takes Routing as receiver to allow { } DSL block.
+ * Route handler installer for Test API.
+ * Accepts Routing as receiver so { } DSL block works.
  */
 fun Routing.installTestApiRoutes(
     mainVm: MainViewModel,
@@ -22,16 +22,18 @@ fun Routing.installTestApiRoutes(
     gateway: GatewayConnection,
     server: TestApiServer
 ) {
-    // ─── Health ────────────────────────────────────────────────────────────────
+    val route: Routing = this
+
     get("/api/health") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             call.respondText(JsonResponses.encode(HealthResponse("ok", "ClawChat Test API")), ContentType.Application.Json)
         }
     }
 
-    // ─── Agents / Models ────────────────────────────────────────────────────────
     get("/api/agents") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val state = mainVm.uiState.value
@@ -48,6 +50,7 @@ fun Routing.installTestApiRoutes(
     }
 
     get("/api/models") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val state = mainVm.uiState.value
@@ -64,8 +67,8 @@ fun Routing.installTestApiRoutes(
         }
     }
 
-    // ─── Sessions ──────────────────────────────────────────────────────────────
     get("/api/sessions") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val state = mainVm.uiState.value
@@ -78,6 +81,7 @@ fun Routing.installTestApiRoutes(
     }
 
     get("/api/sessions/{key}") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val key = call.parameters["key"]
@@ -95,6 +99,7 @@ fun Routing.installTestApiRoutes(
     }
 
     post("/api/sessions") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val body = try {
@@ -115,6 +120,7 @@ fun Routing.installTestApiRoutes(
     }
 
     delete("/api/sessions/{key}") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val key = call.parameters["key"]
@@ -128,6 +134,7 @@ fun Routing.installTestApiRoutes(
     }
 
     post("/api/sessions/{key}/reset") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val key = call.parameters["key"]
@@ -141,6 +148,7 @@ fun Routing.installTestApiRoutes(
     }
 
     post("/api/sessions/{key}/messages") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val key = call.parameters["key"]
@@ -179,6 +187,7 @@ fun Routing.installTestApiRoutes(
     }
 
     post("/api/sessions/{key}/abort") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val key = call.parameters["key"]
@@ -192,6 +201,7 @@ fun Routing.installTestApiRoutes(
     }
 
     get("/api/sessions/{key}/input") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val key = call.parameters["key"]
@@ -212,6 +222,7 @@ fun Routing.installTestApiRoutes(
     }
 
     put("/api/sessions/{key}/input") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val key = call.parameters["key"]
@@ -235,8 +246,8 @@ fun Routing.installTestApiRoutes(
         }
     }
 
-    // ─── Gateway ───────────────────────────────────────────────────────────────
     get("/api/gateway/status") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val connState = gateway.connectionState.value
@@ -259,6 +270,7 @@ fun Routing.installTestApiRoutes(
     }
 
     post("/api/gateway/connect") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val body = try {
@@ -271,8 +283,8 @@ fun Routing.installTestApiRoutes(
         }
     }
 
-    // ─── State ─────────────────────────────────────────────────────────────────
     get("/api/state") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val mainState = mainVm.uiState.value
@@ -296,6 +308,7 @@ fun Routing.installTestApiRoutes(
     }
 
     get("/api/state/session") {
+        val call = call
         withContext(Dispatchers.IO) {
             server.recordRequest()
             val state = sessionVm.state.value
