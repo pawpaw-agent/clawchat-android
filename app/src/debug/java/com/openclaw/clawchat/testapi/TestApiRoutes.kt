@@ -5,30 +5,25 @@ import com.openclaw.clawchat.network.WebSocketConnectionState
 import com.openclaw.clawchat.ui.state.MainViewModel
 import com.openclaw.clawchat.ui.state.SessionViewModel
 import com.openclaw.clawchat.ui.state.SessionUi
-import io.ktor.util.pipeline.PipelineContext
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.request.receiveText
-import io.ktor.server.response.respondText
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
 
 /**
  * Route handler installer for Test API.
- * Routes defined using Ktor's routing DSL. Inside get/post/put/delete handlers,
- * 'call' refers to ApplicationCall via PipelineContext.
+ * Uses Ktor's routing { } DSL installed via installTestApiRoutes extension on Routing.
  */
-fun io.ktor.server.routing.Route.installTestApiRoutes(
+fun io.ktor.server.routing.Routing.installTestApiRoutes(
     mainVm: MainViewModel,
     sessionVm: SessionViewModel,
     gateway: GatewayConnection,
     server: TestApiServer
 ) {
-    get("/api/health") {
+    // Health
+    io.ktor.server.routing.get("/api/health") {
         server.recordRequest()
-        call.respondText(JsonResponses.encode(HealthResponse("ok", "ClawChat Test API")), ContentType.Application.Json)
+        call.respondText(JsonResponses.encode(HealthResponse("ok", "ClawChat Test API")), io.ktor.http.ContentType.Application.Json)
     }
 
-    get("/api/agents") {
+    // Agents
+    io.ktor.server.routing.get("/api/agents") {
         server.recordRequest()
         val state = mainVm.uiState.value
         val agents = state.agents.map { ag ->
@@ -39,10 +34,11 @@ fun io.ktor.server.routing.Route.installTestApiRoutes(
                 model = ag.model
             )
         }
-        call.respondText(JsonResponses.encode(AgentsResponse(agents)), ContentType.Application.Json)
+        call.respondText(JsonResponses.encode(AgentsResponse(agents)), io.ktor.http.ContentType.Application.Json)
     }
 
-    get("/api/models") {
+    // Models
+    io.ktor.server.routing.get("/api/models") {
         server.recordRequest()
         val state = mainVm.uiState.value
         val models = state.models.map { m ->
@@ -54,35 +50,38 @@ fun io.ktor.server.routing.Route.installTestApiRoutes(
                 contextWindow = m.contextWindow
             )
         }
-        call.respondText(JsonResponses.encode(ModelsResponse(models)), ContentType.Application.Json)
+        call.respondText(JsonResponses.encode(ModelsResponse(models)), io.ktor.http.ContentType.Application.Json)
     }
 
-    get("/api/sessions") {
+    // Sessions list
+    io.ktor.server.routing.get("/api/sessions") {
         server.recordRequest()
         val state = mainVm.uiState.value
         val sessions = state.sessions.map { it.toSessionResponse() }
         call.respondText(JsonResponses.encode(SessionsResponse(
             sessions = sessions,
             currentSessionKey = state.currentSession?.key
-        )), ContentType.Application.Json)
+        )), io.ktor.http.ContentType.Application.Json)
     }
 
-    get("/api/sessions/{key}") {
+    // Session by key
+    io.ktor.server.routing.get("/api/sessions/{key}") {
         server.recordRequest()
         val key = call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), io.ktor.http.ContentType.Application.Json, io.ktor.http.HttpStatusCode.BadRequest)
             return@get
         }
         val session = mainVm.uiState.value.sessions.find { it.key == key }
         if (session == null) {
-            call.respondText("null", ContentType.Application.Json, HttpStatusCode.NotFound)
+            call.respondText("null", io.ktor.http.ContentType.Application.Json, io.ktor.http.HttpStatusCode.NotFound)
         } else {
-            call.respondText(JsonResponses.encode(session.toSessionResponse()), ContentType.Application.Json)
+            call.respondText(JsonResponses.encode(session.toSessionResponse()), io.ktor.http.ContentType.Application.Json)
         }
     }
 
-    post("/api/sessions") {
+    // Create session
+    io.ktor.server.routing.post("/api/sessions") {
         server.recordRequest()
         val body = try {
             val text = call.receiveText()
@@ -93,39 +92,42 @@ fun io.ktor.server.routing.Route.installTestApiRoutes(
         val newSession = mainVm.uiState.value.currentSession
         call.respondText(
             JsonResponses.encode(CreateSessionResponse(newSession?.key ?: "", newSession?.label)),
-            ContentType.Application.Json,
-            HttpStatusCode.Created
+            io.ktor.http.ContentType.Application.Json,
+            io.ktor.http.HttpStatusCode.Created
         )
     }
 
-    delete("/api/sessions/{key}") {
+    // Delete session
+    io.ktor.server.routing.delete("/api/sessions/{key}") {
         server.recordRequest()
         val key = call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), io.ktor.http.ContentType.Application.Json, io.ktor.http.HttpStatusCode.BadRequest)
             return@delete
         }
         mainVm.deleteSession(key)
-        call.respondText(JsonResponses.encode(DeleteResponse(true)), ContentType.Application.Json)
+        call.respondText(JsonResponses.encode(DeleteResponse(true)), io.ktor.http.ContentType.Application.Json)
     }
 
-    post("/api/sessions/{key}/reset") {
+    // Reset session
+    io.ktor.server.routing.post("/api/sessions/{key}/reset") {
         server.recordRequest()
         val key = call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), io.ktor.http.ContentType.Application.Json, io.ktor.http.HttpStatusCode.BadRequest)
             return@post
         }
         sessionVm.setSessionKey(key)
         mainVm.clearCurrentSession()
-        call.respondText(JsonResponses.encode(ResetResponse(true)), ContentType.Application.Json)
+        call.respondText(JsonResponses.encode(ResetResponse(true)), io.ktor.http.ContentType.Application.Json)
     }
 
-    post("/api/sessions/{key}/messages") {
+    // Send message
+    io.ktor.server.routing.post("/api/sessions/{key}/messages") {
         server.recordRequest()
         val key = call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), io.ktor.http.ContentType.Application.Json, io.ktor.http.HttpStatusCode.BadRequest)
             return@post
         }
         val body = try {
@@ -150,28 +152,30 @@ fun io.ktor.server.routing.Route.installTestApiRoutes(
         val runId = sessionVm.state.value.chatRunId
         call.respondText(
             JsonResponses.encode(MessageResponse(runId, "accepted")),
-            ContentType.Application.Json,
-            HttpStatusCode.Accepted
+            io.ktor.http.ContentType.Application.Json,
+            io.ktor.http.HttpStatusCode.Accepted
         )
     }
 
-    post("/api/sessions/{key}/abort") {
+    // Abort chat
+    io.ktor.server.routing.post("/api/sessions/{key}/abort") {
         server.recordRequest()
         val key = call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), io.ktor.http.ContentType.Application.Json, io.ktor.http.HttpStatusCode.BadRequest)
             return@post
         }
         sessionVm.setSessionKey(key)
         sessionVm.abortChat()
-        call.respondText(JsonResponses.encode(MessageResponse(status = "aborted")), ContentType.Application.Json)
+        call.respondText(JsonResponses.encode(MessageResponse(status = "aborted")), io.ktor.http.ContentType.Application.Json)
     }
 
-    get("/api/sessions/{key}/input") {
+    // Get input
+    io.ktor.server.routing.get("/api/sessions/{key}/input") {
         server.recordRequest()
         val key = call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), io.ktor.http.ContentType.Application.Json, io.ktor.http.HttpStatusCode.BadRequest)
             return@get
         }
         sessionVm.setSessionKey(key)
@@ -181,15 +185,16 @@ fun io.ktor.server.routing.Route.installTestApiRoutes(
                 state.inputText,
                 state.attachments.map { AttachmentUiResponse(it.id, it.mimeType, it.fileName) }
             )),
-            ContentType.Application.Json
+            io.ktor.http.ContentType.Application.Json
         )
     }
 
-    put("/api/sessions/{key}/input") {
+    // Update input
+    io.ktor.server.routing.put("/api/sessions/{key}/input") {
         server.recordRequest()
         val key = call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), io.ktor.http.ContentType.Application.Json, io.ktor.http.HttpStatusCode.BadRequest)
             return@put
         }
         val body = try {
@@ -204,11 +209,12 @@ fun io.ktor.server.routing.Route.installTestApiRoutes(
                 body.text,
                 sessionVm.state.value.attachments.map { AttachmentUiResponse(it.id, it.mimeType, it.fileName) }
             )),
-            ContentType.Application.Json
+            io.ktor.http.ContentType.Application.Json
         )
     }
 
-    get("/api/gateway/status") {
+    // Gateway status
+    io.ktor.server.routing.get("/api/gateway/status") {
         server.recordRequest()
         val connState = gateway.connectionState.value
         val stateName = when (connState) {
@@ -224,11 +230,12 @@ fun io.ktor.server.routing.Route.installTestApiRoutes(
                 url = gateway.connectedUrl,
                 latencyMs = mainVm.uiState.value.latency
             )),
-            ContentType.Application.Json
+            io.ktor.http.ContentType.Application.Json
         )
     }
 
-    post("/api/gateway/connect") {
+    // Gateway connect
+    io.ktor.server.routing.post("/api/gateway/connect") {
         server.recordRequest()
         val body = try {
             val text = call.receiveText()
@@ -236,10 +243,11 @@ fun io.ktor.server.routing.Route.installTestApiRoutes(
         } catch (e: Exception) { GatewayConnectRequest("") }
 
         mainVm.connectToGateway(body.url)
-        call.respondText(JsonResponses.encode(GatewayConnectResponse(true)), ContentType.Application.Json)
+        call.respondText(JsonResponses.encode(GatewayConnectResponse(true)), io.ktor.http.ContentType.Application.Json)
     }
 
-    get("/api/state") {
+    // App state
+    io.ktor.server.routing.get("/api/state") {
         server.recordRequest()
         val mainState = mainVm.uiState.value
         val connState = gateway.connectionState.value
@@ -256,11 +264,12 @@ fun io.ktor.server.routing.Route.installTestApiRoutes(
                 ),
                 currentSessionKey = mainState.currentSession?.key
             )),
-            ContentType.Application.Json
+            io.ktor.http.ContentType.Application.Json
         )
     }
 
-    get("/api/state/session") {
+    // Session state
+    io.ktor.server.routing.get("/api/state/session") {
         server.recordRequest()
         val state = sessionVm.state.value
         call.respondText(
@@ -286,7 +295,7 @@ fun io.ktor.server.routing.Route.installTestApiRoutes(
                 chatStream = state.chatStream,
                 chatRunId = state.chatRunId
             )),
-            ContentType.Application.Json
+            io.ktor.http.ContentType.Application.Json
         )
     }
 }
