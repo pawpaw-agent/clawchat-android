@@ -7,6 +7,7 @@ import com.openclaw.clawchat.ui.state.SessionViewModel
 import com.openclaw.clawchat.ui.state.SessionUi
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
+import io.ktor.server.routing.Route
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 
