@@ -23,7 +23,7 @@ fun Routing.installTestApiRoutes(
     // ─── Health ────────────────────────────────────────────────────────────────
     get("/api/health") {
         server.recordRequest()
-        call.respondText(JsonResponses.encode(HealthResponse("ok", "ClawChat Test API")), ContentType.Application.Json)
+        this@get.call.respondText(JsonResponses.encode(HealthResponse("ok", "ClawChat Test API")), ContentType.Application.Json)
     }
 
     // ─── Agents / Models ────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ fun Routing.installTestApiRoutes(
                 model = ag.model
             )
         }
-        call.respondText(JsonResponses.encode(AgentsResponse(agents)), ContentType.Application.Json)
+        this@get.call.respondText(JsonResponses.encode(AgentsResponse(agents)), ContentType.Application.Json)
     }
 
     get("/api/models") {
@@ -53,7 +53,7 @@ fun Routing.installTestApiRoutes(
                 contextWindow = m.contextWindow
             )
         }
-        call.respondText(JsonResponses.encode(ModelsResponse(models)), ContentType.Application.Json)
+        this@get.call.respondText(JsonResponses.encode(ModelsResponse(models)), ContentType.Application.Json)
     }
 
     // ─── Sessions ──────────────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ fun Routing.installTestApiRoutes(
         server.recordRequest()
         val state = mainVm.uiState.value
         val sessions = state.sessions.map { it.toSessionResponse() }
-        call.respondText(JsonResponses.encode(SessionsResponse(
+        this@get.call.respondText(JsonResponses.encode(SessionsResponse(
             sessions = sessions,
             currentSessionKey = state.currentSession?.key
         )), ContentType.Application.Json)
@@ -69,29 +69,29 @@ fun Routing.installTestApiRoutes(
 
     get("/api/sessions/{key}") {
         server.recordRequest()
-        val key = call.parameters["key"]
+        val key = this@get.call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            this@get.call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
             return@get
         }
         val session = mainVm.uiState.value.sessions.find { it.key == key }
         if (session == null) {
-            call.respondText("null", ContentType.Application.Json, HttpStatusCode.NotFound)
+            this@get.call.respondText("null", ContentType.Application.Json, HttpStatusCode.NotFound)
         } else {
-            call.respondText(JsonResponses.encode(session.toSessionResponse()), ContentType.Application.Json)
+            this@get.call.respondText(JsonResponses.encode(session.toSessionResponse()), ContentType.Application.Json)
         }
     }
 
     post("/api/sessions") {
         server.recordRequest()
         val body = try {
-            val text = call.receiveText()
+            val text = this@get.call.receiveText()
             if (text.isBlank()) CreateSessionRequest() else JsonResponses.decode(text)
         } catch (e: Exception) { CreateSessionRequest() }
 
         mainVm.createSessionWithAgentModel(body.agentId, body.model, body.initialMessage, body.label)
         val newSession = mainVm.uiState.value.currentSession
-        call.respondText(
+        this@get.call.respondText(
             JsonResponses.encode(CreateSessionResponse(newSession?.key ?: "", newSession?.label)),
             ContentType.Application.Json,
             HttpStatusCode.Created
@@ -100,36 +100,36 @@ fun Routing.installTestApiRoutes(
 
     delete("/api/sessions/{key}") {
         server.recordRequest()
-        val key = call.parameters["key"]
+        val key = this@get.call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            this@get.call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
             return@delete
         }
         mainVm.deleteSession(key)
-        call.respondText(JsonResponses.encode(DeleteResponse(true)), ContentType.Application.Json)
+        this@get.call.respondText(JsonResponses.encode(DeleteResponse(true)), ContentType.Application.Json)
     }
 
     post("/api/sessions/{key}/reset") {
         server.recordRequest()
-        val key = call.parameters["key"]
+        val key = this@get.call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            this@get.call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
             return@post
         }
         sessionVm.setSessionKey(key)
         mainVm.clearCurrentSession()
-        call.respondText(JsonResponses.encode(ResetResponse(true)), ContentType.Application.Json)
+        this@get.call.respondText(JsonResponses.encode(ResetResponse(true)), ContentType.Application.Json)
     }
 
     post("/api/sessions/{key}/messages") {
         server.recordRequest()
-        val key = call.parameters["key"]
+        val key = this@get.call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            this@get.call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
             return@post
         }
         val body = try {
-            val text = call.receiveText()
+            val text = this@get.call.receiveText()
             if (text.isBlank()) MessageRequest("") else JsonResponses.decodeMessage(text)
         } catch (e: Exception) { MessageRequest("") }
 
@@ -148,7 +148,7 @@ fun Routing.installTestApiRoutes(
         }
         sessionVm.sendMessage(body.text)
         val runId = sessionVm.state.value.chatRunId
-        call.respondText(
+        this@get.call.respondText(
             JsonResponses.encode(MessageResponse(runId, "accepted")),
             ContentType.Application.Json,
             HttpStatusCode.Accepted
@@ -157,26 +157,26 @@ fun Routing.installTestApiRoutes(
 
     post("/api/sessions/{key}/abort") {
         server.recordRequest()
-        val key = call.parameters["key"]
+        val key = this@get.call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            this@get.call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
             return@post
         }
         sessionVm.setSessionKey(key)
         sessionVm.abortChat()
-        call.respondText(JsonResponses.encode(MessageResponse(status = "aborted")), ContentType.Application.Json)
+        this@get.call.respondText(JsonResponses.encode(MessageResponse(status = "aborted")), ContentType.Application.Json)
     }
 
     get("/api/sessions/{key}/input") {
         server.recordRequest()
-        val key = call.parameters["key"]
+        val key = this@get.call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            this@get.call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
             return@get
         }
         sessionVm.setSessionKey(key)
         val state = sessionVm.state.value
-        call.respondText(
+        this@get.call.respondText(
             JsonResponses.encode(InputTextResponse(
                 state.inputText,
                 state.attachments.map { AttachmentUiResponse(it.id, it.mimeType, it.fileName) }
@@ -187,19 +187,19 @@ fun Routing.installTestApiRoutes(
 
     put("/api/sessions/{key}/input") {
         server.recordRequest()
-        val key = call.parameters["key"]
+        val key = this@get.call.parameters["key"]
         if (key == null) {
-            call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
+            this@get.call.respondText(JsonResponses.encode(ErrorResponse("Missing key")), ContentType.Application.Json, HttpStatusCode.BadRequest)
             return@put
         }
         val body = try {
-            val text = call.receiveText()
+            val text = this@get.call.receiveText()
             if (text.isBlank()) InputTextRequest("") else JsonResponses.decodeInputText(text)
         } catch (e: Exception) { InputTextRequest("") }
 
         sessionVm.setSessionKey(key)
         sessionVm.updateInputText(body.text)
-        call.respondText(
+        this@get.call.respondText(
             JsonResponses.encode(InputTextResponse(
                 body.text,
                 sessionVm.state.value.attachments.map { AttachmentUiResponse(it.id, it.mimeType, it.fileName) }
@@ -219,7 +219,7 @@ fun Routing.installTestApiRoutes(
             is WebSocketConnectionState.Reconnecting -> "Reconnecting"
             else -> "Unknown"
         }
-        call.respondText(
+        this@get.call.respondText(
             JsonResponses.encode(GatewayStatusResponse(
                 state = stateName,
                 url = gateway.connectedUrl,
@@ -232,12 +232,12 @@ fun Routing.installTestApiRoutes(
     post("/api/gateway/connect") {
         server.recordRequest()
         val body = try {
-            val text = call.receiveText()
+            val text = this@get.call.receiveText()
             if (text.isBlank()) GatewayConnectRequest("") else JsonResponses.decodeGatewayConnect(text)
         } catch (e: Exception) { GatewayConnectRequest("") }
 
         mainVm.connectToGateway(body.url)
-        call.respondText(JsonResponses.encode(GatewayConnectResponse(true)), ContentType.Application.Json)
+        this@get.call.respondText(JsonResponses.encode(GatewayConnectResponse(true)), ContentType.Application.Json)
     }
 
     // ─── State ─────────────────────────────────────────────────────────────────
@@ -245,7 +245,7 @@ fun Routing.installTestApiRoutes(
         server.recordRequest()
         val mainState = mainVm.uiState.value
         val connState = gateway.connectionState.value
-        call.respondText(
+        this@get.call.respondText(
             JsonResponses.encode(AppStateResponse(
                 gateway = GatewayStatusResponse(
                     state = connState::class.simpleName ?: "Unknown",
@@ -265,7 +265,7 @@ fun Routing.installTestApiRoutes(
     get("/api/state/session") {
         server.recordRequest()
         val state = sessionVm.state.value
-        call.respondText(
+        this@get.call.respondText(
             JsonResponses.encode(SessionStateResponse(
                 sessionKey = state.session?.key,
                 isSending = state.isSending,
